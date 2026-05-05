@@ -10,6 +10,5 @@ class MessagesPage extends FeatureScaffoldPage {
             'Realtime Supabase subscriptions can plug in here next.',
             'Attachment support can stay out of the first pass.',
           ],
-          navigationIndex: 2,
         );
 }

@@ -4,5 +4,5 @@ class AppConstants {
   static const appName = 'Jobdun';
   static const appTagline = 'Construction workforce platform';
   static const appDescription =
-      'Connect builders, trades, and admins in one mobile-first workflow.';
+      'Connect builders and trades in one mobile-first workflow.';
 }

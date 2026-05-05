@@ -12,21 +12,17 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final role = authState.role;
+    final email = authState.email ?? '';
+    final firstName = email.split('@').first;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
         actions: [
           IconButton(
-            onPressed: () async {
-              await ref.read(authControllerProvider.notifier).signOut();
-              if (!context.mounted) {
-                return;
-              }
-              context.go('/login');
-            },
-            icon: const Icon(Icons.logout),
-            tooltip: 'Sign out',
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Notifications',
+            onPressed: () => context.go('/notifications'),
           ),
         ],
       ),
@@ -34,127 +30,163 @@ class HomePage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            _GreetingSection(firstName: firstName, role: role),
+            const SizedBox(height: 24),
+            _StatsRow(role: role),
+            const SizedBox(height: 24),
+            _PrimaryAction(role: role),
+            const SizedBox(height: 24),
             Text(
-              'Android starter dashboard',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Quick access',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 12),
-            Text(
-              role == null
-                  ? 'No role selected yet.'
-                  : 'Signed in as ${role.label}. This is the base screen set for the first mobile setup.',
-            ),
+            _QuickAccessGrid(role: role),
             const SizedBox(height: 24),
-            const _StatusStrip(),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _QuickLinkCard(
-                  title: 'Jobs',
-                  subtitle: 'Browse and manage open work',
-                  icon: Icons.work_outline,
-                  onTap: () => context.go('/jobs'),
-                ),
-                _QuickLinkCard(
-                  title: 'Messages',
-                  subtitle: 'Job-specific conversations',
-                  icon: Icons.forum_outlined,
-                  onTap: () => context.go('/messages'),
-                ),
-                _QuickLinkCard(
-                  title: 'Profile',
-                  subtitle: 'Identity, company, and reviews',
-                  icon: Icons.badge_outlined,
-                  onTap: () => context.go('/profile'),
-                ),
-                _QuickLinkCard(
-                  title: 'Verification',
-                  subtitle: 'Licences and insurance tracking',
-                  icon: Icons.verified_user_outlined,
-                  onTap: () => context.go('/verification'),
-                ),
-                if (role == UserRole.admin)
-                  _QuickLinkCard(
-                    title: 'Admin',
-                    subtitle: 'Moderation and review queue',
-                    icon: Icons.admin_panel_settings_outlined,
-                    onTap: () => context.go('/admin'),
-                  ),
-              ],
-            ),
+            const _RecentActivity(),
           ],
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              context.go('/home');
-            case 1:
-              context.go('/jobs');
-            case 2:
-              context.go('/messages');
-            case 3:
-              context.go('/profile');
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.work_outline), label: 'Jobs'),
-          NavigationDestination(icon: Icon(Icons.forum_outlined), label: 'Messages'),
-          NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
       ),
     );
   }
 }
 
-class _StatusStrip extends StatelessWidget {
-  const _StatusStrip();
+class _GreetingSection extends StatelessWidget {
+  const _GreetingSection({required this.firstName, required this.role});
+
+  final String firstName;
+  final UserRole? role;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+
     return Row(
-      children: const [
+      children: [
         Expanded(
-          child: _MetricTile(label: 'Open jobs', value: '24'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$greeting, $firstName',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (role != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    role!.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  'Complete setup to get started',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF5A5A5A),
+                  ),
+                ),
+            ],
+          ),
         ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _MetricTile(label: 'Unread', value: '7'),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _MetricTile(label: 'Checks', value: '3'),
+        CircleAvatar(
+          radius: 28,
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Text(
+            firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({required this.label, required this.value});
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.role});
+
+  final UserRole? role;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBuilder = role == UserRole.builder;
+    final stats = isBuilder
+        ? [
+            ('Active Jobs', '—'),
+            ('Applicants', '—'),
+            ('In Progress', '—'),
+          ]
+        : [
+            ('Applications', '—'),
+            ('Shortlisted', '—'),
+            ('Accepted', '—'),
+          ];
+
+    return Row(
+      children: stats.indexed
+          .map(
+            (e) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: e.$1 == 0 ? 0 : 8),
+                child: _StatCard(label: e.$2.$1, value: e.$2.$2),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(label),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF5A5A5A),
+              ),
+            ),
           ],
         ),
       ),
@@ -162,44 +194,174 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _QuickLinkCard extends StatelessWidget {
-  const _QuickLinkCard({
-    required this.title,
-    required this.subtitle,
+class _PrimaryAction extends StatelessWidget {
+  const _PrimaryAction({required this.role});
+
+  final UserRole? role;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isBuilder = role == UserRole.builder;
+
+    return Card(
+      color: theme.colorScheme.primary,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => context.go(isBuilder ? '/jobs/create' : '/jobs'),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isBuilder ? 'Post a new job' : 'Browse open jobs',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isBuilder
+                          ? 'Find skilled trades for your next project'
+                          : 'Find construction work near you',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAccessGrid extends StatelessWidget {
+  const _QuickAccessGrid({required this.role});
+
+  final UserRole? role;
+
+  @override
+  Widget build(BuildContext context) {
+    final isTrade = role == UserRole.trade;
+
+    final items = [
+      (
+        'Applications',
+        Icons.assignment_outlined,
+        '/applications',
+      ),
+      if (isTrade) ...[
+        ('Verification', Icons.verified_user_outlined, '/verification'),
+      ] else ...[
+        ('Verification', Icons.verified_user_outlined, '/verification'),
+      ],
+      ('Reviews', Icons.star_outline, '/reviews'),
+      ('Notifications', Icons.notifications_outlined, '/notifications'),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 1.6,
+      children: items
+          .map(
+            (item) => _QuickCard(
+              label: item.$1,
+              icon: item.$2,
+              onTap: () => context.go(item.$3),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _QuickCard extends StatelessWidget {
+  const _QuickCard({
+    required this.label,
     required this.icon,
     required this.onTap,
   });
 
-  final String title;
-  final String subtitle;
+  final String label;
   final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final width = (MediaQuery.of(context).size.width - 52) / 2;
+    final theme = Theme.of(context);
 
-    return SizedBox(
-      width: width,
-      child: Card(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon),
-                const SizedBox(height: 18),
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Text(subtitle),
-              ],
-            ),
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(width: 12),
+              Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RecentActivity extends StatelessWidget {
+  const _RecentActivity();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent activity',
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    size: 40,
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No recent activity',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF5A5A5A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

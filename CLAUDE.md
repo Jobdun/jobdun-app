@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. It connects three roles: **Builders** (post jobs, manage applicants), **Trades/Crews** (browse and apply for jobs, upload verifications), and **Admins** (review documents, moderate platform).
+Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. It connects two roles in the mobile app: **Builders** (post jobs, manage applicants) and **Trades/Crews** (browse and apply for jobs, upload verifications). **Admin is a separate web application** — the Flutter app has no admin UI.
 
 - **Framework**: Flutter (Dart `^3.11.5`) — Android and iOS primary targets
 - **Backend**: Supabase (Auth, PostgreSQL, Storage, Realtime, RLS, Edge Functions)
@@ -61,7 +61,6 @@ lib/
     verification/
     reviews/
     notifications/
-    admin/
   main.dart
 ```
 
@@ -76,6 +75,8 @@ Each feature folder contains:
 
 Credentials are passed via `--dart-define` at build time and read from `core/config/env.dart`. Never use the service-role key in the Flutter app — only the anon key. Privileged operations go through RLS policies or Edge Functions.
 
+A `handle_new_user()` DB trigger auto-inserts a row into `profiles` on every `auth.users` INSERT. This must exist before any sign-up is attempted.
+
 ### Key database tables
 
 `profiles` → `builder_profiles` / `trade_profiles` (role split via FK), `jobs`, `job_applications`, `messages`, `verification_documents`, `reviews`, `notifications`.
@@ -84,7 +85,9 @@ Row Level Security is required on all tables. Users may only read/write their ow
 
 ### Navigation routes (GoRouter)
 
-`/splash` → `/login` → `/register` → `/onboarding` → `/home` → `/jobs` → `/jobs/:id` → `/jobs/create` → `/applications` → `/messages` → `/messages/:conversationId` → `/profile` → `/profile/edit` → `/verification` → `/admin/*`
+`/splash` → `/login` → `/register` → `/onboarding` → `/home` → `/jobs` (nested: `/jobs/create`, `/jobs/:id`) → `/applications` → `/messages` (nested: `/messages/:conversationId`) → `/profile` (nested: `/profile/edit`) → `/verification` → `/reviews` → `/notifications`
+
+`/jobs` uses nested routes to prevent `/jobs/create` from matching `:id`.
 
 ### Job status lifecycle
 
@@ -94,17 +97,23 @@ Row Level Security is required on all tables. Users may only read/write their ow
 
 `Pending` → `Shortlisted` → `Accepted` / `Rejected` / `Withdrawn`
 
-## Key packages (planned)
+## Key packages
 
 ```yaml
+# installed
 supabase_flutter, go_router, flutter_riverpod,
-freezed_annotation, json_annotation, equatable,
-image_picker, file_picker, cached_network_image,
-intl, url_launcher
+equatable, fpdart, json_annotation,
+intl, connectivity_plus,
+image_picker, file_picker, cached_network_image, url_launcher
 
-# dev
-build_runner, freezed, json_serializable, mocktail
+# dev (installed)
+build_runner, json_serializable, mocktail
+
+# pending — add when freezed resolves with riverpod 3.x
+# freezed_annotation, freezed
 ```
+
+Use case return type: `Future<Either<Failure, T>>` from `fpdart`.
 
 Use pinned versions before production release.
 

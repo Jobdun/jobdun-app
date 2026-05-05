@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:go_router/go_router.dart'; // needed for context.go('/login')
 
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/social_auth_buttons.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -35,19 +36,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   void _continue() {
-    ref
-        .read(authControllerProvider.notifier)
-        .register(
-          email: _emailController.text,
-          password: _passwordController.text,
-          fullName: _nameController.text,
-        )
-        .then((success) {
-          if (!mounted || !success) {
-            return;
-          }
-          context.go('/onboarding');
-        });
+    ref.read(authControllerProvider.notifier).register(
+      email: _emailController.text,
+      password: _passwordController.text,
+      fullName: _nameController.text,
+    );
+    // Router redirect handles navigation:
+    // - If email confirmation required → /verify-email
+    // - If signed in immediately → /onboarding
   }
 
   @override
@@ -112,6 +108,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 label: authState.isLoading ? 'Creating account...' : 'Continue',
                 onPressed: authState.isLoading ? null : _continue,
               ),
+              const SizedBox(height: 24),
+              const SocialAuthButtons(),
               const SizedBox(height: 12),
               AppButton(
                 label: 'Back to sign in',

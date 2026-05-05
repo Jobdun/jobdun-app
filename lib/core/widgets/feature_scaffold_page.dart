@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class FeatureScaffoldPage extends StatelessWidget {
   const FeatureScaffoldPage({
@@ -7,13 +6,11 @@ class FeatureScaffoldPage extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.bullets,
-    required this.navigationIndex,
   });
 
   final String title;
   final String subtitle;
   final List<String> bullets;
-  final int navigationIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -45,36 +42,6 @@ class FeatureScaffoldPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationIndex,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              context.go('/home');
-            case 1:
-              context.go('/jobs');
-            case 2:
-              context.go('/messages');
-            case 3:
-              context.go('/profile');
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Home',
-          ),
-          NavigationDestination(icon: Icon(Icons.work_outline), label: 'Jobs'),
-          NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
-            label: 'Messages',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

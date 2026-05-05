@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
+// To apply a design system: update AppColors/AppSpacing/AppRadius in app_colors.dart
+// and extend/replace the ThemeData below. Widget code never references raw Color values.
 class AppTheme {
   const AppTheme._();
 
   static ThemeData light() {
-    const seed = Color(0xFFC96C2D);
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: seed,
+      seedColor: AppColors.seedOrange,
       brightness: Brightness.light,
-      primary: const Color(0xFFB8561C),
-      secondary: const Color(0xFF254441),
-      surface: const Color(0xFFF7F3EE),
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      surface: AppColors.surface,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFFF3EEE7),
+      scaffoldBackgroundColor: AppColors.background,
       textTheme: const TextTheme(
         headlineLarge: TextStyle(fontSize: 34, fontWeight: FontWeight.w700),
         headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
@@ -31,28 +34,30 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFFE2D6C8)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: seed, width: 1.5),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: const BorderSide(color: AppColors.seedOrange, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: AppRadius.lg,
+          vertical: AppSpacing.md,
         ),
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: AppColors.cardBackground,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
       ),
     );
   }

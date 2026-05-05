@@ -7,6 +7,7 @@ import '../../../../core/config/env.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/social_auth_buttons.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -34,18 +35,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _continue() {
-    ref
-        .read(authControllerProvider.notifier)
-        .signIn(
-          email: _emailController.text,
-          password: _passwordController.text,
-        )
-        .then((success) {
-          if (!mounted || !success) {
-            return;
-          }
-          context.go('/onboarding');
-        });
+    ref.read(authControllerProvider.notifier).signIn(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
   }
 
   @override
@@ -113,7 +106,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 label: authState.isLoading ? 'Signing in...' : 'Sign in',
                 onPressed: authState.isLoading ? null : _continue,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
+              const SocialAuthButtons(),
+              const SizedBox(height: 24),
               AppButton(
                 label: 'Create an account',
                 variant: AppButtonVariant.secondary,

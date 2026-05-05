@@ -10,6 +10,5 @@ class JobsPage extends FeatureScaffoldPage {
             'Review job status from draft through completion.',
             'Create a builder-focused post flow next.',
           ],
-          navigationIndex: 1,
         );
 }

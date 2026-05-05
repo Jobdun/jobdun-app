@@ -1,9 +1,18 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import '../../../../core/config/env.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../domain/entities/user_role.dart';
+
+export '../../domain/entities/user_role.dart';
 
 final authControllerProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
@@ -131,26 +140,24 @@ class AuthController extends Notifier<AuthState> {
       );
 
       if (response.session == null) {
+        // Email confirmation required — route to verify-email screen.
         state = state.copyWith(
-          isAuthenticated: false,
-          onboardingComplete: false,
-          email: response.user?.email ?? email.trim(),
           isLoading: false,
-          infoMessage:
-              'Account created. Confirm your email, then sign in to continue.',
           errorMessage: null,
-          clearRole: true,
+          infoMessage: null,
+          pendingVerificationEmail: response.user?.email ?? email.trim(),
         );
         return false;
       }
 
+      // Email confirmation disabled — signed in immediately.
       state = state.copyWith(
         isAuthenticated: true,
         onboardingComplete: false,
         email: response.user?.email ?? email.trim(),
         isLoading: false,
         errorMessage: null,
-        infoMessage: 'Account created successfully.',
+        infoMessage: null,
         clearRole: true,
       );
       return true;
@@ -169,6 +176,156 @@ class AuthController extends Notifier<AuthState> {
       );
       return false;
     }
+  }
+
+  Future<void> resendVerificationEmail() async {
+    final email = state.pendingVerificationEmail;
+    if (email == null || !SupabaseConfig.isInitialized) return;
+
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    try {
+      await SupabaseConfig.client.auth.resend(
+        type: supabase.OtpType.signup,
+        email: email,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        infoMessage: 'Verification email resent. Check your inbox.',
+      );
+    } on supabase.AuthException catch (error) {
+      state = state.copyWith(isLoading: false, errorMessage: error.message);
+    } catch (error) {
+      state = state.copyWith(isLoading: false, errorMessage: error.toString());
+    }
+  }
+
+  void clearPendingVerification() {
+    state = state.copyWith(clearPendingVerification: true);
+  }
+
+  // Tracks whether GoogleSignIn.instance.initialize() has been called this
+  // app lifecycle. Static so it survives Riverpod provider rebuilds.
+  static bool _googleInitialized = false;
+
+  Future<void> signInWithGoogle() async {
+    if (!AppEnv.isGoogleConfigured) {
+      state = state.copyWith(
+        errorMessage:
+            'Google Sign-In is not configured yet. '
+            'Add GOOGLE_WEB_CLIENT_ID to your .env file.',
+        isLoading: false,
+        infoMessage: null,
+      );
+      return;
+    }
+
+    if (!SupabaseConfig.isInitialized) {
+      state = state.copyWith(
+        errorMessage: 'Supabase is not configured.',
+        isLoading: false,
+        infoMessage: null,
+      );
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+
+    try {
+      if (!_googleInitialized) {
+        await GoogleSignIn.instance.initialize(
+          clientId: AppEnv.googleIosClientId.isEmpty ? null : AppEnv.googleIosClientId,
+          serverClientId: AppEnv.googleWebClientId,
+        );
+        _googleInitialized = true;
+      }
+
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null) throw Exception('Google sign-in failed: no ID token received.');
+
+      final response = await SupabaseConfig.client.auth.signInWithIdToken(
+        provider: supabase.OAuthProvider.google,
+        idToken: idToken,
+      );
+
+      state = state.copyWith(
+        isAuthenticated: response.user != null,
+        onboardingComplete: false,
+        email: response.user?.email,
+        isLoading: false,
+        clearRole: true,
+      );
+    } on GoogleSignInException catch (e) {
+      // User cancelled — clear loading silently.
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    if (!SupabaseConfig.isInitialized) {
+      state = state.copyWith(
+        errorMessage: 'Supabase is not configured.',
+        isLoading: false,
+        infoMessage: null,
+      );
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+
+    try {
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
+
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final idToken = credential.identityToken;
+      if (idToken == null) throw Exception('Apple sign-in failed: no identity token received.');
+
+      final response = await SupabaseConfig.client.auth.signInWithIdToken(
+        provider: supabase.OAuthProvider.apple,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+
+      state = state.copyWith(
+        isAuthenticated: response.user != null,
+        onboardingComplete: false,
+        email: response.user?.email,
+        isLoading: false,
+        clearRole: true,
+      );
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+    }
+  }
+
+  String _generateNonce([int length = 32]) {
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final rng = Random.secure();
+    return List.generate(length, (_) => chars[rng.nextInt(chars.length)]).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
   }
 
   void completeOnboarding(UserRole role) {
@@ -190,6 +347,7 @@ class AuthState {
     this.isLoading = false,
     this.role,
     this.email,
+    this.pendingVerificationEmail,
     this.errorMessage,
     this.infoMessage,
   });
@@ -199,6 +357,7 @@ class AuthState {
   final bool isLoading;
   final UserRole? role;
   final String? email;
+  final String? pendingVerificationEmail;
   final String? errorMessage;
   final String? infoMessage;
 
@@ -208,9 +367,11 @@ class AuthState {
     bool? isLoading,
     UserRole? role,
     String? email,
+    String? pendingVerificationEmail,
     String? errorMessage,
     String? infoMessage,
     bool clearRole = false,
+    bool clearPendingVerification = false,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -218,27 +379,12 @@ class AuthState {
       isLoading: isLoading ?? this.isLoading,
       role: clearRole ? null : role ?? this.role,
       email: email ?? this.email,
+      pendingVerificationEmail: clearPendingVerification
+          ? null
+          : pendingVerificationEmail ?? this.pendingVerificationEmail,
       errorMessage: errorMessage,
       infoMessage: infoMessage,
     );
   }
 }
 
-enum UserRole { builder, trade, admin }
-
-extension UserRoleX on UserRole {
-  String get label => switch (this) {
-    UserRole.builder => 'Builder',
-    UserRole.trade => 'Trade / Crew',
-    UserRole.admin => 'Admin',
-  };
-
-  String get description => switch (this) {
-    UserRole.builder =>
-      'Post work, review applicants, and manage project progress.',
-    UserRole.trade =>
-      'Find work, apply quickly, and maintain verification documents.',
-    UserRole.admin =>
-      'Review verifications, moderate activity, and monitor the platform.',
-  };
-}
