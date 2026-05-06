@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
@@ -45,7 +46,7 @@ class AppButton extends StatelessWidget {
             children: [
               if (icon != null) ...[
                 Icon(icon, size: 18.r),
-                SizedBox(width: 8.w),
+                Gap(8.w),
               ],
               Text(label, style: labelStyle),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
@@ -44,7 +45,7 @@ class _BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       child: SafeArea(
@@ -67,7 +68,7 @@ class _BottomNav extends StatelessWidget {
                         size: 22.r,
                         color: isActive ? AppColors.action : AppColors.text3,
                       ),
-                      SizedBox(height: 3.h),
+                      Gap(3.h),
                       Text(
                         tab.$3,
                         style: GoogleFonts.barlow(

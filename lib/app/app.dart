@@ -19,6 +19,8 @@ class JobdunApp extends ConsumerWidget {
       builder: (context, child) => MaterialApp.router(
         title: 'Jobdun',
         theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
         routerConfig: router,
         debugShowCheckedModeBanner: false,
       ),

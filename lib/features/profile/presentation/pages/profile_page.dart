@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -25,14 +26,17 @@ class ProfilePage extends ConsumerWidget {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _ProfileHeader(initials: initials, email: email, role: role)),
+            SliverToBoxAdapter(
+              child: _ProfileHeader(initials: initials, email: email, role: role),
+            ),
             SliverToBoxAdapter(child: Gap(16.h)),
-            if (isBuilder)
-              SliverToBoxAdapter(child: _BuilderProfile())
-            else
-              SliverToBoxAdapter(child: _TradeProfile()),
+            SliverToBoxAdapter(
+              child: isBuilder
+                  ? const _BuilderProfile()
+                  : const _TradeProfile(),
+            ),
             SliverToBoxAdapter(child: Gap(16.h)),
-            SliverToBoxAdapter(child: _SettingsSection()),
+            SliverToBoxAdapter(child: const _SettingsSection()),
             SliverToBoxAdapter(child: Gap(24.h)),
             SliverToBoxAdapter(
               child: Padding(
@@ -40,7 +44,8 @@ class ProfilePage extends ConsumerWidget {
                 child: AppButton(
                   label: 'Sign out',
                   variant: AppButtonVariant.ghost,
-                  onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                  onPressed: () =>
+                      ref.read(authControllerProvider.notifier).signOut(),
                 ),
               ),
             ),
@@ -81,24 +86,7 @@ class _ProfileHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 24.h),
       child: Row(
         children: [
-          Container(
-            width: 72.r,
-            height: 72.r,
-            decoration: BoxDecoration(
-              color: AppColors.foundation,
-              borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-            ),
-            child: Center(
-              child: Text(
-                initials,
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
+          AvatarBlock(initials: initials, size: 72),
           Gap(16.w),
           Expanded(
             child: Column(
@@ -145,7 +133,7 @@ class _ProfileHeader extends StatelessWidget {
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.08 * 10,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     ),
                   ),
@@ -162,6 +150,8 @@ class _ProfileHeader extends StatelessWidget {
 // ── Builder Profile ────────────────────────────────────────────────────────────
 
 class _BuilderProfile extends StatelessWidget {
+  const _BuilderProfile();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -169,18 +159,31 @@ class _BuilderProfile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats row
           Row(
             children: [
-              _StatBadge(value: '4.8', label: 'Rating', icon: Iconsax.star1, iconColor: const Color(0xFFF59E0B)),
+              _StatBadge(
+                value: '4.8',
+                label: 'Rating',
+                icon: Iconsax.star,
+                iconColor: AppColors.star,
+              ),
               Gap(8.w),
-              _StatBadge(value: '23', label: 'Reviews', icon: Iconsax.message_text, iconColor: AppColors.available),
+              _StatBadge(
+                value: '23',
+                label: 'Reviews',
+                icon: Iconsax.message_text,
+                iconColor: AppColors.available,
+              ),
               Gap(8.w),
-              _StatBadge(value: '47', label: 'Jobs Posted', icon: Iconsax.briefcase, iconColor: AppColors.action),
+              _StatBadge(
+                value: '47',
+                label: 'Jobs posted',
+                icon: Iconsax.briefcase,
+                iconColor: AppColors.action,
+              ),
             ],
           ),
           Gap(16.h),
-          // Company card
           _InfoCard(
             title: 'COMPANY DETAILS',
             children: [
@@ -192,13 +195,12 @@ class _BuilderProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          // Verification card
           _InfoCard(
             title: 'VERIFICATION',
             children: [
-              _VerificationRow(label: 'ABN Verified', isVerified: true),
-              _VerificationRow(label: 'Email Verified', isVerified: true),
-              _VerificationRow(label: 'Insurance Docs', isVerified: false),
+              _VerificationRow(label: 'ABN verified', isVerified: true),
+              _VerificationRow(label: 'Email verified', isVerified: true),
+              _VerificationRow(label: 'Insurance docs', isVerified: false),
             ],
           ),
         ],
@@ -210,6 +212,8 @@ class _BuilderProfile extends StatelessWidget {
 // ── Trade Profile ──────────────────────────────────────────────────────────────
 
 class _TradeProfile extends StatelessWidget {
+  const _TradeProfile();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -217,14 +221,28 @@ class _TradeProfile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stats row
           Row(
             children: [
-              _StatBadge(value: '4.9', label: 'Rating', icon: Iconsax.star1, iconColor: const Color(0xFFF59E0B)),
+              _StatBadge(
+                value: '4.9',
+                label: 'Rating',
+                icon: Iconsax.star,
+                iconColor: AppColors.star,
+              ),
               Gap(8.w),
-              _StatBadge(value: '142', label: 'Jobs Done', icon: Iconsax.tick_circle, iconColor: AppColors.verified),
+              _StatBadge(
+                value: '142',
+                label: 'Jobs done',
+                icon: Iconsax.tick_circle,
+                iconColor: AppColors.verified,
+              ),
               Gap(8.w),
-              _StatBadge(value: '5+', label: 'Yrs Exp', icon: Iconsax.award, iconColor: AppColors.action),
+              _StatBadge(
+                value: '5+',
+                label: 'Yrs exp',
+                icon: Iconsax.award,
+                iconColor: AppColors.action,
+              ),
             ],
           ),
           Gap(16.h),
@@ -234,7 +252,7 @@ class _TradeProfile extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.verifiedBg,
               borderRadius: BorderRadius.circular(AppRadius.card.r),
-              border: Border.all(color: AppColors.verified.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
@@ -261,26 +279,24 @@ class _TradeProfile extends StatelessWidget {
             ),
           ),
           Gap(12.h),
-          // Trade details card
           _InfoCard(
             title: 'TRADE DETAILS',
             children: [
               _InfoRow(icon: Iconsax.personalcard, label: 'Trade', value: 'Electrician'),
               _InfoRow(icon: Iconsax.document_text, label: 'Licence', value: 'EL 123456 (NSW)'),
-              _InfoRow(icon: Iconsax.location, label: 'Base', value: 'Parramatta NSW 2150'),
+              _InfoRow(icon: Iconsax.location, label: 'Base suburb', value: 'Parramatta NSW 2150'),
               _InfoRow(icon: Iconsax.call, label: 'Phone', value: '+61 4 1234 5678'),
               _InfoRow(icon: Iconsax.calendar_1, label: 'Member since', value: 'May 2026'),
             ],
           ),
           Gap(12.h),
-          // Verification card
           _InfoCard(
             title: 'VERIFICATION',
             children: [
-              _VerificationRow(label: 'Email Verified', isVerified: true),
-              _VerificationRow(label: 'Licence Verified', isVerified: true),
-              _VerificationRow(label: 'Police Check', isVerified: false),
-              _VerificationRow(label: 'SWMS Uploaded', isVerified: false),
+              _VerificationRow(label: 'Email verified', isVerified: true),
+              _VerificationRow(label: 'Licence verified', isVerified: true),
+              _VerificationRow(label: 'Police check', isVerified: false),
+              _VerificationRow(label: 'SWMS uploaded', isVerified: false),
             ],
           ),
         ],
@@ -289,9 +305,11 @@ class _TradeProfile extends StatelessWidget {
   }
 }
 
-// ── Settings Section ───────────────────────────────────────────────────────────
+// ── Settings ───────────────────────────────────────────────────────────────────
 
 class _SettingsSection extends StatelessWidget {
+  const _SettingsSection();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -328,7 +346,7 @@ class _StatBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 12.w),
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(AppRadius.card.r),
@@ -401,7 +419,11 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   final IconData icon;
   final String label;
@@ -451,7 +473,7 @@ class _VerificationRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isVerified ? Iconsax.verify5 : Iconsax.close_circle,
+            isVerified ? Iconsax.verify : Iconsax.close_circle,
             size: 16.r,
             color: isVerified ? AppColors.verified : AppColors.text3,
           ),

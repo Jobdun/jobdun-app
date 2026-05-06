@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/gv_chip.dart';
+import '../../../../core/design/widgets/job_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class JobsPage extends ConsumerStatefulWidget {
@@ -18,116 +20,111 @@ class JobsPage extends ConsumerStatefulWidget {
 class _JobsPageState extends ConsumerState<JobsPage> {
   String? _activeFilter;
 
-  static const _filters = ['All', 'Electrician', 'Plumber', 'Carpenter', 'Concreter', 'Painter'];
+  static const _filters = [
+    'All',
+    'Electrician',
+    'Plumber',
+    'Carpenter',
+    'Concreter',
+    'Painter',
+  ];
 
-  static const _sampleJobs = [
-    _JobData(
+  static const _jobs = [
+    _JobModel(
       id: '1',
       title: 'Install 3-phase switchboard at commercial site',
+      description:
+          'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination. Must hold current NSW electrical licence.',
       company: 'Pinnacle Construct',
-      suburb: 'Surry Hills',
-      state: 'NSW',
-      rate: '\$85/hr',
-      rateType: 'Hourly',
+      suburb: 'Surry Hills, NSW',
+      rate: r'$85/hr',
+      startDate: 'Tomorrow 7am',
+      distanceKm: 2.4,
       trade: 'Electrician',
       isUrgent: true,
-      status: 'Open',
       postedAgo: '2h ago',
-      description:
-          'Looking for a licensed electrician to install a 3-phase switchboard at our commercial fit-out in Surry Hills. Work includes conduit run, panel installation, and termination. Must hold current NSW electrical licence.',
-      duration: '3 days',
     ),
-    _JobData(
+    _JobModel(
       id: '2',
       title: 'Frame internal walls for home renovation',
+      description:
+          'Steel stud framing approximately 120 LM for a full renovation in Newtown. Drawings available on site. Supply your own tools.',
       company: 'BuildRight Pty Ltd',
-      suburb: 'Newtown',
-      state: 'NSW',
-      rate: '\$45/hr',
-      rateType: 'Hourly',
+      suburb: 'Newtown, NSW',
+      rate: r'$45/hr',
+      startDate: '12 May',
+      distanceKm: 4.8,
       trade: 'Carpenter',
       isUrgent: false,
-      status: 'Open',
       postedAgo: '5h ago',
-      description:
-          'Internal wall framing for a full home renovation in Newtown. Steel stud framing approximately 120 LM. Drawings available on site. Must supply own tools.',
-      duration: '5 days',
     ),
-    _JobData(
+    _JobModel(
       id: '3',
       title: 'Concrete footings for deck extension',
+      description:
+          '8 × 300mm dia pad footings, 600mm deep. Reinforcement supplied by contractor. All approvals in place.',
       company: 'Coast & Country Builds',
-      suburb: 'Cronulla',
-      state: 'NSW',
-      rate: '\$75/hr',
-      rateType: 'Hourly',
+      suburb: 'Cronulla, NSW',
+      rate: r'$75/hr',
+      startDate: '14 May',
+      distanceKm: 9.1,
       trade: 'Concreter',
       isUrgent: false,
-      status: 'Open',
       postedAgo: '1d ago',
-      description:
-          'Concrete footings for a rear deck extension. 8 x 300mm dia pad footings, 600mm deep. Reinforcement to be supplied by contractor.',
-      duration: '1 day',
     ),
-    _JobData(
+    _JobModel(
       id: '4',
       title: 'Rough-in plumbing for new bathroom',
+      description:
+          'Rough-in plumbing for a new ensuite bathroom in Mosman. Shower, vanity, toilet, and bath connections. Hot and cold supply, sewer connections to existing stack.',
       company: 'Prestige Renos',
-      suburb: 'Mosman',
-      state: 'NSW',
-      rate: '\$1,800',
-      rateType: 'Fixed',
+      suburb: 'Mosman, NSW',
+      rate: r'$1,800 fixed',
+      startDate: '15 May',
+      distanceKm: 6.3,
       trade: 'Plumber',
       isUrgent: false,
-      status: 'Open',
       postedAgo: '2d ago',
-      description:
-          'Rough-in plumbing for a new ensuite bathroom. Shower, vanity, toilet, and bath connections. Hot and cold supply, sewer connections to existing stack.',
-      duration: '2 days',
     ),
-    _JobData(
+    _JobModel(
       id: '5',
-      title: 'Roof repair — replace broken tiles and re-bed ridge',
-      company: 'Harbour Homes',
-      suburb: 'Balmain',
-      state: 'NSW',
-      rate: '\$55/hr',
-      rateType: 'Hourly',
-      trade: 'Roof Plumber',
-      isUrgent: true,
-      status: 'Open',
-      postedAgo: '3h ago',
+      title: 'Roof repair — replace tiles and re-bed ridge',
       description:
-          'Urgent roof repair following storm damage. Approx 20 broken/cracked tiles to replace. Ridge re-bedding on east face. Scaffold supplied.',
-      duration: '1 day',
+          'Approx 20 broken tiles to replace following storm damage. Ridge re-bedding on east face. Scaffold supplied. Must be available immediately.',
+      company: 'Harbour Homes',
+      suburb: 'Balmain, NSW',
+      rate: r'$55/hr',
+      startDate: 'Today',
+      distanceKm: 3.7,
+      trade: 'Painter',
+      isUrgent: true,
+      postedAgo: '3h ago',
     ),
-    _JobData(
+    _JobModel(
       id: '6',
       title: 'Interior paint — 4-bedroom home repaint',
+      description:
+          'Full interior repaint of a 4-bedroom home before sale. Walls, ceilings, trims. Paint supplied. 2 coats Dulux Wash&Wear throughout.',
       company: 'Domain Developments',
-      suburb: 'Randwick',
-      state: 'NSW',
-      rate: '\$3,500',
-      rateType: 'Fixed',
+      suburb: 'Randwick, NSW',
+      rate: r'$3,500 fixed',
+      startDate: '18 May',
+      distanceKm: 7.2,
       trade: 'Painter',
       isUrgent: false,
-      status: 'Open',
       postedAgo: '4d ago',
-      description:
-          'Full interior repaint of 4-bedroom home before sale. Walls, ceilings, trims. Paint supplied. 2 coats Dulux Wash&Wear throughout.',
-      duration: '4 days',
     ),
   ];
 
-  List<_JobData> get _filteredJobs {
-    if (_activeFilter == null || _activeFilter == 'All') return _sampleJobs;
-    return _sampleJobs.where((j) => j.trade == _activeFilter).toList();
+  List<_JobModel> get _filtered {
+    if (_activeFilter == null || _activeFilter == 'All') return _jobs;
+    return _jobs.where((j) => j.trade == _activeFilter).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authControllerProvider);
-    final isBuilder = authState.role == UserRole.builder;
+    final isBuilder = ref.watch(authControllerProvider).role == UserRole.builder;
+    final results = _filtered;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -135,145 +132,126 @@ class _JobsPageState extends ConsumerState<JobsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ── Header
             Container(
               color: AppColors.card,
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
-              child: Row(
+              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isBuilder ? 'POSTED JOBS' : 'FIND WORK',
-                          style: GoogleFonts.barlow(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.12 * 11,
-                            color: AppColors.text3,
-                          ),
-                        ),
-                        Gap(4.h),
-                        Text(
-                          isBuilder ? 'Your job listings' : 'Open near you',
-                          style: GoogleFonts.barlowCondensed(
-                            fontSize: 26.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.02 * 26,
-                            color: AppColors.text1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isBuilder)
-                    GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                        decoration: BoxDecoration(
-                          color: AppColors.action,
-                          borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                        ),
-                        child: Row(
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Iconsax.add, size: 16.r, color: Colors.white),
-                            Gap(6.w),
                             Text(
-                              'Post job',
+                              isBuilder ? 'POSTED JOBS' : 'FIND WORK',
                               style: GoogleFonts.barlow(
-                                fontSize: 13.sp,
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                                letterSpacing: 0.12 * 11,
+                                color: AppColors.text3,
+                              ),
+                            ),
+                            Gap(4.h),
+                            Text(
+                              isBuilder ? 'Your listings' : 'Open near you',
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 28.sp,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.02 * 28,
+                                color: AppColors.text1,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            // Search bar
-            Container(
-              color: AppColors.card,
-              padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-              child: Container(
-                height: 44.h,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.input.r),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    Gap(12.w),
-                    Icon(Iconsax.search_normal, size: 18.r, color: AppColors.text3),
-                    Gap(8.w),
-                    Text(
-                      'Search jobs, trades, locations...',
-                      style: GoogleFonts.barlow(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.text3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Filter chips
-            Container(
-              color: AppColors.card,
-              child: Column(
-                children: [
-                  Divider(height: 1, color: AppColors.border),
-                  SizedBox(
-                    height: 44.h,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-                      itemCount: _filters.length,
-                      separatorBuilder: (context, index) => Gap(8.w),
-                      itemBuilder: (context, i) {
-                        final filter = _filters[i];
-                        final isActive = filter == _activeFilter || (i == 0 && _activeFilter == null);
-                        return GestureDetector(
-                          onTap: () => setState(() => _activeFilter = filter == 'All' ? null : filter),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
+                      if (isBuilder)
+                        GestureDetector(
+                          onTap: () {},
+                          child: Container(
+                            height: 36.h,
                             padding: EdgeInsets.symmetric(horizontal: 14.w),
                             decoration: BoxDecoration(
-                              color: isActive ? AppColors.foundation : AppColors.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                              border: Border.all(
-                                color: isActive ? AppColors.foundation : AppColors.border,
-                              ),
+                              color: AppColors.action,
+                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
                             ),
-                            child: Center(
-                              child: Text(
-                                filter,
-                                style: GoogleFonts.barlow(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: isActive ? Colors.white : AppColors.text2,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Iconsax.add, size: 16.r, color: AppColors.white),
+                                Gap(6.w),
+                                Text(
+                                  'Post job',
+                                  style: GoogleFonts.barlow(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.white,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
+                        ),
+                    ],
+                  ),
+                  Gap(12.h),
+                  // ── Search bar — 40px height per spec
+                  Container(
+                    height: 40.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.input.r),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Gap(14.w),
+                        Icon(Iconsax.search_normal, size: 16.r, color: AppColors.text3),
+                        Gap(8.w),
+                        Text(
+                          'Search trades, skills, suburbs…',
+                          style: GoogleFonts.barlow(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.text3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Gap(12.h),
+                  // ── Filter chips
+                  SizedBox(
+                    height: 30.h,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _filters.length,
+                      separatorBuilder: (ctx, idx) => Gap(8.w),
+                      itemBuilder: (context, i) {
+                        final f = _filters[i];
+                        final isActive =
+                            f == _activeFilter || (i == 0 && _activeFilter == null);
+                        return GvChip(
+                          label: f,
+                          active: isActive,
+                          onTap: () =>
+                              setState(() => _activeFilter = f == 'All' ? null : f),
                         );
                       },
                     ),
                   ),
+                  Gap(12.h),
+                  Divider(height: 1, color: AppColors.border),
                 ],
               ),
             ),
-            // Job count
+            // ── Results count
             Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 8.h),
+              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
               child: Text(
-                '${_filteredJobs.length} jobs found',
+                '${results.length} ${results.length == 1 ? 'job' : 'jobs'} found',
                 style: GoogleFonts.barlow(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w400,
@@ -281,13 +259,24 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 ),
               ),
             ),
-            // Jobs list
+            // ── Job list
             Expanded(
               child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 24.h),
-                itemCount: _filteredJobs.length,
-                separatorBuilder: (ctx, idx) => Gap(12.h),
-                itemBuilder: (context, i) => _JobCard(job: _filteredJobs[i]),
+                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 24.h),
+                itemCount: results.length,
+                separatorBuilder: (ctx, idx) => Gap(9.h),
+                itemBuilder: (context, i) {
+                  final j = results[i];
+                  return JobCard(
+                    title: j.title,
+                    description: j.description,
+                    rate: j.rate,
+                    startDate: j.startDate,
+                    distanceKm: j.distanceKm,
+                    isUrgent: j.isUrgent,
+                    onTap: () {},
+                  );
+                },
               ),
             ),
           ],
@@ -297,228 +286,30 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   }
 }
 
-// ── Data model ─────────────────────────────────────────────────────────────────
-
-class _JobData {
-  const _JobData({
+class _JobModel {
+  const _JobModel({
     required this.id,
     required this.title,
+    required this.description,
     required this.company,
     required this.suburb,
-    required this.state,
     required this.rate,
-    required this.rateType,
+    required this.startDate,
+    required this.distanceKm,
     required this.trade,
     required this.isUrgent,
-    required this.status,
     required this.postedAgo,
-    required this.description,
-    required this.duration,
   });
 
   final String id;
   final String title;
+  final String description;
   final String company;
   final String suburb;
-  final String state;
   final String rate;
-  final String rateType;
+  final String startDate;
+  final double distanceKm;
   final String trade;
   final bool isUrgent;
-  final String status;
   final String postedAgo;
-  final String description;
-  final String duration;
-}
-
-// ── Job Card ───────────────────────────────────────────────────────────────────
-
-class _JobCard extends StatelessWidget {
-  const _JobCard({required this.job});
-
-  final _JobData job;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: EdgeInsets.all(16.r),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(
-            color: job.isUrgent ? AppColors.urgent : AppColors.border,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title + urgent badge
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    job.title,
-                    style: GoogleFonts.barlow(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.text1,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-                if (job.isUrgent) ...[
-                  Gap(8.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.urgentBg,
-                      borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                    ),
-                    child: Text(
-                      'URGENT',
-                      style: GoogleFonts.barlow(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.06 * 10,
-                        color: AppColors.urgentTx,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            Gap(8.h),
-            // Company + location
-            Row(
-              children: [
-                Icon(Iconsax.building_3, size: 13.r, color: AppColors.text3),
-                Gap(4.w),
-                Text(
-                  job.company,
-                  style: GoogleFonts.barlow(fontSize: 12.sp, color: AppColors.text2),
-                ),
-                Gap(12.w),
-                Icon(Iconsax.location, size: 13.r, color: AppColors.text3),
-                Gap(4.w),
-                Text(
-                  '${job.suburb}, ${job.state}',
-                  style: GoogleFonts.barlow(fontSize: 12.sp, color: AppColors.text2),
-                ),
-              ],
-            ),
-            Gap(10.h),
-            // Footer row
-            Row(
-              children: [
-                // Trade chip
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    job.trade,
-                    style: GoogleFonts.barlow(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.text2,
-                    ),
-                  ),
-                ),
-                Gap(8.w),
-                // Duration chip
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Iconsax.clock, size: 11.r, color: AppColors.text3),
-                      Gap(3.w),
-                      Text(
-                        job.duration,
-                        style: GoogleFonts.barlow(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.text2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                // Rate
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      job.rate,
-                      style: GoogleFonts.barlowCondensed(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.action,
-                      ),
-                    ),
-                    Text(
-                      job.rateType,
-                      style: GoogleFonts.barlow(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.text3,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Gap(10.h),
-            Divider(height: 1, color: AppColors.border),
-            Gap(10.h),
-            // Posted time + apply button
-            Row(
-              children: [
-                Icon(Iconsax.clock, size: 12.r, color: AppColors.text3),
-                Gap(4.w),
-                Text(
-                  'Posted ${job.postedAgo}',
-                  style: GoogleFonts.barlow(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.text3,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.action,
-                      borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                    ),
-                    child: Text(
-                      'Apply',
-                      style: GoogleFonts.barlow(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

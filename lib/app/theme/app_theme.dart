@@ -174,4 +174,123 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.text2),
     );
   }
+
+  static ThemeData dark() {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.action,
+      brightness: Brightness.dark,
+    ).copyWith(
+      primary: AppDarkColors.btnPri,
+      onPrimary: AppColors.white,
+      secondary: AppColors.action,
+      onSecondary: AppColors.white,
+      tertiary: AppColors.verified,
+      onTertiary: AppColors.white,
+      tertiaryContainer: AppColors.verifiedBg,
+      onTertiaryContainer: AppColors.verifiedTx,
+      error: AppColors.urgent,
+      onError: AppColors.white,
+      errorContainer: AppColors.urgentBg,
+      onErrorContainer: AppColors.urgentTx,
+      surface: AppDarkColors.card,
+      onSurface: AppDarkColors.text1,
+      surfaceContainerHighest: AppDarkColors.surface,
+      onSurfaceVariant: AppDarkColors.text2,
+      outline: AppDarkColors.border,
+      outlineVariant: AppDarkColors.border,
+    );
+
+    final barlowBase = GoogleFonts.barlowTextTheme(
+      ThemeData(brightness: Brightness.dark).textTheme,
+    );
+
+    final textTheme = barlowBase.copyWith(
+      displaySmall: GoogleFonts.barlowCondensed(
+        fontSize: 40,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.02 * 40,
+        color: AppDarkColors.text1,
+      ),
+      headlineLarge: GoogleFonts.barlowCondensed(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.02 * 28,
+        color: AppDarkColors.text1,
+      ),
+      bodyLarge: GoogleFonts.barlow(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.7,
+        color: AppDarkColors.text1,
+      ),
+      bodyMedium: GoogleFonts.barlow(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: AppDarkColors.text2,
+      ),
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppDarkColors.background,
+      textTheme: textTheme,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: AppDarkColors.text1,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppDarkColors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: const BorderSide(color: AppDarkColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: const BorderSide(color: AppColors.action, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: GoogleFonts.barlow(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color: AppDarkColors.text3,
+        ),
+        hintStyle: GoogleFonts.barlow(
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color: AppDarkColors.text3,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppDarkColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: const BorderSide(color: AppDarkColors.border),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppDarkColors.border,
+        thickness: 1,
+        space: 1,
+      ),
+      iconTheme: const IconThemeData(color: AppDarkColors.text2),
+    );
+  }
 }

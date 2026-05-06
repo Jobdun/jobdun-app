@@ -7,7 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/job_card.dart';
+import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+
+// Sample data — placeholder until Supabase queries are wired
+const _kBuilderLocation = 'Sydney, NSW';
+const _kTradeLocation = 'Parramatta, NSW';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -18,14 +24,20 @@ class HomePage extends ConsumerWidget {
     final role = authState.role;
     final isBuilder = role == UserRole.builder;
     final email = authState.email ?? '';
-    final firstName = _extractFirstName(email);
+    final firstName = _firstName(email);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _Header(firstName: firstName, role: role)),
+            SliverToBoxAdapter(
+              child: _Header(
+                role: role,
+                firstName: firstName,
+                isBuilder: isBuilder,
+              ),
+            ),
             SliverToBoxAdapter(child: Gap(20.h)),
             SliverToBoxAdapter(child: _StatsRow(isBuilder: isBuilder)),
             SliverToBoxAdapter(child: Gap(24.h)),
@@ -33,9 +45,9 @@ class HomePage extends ConsumerWidget {
             SliverToBoxAdapter(child: Gap(24.h)),
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
                 child: Text(
-                  isBuilder ? 'AVAILABLE TRADES' : 'JOBS NEARBY',
+                  isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
                   style: GoogleFonts.barlow(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
@@ -45,178 +57,155 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: Gap(12.h)),
             if (isBuilder)
-              SliverList(
-                delegate: SliverChildListDelegate(_builderTradieCards()),
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                sliver: SliverList.separated(
+                  itemCount: _tradies.length,
+                  separatorBuilder: (ctx, idx) => Gap(9.h),
+                  itemBuilder: (_, i) {
+                    final t = _tradies[i];
+                    return TradieCard(
+                      name: t.name,
+                      trade: t.trade,
+                      suburb: t.suburb,
+                      rating: t.rating,
+                      jobCount: t.jobCount,
+                      isVerified: t.isVerified,
+                      isAvailable: t.isAvailable,
+                      distanceKm: t.distanceKm,
+                      initials: t.initials,
+                      onTap: () {},
+                    );
+                  },
+                ),
               )
             else
-              SliverList(
-                delegate: SliverChildListDelegate(_tradeJobCards()),
+              SliverPadding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                sliver: SliverList.separated(
+                  itemCount: _jobs.length,
+                  separatorBuilder: (ctx, idx) => Gap(9.h),
+                  itemBuilder: (_, i) {
+                    final j = _jobs[i];
+                    return JobCard(
+                      title: j.title,
+                      description: j.description,
+                      rate: j.rate,
+                      startDate: j.startDate,
+                      distanceKm: j.distanceKm,
+                      isUrgent: j.isUrgent,
+                      onTap: () => context.go('/jobs'),
+                    );
+                  },
+                ),
               ),
-            SliverToBoxAdapter(child: Gap(16.h)),
+            SliverToBoxAdapter(child: Gap(24.h)),
           ],
         ),
       ),
     );
   }
 
-  static String _extractFirstName(String email) {
+  static String _firstName(String email) {
     final local = email.split('@').first;
     final parts = local.replaceAll(RegExp(r'[._\-]'), ' ').split(' ');
     final first = parts.isNotEmpty ? parts.first : local;
-    return first.isEmpty ? 'there' : '${first[0].toUpperCase()}${first.substring(1)}';
-  }
-
-  List<Widget> _builderTradieCards() {
-    return [
-      _TradieCard(
-        name: 'Marcus Webb',
-        trade: 'Electrician',
-        suburb: 'Parramatta NSW',
-        rating: 4.9,
-        jobCount: 142,
-        isVerified: true,
-        isAvailable: true,
-        distanceKm: 3.2,
-        initials: 'MW',
-      ),
-      _TradieCard(
-        name: "Sarah O'Brien",
-        trade: 'Plumber',
-        suburb: 'Bondi NSW',
-        rating: 4.7,
-        jobCount: 89,
-        isVerified: true,
-        isAvailable: false,
-        distanceKm: 5.1,
-        initials: 'SO',
-      ),
-      _TradieCard(
-        name: 'Jake Kowalski',
-        trade: 'Carpenter',
-        suburb: 'Newtown NSW',
-        rating: 4.6,
-        jobCount: 67,
-        isVerified: false,
-        isAvailable: true,
-        distanceKm: 7.8,
-        initials: 'JK',
-      ),
-    ];
-  }
-
-  List<Widget> _tradeJobCards() {
-    return [
-      _JobCard(
-        title: 'Install 3-phase switchboard at commercial site',
-        company: 'Pinnacle Construct',
-        suburb: 'Surry Hills NSW',
-        rate: '\$85/hr',
-        trade: 'Electrician',
-        isUrgent: true,
-        postedAgo: '2h ago',
-      ),
-      _JobCard(
-        title: 'Frame internal walls for home renovation',
-        company: 'BuildRight Pty Ltd',
-        suburb: 'Newtown NSW',
-        rate: '\$45/hr',
-        trade: 'Carpenter',
-        isUrgent: false,
-        postedAgo: '5h ago',
-      ),
-      _JobCard(
-        title: 'Concrete footings for deck extension',
-        company: 'Coast & Country Builds',
-        suburb: 'Cronulla NSW',
-        rate: '\$75/hr',
-        trade: 'Concreter',
-        isUrgent: false,
-        postedAgo: '1d ago',
-      ),
-    ];
+    if (first.isEmpty) return 'there';
+    return '${first[0].toUpperCase()}${first.substring(1)}';
   }
 }
 
-// ── Header ─────────────────────────────────────────────────────────────────────
+// ── Header — Galvanised canonical pattern ─────────────────────────────────────
+// Eyebrow → Display (40sp Condensed 700) → Location (action orange) → NotifBtn
 
 class _Header extends StatelessWidget {
-  const _Header({required this.firstName, required this.role});
+  const _Header({
+    required this.role,
+    required this.firstName,
+    required this.isBuilder,
+  });
 
-  final String firstName;
   final UserRole? role;
+  final String firstName;
+  final bool isBuilder;
 
   @override
   Widget build(BuildContext context) {
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    final roleLabel = role != null
+        ? '${role!.label.toUpperCase()} · ${firstName.toUpperCase()}'
+        : 'JOBDUN';
 
     return Container(
       color: AppColors.card,
       padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Eyebrow: "BUILDER · MARCUS"
                 Text(
-                  greeting,
+                  roleLabel,
                   style: GoogleFonts.barlow(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.12 * 11,
                     color: AppColors.text3,
                   ),
                 ),
-                Gap(2.h),
+                Gap(4.h),
+                // Display heading — 40sp Barlow Condensed 700
                 Text(
-                  firstName,
+                  isBuilder ? 'FIND A TRADIE' : 'JOBS NEARBY',
                   style: GoogleFonts.barlowCondensed(
-                    fontSize: 26.sp,
+                    fontSize: 40.sp,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.02 * 26,
+                    letterSpacing: 0.02 * 40,
                     color: AppColors.text1,
+                    height: 1.0,
                   ),
+                ),
+                Gap(4.h),
+                // Location row — always action orange
+                Row(
+                  children: [
+                    Icon(
+                      Iconsax.location,
+                      size: 12.r,
+                      color: AppColors.action,
+                    ),
+                    Gap(4.w),
+                    Text(
+                      isBuilder ? _kBuilderLocation : _kTradeLocation,
+                      style: GoogleFonts.barlow(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.02 * 11,
+                        color: AppColors.action,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Row(
-            children: [
-              if (role != null)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    role!.label.toUpperCase(),
-                    style: GoogleFonts.barlow(
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.08 * 10,
-                      color: AppColors.text2,
-                    ),
-                  ),
-                ),
-              Gap(12.w),
-              GestureDetector(
-                onTap: () => context.go('/notifications'),
-                child: Container(
-                  width: 40.r,
-                  height: 40.r,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Icon(Iconsax.notification, size: 20.r, color: AppColors.text2),
-                ),
+          Gap(12.w),
+          // Notification icon button — 34×34, surface bg, border
+          GestureDetector(
+            onTap: () => context.go('/notifications'),
+            child: Container(
+              width: 34.r,
+              height: 34.r,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+                border: Border.all(color: AppColors.border),
               ),
-            ],
+              child: Icon(Iconsax.notification, size: 18.r, color: AppColors.text2),
+            ),
           ),
         ],
       ),
@@ -234,18 +223,17 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = isBuilder
-        ? [('3', 'Active Jobs'), ('12', 'Applicants'), ('2', 'In Progress')]
+        ? [('3', 'Active jobs'), ('12', 'Applicants'), ('2', 'In progress')]
         : [('5', 'Applied'), ('2', 'Shortlisted'), ('1', 'Accepted')];
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Row(
         children: List.generate(stats.length, (i) {
-          final stat = stats[i];
           return Expanded(
             child: Padding(
               padding: EdgeInsets.only(left: i == 0 ? 0 : 8.w),
-              child: _StatCard(value: stat.$1, label: stat.$2),
+              child: _StatCard(value: stats[i].$1, label: stats[i].$2),
             ),
           );
         }),
@@ -263,7 +251,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
@@ -278,6 +266,7 @@ class _StatCard extends StatelessWidget {
               fontSize: 28.sp,
               fontWeight: FontWeight.w700,
               color: AppColors.text1,
+              height: 1.0,
             ),
           ),
           Gap(2.h),
@@ -326,7 +315,7 @@ class _PrimaryActionCard extends StatelessWidget {
                 child: Icon(
                   isBuilder ? Iconsax.add_square : Iconsax.search_normal,
                   size: 22.r,
-                  color: Colors.white,
+                  color: AppColors.white,
                 ),
               ),
               Gap(16.w),
@@ -339,24 +328,28 @@ class _PrimaryActionCard extends StatelessWidget {
                       style: GoogleFonts.barlow(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppColors.white,
                       ),
                     ),
                     Gap(2.h),
                     Text(
                       isBuilder
-                          ? 'Find skilled trades for your next project'
+                          ? 'Find skilled tradies for your next site'
                           : 'Construction work near you',
                       style: GoogleFonts.barlow(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
-                        color: Colors.white.withValues(alpha: 0.65),
+                        color: AppColors.text3,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Iconsax.arrow_right_3, size: 20.r, color: Colors.white.withValues(alpha: 0.7)),
+              Icon(
+                Iconsax.arrow_right_3,
+                size: 20.r,
+                color: AppColors.text3,
+              ),
             ],
           ),
         ),
@@ -365,10 +358,10 @@ class _PrimaryActionCard extends StatelessWidget {
   }
 }
 
-// ── Tradie Card (Builder view) ─────────────────────────────────────────────────
+// ── Sample data ────────────────────────────────────────────────────────────────
 
-class _TradieCard extends StatelessWidget {
-  const _TradieCard({
+class _TradieData {
+  const _TradieData({
     required this.name,
     required this.trade,
     required this.suburb,
@@ -389,295 +382,88 @@ class _TradieCard extends StatelessWidget {
   final bool isAvailable;
   final double distanceKm;
   final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-      child: Container(
-        padding: EdgeInsets.all(16.r),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            // Avatar
-            Container(
-              width: 48.r,
-              height: 48.r,
-              decoration: BoxDecoration(
-                color: AppColors.foundation,
-                borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-              ),
-              child: Center(
-                child: Text(
-                  initials,
-                  style: GoogleFonts.barlow(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            Gap(12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: GoogleFonts.barlow(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text1,
-                          ),
-                        ),
-                      ),
-                      if (isAvailable)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.verifiedBg,
-                            borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                          ),
-                          child: Text(
-                            'Available',
-                            style: GoogleFonts.barlow(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.verifiedTx,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  Gap(3.h),
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Text(
-                          trade,
-                          style: GoogleFonts.barlow(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.text2,
-                          ),
-                        ),
-                      ),
-                      if (isVerified) ...[
-                        Gap(6.w),
-                        Icon(Iconsax.verify5, size: 14.r, color: AppColors.verified),
-                        Gap(2.w),
-                        Text(
-                          'Verified',
-                          style: GoogleFonts.barlow(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.verified,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Gap(6.h),
-                  Row(
-                    children: [
-                      Icon(Iconsax.star1, size: 12.r, color: const Color(0xFFF59E0B)),
-                      Gap(3.w),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: GoogleFonts.barlow(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.text1,
-                        ),
-                      ),
-                      Gap(3.w),
-                      Text(
-                        '($jobCount jobs)',
-                        style: GoogleFonts.barlow(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.text3,
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(Iconsax.location, size: 12.r, color: AppColors.text3),
-                      Gap(2.w),
-                      Text(
-                        '${distanceKm}km · $suburb',
-                        style: GoogleFonts.barlow(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.text3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-// ── Job Card (Trade view) ──────────────────────────────────────────────────────
-
-class _JobCard extends StatelessWidget {
-  const _JobCard({
+class _JobData {
+  const _JobData({
     required this.title,
-    required this.company,
-    required this.suburb,
+    required this.description,
     required this.rate,
-    required this.trade,
+    required this.startDate,
+    required this.distanceKm,
     required this.isUrgent,
-    required this.postedAgo,
   });
 
   final String title;
-  final String company;
-  final String suburb;
+  final String description;
   final String rate;
-  final String trade;
+  final String startDate;
+  final double distanceKm;
   final bool isUrgent;
-  final String postedAgo;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-      child: GestureDetector(
-        onTap: () => context.go('/jobs'),
-        child: Container(
-          padding: EdgeInsets.all(16.r),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(AppRadius.card.r),
-            border: Border.all(
-              color: isUrgent ? AppColors.urgent : AppColors.border,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.barlow(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.text1,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  Gap(8.w),
-                  if (isUrgent)
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                      decoration: BoxDecoration(
-                        color: AppColors.urgentBg,
-                        borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                      ),
-                      child: Text(
-                        'URGENT',
-                        style: GoogleFonts.barlow(
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.06 * 10,
-                          color: AppColors.urgentTx,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              Gap(8.h),
-              Row(
-                children: [
-                  Icon(Iconsax.building_3, size: 13.r, color: AppColors.text3),
-                  Gap(4.w),
-                  Text(
-                    company,
-                    style: GoogleFonts.barlow(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.text2,
-                    ),
-                  ),
-                  Gap(12.w),
-                  Icon(Iconsax.location, size: 13.r, color: AppColors.text3),
-                  Gap(4.w),
-                  Text(
-                    suburb,
-                    style: GoogleFonts.barlow(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.text2,
-                    ),
-                  ),
-                ],
-              ),
-              Gap(10.h),
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      trade,
-                      style: GoogleFonts.barlow(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.text2,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    rate,
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.action,
-                    ),
-                  ),
-                  Gap(12.w),
-                  Text(
-                    postedAgo,
-                    style: GoogleFonts.barlow(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.text3,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
+
+const _tradies = [
+  _TradieData(
+    name: 'Marcus Webb',
+    trade: 'Electrician',
+    suburb: 'Parramatta',
+    rating: 4.9,
+    jobCount: 142,
+    isVerified: true,
+    isAvailable: true,
+    distanceKm: 3.2,
+    initials: 'MW',
+  ),
+  _TradieData(
+    name: "Sarah O'Brien",
+    trade: 'Plumber',
+    suburb: 'Bondi',
+    rating: 4.7,
+    jobCount: 89,
+    isVerified: true,
+    isAvailable: true,
+    distanceKm: 5.1,
+    initials: 'SO',
+  ),
+  _TradieData(
+    name: 'Jake Kowalski',
+    trade: 'Carpenter',
+    suburb: 'Newtown',
+    rating: 4.6,
+    jobCount: 67,
+    isVerified: false,
+    isAvailable: false,
+    distanceKm: 7.8,
+    initials: 'JK',
+  ),
+];
+
+const _jobs = [
+  _JobData(
+    title: 'Install 3-phase switchboard at commercial site',
+    description:
+        'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Work includes conduit run, panel installation, and termination.',
+    rate: r'$85/hr',
+    startDate: 'Tomorrow 7am',
+    distanceKm: 2.4,
+    isUrgent: true,
+  ),
+  _JobData(
+    title: 'Frame internal walls for home renovation',
+    description:
+        'Steel stud framing approximately 120 LM for a full home renovation in Newtown. Drawings available on site.',
+    rate: r'$45/hr',
+    startDate: '12 May',
+    distanceKm: 4.8,
+    isUrgent: false,
+  ),
+  _JobData(
+    title: 'Concrete footings for deck extension',
+    description:
+        '8 × 300mm dia pad footings, 600mm deep. Reinforcement to be supplied by contractor. All approvals in place.',
+    rate: r'$75/hr',
+    startDate: '14 May',
+    distanceKm: 9.1,
+    isUrgent: false,
+  ),
+];
