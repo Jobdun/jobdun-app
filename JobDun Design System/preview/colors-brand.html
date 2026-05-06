@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Card</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #F4F6F8; }
+  body { padding: 20px; box-sizing: border-box; width: 700px; }
+  .row { display: flex; gap: 12px; align-items: stretch; flex-wrap: wrap; }
+  .swatch { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .chip { width: 100%; height: 56px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); }
+  .name { font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 600; color: #252D34; line-height: 1.2; }
+  .hex { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; color: #5A6872; letter-spacing: 0.04em; text-transform: uppercase; }
+  .label { font-family: 'Barlow', sans-serif; font-size: 10px; font-weight: 600; color: #A0ACB8; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px; }
+  h2.section-h { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.02em; color: #252D34; margin: 0 0 14px; }
+</style>
+</head>
+<body>
+<div class="label">Brand · Foundation + Action</div>
+<div class="row">
+  <div class="swatch" style="flex:1.2">
+    <div class="chip" style="background:#252D34"></div>
+    <div class="name">Foundation</div>
+    <div class="hex">#252D34</div>
+  </div>
+  <div class="swatch" style="flex:1.2">
+    <div class="chip" style="background:#CC4A10"></div>
+    <div class="name">Action</div>
+    <div class="hex">#CC4A10</div>
+  </div>
+  <div class="swatch" style="flex:1">
+    <div class="chip" style="background:#FAE4D8"></div>
+    <div class="name">Action tint</div>
+    <div class="hex">#FAE4D8</div>
+  </div>
+  <div class="swatch" style="flex:1">
+    <div class="chip" style="background:#7A2808"></div>
+    <div class="name">Action text</div>
+    <div class="hex">#7A2808</div>
+  </div>
+</div>
+</body></html>

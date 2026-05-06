@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -9,96 +15,346 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
-    final email = authState.email ?? '';
     final role = authState.role;
-    final initials = email.isNotEmpty ? email[0].toUpperCase() : '?';
+    final isBuilder = role == UserRole.builder;
+    final email = authState.email ?? '';
+    final initials = _initials(email);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            // Avatar + identity
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 44,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(
-                      initials,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(email, style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  if (role != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _ProfileHeader(initials: initials, email: email, role: role)),
+            SliverToBoxAdapter(child: Gap(16.h)),
+            if (isBuilder)
+              SliverToBoxAdapter(child: _BuilderProfile())
+            else
+              SliverToBoxAdapter(child: _TradeProfile()),
+            SliverToBoxAdapter(child: Gap(16.h)),
+            SliverToBoxAdapter(child: _SettingsSection()),
+            SliverToBoxAdapter(child: Gap(24.h)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                child: AppButton(
+                  label: 'Sign out',
+                  variant: AppButtonVariant.ghost,
+                  onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(child: Gap(32.h)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _initials(String email) {
+    final local = email.split('@').first;
+    final parts = local.replaceAll(RegExp(r'[._\-]'), ' ').split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return local.isNotEmpty ? local[0].toUpperCase() : '?';
+  }
+}
+
+// ── Profile Header ─────────────────────────────────────────────────────────────
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.initials,
+    required this.email,
+    required this.role,
+  });
+
+  final String initials;
+  final String email;
+  final UserRole? role;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.card,
+      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 24.h),
+      child: Row(
+        children: [
+          Container(
+            width: 72.r,
+            height: 72.r,
+            decoration: BoxDecoration(
+              color: AppColors.foundation,
+              borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+            ),
+            child: Center(
+              child: Text(
+                initials,
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          Gap(16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        role.label,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                        email.split('@').first,
+                        style: GoogleFonts.barlow(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.text1,
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Profile details placeholder
-            _SectionCard(
-              title: role == UserRole.builder ? 'Company details' : 'Trade details',
-              items: role == UserRole.builder
-                  ? const [
-                      'Company name',
-                      'ABN / ACN',
-                      'Business address',
-                      'Contact phone',
-                    ]
-                  : const [
-                      'Trade category',
-                      'Skills and specialisations',
-                      'Licence numbers',
-                      'Availability',
-                    ],
-            ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: 'Account',
-              items: const ['Change email', 'Change password'],
-            ),
-            const SizedBox(height: 32),
-
-            // Sign out
-            OutlinedButton.icon(
-              onPressed: () =>
-                  ref.read(authControllerProvider.notifier).signOut(),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
-                side: BorderSide(color: theme.colorScheme.error.withAlpha(80)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Icon(Iconsax.edit_2, size: 20.r, color: AppColors.text3),
+                    ),
+                  ],
                 ),
+                Gap(4.h),
+                Text(
+                  email,
+                  style: GoogleFonts.barlow(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.text3,
+                  ),
+                ),
+                if (role != null) ...[
+                  Gap(8.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                    decoration: BoxDecoration(
+                      color: AppColors.foundation,
+                      borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                    ),
+                    child: Text(
+                      role!.label.toUpperCase(),
+                      style: GoogleFonts.barlow(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.08 * 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Builder Profile ────────────────────────────────────────────────────────────
+
+class _BuilderProfile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats row
+          Row(
+            children: [
+              _StatBadge(value: '4.8', label: 'Rating', icon: Iconsax.star1, iconColor: const Color(0xFFF59E0B)),
+              Gap(8.w),
+              _StatBadge(value: '23', label: 'Reviews', icon: Iconsax.message_text, iconColor: AppColors.available),
+              Gap(8.w),
+              _StatBadge(value: '47', label: 'Jobs Posted', icon: Iconsax.briefcase, iconColor: AppColors.action),
+            ],
+          ),
+          Gap(16.h),
+          // Company card
+          _InfoCard(
+            title: 'COMPANY DETAILS',
+            children: [
+              _InfoRow(icon: Iconsax.building_3, label: 'Company', value: 'Pinnacle Construct'),
+              _InfoRow(icon: Iconsax.receipt_1, label: 'ABN', value: '12 345 678 901'),
+              _InfoRow(icon: Iconsax.briefcase, label: 'Type', value: 'Company'),
+              _InfoRow(icon: Iconsax.location, label: 'Location', value: 'Surry Hills NSW 2010'),
+              _InfoRow(icon: Iconsax.call, label: 'Contact', value: '+61 2 9123 4567'),
+            ],
+          ),
+          Gap(12.h),
+          // Verification card
+          _InfoCard(
+            title: 'VERIFICATION',
+            children: [
+              _VerificationRow(label: 'ABN Verified', isVerified: true),
+              _VerificationRow(label: 'Email Verified', isVerified: true),
+              _VerificationRow(label: 'Insurance Docs', isVerified: false),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Trade Profile ──────────────────────────────────────────────────────────────
+
+class _TradeProfile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats row
+          Row(
+            children: [
+              _StatBadge(value: '4.9', label: 'Rating', icon: Iconsax.star1, iconColor: const Color(0xFFF59E0B)),
+              Gap(8.w),
+              _StatBadge(value: '142', label: 'Jobs Done', icon: Iconsax.tick_circle, iconColor: AppColors.verified),
+              Gap(8.w),
+              _StatBadge(value: '5+', label: 'Yrs Exp', icon: Iconsax.award, iconColor: AppColors.action),
+            ],
+          ),
+          Gap(16.h),
+          // Availability banner
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: AppColors.verifiedBg,
+              borderRadius: BorderRadius.circular(AppRadius.card.r),
+              border: Border.all(color: AppColors.verified.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Iconsax.tick_circle, size: 18.r, color: AppColors.verified),
+                Gap(10.w),
+                Text(
+                  'Available for work',
+                  style: GoogleFonts.barlow(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.verifiedTx,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Change',
+                  style: GoogleFonts.barlow(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.available,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Gap(12.h),
+          // Trade details card
+          _InfoCard(
+            title: 'TRADE DETAILS',
+            children: [
+              _InfoRow(icon: Iconsax.personalcard, label: 'Trade', value: 'Electrician'),
+              _InfoRow(icon: Iconsax.document_text, label: 'Licence', value: 'EL 123456 (NSW)'),
+              _InfoRow(icon: Iconsax.location, label: 'Base', value: 'Parramatta NSW 2150'),
+              _InfoRow(icon: Iconsax.call, label: 'Phone', value: '+61 4 1234 5678'),
+              _InfoRow(icon: Iconsax.calendar_1, label: 'Member since', value: 'May 2026'),
+            ],
+          ),
+          Gap(12.h),
+          // Verification card
+          _InfoCard(
+            title: 'VERIFICATION',
+            children: [
+              _VerificationRow(label: 'Email Verified', isVerified: true),
+              _VerificationRow(label: 'Licence Verified', isVerified: true),
+              _VerificationRow(label: 'Police Check', isVerified: false),
+              _VerificationRow(label: 'SWMS Uploaded', isVerified: false),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Settings Section ───────────────────────────────────────────────────────────
+
+class _SettingsSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: _InfoCard(
+        title: 'ACCOUNT',
+        children: [
+          _ActionRow(icon: Iconsax.sms, label: 'Change email'),
+          _ActionRow(icon: Iconsax.lock, label: 'Change password'),
+          _ActionRow(icon: Iconsax.notification, label: 'Notifications'),
+          _ActionRow(icon: Iconsax.shield_tick, label: 'Privacy settings'),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Shared components ──────────────────────────────────────────────────────────
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 12.w),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadius.card.r),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18.r, color: iconColor),
+            Gap(6.h),
+            Text(
+              value,
+              style: GoogleFonts.barlowCondensed(
+                fontSize: 22.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text1,
               ),
-              icon: const Icon(Icons.logout),
-              label: const Text('Sign out'),
+            ),
+            Gap(1.h),
+            Text(
+              label,
+              style: GoogleFonts.barlow(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w400,
+                color: AppColors.text3,
+              ),
             ),
           ],
         ),
@@ -107,40 +363,151 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.items});
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({required this.title, required this.children});
 
   final String title;
-  final List<String> items;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
+            child: Text(
+              title,
+              style: GoogleFonts.barlow(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.12 * 11,
+                color: AppColors.text3,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: AppColors.border),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
 
-    return Card(
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.label, required this.value});
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        children: [
+          Icon(icon, size: 16.r, color: AppColors.text3),
+          Gap(12.w),
+          Text(
+            label,
+            style: GoogleFonts.barlow(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w400,
+              color: AppColors.text2,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: GoogleFonts.barlow(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerificationRow extends StatelessWidget {
+  const _VerificationRow({required this.label, required this.isVerified});
+
+  final String label;
+  final bool isVerified;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        children: [
+          Icon(
+            isVerified ? Iconsax.verify5 : Iconsax.close_circle,
+            size: 16.r,
+            color: isVerified ? AppColors.verified : AppColors.text3,
+          ),
+          Gap(12.w),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.barlow(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w400,
+                color: AppColors.text1,
+              ),
+            ),
+          ),
+          Text(
+            isVerified ? 'Verified' : 'Upload',
+            style: GoogleFonts.barlow(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: isVerified ? AppColors.verified : AppColors.available,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
       child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            Icon(icon, size: 18.r, color: AppColors.text2),
+            Gap(12.w),
+            Expanded(
               child: Text(
-                title,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: const Color(0xFF5A5A5A),
-                  fontWeight: FontWeight.w600,
+                label,
+                style: GoogleFonts.barlow(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.text1,
                 ),
               ),
             ),
-            const Divider(height: 1),
-            ...items.map(
-              (item) => ListTile(
-                title: Text(item),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
-              ),
-            ),
+            Icon(Iconsax.arrow_right_3, size: 16.r, color: AppColors.text3),
           ],
         ),
       ),

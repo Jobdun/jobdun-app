@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JobDun · UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+  html, body { margin:0; padding:0; min-height:100vh; }
+  body { font-family:'Barlow',sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:30px 20px; box-sizing:border-box;
+    transition: background 200ms ease, color 200ms ease; }
+  body.light { background:#F4F6F8; color:#252D34; }
+  body.dark  { background:#0E1216; color:#E8ECF2; }
+  .stage { display:flex; flex-direction:column; align-items:center; gap:18px; }
+  .pill { display:inline-flex; gap:6px; align-items:center; padding:6px 12px; border-radius:6px;
+    font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; }
+  body.light .pill { background:#EAEEF2; border:1px solid #D4D9DF; color:#5A6872; }
+  body.dark  .pill { background:#1F262C; border:1px solid #2A333B; color:#A0ACB8; }
+  .pill .dot { width:6px; height:6px; border-radius:50%; background:#CC4A10; }
+
+  .controls { display:flex; gap:14px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  .seg { display:inline-flex; padding:3px; border-radius:9px; }
+  body.light .seg { background:#EAEEF2; border:1px solid #D4D9DF; }
+  body.dark  .seg { background:#1F262C; border:1px solid #2A333B; }
+  .seg button { background:transparent; border:none; padding:6px 14px; border-radius:6px;
+    font-family:'Barlow',sans-serif; font-size:11px; font-weight:600; cursor:pointer;
+    letter-spacing:0.04em; color:inherit; opacity:0.65; }
+  .seg button.on { opacity:1; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  body.light .seg button.on { background:#FFFFFF; color:#252D34; }
+  body.dark  .seg button.on { background:#0E1216; color:#E8ECF2; }
+
+  .nav { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; max-width:480px; }
+  .nav button { background:transparent; border:1px solid; padding:6px 10px;
+    border-radius:6px; font-family:'Barlow',sans-serif; font-size:11px; font-weight:600; cursor:pointer;
+    letter-spacing:0.04em; color:inherit; }
+  body.light .nav button { border-color:#D4D9DF; }
+  body.dark  .nav button { border-color:#2A333B; }
+  .nav button.on { background:#CC4A10; border-color:#CC4A10; color:#fff; }
+</style>
+</head>
+<body class="light">
+<div class="stage" id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="theme.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="BuilderHomeScreen.jsx"></script>
+<script type="text/babel" src="TradieProfileScreen.jsx"></script>
+<script type="text/babel" src="JobFeedScreen.jsx"></script>
+<script type="text/babel" src="JobDetailScreen.jsx"></script>
+<script type="text/babel" src="PostJobScreen.jsx"></script>
+<script type="text/babel" src="ChatScreen.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect } = React;
+
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "platform": "ios",
+  "mode": "light"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAKS);
+  const platform = tweaks.platform;
+  const mode = tweaks.mode;
+  const theme = window.THEMES[mode];
+
+  // body class for page chrome
+  useEffect(()=>{ document.body.className = mode; }, [mode]);
+
+  const [screen, setScreen] = useState({name:'builderHome'});
+  const [tab, setTab] = useState('home');
+
+  const screens = [
+    {id:'builderHome', label:'Builder Home', go:()=>{setTab('home');setScreen({name:'builderHome'});}},
+    {id:'tradieProfile', label:'Tradie Profile', go:()=>{setTab('profile');setScreen({name:'tradieProfile', tradie:window.TRADIES[0]});}},
+    {id:'jobFeed', label:'Job Feed', go:()=>{setTab('jobs');setScreen({name:'jobFeed'});}},
+    {id:'jobDetail', label:'Job Detail', go:()=>setScreen({name:'jobDetail', job:window.JOBS[0]})},
+    {id:'postJob', label:'Post Job', go:()=>setScreen({name:'postJob'})},
+    {id:'chat', label:'Chat', go:()=>{setTab('chat');setScreen({name:'chat', tradie:window.TRADIES[0]});}},
+  ];
+
+  let content;
+  switch (screen.name) {
+    case 'tradieProfile':
+      content = <TradieProfileScreen theme={theme} platform={platform} tradie={screen.tradie}
+        onBack={()=>setScreen({name:'builderHome'})}
+        onInvite={()=>setScreen({name:'postJob'})}/>; break;
+    case 'jobFeed':
+      content = <JobFeedScreen theme={theme} platform={platform}
+        onOpenJob={(j)=>setScreen({name:'jobDetail', job:j})}/>; break;
+    case 'jobDetail':
+      content = <JobDetailScreen theme={theme} platform={platform} job={screen.job}
+        onBack={()=>setScreen({name:'jobFeed'})}
+        onAccept={()=>{ setTab('chat'); setScreen({name:'chat', tradie:window.TRADIES[0]}); }}
+        onDecline={()=>setScreen({name:'jobFeed'})}/>; break;
+    case 'postJob':
+      content = <PostJobScreen theme={theme} platform={platform}
+        onBack={()=>setScreen({name:'builderHome'})}
+        onPosted={()=>setScreen({name:'builderHome'})}/>; break;
+    case 'chat':
+      content = <ChatScreen theme={theme} platform={platform} tradie={screen.tradie}
+        onBack={()=>{ setTab('home'); setScreen({name:'builderHome'}); }}/>; break;
+    default:
+      content = <BuilderHomeScreen theme={theme} platform={platform}
+        onOpenTradie={(t)=>setScreen({name:'tradieProfile', tradie:t})}
+        onPostJob={()=>setScreen({name:'postJob'})}/>;
+  }
+
+  const showNav = screen.name !== 'chat';
+
+  const inner = (
+    <div data-screen-label={screen.name}
+         style={{height:'100%',display:'flex',flexDirection:'column', background:theme.background}}>
+      <div style={{flex:1,overflowY:'auto'}}>{content}</div>
+      {showNav && <BottomNav theme={theme} platform={platform} active={tab} onChange={(id)=>{
+        setTab(id);
+        if (id==='home') setScreen({name:'builderHome'});
+        if (id==='jobs') setScreen({name:'jobFeed'});
+        if (id==='chat') setScreen({name:'chat', tradie:window.TRADIES[0]});
+        if (id==='profile') setScreen({name:'tradieProfile', tradie:window.TRADIES[0]});
+      }}/>}
+    </div>
+  );
+
+  // Re-mount frame when platform changes so internals (status bar etc) refresh cleanly
+  const frameKey = `${platform}-${mode}`;
+  const frame = platform==='android'
+    ? <AndroidDevice key={frameKey} width={390} height={812} dark={mode==='dark'}>{inner}</AndroidDevice>
+    : <IOSDevice key={frameKey} width={390} height={812} dark={mode==='dark'}>{inner}</IOSDevice>;
+
+  return <>
+    <div className="pill"><span className="dot"></span>JobDun · {platform.toUpperCase()} · {mode.toUpperCase()}</div>
+
+    <div className="controls">
+      <div className="seg">
+        <button className={platform==='ios'?'on':''} onClick={()=>setTweak('platform','ios')}>iOS</button>
+        <button className={platform==='android'?'on':''} onClick={()=>setTweak('platform','android')}>Android</button>
+      </div>
+      <div className="seg">
+        <button className={mode==='light'?'on':''} onClick={()=>setTweak('mode','light')}>Light</button>
+        <button className={mode==='dark'?'on':''} onClick={()=>setTweak('mode','dark')}>Dark</button>
+      </div>
+    </div>
+
+    {frame}
+
+    <div className="nav">
+      {screens.map(s=>(
+        <button key={s.id} className={s.id===screen.name?'on':''} onClick={s.go}>{s.label}</button>
+      ))}
+    </div>
+
+    <TweaksPanel title="Tweaks">
+      <TweakSection title="Platform">
+        <TweakRadio value={platform} onChange={(v)=>setTweak('platform',v)}
+          options={[{value:'ios',label:'iOS'},{value:'android',label:'Android'}]}/>
+      </TweakSection>
+      <TweakSection title="Theme mode">
+        <TweakRadio value={mode} onChange={(v)=>setTweak('mode',v)}
+          options={[{value:'light',label:'Light'},{value:'dark',label:'Dark'}]}/>
+      </TweakSection>
+    </TweaksPanel>
+  </>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body></html>

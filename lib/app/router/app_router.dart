@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -41,7 +42,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Step 2 — unauthenticated.
       if (!auth.isAuthenticated) {
-        const publicRoutes = {'/login', '/register'};
+        const publicRoutes = {'/login', '/register', '/forgot-password'};
         return publicRoutes.contains(location) ? null : '/login';
       }
 
@@ -51,7 +52,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Step 4 — fully authenticated: bounce away from auth pages.
-      const authPages = {'/login', '/register', '/onboarding', '/verify-email'};
+      const authPages = {
+        '/login',
+        '/register',
+        '/onboarding',
+        '/verify-email',
+        '/forgot-password',
+      };
       if (authPages.contains(location)) return '/home';
 
       return null;
@@ -62,6 +69,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
       GoRoute(path: '/verify-email', builder: (_, _) => const VerifyEmailPage()),
+      GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
 
       // ── Shell (bottom nav — 5 tabs) ────────────────────────────────────

@@ -1,0 +1,364 @@
+/**
+ * GALVANISED — Design Tokens
+ * Australian Tradie Marketplace
+ * v1.0 · May 2026
+ *
+ * Usage:
+ *   @import './tokens.css';
+ *   background: var(--c-bg);
+ *
+ * Token naming:
+ *   --c-*    colour
+ *   --f-*    font
+ *   --sp-*   spacing
+ *   --r-*    border-radius
+ *   --t-*    transition
+ *   --sz-*   sizing
+ */
+
+/* ═══════════════════════════════════════
+   LIGHT MODE (default)
+═══════════════════════════════════════ */
+:root {
+
+  /* ── Primitives (never change between modes) ── */
+  --c-foundation:      #252D34;
+  --c-action:          #CC4A10;
+  --c-action-bg:       #FAE4D8;
+  --c-action-tx:       #7A2808;
+  --c-verified:        #0D8A5A;
+  --c-verified-bg:     #E6F7F1;
+  --c-verified-tx:     #0D6644;
+  --c-urgent:          #C73B2E;   /* FIXED — never changes */
+  --c-urgent-bg:       #FDECEA;   /* FIXED — never changes */
+  --c-urgent-tx:       #A32E24;   /* FIXED — never changes */
+  --c-available:       #1A7AD4;   /* FIXED — never changes */
+  --c-available-bg:    #E6F3FF;   /* FIXED — never changes */
+  --c-available-tx:    #1254A0;   /* FIXED — never changes */
+
+  /* ── Semantic (shift in dark mode) ── */
+  --c-bg:              #F4F6F8;
+  --c-surf:            #EAEEF2;
+  --c-card:            #FFFFFF;
+  --c-border:          #D4D9DF;
+  --c-text-1:          #252D34;
+  --c-text-2:          #5A6872;
+  --c-text-3:          #A0ACB8;
+  --c-btn-pri:         #252D34;
+  --c-btn-pri-text:    #FFFFFF;
+
+  /* ── Typography ── */
+  --f-display:         'Barlow Condensed', sans-serif;
+  --f-body:            'Barlow', sans-serif;
+
+  --f-size-display:    40px;
+  --f-size-h1:         28px;
+  --f-size-h2:         20px;
+  --f-size-h3:         16px;
+  --f-size-body:       15px;
+  --f-size-label:      13px;
+  --f-size-caption:    11px;
+  --f-size-stat:       20px;
+
+  --f-weight-bold:     700;
+  --f-weight-semi:     600;
+  --f-weight-regular:  400;
+  --f-weight-medium:   500;
+
+  --f-lh-tight:        1.0;
+  --f-lh-snug:         1.4;
+  --f-lh-normal:       1.7;
+
+  --f-ls-display:      0.02em;
+  --f-ls-eyebrow:      0.12em;
+  --f-ls-badge:        0.02em;
+  --f-ls-btn:          0.01em;
+
+  /* ── Spacing (4pt grid) ── */
+  --sp-xs:    4px;
+  --sp-sm:    8px;
+  --sp-md:    12px;
+  --sp-lg:    16px;
+  --sp-xl:    20px;   /* screen horizontal padding — always */
+  --sp-2xl:   32px;
+  --sp-3xl:   48px;   /* minimum touch target height */
+  --sp-4xl:   64px;
+  --sp-5xl:   96px;
+
+  /* ── Border radius ── */
+  --r-sm:     5px;    /* badges */
+  --r-md:     8px;    /* chips, small buttons */
+  --r-lg:     9px;    /* buttons */
+  --r-card:   14px;   /* cards — never exceed this */
+  --r-input:  10px;   /* search bar, inputs */
+  --r-avatar: 10px;   /* avatar initials blocks */
+  --r-screen: 28px;   /* phone screen corners in mockups */
+
+  /* ── Transitions ── */
+  --t-fast:   100ms ease;
+  --t-normal: 150ms ease;   /* max allowed — hard ceiling */
+
+  /* ── Sizing ── */
+  --sz-touch-min:    48px;   /* minimum touch target */
+  --sz-btn-height:   48px;
+  --sz-chip-height:  30px;
+  --sz-badge-height: 28px;
+  --sz-avatar-md:    44px;
+  --sz-avatar-lg:    50px;
+  --sz-nav-height:   62px;
+  --sz-dot:          6px;    /* status indicator dot */
+}
+
+/* ═══════════════════════════════════════
+   DARK MODE
+   Apply class="dark" to <html> or <body>
+═══════════════════════════════════════ */
+.dark {
+  /* Semantic tokens shift */
+  --c-bg:           #0E1216;
+  --c-surf:         #1C2428;
+  --c-card:         #252D34;
+  --c-border:       #303A44;
+  --c-text-1:       #E8ECF2;
+  --c-text-2:       #7A8898;
+  --c-text-3:       #505C68;
+
+  /* Primary button flips to action colour —
+     foundation on dark bg is invisible */
+  --c-btn-pri:      #CC4A10;
+  --c-btn-pri-text: #FFFFFF;
+
+  /* Primitives unchanged */
+  /* --c-foundation, --c-action, --c-verified,
+     --c-urgent, --c-available — all fixed    */
+}
+
+/* ═══════════════════════════════════════
+   COMPONENT UTILITIES
+   Ready-to-use class combos
+═══════════════════════════════════════ */
+
+/* Tradie card */
+.gv-card {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  padding: var(--sp-lg);
+  transition: border-color var(--t-normal);
+}
+
+/* Avatar block */
+.gv-avatar {
+  width: var(--sz-avatar-md);
+  height: var(--sz-avatar-md);
+  border-radius: var(--r-avatar);
+  background: var(--c-foundation);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f-display);
+  font-size: 14px;
+  font-weight: var(--f-weight-bold);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.gv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--sz-btn-height);
+  min-height: var(--sz-touch-min);
+  padding: 0 22px;
+  border-radius: var(--r-lg);
+  font-family: var(--f-body);
+  font-size: var(--f-size-label);
+  font-weight: var(--f-weight-semi);
+  letter-spacing: var(--f-ls-btn);
+  border: none;
+  cursor: pointer;
+  transition: opacity var(--t-fast);
+}
+.gv-btn:active { opacity: 0.85; }
+
+.gv-btn-primary {
+  background: var(--c-btn-pri);
+  color: var(--c-btn-pri-text);
+}
+.gv-btn-action {
+  background: var(--c-action);
+  color: #fff;
+}
+.gv-btn-outline {
+  background: transparent;
+  color: var(--c-text-1);
+  border: 1.5px solid var(--c-text-1);
+}
+.gv-btn-ghost {
+  background: var(--c-card);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.gv-btn-danger {
+  background: var(--c-urgent-bg);
+  color: var(--c-urgent-tx);
+  border: 1px solid var(--c-urgent);
+}
+
+/* Status badges */
+.gv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  height: var(--sz-badge-height);
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-semi);
+  letter-spacing: var(--f-ls-badge);
+}
+.gv-badge-dot {
+  width: var(--sz-dot);
+  height: var(--sz-dot);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gv-badge-verified  { background: var(--c-verified-bg);  color: var(--c-verified-tx); }
+.gv-badge-verified .gv-badge-dot { background: var(--c-verified); }
+
+.gv-badge-available { background: var(--c-available-bg); color: var(--c-available-tx); }
+.gv-badge-available .gv-badge-dot { background: var(--c-available); }
+
+.gv-badge-urgent    { background: var(--c-urgent-bg);    color: var(--c-urgent-tx); }
+.gv-badge-urgent .gv-badge-dot { background: var(--c-urgent); }
+
+.gv-badge-pending   { background: var(--c-action-bg);    color: var(--c-action-tx); }
+.gv-badge-pending .gv-badge-dot { background: var(--c-action); }
+
+.gv-badge-pro       { background: var(--c-foundation);   color: #fff; }
+
+/* Filter chips */
+.gv-chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--sz-chip-height);
+  padding: 0 14px;
+  border-radius: var(--r-md);
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-semi);
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  transition: background var(--t-normal), color var(--t-normal);
+}
+.gv-chip-on  { background: var(--c-foundation); color: #fff; }
+.gv-chip-off { background: var(--c-surf); color: var(--c-text-2); border: 1px solid var(--c-border); }
+
+/* Search input */
+.gv-search {
+  background: var(--c-surf);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-input);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: var(--sp-sm);
+  width: 100%;
+}
+.gv-search-placeholder {
+  font-family: var(--f-body);
+  font-size: var(--f-size-label);
+  color: var(--c-text-2);
+}
+
+/* Card footer row (availability + distance) */
+.gv-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding-top: var(--sp-md);
+  margin-top: var(--sp-md);
+  border-top: 1px solid var(--c-border);
+}
+.gv-distance {
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-semi);
+  color: var(--c-action);  /* always action colour */
+  margin-left: auto;
+}
+
+/* Urgent job bar (top of job card) */
+.gv-urgent-bar {
+  height: 3px;
+  background: var(--c-urgent);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  margin: calc(-1 * var(--sp-lg)) calc(-1 * var(--sp-lg)) var(--sp-md);
+}
+
+/* Section label row */
+.gv-section-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-md);
+}
+.gv-section-title {
+  font-family: var(--f-body);
+  font-size: var(--f-size-h3);
+  font-weight: var(--f-weight-semi);
+  color: var(--c-text-1);
+}
+.gv-section-link {
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-semi);
+  color: var(--c-verified); /* green — available count is a positive signal */
+}
+
+/* Rating display */
+.gv-rating-n {
+  font-family: var(--f-display);
+  font-size: var(--f-size-stat);
+  font-weight: var(--f-weight-bold);
+  color: var(--c-text-1);
+  line-height: 1;
+}
+.gv-rating-d {
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  color: var(--c-text-3);
+}
+
+/* Screen container */
+.gv-screen {
+  background: var(--c-bg);
+  padding: 0 var(--sp-xl);
+  min-height: 100vh;
+}
+
+/* Eyebrow label */
+.gv-eyebrow {
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-semi);
+  letter-spacing: var(--f-ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--c-text-3);
+}
+
+/* Display heading */
+.gv-heading-display {
+  font-family: var(--f-display);
+  font-size: var(--f-size-display);
+  font-weight: var(--f-weight-bold);
+  color: var(--c-text-1);
+  line-height: var(--f-lh-tight);
+  letter-spacing: var(--f-ls-display);
+}

@@ -136,7 +136,7 @@ class AuthController extends Notifier<AuthState> {
       final response = await SupabaseConfig.client.auth.signUp(
         email: email.trim(),
         password: password,
-        data: {'full_name': fullName.trim()},
+        data: {'display_name': fullName.trim()},
       );
 
       if (response.session == null) {
@@ -328,8 +328,86 @@ class AuthController extends Notifier<AuthState> {
     return sha256.convert(bytes).toString();
   }
 
-  void completeOnboarding(UserRole role) {
-    state = state.copyWith(role: role, onboardingComplete: true);
+  Future<void> completeOnboarding(
+    UserRole role, {
+    String? location,
+    String? companyName,
+    String? businessType,
+    String? tradeCategory,
+    String? yearsExperience,
+  }) async {
+    state = state.copyWith(isLoading: true);
+
+    try {
+      if (SupabaseConfig.isInitialized) {
+        final userId = SupabaseConfig.client.auth.currentUser?.id;
+        if (userId != null) {
+          final profileUpdate = <String, dynamic>{
+            'id': userId,
+            'role': role.name,
+          };
+          if (location != null) profileUpdate['location'] = location;
+          await SupabaseConfig.client.from('profiles').upsert(profileUpdate);
+
+          if (role == UserRole.builder) {
+            final builderData = <String, dynamic>{'profile_id': userId};
+            if (companyName != null) builderData['company_name'] = companyName;
+            if (businessType != null) builderData['business_type'] = businessType;
+            if (builderData.length > 1) {
+              await SupabaseConfig.client
+                  .from('builder_profiles')
+                  .upsert(builderData);
+            }
+          } else if (role == UserRole.trade) {
+            final tradeData = <String, dynamic>{'profile_id': userId};
+            if (tradeCategory != null) tradeData['trade_category'] = tradeCategory;
+            if (yearsExperience != null) tradeData['years_experience'] = yearsExperience;
+            if (tradeData.length > 1) {
+              await SupabaseConfig.client
+                  .from('trade_profiles')
+                  .upsert(tradeData);
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Best-effort — don't block the user from progressing
+    }
+
+    state = state.copyWith(
+      role: role,
+      onboardingComplete: true,
+      isLoading: false,
+    );
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    if (!SupabaseConfig.isInitialized) {
+      state = state.copyWith(
+        errorMessage: 'Supabase is not configured.',
+        isLoading: false,
+        infoMessage: null,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
+
+    try {
+      await SupabaseConfig.client.auth.resetPasswordForEmail(email.trim());
+      state = state.copyWith(
+        isLoading: false,
+        infoMessage: 'Check your email for a reset link.',
+      );
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
   }
 
   Future<void> signOut() async {

@@ -1,18 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
 
-/// Divider + Google + Apple (iOS/macOS only) sign-in buttons.
-/// Drop this widget into any auth page.
 class SocialAuthButtons extends ConsumerWidget {
   const SocialAuthButtons({super.key});
-
-  bool get _isApplePlatform =>
-      defaultTargetPlatform == TargetPlatform.iOS ||
-      defaultTargetPlatform == TargetPlatform.macOS;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,26 +20,89 @@ class SocialAuthButtons extends ConsumerWidget {
     return Column(
       children: [
         const _OrDivider(),
-        const SizedBox(height: 16),
-        _GoogleButton(
-          loading: isLoading,
-          onPressed: isLoading
-              ? null
-              : () =>
-                  ref.read(authControllerProvider.notifier).signInWithGoogle(),
+        Gap(16.h),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _SocialButton(
+              loading: isLoading,
+              onPressed: isLoading
+                  ? null
+                  : () => ref
+                      .read(authControllerProvider.notifier)
+                      .signInWithGoogle(),
+              child: SvgPicture.asset(
+                'lib/core/assets/icon-google.svg',
+                width: 20.r,
+                height: 20.r,
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFF4285F4),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            Gap(12.w),
+            _SocialButton(
+              loading: isLoading,
+              onPressed: isLoading
+                  ? null
+                  : () => ref
+                      .read(authControllerProvider.notifier)
+                      .signInWithApple(),
+              child: SvgPicture.asset(
+                'lib/core/assets/icon-apple.svg',
+                width: 20.r,
+                height: 20.r,
+                colorFilter: const ColorFilter.mode(
+                  Colors.black87,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ],
         ),
-        if (_isApplePlatform) ...[
-          const SizedBox(height: 12),
-          _AppleButton(
-            loading: isLoading,
-            onPressed: isLoading
-                ? null
-                : () => ref
-                    .read(authControllerProvider.notifier)
-                    .signInWithApple(),
-          ),
-        ],
       ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({
+    required this.loading,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final bool loading;
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48.r,
+      height: 48.r,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: AppColors.card,
+          side: const BorderSide(color: AppColors.border),
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+        ),
+        child: loading
+            ? SizedBox(
+                width: 18.r,
+                height: 18.r,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.action,
+                ),
+              )
+            : child,
+      ),
     );
   }
 }
@@ -52,174 +112,22 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
       children: [
         const Expanded(child: Divider()),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
           child: Text(
             'or continue with',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF5A5A5A),
+            style: GoogleFonts.barlow(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w400,
+              color: AppColors.text3,
             ),
           ),
         ),
         const Expanded(child: Divider()),
       ],
-    );
-  }
-}
-
-class _GoogleButton extends StatelessWidget {
-  const _GoogleButton({required this.loading, required this.onPressed});
-
-  final bool loading;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: theme.colorScheme.outlineVariant),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          backgroundColor: Colors.white,
-        ),
-        child: loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _GoogleLogo(),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Continue with Google',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF3C4043),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _GoogleLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Four-colour Google 'G' built from a Stack of arcs.
-    // Swap for an SVG asset when the design system arrives.
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: CustomPaint(painter: _GoogleGPainter()),
-    );
-  }
-}
-
-class _GoogleGPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = size.width / 2;
-    const strokeW = 3.0;
-
-    final segments = [
-      (0.0, 90.0, const Color(0xFF4285F4)),   // blue  — top-right arc
-      (90.0, 90.0, const Color(0xFF34A853)),  // green — bottom-right
-      (180.0, 90.0, const Color(0xFFFBBC05)), // yellow — bottom-left
-      (270.0, 90.0, const Color(0xFFEA4335)), // red   — top-left
-    ];
-
-    for (final (startDeg, sweepDeg, color) in segments) {
-      final paint = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeW
-        ..strokeCap = StrokeCap.butt;
-
-      final start = startDeg * (3.14159 / 180);
-      final sweep = sweepDeg * (3.14159 / 180);
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset(cx, cy), radius: r - strokeW / 2),
-        start,
-        sweep,
-        false,
-        paint,
-      );
-    }
-
-    // Horizontal bar of the 'G' (right side)
-    final barPaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..strokeWidth = strokeW
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(cx, cy),
-      Offset(size.width - strokeW / 2, cy),
-      barPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _AppleButton extends StatelessWidget {
-  const _AppleButton({required this.loading, required this.onPressed});
-
-  final bool loading;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    if (loading) {
-      return SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: OutlinedButton(
-          onPressed: null,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          child: const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: SignInWithAppleButton(
-        onPressed: onPressed ?? () {},
-        style: SignInWithAppleButtonStyle.black,
-        borderRadius: const BorderRadius.all(Radius.circular(14)),
-      ),
     );
   }
 }

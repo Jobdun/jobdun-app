@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin:0; padding:0; background:#F4F6F8; }
+  body { padding: 20px; box-sizing: border-box; width: 700px; }
+  .top { font-family:'Barlow'; font-size:10px; font-weight:600; color:#A0ACB8; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:14px; }
+  .nav { display:flex; background:#EAEEF2; border-top:1px solid #D4D9DF; height:62px; padding:0 8px 10px; align-items:center; border-radius: 14px; }
+  .tab { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 0; }
+  .tab-l { font-family:'Barlow'; font-size:10px; font-weight:600; }
+  .ic { width:22px; height:22px; }
+</style></head><body>
+<div class="top">Bottom navigation · 4 tabs · home active</div>
+<div class="nav">
+  <div class="tab">
+    <div style="background:#FAE4D8;border-radius:8px;padding:4px 8px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC4A10" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div class="tab-l" style="color:#CC4A10">Home</div>
+  </div>
+  <div class="tab">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#A0ACB8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <div class="tab-l" style="color:#A0ACB8">Jobs</div>
+  </div>
+  <div class="tab">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#A0ACB8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <div class="tab-l" style="color:#A0ACB8">Chat</div>
+  </div>
+  <div class="tab">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#A0ACB8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <div class="tab-l" style="color:#A0ACB8">Profile</div>
+  </div>
+</div>
+</body></html>

@@ -1,0 +1,185 @@
+/**
+ * JobDun · Galvanised Design Language
+ * Colors + Type — semantic CSS variables
+ *
+ * Layers on top of tokens.css. Import both:
+ *   @import './tokens.css';
+ *   @import './colors_and_type.css';
+ *
+ * tokens.css owns the primitive + semantic token names (--c-*, --f-*, --sp-*, etc).
+ * This file adds:
+ *   1) Webfont @font-face (Barlow + Barlow Condensed) — local files in /fonts
+ *   2) Element-level defaults (h1/h2/h3/p/code) tied to type scale
+ *   3) Convenience semantic colour aliases (fg1/fg2/fg3, bg, surface, etc)
+ */
+
+/* ─── Webfonts ─── */
+/* Self-hosted via fonts/ folder. Falls back to Google Fonts CDN if not bundled. */
+
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow'),
+       url('fonts/Barlow-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow Medium'),
+       url('fonts/Barlow-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow SemiBold'),
+       url('fonts/Barlow-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow Bold'),
+       url('fonts/Barlow-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow Condensed SemiBold'),
+       url('fonts/BarlowCondensed-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: local('Barlow Condensed Bold'),
+       url('fonts/BarlowCondensed-Bold.woff2') format('woff2');
+}
+
+/* ─── Convenience aliases (bridge to common naming conventions) ─── */
+:root {
+  /* foreground */
+  --fg-1:        var(--c-text-1);
+  --fg-2:        var(--c-text-2);
+  --fg-3:        var(--c-text-3);
+  --fg-on-dark:  #FFFFFF;
+
+  /* background */
+  --bg:          var(--c-bg);
+  --surface:     var(--c-surf);
+  --card:        var(--c-card);
+  --border:      var(--c-border);
+
+  /* brand */
+  --foundation:  var(--c-foundation);
+  --action:      var(--c-action);
+  --verified:    var(--c-verified);
+  --urgent:      var(--c-urgent);
+  --available:   var(--c-available);
+
+  /* font shortcuts */
+  --font-display: var(--f-display);
+  --font-body:    var(--f-body);
+  --font-stat:    var(--f-display); /* stats use Barlow Condensed */
+}
+
+/* ─── Element defaults ─── */
+html, body {
+  font-family: var(--f-body);
+  font-size: var(--f-size-body);
+  font-weight: var(--f-weight-regular);
+  line-height: var(--f-lh-normal);
+  color: var(--c-text-1);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .gv-display {
+  font-family: var(--f-display);
+  font-size: var(--f-size-display);
+  font-weight: var(--f-weight-bold);
+  line-height: var(--f-lh-tight);
+  letter-spacing: var(--f-ls-display);
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+h2, .gv-h1 {
+  font-family: var(--f-display);
+  font-size: var(--f-size-h1);
+  font-weight: var(--f-weight-bold);
+  line-height: var(--f-lh-tight);
+  letter-spacing: var(--f-ls-display);
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+h3, .gv-h2 {
+  font-family: var(--f-body);
+  font-size: var(--f-size-h2);
+  font-weight: var(--f-weight-semi);
+  line-height: var(--f-lh-snug);
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+h4, .gv-h3 {
+  font-family: var(--f-body);
+  font-size: var(--f-size-h3);
+  font-weight: var(--f-weight-semi);
+  line-height: var(--f-lh-snug);
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+p, .gv-body {
+  font-family: var(--f-body);
+  font-size: var(--f-size-body);
+  font-weight: var(--f-weight-regular);
+  line-height: var(--f-lh-normal);
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+.gv-label {
+  font-family: var(--f-body);
+  font-size: var(--f-size-label);
+  font-weight: var(--f-weight-regular);
+  color: var(--c-text-2);
+}
+
+.gv-caption {
+  font-family: var(--f-body);
+  font-size: var(--f-size-caption);
+  font-weight: var(--f-weight-medium);
+  color: var(--c-text-3);
+}
+
+.gv-stat {
+  font-family: var(--f-display);
+  font-size: var(--f-size-stat);
+  font-weight: var(--f-weight-bold);
+  line-height: 1;
+  letter-spacing: var(--f-ls-display);
+  color: var(--c-text-1);
+}
+
+code, .gv-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--c-surf);
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: var(--c-text-1);
+}

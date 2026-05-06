@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
 
 class VerifyEmailPage extends ConsumerWidget {
@@ -10,113 +17,106 @@ class VerifyEmailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
     final email = authState.pendingVerificationEmail ?? '';
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Gap(32.h),
+              Center(
+                child: SvgPicture.asset(
+                  'lib/core/assets/mark-jobdun.svg',
+                  width: 40.r,
+                  height: 40.r,
+                ),
+              ),
               const Spacer(),
               Container(
-                width: 96,
-                height: 96,
+                width: 72.r,
+                height: 72.r,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+                  color: AppColors.foundation,
+                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
-                  Icons.mark_email_unread_outlined,
-                  size: 48,
-                  color: theme.colorScheme.primary,
+                  Iconsax.sms_notification,
+                  size: 36.r,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 32),
-              Text('Check your inbox', style: theme.textTheme.headlineMedium),
-              const SizedBox(height: 12),
+              Gap(24.h),
               Text(
-                'We sent a verification link to',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF5A5A5A),
+                'CHECK YOUR EMAIL',
+                style: GoogleFonts.barlowCondensed(
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.02 * 28,
+                  color: AppColors.text1,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
-              Text(
-                email,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Gap(12.h),
+              Text.rich(
+                TextSpan(
+                  style: GoogleFonts.barlow(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.text2,
+                    height: 1.7,
+                  ),
+                  children: [
+                    const TextSpan(text: 'We sent a verification link to '),
+                    TextSpan(
+                      text: email,
+                      style: GoogleFonts.barlow(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.action,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: '. Tap it to verify your account.',
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Click the link to verify your account, then come back and sign in.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF5A5A5A),
-                ),
-                textAlign: TextAlign.center,
               ),
               if (authState.infoMessage != null) ...[
-                const SizedBox(height: 20),
-                _StatusBanner(
-                  message: authState.infoMessage!,
-                  isError: false,
-                ),
+                Gap(12.h),
+                StatusBanner(message: authState.infoMessage!, isError: false),
               ],
               if (authState.errorMessage != null) ...[
-                const SizedBox(height: 20),
-                _StatusBanner(
-                  message: authState.errorMessage!,
-                  isError: true,
-                ),
+                Gap(12.h),
+                StatusBanner(message: authState.errorMessage!, isError: true),
               ],
               const Spacer(),
               AppButton(
-                label: authState.isLoading ? 'Sending...' : 'Resend verification email',
-                variant: AppButtonVariant.secondary,
+                label: authState.isLoading
+                    ? 'Sending...'
+                    : 'Resend verification email',
+                variant: AppButtonVariant.ghost,
+                isLoading: authState.isLoading,
                 onPressed: authState.isLoading
                     ? null
                     : () => ref
                         .read(authControllerProvider.notifier)
                         .resendVerificationEmail(),
               ),
-              const SizedBox(height: 12),
+              Gap(12.h),
               AppButton(
                 label: 'Back to sign in',
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).clearPendingVerification(),
+                variant: AppButtonVariant.text,
+                onPressed: () => ref
+                    .read(authControllerProvider.notifier)
+                    .clearPendingVerification(),
               ),
-              const SizedBox(height: 8),
+              Gap(16.h),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.message, required this.isError});
-
-  final String message;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isError ? const Color(0xFFFCEAEA) : const Color(0xFFEAF4ED),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isError ? const Color(0xFFE7B5B5) : const Color(0xFFB7D4BE),
-        ),
-      ),
-      child: Text(message, textAlign: TextAlign.center),
     );
   }
 }
