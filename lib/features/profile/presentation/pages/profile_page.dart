@@ -15,6 +15,7 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final authState = ref.watch(authControllerProvider);
     final role = authState.role;
     final isBuilder = role == UserRole.builder;
@@ -22,7 +23,7 @@ class ProfilePage extends ConsumerWidget {
     final initials = _initials(email);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -43,7 +44,7 @@ class ProfilePage extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: AppButton(
                   label: 'Sign out',
-                  variant: AppButtonVariant.ghost,
+                  variant: AppButtonVariant.secondary,
                   onPressed: () =>
                       ref.read(authControllerProvider.notifier).signOut(),
                 ),
@@ -81,8 +82,10 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Container(
-      color: AppColors.card,
+      color: c.card,
       padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 24.h),
       child: Row(
         children: [
@@ -100,13 +103,13 @@ class _ProfileHeader extends StatelessWidget {
                         style: GoogleFonts.barlow(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.text1,
+                          color: c.text1,
                         ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () {},
-                      child: Icon(Iconsax.edit_2, size: 20.r, color: AppColors.text3),
+                      child: Icon(Iconsax.edit_2, size: 20.r, color: c.text3),
                     ),
                   ],
                 ),
@@ -116,15 +119,16 @@ class _ProfileHeader extends StatelessWidget {
                   style: GoogleFonts.barlow(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w400,
-                    color: AppColors.text3,
+                    color: c.text3,
                   ),
                 ),
                 if (role != null) ...[
                   Gap(8.h),
+                  // Orange badge — high-contrast on both light and dark backgrounds
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
                     decoration: BoxDecoration(
-                      color: AppColors.foundation,
+                      color: c.action,
                       borderRadius: BorderRadius.circular(AppRadius.chip.r),
                     ),
                     child: Text(
@@ -133,7 +137,7 @@ class _ProfileHeader extends StatelessWidget {
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.08 * 10,
-                        color: AppColors.white,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -154,6 +158,8 @@ class _BuilderProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -165,21 +171,21 @@ class _BuilderProfile extends StatelessWidget {
                 value: '4.8',
                 label: 'Rating',
                 icon: Iconsax.star,
-                iconColor: AppColors.star,
+                iconColor: c.star,
               ),
               Gap(8.w),
               _StatBadge(
                 value: '23',
                 label: 'Reviews',
                 icon: Iconsax.message_text,
-                iconColor: AppColors.available,
+                iconColor: c.available,
               ),
               Gap(8.w),
               _StatBadge(
                 value: '47',
                 label: 'Jobs posted',
                 icon: Iconsax.briefcase,
-                iconColor: AppColors.action,
+                iconColor: c.action,
               ),
             ],
           ),
@@ -216,6 +222,8 @@ class _TradeProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -227,21 +235,21 @@ class _TradeProfile extends StatelessWidget {
                 value: '4.9',
                 label: 'Rating',
                 icon: Iconsax.star,
-                iconColor: AppColors.star,
+                iconColor: c.star,
               ),
               Gap(8.w),
               _StatBadge(
                 value: '142',
                 label: 'Jobs done',
                 icon: Iconsax.tick_circle,
-                iconColor: AppColors.verified,
+                iconColor: c.verified,
               ),
               Gap(8.w),
               _StatBadge(
                 value: '5+',
                 label: 'Yrs exp',
                 icon: Iconsax.award,
-                iconColor: AppColors.action,
+                iconColor: c.action,
               ),
             ],
           ),
@@ -250,20 +258,20 @@ class _TradeProfile extends StatelessWidget {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             decoration: BoxDecoration(
-              color: AppColors.verifiedBg,
+              color: c.verifiedBg,
               borderRadius: BorderRadius.circular(AppRadius.card.r),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: c.border),
             ),
             child: Row(
               children: [
-                Icon(Iconsax.tick_circle, size: 18.r, color: AppColors.verified),
+                Icon(Iconsax.tick_circle, size: 18.r, color: c.verified),
                 Gap(10.w),
                 Text(
                   'Available for work',
                   style: GoogleFonts.barlow(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.verifiedTx,
+                    color: c.verifiedTx,
                   ),
                 ),
                 const Spacer(),
@@ -272,7 +280,7 @@ class _TradeProfile extends StatelessWidget {
                   style: GoogleFonts.barlow(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.available,
+                    color: c.available,
                   ),
                 ),
               ],
@@ -344,13 +352,15 @@ class _StatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Expanded(
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: c.card,
           borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +372,7 @@ class _StatBadge extends StatelessWidget {
               style: GoogleFonts.barlowCondensed(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.w700,
-                color: AppColors.text1,
+                color: c.text1,
               ),
             ),
             Gap(1.h),
@@ -371,7 +381,7 @@ class _StatBadge extends StatelessWidget {
               style: GoogleFonts.barlow(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w400,
-                color: AppColors.text3,
+                color: c.text3,
               ),
             ),
           ],
@@ -389,11 +399,13 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: c.card,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,11 +418,11 @@ class _InfoCard extends StatelessWidget {
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.12 * 11,
-                color: AppColors.text3,
+                color: c.text3,
               ),
             ),
           ),
-          Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: c.border),
           ...children,
         ],
       ),
@@ -431,18 +443,20 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       child: Row(
         children: [
-          Icon(icon, size: 16.r, color: AppColors.text3),
+          Icon(icon, size: 16.r, color: c.text3),
           Gap(12.w),
           Text(
             label,
             style: GoogleFonts.barlow(
               fontSize: 13.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text2,
+              color: c.text2,
             ),
           ),
           const Spacer(),
@@ -451,7 +465,7 @@ class _InfoRow extends StatelessWidget {
             style: GoogleFonts.barlow(
               fontSize: 13.sp,
               fontWeight: FontWeight.w600,
-              color: AppColors.text1,
+              color: c.text1,
             ),
           ),
         ],
@@ -468,6 +482,8 @@ class _VerificationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       child: Row(
@@ -475,7 +491,7 @@ class _VerificationRow extends StatelessWidget {
           Icon(
             isVerified ? Iconsax.verify : Iconsax.close_circle,
             size: 16.r,
-            color: isVerified ? AppColors.verified : AppColors.text3,
+            color: isVerified ? c.verified : c.text3,
           ),
           Gap(12.w),
           Expanded(
@@ -484,7 +500,7 @@ class _VerificationRow extends StatelessWidget {
               style: GoogleFonts.barlow(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w400,
-                color: AppColors.text1,
+                color: c.text1,
               ),
             ),
           ),
@@ -493,7 +509,7 @@ class _VerificationRow extends StatelessWidget {
             style: GoogleFonts.barlow(
               fontSize: 13.sp,
               fontWeight: FontWeight.w600,
-              color: isVerified ? AppColors.verified : AppColors.available,
+              color: isVerified ? c.verified : c.available,
             ),
           ),
         ],
@@ -510,6 +526,8 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
@@ -517,7 +535,7 @@ class _ActionRow extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(
           children: [
-            Icon(icon, size: 18.r, color: AppColors.text2),
+            Icon(icon, size: 18.r, color: c.text2),
             Gap(12.w),
             Expanded(
               child: Text(
@@ -525,11 +543,11 @@ class _ActionRow extends StatelessWidget {
                 style: GoogleFonts.barlow(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.text1,
+                  color: c.text1,
                 ),
               ),
             ),
-            Icon(Iconsax.arrow_right_3, size: 16.r, color: AppColors.text3),
+            Icon(Iconsax.arrow_right_3, size: 16.r, color: c.text3),
           ],
         ),
       ),

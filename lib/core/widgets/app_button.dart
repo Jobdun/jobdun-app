@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 
-enum AppButtonVariant { primary, action, outline, ghost, text }
+enum AppButtonVariant { primary, secondary, text }
 
 class AppButton extends StatelessWidget {
   const AppButton({
@@ -25,10 +25,12 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labelStyle = GoogleFonts.barlow(
-      fontSize: 13.sp,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.01 * 13,
+    final c = context.c;
+
+    final labelStyle = GoogleFonts.oswald(
+      fontSize: 14.sp,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.5,
     );
 
     final Widget content = isLoading
@@ -37,7 +39,7 @@ class AppButton extends StatelessWidget {
             height: 18.r,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: _loaderColor,
+              color: _loaderColor(c),
             ),
           )
         : Row(
@@ -48,7 +50,7 @@ class AppButton extends StatelessWidget {
                 Icon(icon, size: 18.r),
                 Gap(8.w),
               ],
-              Text(label, style: labelStyle),
+              Text(label.toUpperCase(), style: labelStyle),
             ],
           );
 
@@ -56,11 +58,11 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.primary => FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.foundation,
+          backgroundColor: c.action,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.foundation.withValues(alpha: 0.4),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
-          minimumSize: Size.fromHeight(48.h),
+          disabledBackgroundColor: c.action.withValues(alpha: 0.35),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
+          minimumSize: Size.fromHeight(52.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
           ),
@@ -69,62 +71,36 @@ class AppButton extends StatelessWidget {
         ),
         child: content,
       ),
-      AppButtonVariant.action => FilledButton(
+      AppButtonVariant.secondary => FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.action,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.action.withValues(alpha: 0.4),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
-          minimumSize: Size.fromHeight(48.h),
+          backgroundColor: c.surfaceRaised,
+          foregroundColor: c.text1,
+          disabledBackgroundColor: c.surfaceRaised.withValues(alpha: 0.5),
+          disabledForegroundColor: c.text2,
+          minimumSize: Size.fromHeight(52.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
           ),
           elevation: 0,
           shadowColor: Colors.transparent,
-        ),
-        child: content,
-      ),
-      AppButtonVariant.outline => OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.text1,
-          side: const BorderSide(color: AppColors.text1, width: 1.5),
-          minimumSize: Size.fromHeight(48.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.btn.r),
-          ),
-        ),
-        child: content,
-      ),
-      AppButtonVariant.ghost => OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.text2,
-          backgroundColor: AppColors.card,
-          side: const BorderSide(color: AppColors.border),
-          minimumSize: Size.fromHeight(48.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.btn.r),
-          ),
         ),
         child: content,
       ),
       AppButtonVariant.text => TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.action,
-          minimumSize: Size.fromHeight(48.h),
+          foregroundColor: c.action,
+          minimumSize: Size.fromHeight(44.h),
         ),
         child: content,
       ),
     };
   }
 
-  Color get _loaderColor => switch (variant) {
-    AppButtonVariant.primary || AppButtonVariant.action => Colors.white,
-    AppButtonVariant.outline => AppColors.text1,
-    AppButtonVariant.ghost => AppColors.text2,
-    AppButtonVariant.text => AppColors.action,
+  Color _loaderColor(JColors c) => switch (variant) {
+    AppButtonVariant.primary   => Colors.white,
+    AppButtonVariant.secondary => c.text1,
+    AppButtonVariant.text      => c.action,
   };
 }

@@ -65,6 +65,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final isLoading =
         ref.watch(authControllerProvider.select((s) => s.isLoading));
 
@@ -119,20 +120,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               Positioned(
                 top: 16.h,
                 right: 20.w,
-                child: TextButton(
-                  onPressed: _next,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.text2,
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size(0, 36.h),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Skip',
-                    style: GoogleFonts.barlow(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.text2,
+                child: GestureDetector(
+                  onTap: _next,
+                  child: Padding(
+                    padding: EdgeInsets.all(8.r),
+                    child: Text(
+                      'SKIP',
+                      style: GoogleFonts.openSans(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: c.text3,
+                      ),
                     ),
                   ),
                 ),
@@ -151,6 +150,8 @@ class _WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -158,30 +159,67 @@ class _WelcomePage extends StatelessWidget {
         children: [
           SvgPicture.asset(
             'lib/core/assets/mark-jobdun.svg',
-            width: 80.r,
-            height: 80.r,
-          ),
-          Gap(32.h),
-          Text(
-            'GET WORK.\nPOST JOBS.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 40.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.02 * 40,
-              color: AppColors.text1,
-              height: 1.0,
-            ),
+            width: 72.r,
+            height: 72.r,
+            colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
           ),
           Gap(12.h),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFF176),
+                Color(0xFFFFB300),
+                Color(0xFFF97316),
+                Color(0xFFE64A19),
+                Color(0xFFBF360C),
+              ],
+              stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+            ).createShader(bounds),
+            child: Text(
+              'JOBDUN',
+              style: GoogleFonts.oswald(
+                fontSize: 52.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 4.0,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
+          ),
+          Gap(28.h),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFB300),
+                Color(0xFFF97316),
+                Color(0xFFE64A19),
+              ],
+            ).createShader(bounds),
+            child: Text(
+              'GET WORK.\nPOST JOBS.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.oswald(
+                fontSize: 44.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
+          ),
+          Gap(14.h),
           Text(
-            'Connect with builders and trades. Apply for work, post jobs, and build your reputation.',
+            'Verified jobs. Real builders. Get hired fast.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 15.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text2,
-              height: 1.7,
+              color: c.text2,
+              height: 1.6,
             ),
           ),
         ],
@@ -193,16 +231,15 @@ class _WelcomePage extends StatelessWidget {
 // ── Page 1: Role Selection ─────────────────────────────────────────────────────
 
 class _RolePage extends StatelessWidget {
-  const _RolePage({
-    required this.selectedRole,
-    required this.onRoleChanged,
-  });
+  const _RolePage({required this.selectedRole, required this.onRoleChanged});
 
   final UserRole? selectedRole;
   final ValueChanged<UserRole> onRoleChanged;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -211,30 +248,30 @@ class _RolePage extends StatelessWidget {
           Gap(24.h),
           Text(
             'YOUR ROLE',
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.12 * 11,
-              color: AppColors.text3,
+              letterSpacing: 1.2,
+              color: c.text3,
             ),
           ),
           Gap(8.h),
           Text(
             'What describes you best?',
-            style: GoogleFonts.barlowCondensed(
+            style: GoogleFonts.oswald(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.02 * 28,
-              color: AppColors.text1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              color: c.text1,
             ),
           ),
           Gap(8.h),
           Text(
             'Choose your role to personalise your experience.',
-            style: GoogleFonts.barlow(
-              fontSize: 15.sp,
+            style: GoogleFonts.openSans(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text2,
+              color: c.text2,
             ),
           ),
           Gap(24.h),
@@ -256,11 +293,7 @@ class _RolePage extends StatelessWidget {
 }
 
 class _RoleCard extends StatelessWidget {
-  const _RoleCard({
-    required this.role,
-    required this.selected,
-    required this.onTap,
-  });
+  const _RoleCard({required this.role, required this.selected, required this.onTap});
 
   final UserRole role;
   final bool selected;
@@ -268,14 +301,16 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       curve: Curves.ease,
       decoration: BoxDecoration(
-        color: selected ? AppColors.foundation : AppColors.card,
+        color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
         border: Border.all(
-          color: selected ? AppColors.foundation : AppColors.border,
+          color: selected ? c.action : c.border,
           width: selected ? 2 : 1,
         ),
       ),
@@ -290,15 +325,13 @@ class _RoleCard extends StatelessWidget {
                 width: 44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
-                  color: selected ? AppColors.action : AppColors.surface,
+                  color: selected ? c.action : c.surfaceRaised,
                   borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
-                  role == UserRole.builder
-                      ? Iconsax.briefcase
-                      : Iconsax.personalcard,
+                  role == UserRole.builder ? Iconsax.briefcase : Iconsax.personalcard,
                   size: 22.r,
-                  color: selected ? Colors.white : AppColors.text2,
+                  color: selected ? Colors.white : c.text2,
                 ),
               ),
               Gap(12.w),
@@ -308,21 +341,19 @@ class _RoleCard extends StatelessWidget {
                   children: [
                     Text(
                       role.label,
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? Colors.white : AppColors.text1,
+                        fontWeight: FontWeight.w700,
+                        color: c.text1,
                       ),
                     ),
                     Gap(2.h),
                     Text(
                       role.description,
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.7)
-                            : AppColors.text2,
+                        color: c.text2,
                       ),
                     ),
                   ],
@@ -330,14 +361,14 @@ class _RoleCard extends StatelessWidget {
               ),
               Gap(8.w),
               if (selected)
-                Icon(Iconsax.tick_circle, size: 20.r, color: Colors.white)
+                Icon(Iconsax.tick_circle, size: 20.r, color: c.action)
               else
                 Container(
                   width: 20.r,
                   height: 20.r,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.badge.r),
-                    border: Border.all(color: AppColors.border, width: 1.5),
+                    border: Border.all(color: c.border, width: 1.5),
                   ),
                 ),
             ],
@@ -376,6 +407,7 @@ class _ProfileSetupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (role == null) return const SizedBox.shrink();
+    final c = context.c;
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
@@ -384,11 +416,11 @@ class _ProfileSetupPage extends StatelessWidget {
         children: [
           Text(
             role == UserRole.builder ? 'COMPANY SETUP' : 'YOUR TRADE',
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.12 * 11,
-              color: AppColors.text3,
+              letterSpacing: 1.2,
+              color: c.text3,
             ),
           ),
           Gap(8.h),
@@ -396,20 +428,20 @@ class _ProfileSetupPage extends StatelessWidget {
             role == UserRole.builder
                 ? 'Tell us about your business.'
                 : 'Tell us about your skills.',
-            style: GoogleFonts.barlowCondensed(
+            style: GoogleFonts.oswald(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.02 * 28,
-              color: AppColors.text1,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+              color: c.text1,
             ),
           ),
           Gap(8.h),
           Text(
             'You can update this anytime from your profile.',
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 13.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text3,
+              color: c.text3,
             ),
           ),
           Gap(24.h),
@@ -450,6 +482,8 @@ class _BuilderForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -458,19 +492,20 @@ class _BuilderForm extends StatelessWidget {
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           textCapitalization: TextCapitalization.words,
-          style: GoogleFonts.barlow(fontSize: 15.sp, color: AppColors.text1),
+          style: TextStyle(color: c.text1),
           decoration: InputDecoration(
-            labelText: 'Company name',
-            prefixIcon: Icon(Iconsax.building, size: 20.r),
+            labelText: 'COMPANY NAME',
+            prefixIcon: Icon(Iconsax.building, size: 18.r),
           ),
         ),
         Gap(20.h),
         Text(
-          'Business type',
-          style: GoogleFonts.barlow(
-            fontSize: 13.sp,
+          'BUSINESS TYPE',
+          style: GoogleFonts.openSans(
+            fontSize: 11.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.text2,
+            letterSpacing: 0.8,
+            color: c.text3,
           ),
         ),
         Gap(8.h),
@@ -484,10 +519,10 @@ class _BuilderForm extends StatelessWidget {
           controller: locationController,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.done,
-          style: GoogleFonts.barlow(fontSize: 15.sp, color: AppColors.text1),
+          style: TextStyle(color: c.text1),
           decoration: InputDecoration(
-            labelText: 'City or suburb',
-            prefixIcon: Icon(Iconsax.location, size: 20.r),
+            labelText: 'CITY OR SUBURB',
+            prefixIcon: Icon(Iconsax.location, size: 18.r),
           ),
         ),
       ],
@@ -512,50 +547,40 @@ class _TradeForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Trade',
-          style: GoogleFonts.barlow(
-            fontSize: 13.sp,
+          'TRADE',
+          style: GoogleFonts.openSans(
+            fontSize: 11.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.text2,
+            letterSpacing: 0.8,
+            color: c.text3,
           ),
         ),
         Gap(8.h),
         _ChipGroup(
           options: const [
-            'Electrician',
-            'Plumber',
-            'Carpenter',
-            'Plasterer',
-            'Painter',
-            'Concreter',
-            'Welder',
-            'Bricklayer',
-            'Tiler',
-            'Steel Fixer',
-            'Form Worker',
-            'Rigger',
-            'Scaffolder',
-            'Crane Operator',
-            'Boilermaker',
-            'Roof Plumber',
-            'Cabinet Maker',
-            'Demolition',
-            'Other',
+            'Electrician', 'Plumber', 'Carpenter', 'Plasterer',
+            'Painter', 'Concreter', 'Welder', 'Bricklayer',
+            'Tiler', 'Steel Fixer', 'Form Worker', 'Rigger',
+            'Scaffolder', 'Crane Operator', 'Boilermaker',
+            'Roof Plumber', 'Cabinet Maker', 'Demolition', 'Other',
           ],
           selected: selectedTradeCategory,
           onSelected: onTradeCategoryChanged,
         ),
         Gap(20.h),
         Text(
-          'Experience',
-          style: GoogleFonts.barlow(
-            fontSize: 13.sp,
+          'EXPERIENCE',
+          style: GoogleFonts.openSans(
+            fontSize: 11.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.text2,
+            letterSpacing: 0.8,
+            color: c.text3,
           ),
         ),
         Gap(8.h),
@@ -569,10 +594,10 @@ class _TradeForm extends StatelessWidget {
           controller: locationController,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.done,
-          style: GoogleFonts.barlow(fontSize: 15.sp, color: AppColors.text1),
+          style: TextStyle(color: c.text1),
           decoration: InputDecoration(
-            labelText: 'City or suburb',
-            prefixIcon: Icon(Iconsax.location, size: 20.r),
+            labelText: 'CITY OR SUBURB',
+            prefixIcon: Icon(Iconsax.location, size: 18.r),
           ),
         ),
       ],
@@ -593,6 +618,8 @@ class _ChipGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
@@ -607,18 +634,18 @@ class _ChipGroup extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 14.w),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.foundation : AppColors.surface,
+              color: isSelected ? c.action : c.surfaceRaised,
               border: Border.all(
-                color: isSelected ? AppColors.foundation : AppColors.border,
+                color: isSelected ? c.action : c.border,
               ),
               borderRadius: BorderRadius.circular(AppRadius.chip.r),
             ),
             child: Text(
               option,
-              style: GoogleFonts.barlow(
+              style: GoogleFonts.openSans(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.text2,
+                color: isSelected ? Colors.white : c.text2,
               ),
             ),
           ),
@@ -635,6 +662,8 @@ class _AllSetPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
@@ -642,30 +671,67 @@ class _AllSetPage extends StatelessWidget {
         children: [
           SvgPicture.asset(
             'lib/core/assets/mark-jobdun.svg',
-            width: 64.r,
-            height: 64.r,
-          ),
-          Gap(32.h),
-          Text(
-            "YOU'RE ALL SET.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.barlowCondensed(
-              fontSize: 40.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.02 * 40,
-              color: AppColors.text1,
-              height: 1.0,
-            ),
+            width: 72.r,
+            height: 72.r,
+            colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
           ),
           Gap(12.h),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFF176),
+                Color(0xFFFFB300),
+                Color(0xFFF97316),
+                Color(0xFFE64A19),
+                Color(0xFFBF360C),
+              ],
+              stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+            ).createShader(bounds),
+            child: Text(
+              'JOBDUN',
+              style: GoogleFonts.oswald(
+                fontSize: 52.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 4.0,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
+          ),
+          Gap(28.h),
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFB300),
+                Color(0xFFF97316),
+                Color(0xFFE64A19),
+              ],
+            ).createShader(bounds),
+            child: Text(
+              'PROFILE\nLIVE.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.oswald(
+                fontSize: 44.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: Colors.white,
+                height: 1.0,
+              ),
+            ),
+          ),
+          Gap(14.h),
           Text(
-            "Your profile is ready. Let's find your next opportunity.",
+            'Your profile is active. Start getting work.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 15.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text2,
-              height: 1.7,
+              color: c.text2,
+              height: 1.6,
             ),
           ),
         ],
@@ -697,6 +763,7 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final isLastPage = currentPage == totalPages - 1;
     final isRolePage = currentPage == 1;
 
@@ -708,8 +775,8 @@ class _BottomBar extends StatelessWidget {
             controller: pageController,
             count: totalPages,
             effect: ExpandingDotsEffect(
-              dotColor: AppColors.border,
-              activeDotColor: AppColors.foundation,
+              dotColor: c.surfaceRaised,
+              activeDotColor: c.action,
               dotHeight: 6.r,
               dotWidth: 6.r,
               expansionFactor: 3,
@@ -718,7 +785,7 @@ class _BottomBar extends StatelessWidget {
           Gap(20.h),
           if (isLastPage)
             AppButton(
-              label: isLoading ? 'Setting up...' : 'Go to dashboard',
+              label: isLoading ? 'Setting up...' : 'Get to work',
               isLoading: isLoading,
               onPressed: isLoading ? null : onFinish,
             )
@@ -726,10 +793,9 @@ class _BottomBar extends StatelessWidget {
             AppButton(
               label: currentPage == 2 ? 'Continue' : 'Next',
               variant: (isRolePage && selectedRole == null)
-                  ? AppButtonVariant.ghost
+                  ? AppButtonVariant.secondary
                   : AppButtonVariant.primary,
-              onPressed:
-                  (isRolePage && selectedRole == null) ? null : onNext,
+              onPressed: (isRolePage && selectedRole == null) ? null : onNext,
             ),
         ],
       ),

@@ -28,15 +28,18 @@ Available page-specific overrides:
 - `design-system/jobdun/pages/admin-web.md`
 
 **Jobdun design tokens (from MASTER):**
-- Primary: `#64748B` (industrial slate)
-- Secondary: `#94A3B8`
-- CTA / Accent: `#F97316` (safety orange)
-- Background: `#F8FAFC`
-- Text: `#334155`
-- Style: Flat Design — 2D, no heavy shadows, clean lines, icon-heavy
-- Typography: Inter (all weights) via `google_fonts`
-- Transitions: 150–200ms ease, no gratuitous animation
-- Anti-patterns: outdated forms, hidden filters, heavy gradients
+- Background: `#0F172A` (dark slate — NOT white, never `#F8FAFC`)
+- Surface: `#1E293B` (cards, inputs, bottom sheets)
+- Surface Raised: `#334155` (elevated cards, secondary buttons)
+- CTA / Accent: `#F97316` (safety orange — primary action color)
+- Primary Text: `#F1F5F9` (on dark backgrounds)
+- Secondary Text: `#94A3B8` (labels, hints, metadata)
+- Border: `#334155`
+- Error: `#EF4444` | Success: `#22C55E`
+- Style: Aggressive Flat — dark, heavy weight, no shadows, icon-heavy, all-caps buttons
+- Typography: Inter (all weights, 700+ for headings) via `google_fonts`
+- Transitions: 150–200ms ease, no bounce/spring
+- Anti-patterns: white backgrounds, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
 
 To regenerate design system for a new page:
 ```bash

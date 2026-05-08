@@ -123,18 +123,19 @@ class _JobsPageState extends ConsumerState<JobsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final isBuilder = ref.watch(authControllerProvider).role == UserRole.builder;
     final results = _filtered;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Header
             Container(
-              color: AppColors.card,
+              color: c.card,
               padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,17 +152,29 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 fontSize: 11.sp,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.12 * 11,
-                                color: AppColors.text3,
+                                color: c.text3,
                               ),
                             ),
                             Gap(4.h),
-                            Text(
-                              isBuilder ? 'Your listings' : 'Open near you',
-                              style: GoogleFonts.barlowCondensed(
-                                fontSize: 28.sp,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.02 * 28,
-                                color: AppColors.text1,
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFFFFB300),
+                                  Color(0xFFF97316),
+                                  Color(0xFFE64A19),
+                                ],
+                              ).createShader(bounds),
+                              child: Text(
+                                isBuilder ? 'Your listings' : 'Open near you',
+                                style: GoogleFonts.barlowCondensed(
+                                  fontSize: 28.sp,
+                                  fontWeight: FontWeight.w800,
+                                  fontStyle: FontStyle.italic,
+                                  letterSpacing: 0.02 * 28,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ],
@@ -174,20 +187,21 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             height: 36.h,
                             padding: EdgeInsets.symmetric(horizontal: 14.w),
                             decoration: BoxDecoration(
-                              color: AppColors.action,
+                              color: c.action,
                               borderRadius: BorderRadius.circular(AppRadius.btn.r),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Iconsax.add, size: 16.r, color: AppColors.white),
+                                Icon(Iconsax.add, size: 16.r, color: Colors.white),
                                 Gap(6.w),
                                 Text(
-                                  'Post job',
+                                  'POST JOB',
                                   style: GoogleFonts.barlow(
                                     fontSize: 13.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.white,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
@@ -201,21 +215,21 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                   Container(
                     height: 40.h,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: c.surface,
                       borderRadius: BorderRadius.circular(AppRadius.input.r),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: c.border),
                     ),
                     child: Row(
                       children: [
                         Gap(14.w),
-                        Icon(Iconsax.search_normal, size: 16.r, color: AppColors.text3),
+                        Icon(Iconsax.search_normal, size: 16.r, color: c.text3),
                         Gap(8.w),
                         Text(
                           'Search trades, skills, suburbs…',
                           style: GoogleFonts.barlow(
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w400,
-                            color: AppColors.text3,
+                            color: c.text3,
                           ),
                         ),
                       ],
@@ -243,7 +257,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                     ),
                   ),
                   Gap(12.h),
-                  Divider(height: 1, color: AppColors.border),
+                  Divider(height: 1, color: c.border),
                 ],
               ),
             ),
@@ -255,7 +269,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 style: GoogleFonts.barlow(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.text3,
+                  color: c.text3,
                 ),
               ),
             ),

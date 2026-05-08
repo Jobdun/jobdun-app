@@ -17,10 +17,12 @@ class StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg     = isError ? AppColors.urgentBg   : AppColors.verifiedBg;
-    final border = isError ? AppColors.urgent      : AppColors.verified;
-    final icon   = isError ? Iconsax.warning_2     : Iconsax.tick_circle;
-    final color  = isError ? AppColors.urgent      : AppColors.verified;
+    final c = context.c;
+    final bg     = isError ? c.urgentBg  : c.verifiedBg;
+    final border = isError ? c.urgent    : c.verified;
+    final icon   = isError ? Iconsax.warning_2 : Iconsax.tick_circle;
+    final color  = isError ? c.urgent    : c.verified;
+    final tx     = isError ? c.urgentTx  : c.verifiedTx;
 
     return Container(
       width: double.infinity,
@@ -38,9 +40,7 @@ class StatusBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.text1,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tx),
             ),
           ),
         ],

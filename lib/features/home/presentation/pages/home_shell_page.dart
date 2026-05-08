@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -34,24 +32,26 @@ class _BottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _tabs = [
-    (Iconsax.home_2, Iconsax.home_25, 'Home'),
-    (Iconsax.briefcase, Iconsax.briefcase5, 'Jobs'),
-    (Iconsax.document_text, Iconsax.document_text1, 'Applications'),
-    (Iconsax.message, Iconsax.message5, 'Messages'),
-    (Iconsax.user, Iconsax.user5, 'Profile'),
+    (Iconsax.home_2,        Iconsax.home_25),
+    (Iconsax.briefcase,     Iconsax.briefcase5),
+    (Iconsax.document_text, Iconsax.document_text1),
+    (Iconsax.message,       Iconsax.message5),
+    (Iconsax.user,          Iconsax.user5),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+        color: c.background,
+        border: Border(top: BorderSide(color: c.border, width: 1)),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 56.h,
+          height: 52.h,
           child: Row(
             children: List.generate(_tabs.length, (i) {
               final tab = _tabs[i];
@@ -60,26 +60,12 @@ class _BottomNav extends StatelessWidget {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => onTap(i),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isActive ? tab.$2 : tab.$1,
-                        size: 22.r,
-                        color: isActive ? AppColors.action : AppColors.text3,
-                      ),
-                      Gap(3.h),
-                      Text(
-                        tab.$3,
-                        style: GoogleFonts.barlow(
-                          fontSize: 10.sp,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: isActive ? AppColors.action : AppColors.text3,
-                        ),
-                      ),
-                    ],
+                  child: Center(
+                    child: Icon(
+                      isActive ? tab.$2 : tab.$1,
+                      size: 22.r,
+                      color: isActive ? c.action : c.text3,
+                    ),
                   ),
                 ),
               );

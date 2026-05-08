@@ -39,7 +39,6 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   void _continue() {
     if (!mounted) return;
     final authState = ref.read(authControllerProvider);
-
     if (!authState.isAuthenticated) {
       context.go('/login');
       return;
@@ -53,43 +52,61 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Spacer(),
               SvgPicture.asset(
                 'lib/core/assets/mark-jobdun.svg',
                 width: 64.r,
                 height: 64.r,
+                colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
               ),
               Gap(20.h),
-              Text(
-                'JOBDUN',
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 40.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text1,
-                  letterSpacing: 0.02 * 40,
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFFF176),
+                    Color(0xFFFFB300),
+                    Color(0xFFF97316),
+                    Color(0xFFE64A19),
+                    Color(0xFFBF360C),
+                  ],
+                  stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+                ).createShader(bounds),
+                child: Text(
+                  'JOBDUN',
+                  style: GoogleFonts.oswald(
+                    fontSize: 48.sp,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 4.0,
+                    color: Colors.white,
+                    height: 1.0,
+                  ),
                 ),
               ),
-              Gap(8.h),
+              Gap(6.h),
               Text(
                 AppConstants.appTagline,
-                style: GoogleFonts.barlow(
-                  fontSize: 15.sp,
+                style: GoogleFonts.openSans(
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.text2,
+                  color: c.text3,
+                  letterSpacing: 0.3,
                 ),
               ),
               const Spacer(),
               if (!AppEnv.isSupabaseConfigured)
                 _EnvChip(missingKeys: AppEnv.missingKeysSummary),
               Gap(16.h),
-              _LoadingBar(),
+              _LoadingBar(c: c),
               Gap(24.h),
             ],
           ),
@@ -106,25 +123,27 @@ class _EnvChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.chip.r),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Iconsax.info_circle, size: 14.r, color: AppColors.text3),
+          Icon(Iconsax.info_circle, size: 14.r, color: c.text3),
           Gap(6.w),
           Flexible(
             child: Text(
               'Missing $missingKeys. Run with --dart-define-from-file=.env.',
-              style: GoogleFonts.barlow(
+              style: GoogleFonts.openSans(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w400,
-                color: AppColors.text2,
+                color: c.text2,
               ),
             ),
           ),
@@ -135,13 +154,17 @@ class _EnvChip extends StatelessWidget {
 }
 
 class _LoadingBar extends StatelessWidget {
+  const _LoadingBar({required this.c});
+
+  final JColors c;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 3.h,
+      height: 2.h,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(999.r),
       ),
       child: TweenAnimationBuilder<double>(
@@ -153,7 +176,7 @@ class _LoadingBar extends StatelessWidget {
             widthFactor: value,
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.action,
+                color: c.action,
                 borderRadius: BorderRadius.circular(999.r),
               ),
             ),

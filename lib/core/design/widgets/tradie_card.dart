@@ -36,6 +36,7 @@ class TradieCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final isOffline = !isAvailable;
 
     return Opacity(
@@ -46,14 +47,13 @@ class TradieCard extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: c.card,
             borderRadius: BorderRadius.circular(AppRadius.card.r),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top: avatar + name/trade/jobs
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -63,7 +63,6 @@ class TradieCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Name + rating on same row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -72,8 +71,8 @@ class TradieCard extends StatelessWidget {
                                 name,
                                 style: GoogleFonts.barlow(
                                   fontSize: 16.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.text1,
+                                  fontWeight: FontWeight.w700,
+                                  color: c.text1,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -87,7 +86,7 @@ class TradieCard extends StatelessWidget {
                                   style: GoogleFonts.barlowCondensed(
                                     fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.text1,
+                                    color: c.text1,
                                     height: 1,
                                   ),
                                 ),
@@ -95,7 +94,7 @@ class TradieCard extends StatelessWidget {
                                   '/5',
                                   style: GoogleFonts.barlow(
                                     fontSize: 11.sp,
-                                    color: AppColors.text3,
+                                    color: c.text3,
                                   ),
                                 ),
                               ],
@@ -107,7 +106,7 @@ class TradieCard extends StatelessWidget {
                           '$trade · $suburb',
                           style: GoogleFonts.barlow(
                             fontSize: 13.sp,
-                            color: AppColors.text2,
+                            color: c.text2,
                           ),
                         ),
                         Gap(2.h),
@@ -115,7 +114,7 @@ class TradieCard extends StatelessWidget {
                           '$jobCount jobs completed',
                           style: GoogleFonts.barlow(
                             fontSize: 11.sp,
-                            color: AppColors.text3,
+                            color: c.text3,
                           ),
                         ),
                       ],
@@ -123,12 +122,10 @@ class TradieCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // Divider
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 12.h),
-                child: Divider(height: 1, color: AppColors.border),
+                child: Divider(height: 1, color: c.border),
               ),
-              // Footer: ● status · ✓ Verified   distance→
               Row(
                 children: [
                   Container(
@@ -136,7 +133,7 @@ class TradieCard extends StatelessWidget {
                     height: 6.r,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isOffline ? AppColors.text3 : AppColors.verified,
+                      color: isOffline ? c.text3 : c.verified,
                     ),
                   ),
                   Gap(8.w),
@@ -145,25 +142,19 @@ class TradieCard extends StatelessWidget {
                     style: GoogleFonts.barlow(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w600,
-                      color: isOffline ? AppColors.text3 : AppColors.verifiedTx,
+                      color: isOffline ? c.text3 : c.verifiedTx,
                     ),
                   ),
                   if (!isOffline && isVerified) ...[
                     Gap(8.w),
-                    Text(
-                      '·',
-                      style: GoogleFonts.barlow(
-                        fontSize: 11.sp,
-                        color: AppColors.border,
-                      ),
-                    ),
+                    Text('·', style: GoogleFonts.barlow(fontSize: 11.sp, color: c.border)),
                     Gap(8.w),
                     Text(
                       '✓ Verified',
                       style: GoogleFonts.barlow(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.verifiedTx,
+                        color: c.verifiedTx,
                       ),
                     ),
                   ],
@@ -174,7 +165,7 @@ class TradieCard extends StatelessWidget {
                       style: GoogleFonts.barlowCondensed(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.action,
+                        color: c.action,
                       ),
                     ),
                   ],

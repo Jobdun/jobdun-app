@@ -16,87 +16,164 @@ class VerifyEmailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final authState = ref.watch(authControllerProvider);
     final email = authState.pendingVerificationEmail ?? '';
 
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Gap(32.h),
+              // ── Brand mark ──────────────────────────────────────────────────
+              Gap(48.h),
               Center(
                 child: SvgPicture.asset(
                   'lib/core/assets/mark-jobdun.svg',
-                  width: 40.r,
-                  height: 40.r,
+                  width: 52.r,
+                  height: 52.r,
+                  colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
                 ),
               ),
-              const Spacer(),
-              Container(
-                width: 72.r,
-                height: 72.r,
-                decoration: BoxDecoration(
-                  color: AppColors.foundation,
-                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                ),
-                child: Icon(
-                  Iconsax.sms_notification,
-                  size: 36.r,
-                  color: Colors.white,
+              Gap(12.h),
+              Center(
+                child: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFFFF176),
+                      Color(0xFFFFB300),
+                      Color(0xFFF97316),
+                      Color(0xFFE64A19),
+                      Color(0xFFBF360C),
+                    ],
+                    stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+                  ).createShader(bounds),
+                  child: Text(
+                    'JOBDUN',
+                    style: GoogleFonts.oswald(
+                      fontSize: 44.sp,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 4.0,
+                      color: Colors.white,
+                      height: 1.0,
+                    ),
+                  ),
                 ),
               ),
-              Gap(24.h),
+
+              Gap(48.h),
+
+              // ── Email icon ────────────────────────────────────────────────
+              Center(
+                child: Container(
+                  width: 80.r,
+                  height: 80.r,
+                  decoration: BoxDecoration(
+                    color: c.surfaceRaised,
+                    borderRadius: BorderRadius.circular(AppRadius.card.r),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Icon(
+                    Iconsax.sms_notification,
+                    size: 36.r,
+                    color: c.action,
+                  ),
+                ),
+              ),
+
+              Gap(28.h),
+
+              // ── Heading ───────────────────────────────────────────────────
               Text(
-                'CHECK YOUR EMAIL',
-                style: GoogleFonts.barlowCondensed(
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.02 * 28,
-                  color: AppColors.text1,
+                'CHECK YOUR\nEMAIL.',
+                style: GoogleFonts.oswald(
+                  fontSize: 40.sp,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: c.text1,
+                  height: 1.05,
                 ),
               ),
               Gap(12.h),
               Text.rich(
                 TextSpan(
-                  style: GoogleFonts.barlow(
-                    fontSize: 15.sp,
+                  style: GoogleFonts.openSans(
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w400,
-                    color: AppColors.text2,
+                    color: c.text2,
                     height: 1.7,
                   ),
                   children: [
                     const TextSpan(text: 'We sent a verification link to '),
                     TextSpan(
                       text: email,
-                      style: GoogleFonts.barlow(
-                        fontSize: 15.sp,
+                      style: GoogleFonts.openSans(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.action,
+                        color: c.action,
                       ),
                     ),
-                    const TextSpan(
-                      text: '. Tap it to verify your account.',
+                    const TextSpan(text: '. Tap it to activate your account.'),
+                  ],
+                ),
+              ),
+
+              Gap(12.h),
+
+              // ── Tips row ──────────────────────────────────────────────────
+              Container(
+                padding: EdgeInsets.all(14.r),
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.card.r),
+                  border: Border.all(color: c.border),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Iconsax.info_circle, size: 16.r, color: c.text3),
+                    Gap(10.w),
+                    Expanded(
+                      child: Text(
+                        "Can't find it? Check your spam or junk folder.",
+                        style: GoogleFonts.openSans(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w400,
+                          color: c.text3,
+                          height: 1.5,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
+
               if (authState.infoMessage != null) ...[
                 Gap(12.h),
-                StatusBanner(message: authState.infoMessage!, isError: false),
+                StatusBanner(
+                  message: authState.infoMessage!,
+                  isError: false,
+                ),
               ],
               if (authState.errorMessage != null) ...[
                 Gap(12.h),
-                StatusBanner(message: authState.errorMessage!, isError: true),
+                StatusBanner(
+                  message: authState.errorMessage!,
+                  isError: true,
+                ),
               ],
-              const Spacer(),
+
+              Gap(32.h),
+
               AppButton(
                 label: authState.isLoading
                     ? 'Sending...'
                     : 'Resend verification email',
-                variant: AppButtonVariant.ghost,
                 isLoading: authState.isLoading,
                 onPressed: authState.isLoading
                     ? null
@@ -104,15 +181,39 @@ class VerifyEmailPage extends ConsumerWidget {
                         .read(authControllerProvider.notifier)
                         .resendVerificationEmail(),
               ),
+
               Gap(12.h),
+
+              Row(
+                children: [
+                  Expanded(child: Divider(color: c.border)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    child: Text(
+                      'OR',
+                      style: GoogleFonts.openSans(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.0,
+                        color: c.text3,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: c.border)),
+                ],
+              ),
+
+              Gap(12.h),
+
               AppButton(
                 label: 'Back to sign in',
-                variant: AppButtonVariant.text,
+                variant: AppButtonVariant.secondary,
                 onPressed: () => ref
                     .read(authControllerProvider.notifier)
                     .clearPendingVerification(),
               ),
-              Gap(16.h),
+
+              Gap(32.h),
             ],
           ),
         ),

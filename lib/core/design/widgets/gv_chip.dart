@@ -18,6 +18,8 @@ class GvChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -27,18 +29,19 @@ class GvChip extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14.w),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: active ? AppColors.foundation : AppColors.surface,
+          color: active ? c.action : c.surfaceRaised,
           borderRadius: BorderRadius.circular(AppRadius.chip.r),
           border: Border.all(
-            color: active ? AppColors.foundation : AppColors.border,
+            color: active ? c.action : c.border,
           ),
         ),
         child: Text(
-          label,
+          label.toUpperCase(),
           style: GoogleFonts.barlow(
-            fontSize: 12.sp,
+            fontSize: 11.sp,
             fontWeight: FontWeight.w600,
-            color: active ? AppColors.white : AppColors.text2,
+            letterSpacing: 0.5,
+            color: active ? Colors.white : c.text2,
           ),
         ),
       ),

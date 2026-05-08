@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
@@ -6,291 +7,165 @@ import 'app_colors.dart';
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData light() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.foundation,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: AppColors.foundation,
-      onPrimary: Colors.white,
-      primaryContainer: AppColors.actionBg,
-      onPrimaryContainer: AppColors.actionTx,
-      secondary: AppColors.action,
-      onSecondary: Colors.white,
-      secondaryContainer: AppColors.actionBg,
-      onSecondaryContainer: AppColors.actionTx,
-      tertiary: AppColors.verified,
-      onTertiary: Colors.white,
-      tertiaryContainer: AppColors.verifiedBg,
-      onTertiaryContainer: AppColors.verifiedTx,
-      error: AppColors.urgent,
-      onError: Colors.white,
-      errorContainer: AppColors.urgentBg,
-      onErrorContainer: AppColors.urgentTx,
-      surface: AppColors.card,
-      onSurface: AppColors.text1,
-      surfaceContainerHighest: AppColors.surface,
-      onSurfaceVariant: AppColors.text2,
-      outline: AppColors.border,
-      outlineVariant: AppColors.border,
-      inverseSurface: AppColors.foundation,
-      onInverseSurface: Colors.white,
+  static ThemeData light() => _build(JColors.light, Brightness.light);
+  static ThemeData dark()  => _build(JColors.dark,  Brightness.dark);
+
+  static ThemeData _build(JColors c, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+
+    final colorScheme = ColorScheme(
+      brightness: brightness,
+      primary:              c.action,
+      onPrimary:            Colors.white,
+      primaryContainer:     c.actionBg,
+      onPrimaryContainer:   c.actionTx,
+      secondary:            c.surfaceRaised,
+      onSecondary:          c.text1,
+      secondaryContainer:   c.surface,
+      onSecondaryContainer: c.text2,
+      tertiary:             c.verified,
+      onTertiary:           Colors.white,
+      tertiaryContainer:    c.verifiedBg,
+      onTertiaryContainer:  c.verifiedTx,
+      error:                c.urgent,
+      onError:              Colors.white,
+      errorContainer:       c.urgentBg,
+      onErrorContainer:     c.urgentTx,
+      surface:              c.card,
+      onSurface:            c.text1,
+      surfaceContainerHighest: c.surface,
+      onSurfaceVariant:     c.text2,
+      outline:              c.border,
+      outlineVariant:       c.border,
+      inverseSurface:       isDark ? c.text1 : c.text1,
+      onInverseSurface:     isDark ? c.background : c.background,
     );
 
-    final barlowBase = GoogleFonts.barlowTextTheme();
+    final openSansBase = GoogleFonts.openSansTextTheme(
+      ThemeData(brightness: brightness).textTheme,
+    );
 
-    final textTheme = barlowBase.copyWith(
-      displayLarge: GoogleFonts.barlowCondensed(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 57,
+    final textTheme = openSansBase.copyWith(
+      displayLarge: GoogleFonts.oswald(
+        fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.text1,
       ),
-      displayMedium: GoogleFonts.barlowCondensed(
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 45,
+      displaySmall: GoogleFonts.oswald(
+        fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: 1.0, color: c.text1,
       ),
-      displaySmall: GoogleFonts.barlowCondensed(
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 40,
+      headlineLarge: GoogleFonts.oswald(
+        fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.text1,
       ),
-      headlineLarge: GoogleFonts.barlowCondensed(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 28,
+      headlineMedium: GoogleFonts.oswald(
+        fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: c.text1,
       ),
-      headlineMedium: GoogleFonts.barlow(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
+      headlineSmall: GoogleFonts.oswald(
+        fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: 0.3, color: c.text1,
       ),
-      headlineSmall: GoogleFonts.barlow(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
+      titleLarge: GoogleFonts.oswald(
+        fontSize: 16, fontWeight: FontWeight.w600, color: c.text1,
       ),
-      titleLarge: GoogleFonts.barlow(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
+      titleMedium: GoogleFonts.openSans(
+        fontSize: 15, fontWeight: FontWeight.w600, height: 1.6, color: c.text1,
       ),
-      titleMedium: GoogleFonts.barlow(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.7,
+      bodyLarge: GoogleFonts.openSans(
+        fontSize: 15, fontWeight: FontWeight.w400, height: 1.6, color: c.text1,
       ),
-      bodyLarge: GoogleFonts.barlow(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.7,
+      bodyMedium: GoogleFonts.openSans(
+        fontSize: 13, fontWeight: FontWeight.w400, color: c.text2,
       ),
-      bodyMedium: GoogleFonts.barlow(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
+      bodySmall: GoogleFonts.openSans(
+        fontSize: 11, fontWeight: FontWeight.w500, color: c.text2,
       ),
-      bodySmall: GoogleFonts.barlow(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
+      labelLarge: GoogleFonts.oswald(
+        fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: c.text1,
       ),
-      labelLarge: GoogleFonts.barlow(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.01 * 13,
+      labelMedium: GoogleFonts.openSans(
+        fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: c.text2,
       ),
-      labelMedium: GoogleFonts.barlow(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-      ),
-      labelSmall: GoogleFonts.barlow(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.12 * 11,
+      labelSmall: GoogleFonts.openSans(
+        fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8, color: c.text3,
       ),
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
+      extensions: [c],
+      scaffoldBackgroundColor: c.background,
       textTheme: textTheme,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        foregroundColor: AppColors.text1,
+        foregroundColor: c.text1,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: c.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: c.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: c.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.foundation, width: 1.5),
+          borderSide: BorderSide(color: c.action, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
+          borderSide: BorderSide(color: c.urgent, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
+          borderSide: BorderSide(color: c.urgent, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        labelStyle: GoogleFonts.openSans(
+          fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.text3,
         ),
-        labelStyle: GoogleFonts.barlow(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: AppColors.text3,
+        floatingLabelStyle: GoogleFonts.openSans(
+          fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.action,
         ),
-        hintStyle: GoogleFonts.barlow(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: AppColors.text3,
+        hintStyle: GoogleFonts.openSans(
+          fontSize: 13, fontWeight: FontWeight.w400, color: c.text3,
         ),
-        errorStyle: GoogleFonts.barlow(
-          fontSize: 11,
-          fontWeight: FontWeight.w400,
-          color: AppColors.urgent,
+        errorStyle: GoogleFonts.openSans(
+          fontSize: 11, fontWeight: FontWeight.w500, color: c.urgentTx,
         ),
+        prefixIconColor: c.text3,
+        suffixIconColor: c.text3,
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColors.card,
+        color: c.card,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          side: const BorderSide(color: AppColors.border),
+          borderRadius: const BorderRadius.all(Radius.circular(AppRadius.card)),
+          side: BorderSide(color: c.border),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.border,
-        thickness: 1,
-        space: 1,
+      dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
+      iconTheme: IconThemeData(color: c.text3),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: c.background,
       ),
-      iconTheme: const IconThemeData(color: AppColors.text2),
-    );
-  }
-
-  static ThemeData dark() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.action,
-      brightness: Brightness.dark,
-    ).copyWith(
-      primary: AppDarkColors.btnPri,
-      onPrimary: AppColors.white,
-      secondary: AppColors.action,
-      onSecondary: AppColors.white,
-      tertiary: AppColors.verified,
-      onTertiary: AppColors.white,
-      tertiaryContainer: AppColors.verifiedBg,
-      onTertiaryContainer: AppColors.verifiedTx,
-      error: AppColors.urgent,
-      onError: AppColors.white,
-      errorContainer: AppColors.urgentBg,
-      onErrorContainer: AppColors.urgentTx,
-      surface: AppDarkColors.card,
-      onSurface: AppDarkColors.text1,
-      surfaceContainerHighest: AppDarkColors.surface,
-      onSurfaceVariant: AppDarkColors.text2,
-      outline: AppDarkColors.border,
-      outlineVariant: AppDarkColors.border,
-    );
-
-    final barlowBase = GoogleFonts.barlowTextTheme(
-      ThemeData(brightness: Brightness.dark).textTheme,
-    );
-
-    final textTheme = barlowBase.copyWith(
-      displaySmall: GoogleFonts.barlowCondensed(
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 40,
-        color: AppDarkColors.text1,
-      ),
-      headlineLarge: GoogleFonts.barlowCondensed(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.02 * 28,
-        color: AppDarkColors.text1,
-      ),
-      bodyLarge: GoogleFonts.barlow(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.7,
-        color: AppDarkColors.text1,
-      ),
-      bodyMedium: GoogleFonts.barlow(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: AppDarkColors.text2,
-      ),
-    );
-
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppDarkColors.background,
-      textTheme: textTheme,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        foregroundColor: AppDarkColors.text1,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppDarkColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppDarkColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.action, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: const BorderSide(color: AppColors.urgent, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        labelStyle: GoogleFonts.barlow(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: AppDarkColors.text3,
-        ),
-        hintStyle: GoogleFonts.barlow(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          color: AppDarkColors.text3,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: AppDarkColors.card,
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return c.action;
+          return c.surface;
+        }),
+        side: BorderSide(color: c.border, width: 1.5),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          side: const BorderSide(color: AppDarkColors.border),
+          borderRadius: BorderRadius.circular(3),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppDarkColors.border,
-        thickness: 1,
-        space: 1,
-      ),
-      iconTheme: const IconThemeData(color: AppDarkColors.text2),
     );
   }
 }

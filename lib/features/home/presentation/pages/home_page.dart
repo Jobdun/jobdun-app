@@ -20,6 +20,7 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final authState = ref.watch(authControllerProvider);
     final role = authState.role;
     final isBuilder = role == UserRole.builder;
@@ -27,7 +28,7 @@ class HomePage extends ConsumerWidget {
     final firstName = _firstName(email);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -52,7 +53,7 @@ class HomePage extends ConsumerWidget {
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.12 * 11,
-                    color: AppColors.text3,
+                    color: c.text3,
                   ),
                 ),
               ),
@@ -116,8 +117,7 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-// ── Header — Galvanised canonical pattern ─────────────────────────────────────
-// Eyebrow → Display (40sp Condensed 700) → Location (action orange) → NotifBtn
+// ── Header — Eyebrow → Display (40sp Condensed 700) → Location (action orange) → NotifBtn
 
 class _Header extends StatelessWidget {
   const _Header({
@@ -132,12 +132,13 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final roleLabel = role != null
         ? '${role!.label.toUpperCase()} · ${firstName.toUpperCase()}'
         : 'JOBDUN';
 
     return Container(
-      color: AppColors.card,
+      color: c.card,
       padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,37 +147,42 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Eyebrow: "BUILDER · MARCUS"
                 Text(
                   roleLabel,
                   style: GoogleFonts.barlow(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.12 * 11,
-                    color: AppColors.text3,
+                    color: c.text3,
                   ),
                 ),
                 Gap(4.h),
-                // Display heading — 40sp Barlow Condensed 700
-                Text(
-                  isBuilder ? 'FIND A TRADIE' : 'JOBS NEARBY',
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 40.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.02 * 40,
-                    color: AppColors.text1,
-                    height: 1.0,
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFFFB300),
+                      Color(0xFFF97316),
+                      Color(0xFFE64A19),
+                    ],
+                  ).createShader(bounds),
+                  child: Text(
+                    isBuilder ? 'FIND A TRADIE' : 'JOBS NEARBY',
+                    style: GoogleFonts.barlowCondensed(
+                      fontSize: 40.sp,
+                      fontWeight: FontWeight.w800,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 0.02 * 40,
+                      color: Colors.white,
+                      height: 1.0,
+                    ),
                   ),
                 ),
                 Gap(4.h),
-                // Location row — always action orange
                 Row(
                   children: [
-                    Icon(
-                      Iconsax.location,
-                      size: 12.r,
-                      color: AppColors.action,
-                    ),
+                    Icon(Iconsax.location, size: 12.r, color: c.action),
                     Gap(4.w),
                     Text(
                       isBuilder ? _kBuilderLocation : _kTradeLocation,
@@ -184,7 +190,7 @@ class _Header extends StatelessWidget {
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.02 * 11,
-                        color: AppColors.action,
+                        color: c.action,
                       ),
                     ),
                   ],
@@ -193,18 +199,17 @@ class _Header extends StatelessWidget {
             ),
           ),
           Gap(12.w),
-          // Notification icon button — 34×34, surface bg, border
           GestureDetector(
             onTap: () => context.go('/notifications'),
             child: Container(
               width: 34.r,
               height: 34.r,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: c.surface,
                 borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: c.border),
               ),
-              child: Icon(Iconsax.notification, size: 18.r, color: AppColors.text2),
+              child: Icon(Iconsax.notification, size: 18.r, color: c.text2),
             ),
           ),
         ],
@@ -250,12 +255,14 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: c.card,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +272,7 @@ class _StatCard extends StatelessWidget {
             style: GoogleFonts.barlowCondensed(
               fontSize: 28.sp,
               fontWeight: FontWeight.w700,
-              color: AppColors.text1,
+              color: c.text1,
               height: 1.0,
             ),
           ),
@@ -275,7 +282,7 @@ class _StatCard extends StatelessWidget {
             style: GoogleFonts.barlow(
               fontSize: 11.sp,
               fontWeight: FontWeight.w400,
-              color: AppColors.text3,
+              color: c.text3,
             ),
           ),
         ],
@@ -293,6 +300,8 @@ class _PrimaryActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: GestureDetector(
@@ -300,7 +309,7 @@ class _PrimaryActionCard extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(20.r),
           decoration: BoxDecoration(
-            color: AppColors.foundation,
+            color: c.surfaceRaised,
             borderRadius: BorderRadius.circular(AppRadius.card.r),
           ),
           child: Row(
@@ -309,13 +318,13 @@ class _PrimaryActionCard extends StatelessWidget {
                 width: 44.r,
                 height: 44.r,
                 decoration: BoxDecoration(
-                  color: AppColors.action,
+                  color: c.action,
                   borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
                   isBuilder ? Iconsax.add_square : Iconsax.search_normal,
                   size: 22.r,
-                  color: AppColors.white,
+                  color: Colors.white,
                 ),
               ),
               Gap(16.w),
@@ -328,7 +337,7 @@ class _PrimaryActionCard extends StatelessWidget {
                       style: GoogleFonts.barlow(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.white,
+                        color: c.text1,
                       ),
                     ),
                     Gap(2.h),
@@ -339,7 +348,7 @@ class _PrimaryActionCard extends StatelessWidget {
                       style: GoogleFonts.barlow(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
-                        color: AppColors.text3,
+                        color: c.text3,
                       ),
                     ),
                   ],
@@ -348,7 +357,7 @@ class _PrimaryActionCard extends StatelessWidget {
               Icon(
                 Iconsax.arrow_right_3,
                 size: 20.r,
-                color: AppColors.text3,
+                color: c.text3,
               ),
             ],
           ),

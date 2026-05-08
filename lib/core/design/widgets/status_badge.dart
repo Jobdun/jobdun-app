@@ -15,7 +15,8 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = _spec(variant);
+    final c = context.c;
+    final s = _spec(c, variant);
 
     return Container(
       height: 28.h,
@@ -40,7 +41,7 @@ class StatusBadge extends StatelessWidget {
             style: GoogleFonts.barlow(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.02 * 11,
+              letterSpacing: 0.5,
               color: s.textColor,
             ),
           ),
@@ -49,35 +50,25 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
-  _BadgeSpec _spec(BadgeVariant v) => switch (v) {
-    BadgeVariant.verified => const _BadgeSpec(
-      bg: AppColors.verifiedBg,
-      textColor: AppColors.verifiedTx,
-      dotColor: AppColors.verified,
+  _BadgeSpec _spec(JColors c, BadgeVariant v) => switch (v) {
+    BadgeVariant.verified => _BadgeSpec(
+      bg: c.verifiedBg, textColor: c.verifiedTx, dotColor: c.verified,
       defaultLabel: 'Licenced & Verified',
     ),
-    BadgeVariant.available => const _BadgeSpec(
-      bg: AppColors.availableBg,
-      textColor: AppColors.availableTx,
-      dotColor: AppColors.available,
+    BadgeVariant.available => _BadgeSpec(
+      bg: c.availableBg, textColor: c.availableTx, dotColor: c.available,
       defaultLabel: 'Available now',
     ),
-    BadgeVariant.urgent => const _BadgeSpec(
-      bg: AppColors.urgentBg,
-      textColor: AppColors.urgentTx,
-      dotColor: AppColors.urgent,
+    BadgeVariant.urgent => _BadgeSpec(
+      bg: c.urgentBg, textColor: c.urgentTx, dotColor: c.urgent,
       defaultLabel: 'Urgent',
     ),
-    BadgeVariant.pending => const _BadgeSpec(
-      bg: AppColors.actionBg,
-      textColor: AppColors.actionTx,
-      dotColor: AppColors.action,
+    BadgeVariant.pending => _BadgeSpec(
+      bg: c.actionBg, textColor: c.actionTx, dotColor: c.action,
       defaultLabel: 'Pending',
     ),
-    BadgeVariant.pro => const _BadgeSpec(
-      bg: AppColors.foundation,
-      textColor: AppColors.white,
-      dotColor: null,
+    BadgeVariant.pro => _BadgeSpec(
+      bg: c.surfaceRaised, textColor: c.text1, dotColor: null,
       defaultLabel: 'Tradie Pro',
     ),
   };

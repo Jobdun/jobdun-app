@@ -13,51 +13,37 @@ class SocialAuthButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final isLoading = ref.watch(
       authControllerProvider.select((s) => s.isLoading),
     );
 
     return Column(
       children: [
-        const _OrDivider(),
-        Gap(16.h),
+        Text(
+          'OR CONTINUE WITH',
+          style: GoogleFonts.barlow(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.12 * 10,
+            color: c.text3,
+          ),
+        ),
+        Gap(10.h),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _SocialButton(
-              loading: isLoading,
-              onPressed: isLoading
-                  ? null
-                  : () => ref
-                      .read(authControllerProvider.notifier)
-                      .signInWithGoogle(),
-              child: SvgPicture.asset(
-                'lib/core/assets/icon-google.svg',
-                width: 20.r,
-                height: 20.r,
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFF4285F4),
-                  BlendMode.srcIn,
-                ),
-              ),
+            _SocialChip(
+              icon: 'lib/core/assets/icon-google.svg',
+              label: 'Google',
+              isLoading: isLoading,
+              onTap: () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
             ),
-            Gap(12.w),
-            _SocialButton(
-              loading: isLoading,
-              onPressed: isLoading
-                  ? null
-                  : () => ref
-                      .read(authControllerProvider.notifier)
-                      .signInWithApple(),
-              child: SvgPicture.asset(
-                'lib/core/assets/icon-apple.svg',
-                width: 20.r,
-                height: 20.r,
-                colorFilter: const ColorFilter.mode(
-                  Colors.black87,
-                  BlendMode.srcIn,
-                ),
-              ),
+            Gap(10.w),
+            _SocialChip(
+              icon: 'lib/core/assets/icon-apple.svg',
+              label: 'Apple',
+              isLoading: isLoading,
+              onTap: () => ref.read(authControllerProvider.notifier).signInWithApple(),
             ),
           ],
         ),
@@ -66,68 +52,54 @@ class SocialAuthButtons extends ConsumerWidget {
   }
 }
 
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.loading,
-    required this.onPressed,
-    required this.child,
+class _SocialChip extends StatelessWidget {
+  const _SocialChip({
+    required this.icon,
+    required this.label,
+    required this.isLoading,
+    required this.onTap,
   });
 
-  final bool loading;
-  final VoidCallback? onPressed;
-  final Widget child;
+  final String icon;
+  final String label;
+  final bool isLoading;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48.r,
-      height: 48.r,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.card,
-          side: const BorderSide(color: AppColors.border),
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.btn.r),
-          ),
-        ),
-        child: loading
-            ? SizedBox(
-                width: 18.r,
-                height: 18.r,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.action,
+    final c = context.c;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: isLoading ? null : onTap,
+        child: AnimatedOpacity(
+          opacity: isLoading ? 0.4 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          child: Container(
+            height: 40.h,
+            decoration: BoxDecoration(
+              color: c.surfaceRaised,
+              borderRadius: BorderRadius.circular(AppRadius.btn.r),
+              border: Border.all(color: c.border),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(icon, width: 16.r, height: 16.r),
+                Gap(8.w),
+                Text(
+                  label,
+                  style: GoogleFonts.barlow(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: c.text1,
+                  ),
                 ),
-              )
-            : child,
-      ),
-    );
-  }
-}
-
-class _OrDivider extends StatelessWidget {
-  const _OrDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12.w),
-          child: Text(
-            'or continue with',
-            style: GoogleFonts.barlow(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w400,
-              color: AppColors.text3,
+              ],
             ),
           ),
         ),
-        const Expanded(child: Divider()),
-      ],
+      ),
     );
   }
 }

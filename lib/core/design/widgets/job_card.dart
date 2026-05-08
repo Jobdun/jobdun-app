@@ -16,6 +16,7 @@ class JobCard extends StatelessWidget {
     required this.distanceKm,
     required this.isUrgent,
     this.onTap,
+    this.onApply,
   });
 
   final String title;
@@ -25,71 +26,108 @@ class JobCard extends StatelessWidget {
   final double distanceKm;
   final bool isUrgent;
   final VoidCallback? onTap;
+  final VoidCallback? onApply;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: c.card,
           borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.border),
         ),
         clipBehavior: Clip.hardEdge,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 3px urgency bar — full-width, flush at top
-            if (isUrgent) Container(height: 3.h, color: AppColors.urgent),
+            if (isUrgent) Container(height: 3.h, color: c.urgent),
             Padding(
               padding: EdgeInsets.all(16.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isUrgent) ...[
-                    const StatusBadge(variant: BadgeVariant.urgent),
-                    Gap(8.h),
-                  ],
-                  // Title — Barlow Condensed 700 20sp
-                  Text(
-                    title,
-                    style: GoogleFonts.barlowCondensed(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.02 * 20,
-                      color: AppColors.text1,
-                      height: 1.1,
-                    ),
-                  ),
-                  Gap(6.h),
-                  // Description — 2-line clamp
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.barlow(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.text2,
-                      height: 1.5,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (isUrgent) ...[
+                              const StatusBadge(variant: BadgeVariant.urgent),
+                              Gap(8.h),
+                            ],
+                            Text(
+                              title,
+                              style: GoogleFonts.barlowCondensed(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                                color: c.text1,
+                                height: 1.1,
+                              ),
+                            ),
+                            Gap(4.h),
+                            Text(
+                              description,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.barlow(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w400,
+                                color: c.text2,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (onApply != null) ...[
+                        Gap(12.w),
+                        GestureDetector(
+                          onTap: onApply,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 8.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.action,
+                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                            ),
+                            child: Text(
+                              'APPLY NOW',
+                              style: GoogleFonts.barlow(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   Gap(12.h),
-                  Divider(height: 1, color: AppColors.border),
+                  Container(height: 1, color: c.border),
                   Gap(12.h),
-                  // Meta row: Rate | Start | Distance (action colour, pushed right)
                   Row(
                     children: [
-                      _MetaCol(label: 'Rate', value: rate),
+                      _MetaCol(label: 'RATE',     value: rate,     c: c),
                       Gap(16.w),
-                      _MetaCol(label: 'Start', value: startDate),
+                      _MetaCol(label: 'START',    value: startDate, c: c),
                       const Spacer(),
                       _MetaCol(
-                        label: 'Distance',
+                        label: 'DISTANCE',
                         value: '${distanceKm.toStringAsFixed(1)} km',
-                        valueColor: AppColors.action,
+                        c: c,
+                        valueColor: c.action,
                         align: CrossAxisAlignment.end,
                       ),
                     ],
@@ -108,12 +146,14 @@ class _MetaCol extends StatelessWidget {
   const _MetaCol({
     required this.label,
     required this.value,
+    required this.c,
     this.valueColor,
     this.align = CrossAxisAlignment.start,
   });
 
   final String label;
   final String value;
+  final JColors c;
   final Color? valueColor;
   final CrossAxisAlignment align;
 
@@ -125,9 +165,10 @@ class _MetaCol extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.barlow(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.text3,
+            fontSize: 9.sp,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
+            color: c.text3,
           ),
         ),
         Gap(2.h),
@@ -136,7 +177,7 @@ class _MetaCol extends StatelessWidget {
           style: GoogleFonts.barlowCondensed(
             fontSize: 15.sp,
             fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.text1,
+            color: valueColor ?? c.text1,
           ),
         ),
       ],

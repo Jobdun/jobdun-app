@@ -18,13 +18,14 @@ class AvatarBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final fs = size >= 64 ? 22.0 : size >= 50 ? 16.0 : 14.0;
 
     return Container(
       width: size.r,
       height: size.r,
       decoration: BoxDecoration(
-        color: bg ?? AppColors.foundation,
+        color: bg ?? c.surfaceRaised,
         borderRadius: BorderRadius.circular(AppRadius.avatar.r),
       ),
       child: Center(
@@ -34,7 +35,7 @@ class AvatarBlock extends StatelessWidget {
             fontSize: fs.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.04 * fs,
-            color: AppColors.white,
+            color: c.text1,
           ),
         ),
       ),

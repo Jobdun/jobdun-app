@@ -25,6 +25,7 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _obscurePassword = true;
+  bool _rememberMe = false;
   bool _ready = false;
 
   @override
@@ -35,7 +36,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
   }
 
-  void _continue() {
+  void _submit() {
     if (!(_formKey.currentState?.saveAndValidate() ?? false)) return;
     final values = _formKey.currentState!.value;
     ref.read(authControllerProvider.notifier).signIn(
@@ -46,112 +47,190 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
         child: AnimatedOpacity(
           opacity: _ready ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 100),
+          duration: const Duration(milliseconds: 150),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ── Hero ─────────────────────────────────────────────────────
                 Gap(48.h),
                 Center(
                   child: SvgPicture.asset(
                     'lib/core/assets/mark-jobdun.svg',
-                    width: 48.r,
-                    height: 48.r,
+                    width: 64.r,
+                    height: 64.r,
+                    colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
                   ),
                 ),
-                Gap(32.h),
-                Text(
-                  'WELCOME BACK',
-                  style: GoogleFonts.barlow(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.12 * 11,
-                    color: AppColors.text3,
+                Gap(16.h),
+                Center(
+                  child: ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFFF176),
+                        Color(0xFFFFB300),
+                        Color(0xFFF97316),
+                        Color(0xFFE64A19),
+                        Color(0xFFBF360C),
+                      ],
+                      stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+                    ).createShader(bounds),
+                    child: Text(
+                      'JOBDUN',
+                      style: GoogleFonts.oswald(
+                        fontSize: 60.sp,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 4.0,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
                   ),
                 ),
-                Gap(8.h),
-                Text(
-                  'Sign in.',
-                  style: GoogleFonts.barlowCondensed(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.02 * 28,
-                    color: AppColors.text1,
+                Gap(6.h),
+                Center(
+                  child: Text(
+                    'Sign in to your account',
+                    style: GoogleFonts.openSans(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w400,
+                      color: c.text2,
+                    ),
                   ),
                 ),
-                Gap(32.h),
+
+                Gap(40.h),
+
+                // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _FieldLabel(label: 'EMAIL', c: c),
+                      Gap(6.h),
                       FormBuilderTextField(
                         name: 'email',
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
+                        style: TextStyle(
+                          color: c.text1,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
-                          labelText: 'Email address',
-                          prefixIcon: Icon(Iconsax.sms, size: 20.r),
+                          hintText: 'Enter your email',
+                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
+                          prefixIcon: Icon(Iconsax.sms, size: 18.r),
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 16.h, horizontal: 16.w,
+                          ),
                         ),
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(),
                           FormBuilderValidators.email(),
                         ]),
                       ),
-                      Gap(12.h),
+                      Gap(18.h),
+                      _FieldLabel(label: 'PASSWORD', c: c),
+                      Gap(6.h),
                       FormBuilderTextField(
                         name: 'password',
                         obscureText: _obscurePassword,
                         textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _continue(),
+                        onSubmitted: (_) => _submit(),
+                        style: TextStyle(
+                          color: c.text1,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
                         decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Iconsax.lock, size: 20.r),
+                          hintText: 'Enter your password',
+                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
+                          prefixIcon: Icon(Iconsax.lock, size: 18.r),
+                          contentPadding: EdgeInsets.symmetric(
+                            vertical: 16.h, horizontal: 16.w,
+                          ),
                           suffixIcon: GestureDetector(
                             onTap: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                             child: Icon(
-                              _obscurePassword
-                                  ? Iconsax.eye_slash
-                                  : Iconsax.eye,
-                              size: 20.r,
+                              _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
+                              size: 18.r,
                             ),
                           ),
                         ),
                         validator: FormBuilderValidators.required(),
                       ),
-                      Gap(8.h),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => context.go('/forgot-password'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.text2,
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size(0, 36.h),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Forgot password',
-                            style: GoogleFonts.barlow(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.text2,
+                      Gap(10.h),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () =>
+                                setState(() => _rememberMe = !_rememberMe),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 18.r,
+                                  height: 18.r,
+                                  child: Checkbox(
+                                    value: _rememberMe,
+                                    onChanged: (v) => setState(
+                                      () => _rememberMe = v ?? false,
+                                    ),
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ),
+                                Gap(6.w),
+                                Text(
+                                  'REMEMBER ME',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                    color: c.text3,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => context.go('/forgot-password'),
+                            child: Text(
+                              'FORGOT PASSWORD',
+                              style: GoogleFonts.openSans(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                                color: c.action,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
+
                 Gap(8.h),
+
+                // ── Status banners ────────────────────────────────────────────
                 if (authState.errorMessage != null) ...[
                   StatusBanner(message: authState.errorMessage!, isError: true),
                   Gap(8.h),
@@ -160,45 +239,76 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   StatusBanner(message: authState.infoMessage!, isError: false),
                   Gap(8.h),
                 ],
-                Gap(12.h),
+
+                Gap(24.h),
+
+                // ── Primary CTA ───────────────────────────────────────────────
                 AppButton(
-                  label: authState.isLoading ? 'Signing in...' : 'Sign in',
+                  label: authState.isLoading ? 'Logging in...' : 'Log in',
                   isLoading: authState.isLoading,
-                  onPressed: authState.isLoading ? null : _continue,
+                  onPressed: authState.isLoading ? null : _submit,
                 ),
-                Gap(24.h),
-                const SocialAuthButtons(),
-                Gap(24.h),
+
+                Gap(12.h),
+
+                // ── OR divider ────────────────────────────────────────────────
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'No account?',
-                      style: GoogleFonts.barlow(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.text2,
-                      ),
-                    ),
-                    Gap(4.w),
-                    GestureDetector(
-                      onTap: () => context.go('/register'),
+                    Expanded(child: Divider(color: c.border)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w),
                       child: Text(
-                        'Create one.',
-                        style: GoogleFonts.barlow(
-                          fontSize: 13.sp,
+                        'OR',
+                        style: GoogleFonts.openSans(
+                          fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.action,
+                          letterSpacing: 1.0,
+                          color: c.text3,
                         ),
                       ),
                     ),
+                    Expanded(child: Divider(color: c.border)),
                   ],
                 ),
-                Gap(16.h),
+
+                Gap(12.h),
+
+                AppButton(
+                  label: 'Sign Up',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => context.go('/register'),
+                ),
+
+                Gap(24.h),
+
+                // ── Social SSO ────────────────────────────────────────────────
+                const SocialAuthButtons(),
+
+                Gap(32.h),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label, required this.c});
+
+  final String label;
+  final JColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.openSans(
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.12 * 11,
+        color: c.text2,
       ),
     );
   }
