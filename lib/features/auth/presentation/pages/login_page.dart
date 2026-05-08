@@ -90,7 +90,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       'JOBDUN',
                       style: GoogleFonts.oswald(
                         fontSize: 60.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 4.0,
                         color: Colors.white,
                         height: 1.0,

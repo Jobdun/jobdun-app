@@ -181,7 +181,7 @@ class _WelcomePage extends StatelessWidget {
               'JOBDUN',
               style: GoogleFonts.oswald(
                 fontSize: 52.sp,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 4.0,
                 color: Colors.white,
                 height: 1.0,
@@ -204,7 +204,7 @@ class _WelcomePage extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.oswald(
                 fontSize: 44.sp,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
                 color: Colors.white,
                 height: 1.0,
@@ -260,7 +260,7 @@ class _RolePage extends StatelessWidget {
             'What describes you best?',
             style: GoogleFonts.oswald(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: c.text1,
             ),
@@ -430,7 +430,7 @@ class _ProfileSetupPage extends StatelessWidget {
                 : 'Tell us about your skills.',
             style: GoogleFonts.oswald(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: c.text1,
             ),
@@ -693,7 +693,7 @@ class _AllSetPage extends StatelessWidget {
               'JOBDUN',
               style: GoogleFonts.oswald(
                 fontSize: 52.sp,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 4.0,
                 color: Colors.white,
                 height: 1.0,
@@ -716,7 +716,7 @@ class _AllSetPage extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.oswald(
                 fontSize: 44.sp,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
                 color: Colors.white,
                 height: 1.0,

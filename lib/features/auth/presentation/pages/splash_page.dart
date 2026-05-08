@@ -12,7 +12,6 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/config/env.dart';
-import '../providers/auth_provider.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -38,15 +37,6 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   void _continue() {
     if (!mounted) return;
-    final authState = ref.read(authControllerProvider);
-    if (!authState.isAuthenticated) {
-      context.go('/login');
-      return;
-    }
-    if (!authState.onboardingComplete) {
-      context.go('/onboarding');
-      return;
-    }
     context.go('/home');
   }
 
@@ -85,7 +75,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                   'JOBDUN',
                   style: GoogleFonts.oswald(
                     fontSize: 48.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 4.0,
                     color: Colors.white,
                     height: 1.0,

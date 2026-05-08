@@ -34,7 +34,7 @@ class AuthController extends Notifier<AuthState> {
         state = const AuthState();
         return;
       }
-
+      // Only update auth flag — role / onboarding status loaded separately.
       state = state.copyWith(
         isAuthenticated: true,
         email: session.user.email,
@@ -51,6 +51,10 @@ class AuthController extends Notifier<AuthState> {
       return const AuthState();
     }
 
+    // Session exists → user completed onboarding at some point.
+    // Load role from DB in the background so home screen personalises correctly.
+    Future.microtask(_loadProfileForCurrentUser);
+
     return AuthState(
       isAuthenticated: true,
       onboardingComplete: true,
@@ -58,14 +62,68 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
+  // ── Profile helper ─────────────────────────────────────────────────────────
+
+  Future<void> _loadProfileForCurrentUser() async {
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final data = await SupabaseConfig.client
+          .from('profiles')
+          .select('role, is_onboarding_complete')
+          .eq('id', userId)
+          .maybeSingle();
+      if (data == null) return;
+
+      final roleStr = data['role'] as String?;
+      final onboardingDone = data['is_onboarding_complete'] as bool? ?? true;
+      UserRole? role;
+      if (roleStr != null) {
+        role = UserRole.values.firstWhere(
+          (r) => r.name == roleStr,
+          orElse: () => UserRole.trade,
+        );
+      }
+      state = state.copyWith(role: role, onboardingComplete: onboardingDone);
+    } catch (_) {
+      // Best-effort — don't disrupt the session if profile fetch fails.
+    }
+  }
+
+  // Returns true if the authenticated user has completed onboarding in the DB.
+  Future<bool> _fetchOnboardingStatus(String? userId) async {
+    if (userId == null || !SupabaseConfig.isInitialized) return false;
+    try {
+      final data = await SupabaseConfig.client
+          .from('profiles')
+          .select('is_onboarding_complete, role')
+          .eq('id', userId)
+          .maybeSingle();
+      if (data == null) return false;
+
+      final roleStr = data['role'] as String?;
+      if (roleStr != null) {
+        final role = UserRole.values.firstWhere(
+          (r) => r.name == roleStr,
+          orElse: () => UserRole.trade,
+        );
+        state = state.copyWith(role: role);
+      }
+      return data['is_onboarding_complete'] as bool? ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Auth methods ───────────────────────────────────────────────────────────
+
   Future<bool> signIn({
     required String email,
     required String password,
   }) async {
     if (!SupabaseConfig.isInitialized) {
       state = state.copyWith(
-        errorMessage:
-            'Supabase is not configured. Fill .env and run with '
+        errorMessage: 'Supabase is not configured. Fill .env and run with '
             '--dart-define-from-file=.env.',
         isLoading: false,
         infoMessage: null,
@@ -85,12 +143,14 @@ class AuthController extends Notifier<AuthState> {
         password: password,
       );
 
+      final onboardingDone =
+          await _fetchOnboardingStatus(response.user?.id);
+
       state = state.copyWith(
         isAuthenticated: response.user != null || response.session != null,
-        onboardingComplete: false,
+        onboardingComplete: onboardingDone,
         email: response.user?.email ?? email.trim(),
         isLoading: false,
-        clearRole: true,
       );
       return state.isAuthenticated;
     } on supabase.AuthException catch (error) {
@@ -117,8 +177,7 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     if (!SupabaseConfig.isInitialized) {
       state = state.copyWith(
-        errorMessage:
-            'Supabase is not configured. Fill .env and run with '
+        errorMessage: 'Supabase is not configured. Fill .env and run with '
             '--dart-define-from-file=.env.',
         isLoading: false,
         infoMessage: null,
@@ -136,11 +195,12 @@ class AuthController extends Notifier<AuthState> {
       final response = await SupabaseConfig.client.auth.signUp(
         email: email.trim(),
         password: password,
-        data: {'display_name': fullName.trim()},
+        // Use 'full_name' — matches the DB trigger and UserModel.fromJson key.
+        data: {'full_name': fullName.trim()},
       );
 
       if (response.session == null) {
-        // Email confirmation required — route to verify-email screen.
+        // Email confirmation required → show verify-email screen.
         state = state.copyWith(
           isLoading: false,
           errorMessage: null,
@@ -150,7 +210,7 @@ class AuthController extends Notifier<AuthState> {
         return false;
       }
 
-      // Email confirmation disabled — signed in immediately.
+      // Email confirmation disabled → signed in immediately, send to onboarding.
       state = state.copyWith(
         isAuthenticated: true,
         onboardingComplete: false,
@@ -182,7 +242,11 @@ class AuthController extends Notifier<AuthState> {
     final email = state.pendingVerificationEmail;
     if (email == null || !SupabaseConfig.isInitialized) return;
 
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
     try {
       await SupabaseConfig.client.auth.resend(
         type: supabase.OtpType.signup,
@@ -203,15 +267,12 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(clearPendingVerification: true);
   }
 
-  // Tracks whether GoogleSignIn.instance.initialize() has been called this
-  // app lifecycle. Static so it survives Riverpod provider rebuilds.
   static bool _googleInitialized = false;
 
   Future<void> signInWithGoogle() async {
     if (!AppEnv.isGoogleConfigured) {
       state = state.copyWith(
-        errorMessage:
-            'Google Sign-In is not configured yet. '
+        errorMessage: 'Google Sign-In is not configured yet. '
             'Add GOOGLE_WEB_CLIENT_ID to your .env file.',
         isLoading: false,
         infoMessage: null,
@@ -228,12 +289,18 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     try {
       if (!_googleInitialized) {
         await GoogleSignIn.instance.initialize(
-          clientId: AppEnv.googleIosClientId.isEmpty ? null : AppEnv.googleIosClientId,
+          clientId: AppEnv.googleIosClientId.isEmpty
+              ? null
+              : AppEnv.googleIosClientId,
           serverClientId: AppEnv.googleWebClientId,
         );
         _googleInitialized = true;
@@ -241,31 +308,41 @@ class AuthController extends Notifier<AuthState> {
 
       final account = await GoogleSignIn.instance.authenticate();
       final idToken = account.authentication.idToken;
-      if (idToken == null) throw Exception('Google sign-in failed: no ID token received.');
+      if (idToken == null) {
+        throw Exception('Google sign-in failed: no ID token received.');
+      }
 
       final response = await SupabaseConfig.client.auth.signInWithIdToken(
         provider: supabase.OAuthProvider.google,
         idToken: idToken,
       );
 
+      final onboardingDone =
+          await _fetchOnboardingStatus(response.user?.id);
+
       state = state.copyWith(
         isAuthenticated: response.user != null,
-        onboardingComplete: false,
+        onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
-        clearRole: true,
+        clearRole: !onboardingDone,
       );
     } on GoogleSignInException catch (e) {
-      // User cancelled — clear loading silently.
       if (e.code == GoogleSignInExceptionCode.canceled) {
         state = state.copyWith(isLoading: false);
         return;
       }
-      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        infoMessage: null,
+      );
     } on supabase.AuthException catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+      state =
+          state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+      state =
+          state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
     }
   }
 
@@ -279,7 +356,11 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
 
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     try {
       final rawNonce = _generateNonce();
@@ -294,7 +375,9 @@ class AuthController extends Notifier<AuthState> {
       );
 
       final idToken = credential.identityToken;
-      if (idToken == null) throw Exception('Apple sign-in failed: no identity token received.');
+      if (idToken == null) {
+        throw Exception('Apple sign-in failed: no identity token received.');
+      }
 
       final response = await SupabaseConfig.client.auth.signInWithIdToken(
         provider: supabase.OAuthProvider.apple,
@@ -302,17 +385,22 @@ class AuthController extends Notifier<AuthState> {
         nonce: rawNonce,
       );
 
+      final onboardingDone =
+          await _fetchOnboardingStatus(response.user?.id);
+
       state = state.copyWith(
         isAuthenticated: response.user != null,
-        onboardingComplete: false,
+        onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
-        clearRole: true,
+        clearRole: !onboardingDone,
       );
     } on supabase.AuthException catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+      state =
+          state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+      state =
+          state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
     }
   }
 
@@ -342,9 +430,11 @@ class AuthController extends Notifier<AuthState> {
       if (SupabaseConfig.isInitialized) {
         final userId = SupabaseConfig.client.auth.currentUser?.id;
         if (userId != null) {
+          // Always write role + completion flag so re-login knows onboarding is done.
           final profileUpdate = <String, dynamic>{
             'id': userId,
             'role': role.name,
+            'is_onboarding_complete': true,
           };
           if (location != null) profileUpdate['location'] = location;
           await SupabaseConfig.client.from('profiles').upsert(profileUpdate);
@@ -361,7 +451,9 @@ class AuthController extends Notifier<AuthState> {
           } else if (role == UserRole.trade) {
             final tradeData = <String, dynamic>{'profile_id': userId};
             if (tradeCategory != null) tradeData['trade_category'] = tradeCategory;
-            if (yearsExperience != null) tradeData['years_experience'] = yearsExperience;
+            if (yearsExperience != null) {
+              tradeData['years_experience'] = yearsExperience;
+            }
             if (tradeData.length > 1) {
               await SupabaseConfig.client
                   .from('trade_profiles')
@@ -371,7 +463,7 @@ class AuthController extends Notifier<AuthState> {
         }
       }
     } catch (_) {
-      // Best-effort — don't block the user from progressing
+      // Best-effort — don't block the user from progressing.
     }
 
     state = state.copyWith(
@@ -465,4 +557,3 @@ class AuthState {
     );
   }
 }
-

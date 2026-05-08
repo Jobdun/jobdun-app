@@ -91,7 +91,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                       'JOBDUN',
                       style: GoogleFonts.oswald(
                         fontSize: 44.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 4.0,
                         color: Colors.white,
                         height: 1.0,
@@ -107,7 +107,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   'RESET YOUR\nPASSWORD.',
                   style: GoogleFonts.oswald(
                     fontSize: 40.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: c.text1,
                     height: 1.05,

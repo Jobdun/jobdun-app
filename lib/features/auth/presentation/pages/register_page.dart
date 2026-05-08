@@ -115,11 +115,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 Gap(20.h),
 
-                // ── Role picker (compact horizontal) ──────────────────────────
-                _RolePicker(c: c),
-
-                Gap(20.h),
-
                 // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
                   key: _formKey,
@@ -406,90 +401,3 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-class _RolePicker extends StatefulWidget {
-  const _RolePicker({required this.c});
-
-  final JColors c;
-
-  @override
-  State<_RolePicker> createState() => _RolePickerState();
-}
-
-class _RolePickerState extends State<_RolePicker> {
-  int _selected = 0;
-
-  static const _roles = [
-    (icon: Iconsax.briefcase, label: 'BUILDER', sub: 'Post jobs, hire trades'),
-    (icon: Iconsax.personalcard, label: 'TRADIE', sub: 'Find work, get hired'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final c = widget.c;
-
-    return Row(
-      children: List.generate(_roles.length, (i) {
-        final role = _roles[i];
-        final selected = _selected == i;
-
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => setState(() => _selected = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              curve: Curves.ease,
-              margin: EdgeInsets.only(right: i == 0 ? 8.w : 0),
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              decoration: BoxDecoration(
-                color: selected
-                    ? c.action.withValues(alpha: 0.10)
-                    : c.surfaceRaised,
-                borderRadius: BorderRadius.circular(AppRadius.card.r),
-                border: Border.all(
-                  color: selected ? c.action : c.border,
-                  width: selected ? 2 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    role.icon,
-                    size: 20.r,
-                    color: selected ? c.action : c.text3,
-                  ),
-                  Gap(8.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          role.label,
-                          style: GoogleFonts.oswald(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: selected ? c.text1 : c.text2,
-                          ),
-                        ),
-                        Text(
-                          role.sub,
-                          style: GoogleFonts.openSans(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w400,
-                            color: c.text3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (selected)
-                    Icon(Iconsax.tick_circle, size: 14.r, color: c.action),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
