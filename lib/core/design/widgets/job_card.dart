@@ -64,9 +64,9 @@ class JobCard extends StatelessWidget {
                             ],
                             Text(
                               title,
-                              style: GoogleFonts.barlowCondensed(
+                              style: GoogleFonts.oswald(
                                 fontSize: 20.sp,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: 0.3,
                                 color: c.text1,
                                 height: 1.1,
@@ -77,7 +77,7 @@ class JobCard extends StatelessWidget {
                               description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.barlow(
+                              style: GoogleFonts.openSans(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w400,
                                 color: c.text2,
@@ -102,7 +102,7 @@ class JobCard extends StatelessWidget {
                             ),
                             child: Text(
                               'APPLY NOW',
-                              style: GoogleFonts.barlow(
+                              style: GoogleFonts.openSans(
                                 fontSize: 11.sp,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.8,
@@ -164,7 +164,7 @@ class _MetaCol extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.barlow(
+          style: GoogleFonts.openSans(
             fontSize: 9.sp,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
@@ -174,7 +174,7 @@ class _MetaCol extends StatelessWidget {
         Gap(2.h),
         Text(
           value,
-          style: GoogleFonts.barlowCondensed(
+          style: GoogleFonts.oswald(
             fontSize: 15.sp,
             fontWeight: FontWeight.w700,
             color: valueColor ?? c.text1,

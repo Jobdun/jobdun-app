@@ -37,7 +37,7 @@ class GvChip extends StatelessWidget {
         ),
         child: Text(
           label.toUpperCase(),
-          style: GoogleFonts.barlow(
+          style: GoogleFonts.openSans(
             fontSize: 11.sp,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,

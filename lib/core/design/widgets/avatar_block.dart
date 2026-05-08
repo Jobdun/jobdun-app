@@ -31,7 +31,7 @@ class AvatarBlock extends StatelessWidget {
       child: Center(
         child: Text(
           initials,
-          style: GoogleFonts.barlowCondensed(
+          style: GoogleFonts.oswald(
             fontSize: fs.sp,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.04 * fs,

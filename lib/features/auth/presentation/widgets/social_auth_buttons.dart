@@ -22,7 +22,7 @@ class SocialAuthButtons extends ConsumerWidget {
       children: [
         Text(
           'OR CONTINUE WITH',
-          style: GoogleFonts.barlow(
+          style: GoogleFonts.openSans(
             fontSize: 10.sp,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.12 * 10,
@@ -89,7 +89,7 @@ class _SocialChip extends StatelessWidget {
                 Gap(8.w),
                 Text(
                   label,
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
                     color: c.text1,

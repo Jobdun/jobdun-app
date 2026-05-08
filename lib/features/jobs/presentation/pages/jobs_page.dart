@@ -148,7 +148,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           children: [
                             Text(
                               isBuilder ? 'POSTED JOBS' : 'FIND WORK',
-                              style: GoogleFonts.barlow(
+                              style: GoogleFonts.openSans(
                                 fontSize: 11.sp,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.12 * 11,
@@ -168,10 +168,9 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                               ).createShader(bounds),
                               child: Text(
                                 isBuilder ? 'Your listings' : 'Open near you',
-                                style: GoogleFonts.barlowCondensed(
+                                style: GoogleFonts.oswald(
                                   fontSize: 28.sp,
-                                  fontWeight: FontWeight.w800,
-                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 0.02 * 28,
                                   color: Colors.white,
                                 ),
@@ -197,7 +196,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 Gap(6.w),
                                 Text(
                                   'POST JOB',
-                                  style: GoogleFonts.barlow(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 13.sp,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.5,
@@ -226,7 +225,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                         Gap(8.w),
                         Text(
                           'Search trades, skills, suburbs…',
-                          style: GoogleFonts.barlow(
+                          style: GoogleFonts.openSans(
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w400,
                             color: c.text3,
@@ -266,7 +265,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
               child: Text(
                 '${results.length} ${results.length == 1 ? 'job' : 'jobs'} found',
-                style: GoogleFonts.barlow(
+                style: GoogleFonts.openSans(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w400,
                   color: c.text3,

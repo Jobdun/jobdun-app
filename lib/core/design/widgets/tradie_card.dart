@@ -69,7 +69,7 @@ class TradieCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 name,
-                                style: GoogleFonts.barlow(
+                                style: GoogleFonts.openSans(
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w700,
                                   color: c.text1,
@@ -83,7 +83,7 @@ class TradieCard extends StatelessWidget {
                               children: [
                                 Text(
                                   rating.toStringAsFixed(1),
-                                  style: GoogleFonts.barlowCondensed(
+                                  style: GoogleFonts.oswald(
                                     fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
                                     color: c.text1,
@@ -92,7 +92,7 @@ class TradieCard extends StatelessWidget {
                                 ),
                                 Text(
                                   '/5',
-                                  style: GoogleFonts.barlow(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 11.sp,
                                     color: c.text3,
                                   ),
@@ -104,7 +104,7 @@ class TradieCard extends StatelessWidget {
                         Gap(2.h),
                         Text(
                           '$trade · $suburb',
-                          style: GoogleFonts.barlow(
+                          style: GoogleFonts.openSans(
                             fontSize: 13.sp,
                             color: c.text2,
                           ),
@@ -112,7 +112,7 @@ class TradieCard extends StatelessWidget {
                         Gap(2.h),
                         Text(
                           '$jobCount jobs completed',
-                          style: GoogleFonts.barlow(
+                          style: GoogleFonts.openSans(
                             fontSize: 11.sp,
                             color: c.text3,
                           ),
@@ -139,7 +139,7 @@ class TradieCard extends StatelessWidget {
                   Gap(8.w),
                   Text(
                     isOffline ? 'Offline' : 'Available',
-                    style: GoogleFonts.barlow(
+                    style: GoogleFonts.openSans(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w600,
                       color: isOffline ? c.text3 : c.verifiedTx,
@@ -147,11 +147,11 @@ class TradieCard extends StatelessWidget {
                   ),
                   if (!isOffline && isVerified) ...[
                     Gap(8.w),
-                    Text('·', style: GoogleFonts.barlow(fontSize: 11.sp, color: c.border)),
+                    Text('·', style: GoogleFonts.openSans(fontSize: 11.sp, color: c.border)),
                     Gap(8.w),
                     Text(
                       '✓ Verified',
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
                         color: c.verifiedTx,
@@ -162,7 +162,7 @@ class TradieCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       '${distanceKm.toStringAsFixed(1)} km',
-                      style: GoogleFonts.barlowCondensed(
+                      style: GoogleFonts.oswald(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
                         color: c.action,

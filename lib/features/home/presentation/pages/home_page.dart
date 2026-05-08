@@ -49,7 +49,7 @@ class HomePage extends ConsumerWidget {
                 padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
                 child: Text(
                   isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.12 * 11,
@@ -149,7 +149,7 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   roleLabel,
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.12 * 11,
@@ -169,10 +169,9 @@ class _Header extends StatelessWidget {
                   ).createShader(bounds),
                   child: Text(
                     isBuilder ? 'FIND A TRADIE' : 'JOBS NEARBY',
-                    style: GoogleFonts.barlowCondensed(
+                    style: GoogleFonts.oswald(
                       fontSize: 40.sp,
-                      fontWeight: FontWeight.w800,
-                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.02 * 40,
                       color: Colors.white,
                       height: 1.0,
@@ -186,7 +185,7 @@ class _Header extends StatelessWidget {
                     Gap(4.w),
                     Text(
                       isBuilder ? _kBuilderLocation : _kTradeLocation,
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.02 * 11,
@@ -269,7 +268,7 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: GoogleFonts.barlowCondensed(
+            style: GoogleFonts.oswald(
               fontSize: 28.sp,
               fontWeight: FontWeight.w700,
               color: c.text1,
@@ -279,7 +278,7 @@ class _StatCard extends StatelessWidget {
           Gap(2.h),
           Text(
             label,
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 11.sp,
               fontWeight: FontWeight.w400,
               color: c.text3,
@@ -334,7 +333,7 @@ class _PrimaryActionCard extends StatelessWidget {
                   children: [
                     Text(
                       isBuilder ? 'Post a new job' : 'Browse open jobs',
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: c.text1,
@@ -345,7 +344,7 @@ class _PrimaryActionCard extends StatelessWidget {
                       isBuilder
                           ? 'Find skilled tradies for your next site'
                           : 'Construction work near you',
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
                         color: c.text3,

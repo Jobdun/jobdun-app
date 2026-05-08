@@ -100,7 +100,7 @@ class _ProfileHeader extends StatelessWidget {
                     Expanded(
                       child: Text(
                         email.split('@').first,
-                        style: GoogleFonts.barlow(
+                        style: GoogleFonts.openSans(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           color: c.text1,
@@ -116,7 +116,7 @@ class _ProfileHeader extends StatelessWidget {
                 Gap(4.h),
                 Text(
                   email,
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w400,
                     color: c.text3,
@@ -133,7 +133,7 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     child: Text(
                       role!.label.toUpperCase(),
-                      style: GoogleFonts.barlow(
+                      style: GoogleFonts.openSans(
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.08 * 10,
@@ -268,7 +268,7 @@ class _TradeProfile extends StatelessWidget {
                 Gap(10.w),
                 Text(
                   'Available for work',
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
                     color: c.verifiedTx,
@@ -277,7 +277,7 @@ class _TradeProfile extends StatelessWidget {
                 const Spacer(),
                 Text(
                   'Change',
-                  style: GoogleFonts.barlow(
+                  style: GoogleFonts.openSans(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
                     color: c.available,
@@ -369,7 +369,7 @@ class _StatBadge extends StatelessWidget {
             Gap(6.h),
             Text(
               value,
-              style: GoogleFonts.barlowCondensed(
+              style: GoogleFonts.oswald(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.w700,
                 color: c.text1,
@@ -378,7 +378,7 @@ class _StatBadge extends StatelessWidget {
             Gap(1.h),
             Text(
               label,
-              style: GoogleFonts.barlow(
+              style: GoogleFonts.openSans(
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w400,
                 color: c.text3,
@@ -414,7 +414,7 @@ class _InfoCard extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
             child: Text(
               title,
-              style: GoogleFonts.barlow(
+              style: GoogleFonts.openSans(
                 fontSize: 11.sp,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.12 * 11,
@@ -453,7 +453,7 @@ class _InfoRow extends StatelessWidget {
           Gap(12.w),
           Text(
             label,
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 13.sp,
               fontWeight: FontWeight.w400,
               color: c.text2,
@@ -462,7 +462,7 @@ class _InfoRow extends StatelessWidget {
           const Spacer(),
           Text(
             value,
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: c.text1,
@@ -497,7 +497,7 @@ class _VerificationRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.barlow(
+              style: GoogleFonts.openSans(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w400,
                 color: c.text1,
@@ -506,7 +506,7 @@ class _VerificationRow extends StatelessWidget {
           ),
           Text(
             isVerified ? 'Verified' : 'Upload',
-            style: GoogleFonts.barlow(
+            style: GoogleFonts.openSans(
               fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: isVerified ? c.verified : c.available,
@@ -540,7 +540,7 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.barlow(
+                style: GoogleFonts.openSans(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                   color: c.text1,
