@@ -62,63 +62,63 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Hero ─────────────────────────────────────────────────────
-                Gap(48.h),
-                Center(
-                  child: SvgPicture.asset(
-                    'lib/core/assets/mark-jobdun.svg',
-                    width: 64.r,
-                    height: 64.r,
-                    colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
-                  ),
-                ),
-                Gap(16.h),
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFFFF176),
-                        Color(0xFFFFB300),
-                        Color(0xFFF97316),
-                        Color(0xFFE64A19),
-                        Color(0xFFBF360C),
-                      ],
-                      stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                    ).createShader(bounds),
-                    child: Text(
-                      'JOBDUN',
-                      style: GoogleFonts.oswald(
-                        fontSize: 60.sp,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 4.0,
-                        color: Colors.white,
-                        height: 1.0,
+                // ── Compact hero ──────────────────────────────────────────────
+                Gap(24.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'lib/core/assets/mark-jobdun.svg',
+                      width: 32.r,
+                      height: 32.r,
+                      colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
+                    ),
+                    Gap(10.w),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFFFF176),
+                          Color(0xFFFFB300),
+                          Color(0xFFF97316),
+                          Color(0xFFE64A19),
+                          Color(0xFFBF360C),
+                        ],
+                        stops: [0.0, 0.2, 0.5, 0.75, 1.0],
+                      ).createShader(bounds),
+                      child: Text(
+                        'JOBDUN',
+                        style: GoogleFonts.oswald(
+                          fontSize: 36.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 3.0,
+                          color: Colors.white,
+                          height: 1.0,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                Gap(6.h),
+                Gap(4.h),
                 Center(
                   child: Text(
                     'Create your account',
                     style: GoogleFonts.openSans(
-                      fontSize: 14.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w400,
                       color: c.text2,
                     ),
                   ),
                 ),
 
-                Gap(32.h),
+                Gap(20.h),
 
-                // ── Role picker ───────────────────────────────────────────────
-                _FieldLabel(label: 'I AM A', c: c),
-                Gap(8.h),
+                // ── Role picker (compact horizontal) ──────────────────────────
                 _RolePicker(c: c),
 
-                Gap(28.h),
+                Gap(20.h),
 
                 // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
@@ -127,7 +127,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _FieldLabel(label: 'FULL NAME', c: c),
-                      Gap(6.h),
+                      Gap(4.h),
                       FormBuilderTextField(
                         name: 'full_name',
                         keyboardType: TextInputType.name,
@@ -135,15 +135,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         textCapitalization: TextCapitalization.words,
                         style: TextStyle(
                           color: c.text1,
-                          fontSize: 15.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Your full name',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
-                          prefixIcon: Icon(Iconsax.user, size: 18.r),
+                          hintStyle: TextStyle(color: c.text3, fontSize: 13.sp),
+                          prefixIcon: Icon(Iconsax.user, size: 16.r),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
+                            vertical: 12.h, horizontal: 14.w,
                           ),
                         ),
                         validator: FormBuilderValidators.compose([
@@ -151,24 +151,24 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           FormBuilderValidators.minLength(2),
                         ]),
                       ),
-                      Gap(18.h),
+                      Gap(12.h),
                       _FieldLabel(label: 'EMAIL', c: c),
-                      Gap(6.h),
+                      Gap(4.h),
                       FormBuilderTextField(
                         name: 'email',
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         style: TextStyle(
                           color: c.text1,
-                          fontSize: 15.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'your@email.com',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
-                          prefixIcon: Icon(Iconsax.sms, size: 18.r),
+                          hintStyle: TextStyle(color: c.text3, fontSize: 13.sp),
+                          prefixIcon: Icon(Iconsax.sms, size: 16.r),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
+                            vertical: 12.h, horizontal: 14.w,
                           ),
                         ),
                         validator: FormBuilderValidators.compose([
@@ -176,105 +176,140 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           FormBuilderValidators.email(),
                         ]),
                       ),
-                      Gap(18.h),
-                      _FieldLabel(label: 'PASSWORD', c: c),
-                      Gap(6.h),
-                      FormBuilderTextField(
-                        name: 'password',
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.next,
-                        style: TextStyle(
-                          color: c.text1,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Min. 8 characters',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
-                          prefixIcon: Icon(Iconsax.lock, size: 18.r),
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
-                          ),
-                          suffixIcon: GestureDetector(
-                            onTap: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                            child: Icon(
-                              _obscurePassword ? Iconsax.eye_slash : Iconsax.eye,
-                              size: 18.r,
-                            ),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(8),
-                        ]),
-                      ),
-                      Gap(18.h),
-                      _FieldLabel(label: 'CONFIRM PASSWORD', c: c),
-                      Gap(6.h),
-                      FormBuilderTextField(
-                        name: 'confirm_password',
-                        obscureText: _obscureConfirm,
-                        textInputAction: TextInputAction.next,
-                        style: TextStyle(
-                          color: c.text1,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Re-enter your password',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
-                          prefixIcon: Icon(Iconsax.lock_1, size: 18.r),
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
-                          ),
-                          suffixIcon: GestureDetector(
-                            onTap: () => setState(
-                              () => _obscureConfirm = !_obscureConfirm,
-                            ),
-                            child: Icon(
-                              _obscureConfirm ? Iconsax.eye_slash : Iconsax.eye,
-                              size: 18.r,
+                      Gap(12.h),
+                      // Password + Confirm side note on same label row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _FieldLabel(label: 'PASSWORD', c: c),
+                                Gap(4.h),
+                                FormBuilderTextField(
+                                  name: 'password',
+                                  obscureText: _obscurePassword,
+                                  textInputAction: TextInputAction.next,
+                                  style: TextStyle(
+                                    color: c.text1,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Min. 8 chars',
+                                    hintStyle: TextStyle(
+                                      color: c.text3,
+                                      fontSize: 13.sp,
+                                    ),
+                                    prefixIcon: Icon(Iconsax.lock, size: 16.r),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 12.h, horizontal: 14.w,
+                                    ),
+                                    suffixIcon: GestureDetector(
+                                      onTap: () => setState(
+                                        () => _obscurePassword =
+                                            !_obscurePassword,
+                                      ),
+                                      child: Icon(
+                                        _obscurePassword
+                                            ? Iconsax.eye_slash
+                                            : Iconsax.eye,
+                                        size: 16.r,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: FormBuilderValidators.compose([
+                                    FormBuilderValidators.required(),
+                                    FormBuilderValidators.minLength(8),
+                                  ]),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        validator: (val) {
-                          final pw = _formKey.currentState?.fields['password']
-                              ?.value as String?;
-                          if (val == null || val.isEmpty) {
-                            return 'Confirm your password.';
-                          }
-                          if (val != pw) return 'Passwords do not match.';
-                          return null;
-                        },
+                          Gap(10.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _FieldLabel(label: 'CONFIRM', c: c),
+                                Gap(4.h),
+                                FormBuilderTextField(
+                                  name: 'confirm_password',
+                                  obscureText: _obscureConfirm,
+                                  textInputAction: TextInputAction.next,
+                                  style: TextStyle(
+                                    color: c.text1,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Re-enter',
+                                    hintStyle: TextStyle(
+                                      color: c.text3,
+                                      fontSize: 13.sp,
+                                    ),
+                                    prefixIcon: Icon(Iconsax.lock_1, size: 16.r),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 12.h, horizontal: 14.w,
+                                    ),
+                                    suffixIcon: GestureDetector(
+                                      onTap: () => setState(
+                                        () =>
+                                            _obscureConfirm = !_obscureConfirm,
+                                      ),
+                                      child: Icon(
+                                        _obscureConfirm
+                                            ? Iconsax.eye_slash
+                                            : Iconsax.eye,
+                                        size: 16.r,
+                                      ),
+                                    ),
+                                  ),
+                                  validator: (val) {
+                                    final pw = _formKey
+                                            .currentState
+                                            ?.fields['password']
+                                            ?.value
+                                        as String?;
+                                    if (val == null || val.isEmpty) {
+                                      return 'Required';
+                                    }
+                                    if (val != pw) return 'No match';
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       Gap(4.h),
                       FormBuilderCheckbox(
                         name: 'terms',
                         initialValue: false,
+                        contentPadding: EdgeInsets.zero,
                         title: RichText(
                           text: TextSpan(
                             style: GoogleFonts.openSans(
-                              fontSize: 12.sp,
+                              fontSize: 11.sp,
                               color: c.text2,
                               height: 1.4,
                             ),
                             children: [
                               const TextSpan(text: 'I agree to the '),
                               TextSpan(
-                                text: 'Terms of Service',
+                                text: 'Terms',
                                 style: GoogleFonts.openSans(
-                                  fontSize: 12.sp,
+                                  fontSize: 11.sp,
                                   fontWeight: FontWeight.w600,
                                   color: c.action,
                                 ),
                               ),
-                              const TextSpan(text: ' and '),
+                              const TextSpan(text: ' & '),
                               TextSpan(
                                 text: 'Privacy Policy',
                                 style: GoogleFonts.openSans(
-                                  fontSize: 12.sp,
+                                  fontSize: 11.sp,
                                   fontWeight: FontWeight.w600,
                                   color: c.action,
                                 ),
@@ -289,18 +324,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   ),
                 ),
 
-                Gap(8.h),
-
                 if (authState.errorMessage != null) ...[
+                  Gap(6.h),
                   StatusBanner(message: authState.errorMessage!, isError: true),
-                  Gap(8.h),
                 ],
                 if (authState.infoMessage != null) ...[
+                  Gap(6.h),
                   StatusBanner(message: authState.infoMessage!, isError: false),
-                  Gap(8.h),
                 ],
 
-                Gap(24.h),
+                Gap(16.h),
 
                 AppButton(
                   label: authState.isLoading
@@ -339,11 +372,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   onPressed: () => context.go('/login'),
                 ),
 
-                Gap(24.h),
+                Gap(20.h),
 
                 const SocialAuthButtons(),
 
-                Gap(32.h),
+                Gap(24.h),
               ],
             ),
           ),
@@ -364,7 +397,7 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label,
       style: GoogleFonts.openSans(
-        fontSize: 11.sp,
+        fontSize: 10.sp,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.12 * 11,
         color: c.text2,
@@ -406,10 +439,10 @@ class _RolePickerState extends State<_RolePicker> {
               duration: const Duration(milliseconds: 150),
               curve: Curves.ease,
               margin: EdgeInsets.only(right: i == 0 ? 8.w : 0),
-              padding: EdgeInsets.symmetric(vertical: 14.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
                 color: selected
-                    ? c.action.withValues(alpha: 0.12)
+                    ? c.action.withValues(alpha: 0.10)
                     : c.surfaceRaised,
                 borderRadius: BorderRadius.circular(AppRadius.card.r),
                 border: Border.all(
@@ -417,32 +450,40 @@ class _RolePickerState extends State<_RolePicker> {
                   width: selected ? 2 : 1,
                 ),
               ),
-              child: Column(
+              child: Row(
                 children: [
                   Icon(
                     role.icon,
-                    size: 28.r,
+                    size: 20.r,
                     color: selected ? c.action : c.text3,
                   ),
-                  Gap(6.h),
-                  Text(
-                    role.label,
-                    style: GoogleFonts.oswald(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                      color: selected ? c.text1 : c.text2,
+                  Gap(8.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          role.label,
+                          style: GoogleFonts.oswald(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: selected ? c.text1 : c.text2,
+                          ),
+                        ),
+                        Text(
+                          role.sub,
+                          style: GoogleFonts.openSans(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w400,
+                            color: c.text3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Gap(2.h),
-                  Text(
-                    role.sub,
-                    style: GoogleFonts.openSans(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w400,
-                      color: c.text3,
-                    ),
-                  ),
+                  if (selected)
+                    Icon(Iconsax.tick_circle, size: 14.r, color: c.action),
                 ],
               ),
             ),
