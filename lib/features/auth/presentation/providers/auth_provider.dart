@@ -64,26 +64,42 @@ class AuthController extends Notifier<AuthState> {
 
   // ── Profile helper ─────────────────────────────────────────────────────────
 
+  // Role lives in user_roles table, injected into JWT via custom_access_token_hook.
+  // Read it from the JWT claim — never from a profiles.role column (doesn't exist).
+  UserRole? _roleFromSession() {
+    final session = SupabaseConfig.client.auth.currentSession;
+    if (session == null) return null;
+    try {
+      final parts = session.accessToken.split('.');
+      if (parts.length != 3) return null;
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final claims = jsonDecode(decoded) as Map<String, dynamic>;
+      final roleStr = claims['user_role'] as String?;
+      if (roleStr == null) return null;
+      return UserRole.values.firstWhere(
+        (r) => r.name == roleStr,
+        orElse: () => UserRole.trade,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _loadProfileForCurrentUser() async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return;
     try {
       final data = await SupabaseConfig.client
           .from('profiles')
-          .select('role, is_onboarding_complete')
+          .select('onboarding_completed_at')
           .eq('id', userId)
           .maybeSingle();
       if (data == null) return;
 
-      final roleStr = data['role'] as String?;
-      final onboardingDone = data['is_onboarding_complete'] as bool? ?? true;
-      UserRole? role;
-      if (roleStr != null) {
-        role = UserRole.values.firstWhere(
-          (r) => r.name == roleStr,
-          orElse: () => UserRole.trade,
-        );
-      }
+      final onboardingDone = data['onboarding_completed_at'] != null;
+      final role = _roleFromSession();
       state = state.copyWith(role: role, onboardingComplete: onboardingDone);
     } catch (_) {
       // Best-effort — don't disrupt the session if profile fetch fails.
@@ -96,20 +112,16 @@ class AuthController extends Notifier<AuthState> {
     try {
       final data = await SupabaseConfig.client
           .from('profiles')
-          .select('is_onboarding_complete, role')
+          .select('onboarding_completed_at')
           .eq('id', userId)
           .maybeSingle();
       if (data == null) return false;
 
-      final roleStr = data['role'] as String?;
-      if (roleStr != null) {
-        final role = UserRole.values.firstWhere(
-          (r) => r.name == roleStr,
-          orElse: () => UserRole.trade,
-        );
-        state = state.copyWith(role: role);
-      }
-      return data['is_onboarding_complete'] as bool? ?? false;
+      // Role comes from JWT after sign-in — refresh it from the token.
+      final role = _roleFromSession();
+      if (role != null) state = state.copyWith(role: role);
+
+      return data['onboarding_completed_at'] != null;
     } catch (_) {
       return false;
     }
@@ -430,34 +442,37 @@ class AuthController extends Notifier<AuthState> {
       if (SupabaseConfig.isInitialized) {
         final userId = SupabaseConfig.client.auth.currentUser?.id;
         if (userId != null) {
-          // Always write role + completion flag so re-login knows onboarding is done.
-          final profileUpdate = <String, dynamic>{
-            'id': userId,
+          // Mark onboarding complete via onboarding_completed_at (schema column).
+          await SupabaseConfig.client.from('profiles').update({
+            'onboarding_completed_at': DateTime.now().toIso8601String(),
+          }).eq('id', userId);
+
+          // Assign role in user_roles (drives JWT claim via custom_access_token_hook).
+          await SupabaseConfig.client.from('user_roles').upsert({
+            'user_id': userId,
             'role': role.name,
-            'is_onboarding_complete': true,
-          };
-          if (location != null) profileUpdate['location'] = location;
-          await SupabaseConfig.client.from('profiles').upsert(profileUpdate);
+          }, onConflict: 'user_id');
 
           if (role == UserRole.builder) {
-            final builderData = <String, dynamic>{'profile_id': userId};
+            // builder_profiles.id is PK = profiles.id (not profile_id)
+            final builderData = <String, dynamic>{'id': userId};
             if (companyName != null) builderData['company_name'] = companyName;
-            if (businessType != null) builderData['business_type'] = businessType;
             if (builderData.length > 1) {
               await SupabaseConfig.client
                   .from('builder_profiles')
-                  .upsert(builderData);
+                  .upsert(builderData, onConflict: 'id');
             }
           } else if (role == UserRole.trade) {
-            final tradeData = <String, dynamic>{'profile_id': userId};
-            if (tradeCategory != null) tradeData['trade_category'] = tradeCategory;
+            // trade_profiles.id is PK = profiles.id (not profile_id)
+            final tradeData = <String, dynamic>{'id': userId};
+            if (tradeCategory != null) tradeData['primary_trade'] = tradeCategory;
             if (yearsExperience != null) {
-              tradeData['years_experience'] = yearsExperience;
+              tradeData['years_experience'] = int.tryParse(yearsExperience) ?? 0;
             }
             if (tradeData.length > 1) {
               await SupabaseConfig.client
                   .from('trade_profiles')
-                  .upsert(tradeData);
+                  .upsert(tradeData, onConflict: 'id');
             }
           }
         }

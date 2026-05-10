@@ -15,6 +15,7 @@ class JColors extends ThemeExtension<JColors> {
     required this.text2,
     required this.text3,
     required this.action,
+    required this.actionPressed,
     required this.actionBg,
     required this.actionTx,
     required this.verified,
@@ -37,7 +38,8 @@ class JColors extends ThemeExtension<JColors> {
   final Color text1;
   final Color text2;
   final Color text3;
-  final Color action;       // safety orange — CTA only
+  final Color action;          // safety orange — CTA only
+  final Color actionPressed;   // darker orange — pressed state for CTA
   final Color actionBg;
   final Color actionTx;
   final Color verified;
@@ -65,6 +67,7 @@ class JColors extends ThemeExtension<JColors> {
     text2:         Color(0xFF94A3B8),
     text3:         Color(0xFF64748B),
     action:        Color(0xFFF97316),
+    actionPressed: Color(0xFFEA6C0A),
     actionBg:      Color(0xFF431407),
     actionTx:      Color(0xFFFED7AA),
     verified:      Color(0xFF22C55E),
@@ -79,7 +82,7 @@ class JColors extends ThemeExtension<JColors> {
     star:          Color(0xFFF59E0B),
   );
 
-  // ── Light ─────────────────────────────────────────────────────────────────
+  // ── Light (gated — app is dark-only; access via AppTheme._light() only) ───
   static const light = JColors(
     background:    Color(0xFFF8FAFC),
     surface:       Color(0xFFFFFFFF),
@@ -90,6 +93,7 @@ class JColors extends ThemeExtension<JColors> {
     text2:         Color(0xFF475569),
     text3:         Color(0xFF94A3B8),
     action:        Color(0xFFF97316),
+    actionPressed: Color(0xFFEA6C0A),
     actionBg:      Color(0xFFFFEDD5),
     actionTx:      Color(0xFF9A3412),
     verified:      Color(0xFF16A34A),
@@ -108,7 +112,7 @@ class JColors extends ThemeExtension<JColors> {
   JColors copyWith({
     Color? background, Color? surface, Color? card, Color? surfaceRaised,
     Color? border, Color? text1, Color? text2, Color? text3,
-    Color? action, Color? actionBg, Color? actionTx,
+    Color? action, Color? actionPressed, Color? actionBg, Color? actionTx,
     Color? verified, Color? verifiedBg, Color? verifiedTx,
     Color? urgent, Color? urgentBg, Color? urgentTx,
     Color? available, Color? availableBg, Color? availableTx,
@@ -123,6 +127,7 @@ class JColors extends ThemeExtension<JColors> {
     text2:         text2         ?? this.text2,
     text3:         text3         ?? this.text3,
     action:        action        ?? this.action,
+    actionPressed: actionPressed ?? this.actionPressed,
     actionBg:      actionBg      ?? this.actionBg,
     actionTx:      actionTx      ?? this.actionTx,
     verified:      verified      ?? this.verified,
@@ -150,6 +155,7 @@ class JColors extends ThemeExtension<JColors> {
       text2:         Color.lerp(text2,         other.text2,         t)!,
       text3:         Color.lerp(text3,         other.text3,         t)!,
       action:        Color.lerp(action,        other.action,        t)!,
+      actionPressed: Color.lerp(actionPressed, other.actionPressed, t)!,
       actionBg:      Color.lerp(actionBg,      other.actionBg,      t)!,
       actionTx:      Color.lerp(actionTx,      other.actionTx,      t)!,
       verified:      Color.lerp(verified,      other.verified,      t)!,
@@ -176,6 +182,7 @@ extension JColorsX on BuildContext {
 
 abstract final class AppColors {
   static const action        = Color(0xFFF97316);
+  static const actionPressed = Color(0xFFEA6C0A);
   static const actionBg      = Color(0xFF431407);
   static const actionTx      = Color(0xFFFED7AA);
   static const verified      = Color(0xFF22C55E);
@@ -214,10 +221,10 @@ abstract final class AppDarkColors {
 abstract final class AppSpacing {
   static const xs  = 4.0;
   static const sm  = 8.0;
-  static const md  = 12.0;
-  static const lg  = 16.0;
-  static const xl  = 20.0;
-  static const xxl = 32.0;
+  static const md  = 16.0;  // matches MASTER (was 12)
+  static const lg  = 24.0;  // matches MASTER (was 16)
+  static const xl  = 32.0;  // matches MASTER (was 20)
+  static const xxl = 48.0;  // matches MASTER (was 32)
 }
 
 abstract final class AppRadius {

@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 
@@ -66,6 +66,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final isLoading =
         ref.watch(authControllerProvider.select((s) => s.isLoading));
 
@@ -123,12 +124,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 child: GestureDetector(
                   onTap: _next,
                   child: Padding(
-                    padding: EdgeInsets.all(8.r),
+                    padding: EdgeInsets.all(AppSpacing.sm.r),
                     child: Text(
                       'SKIP',
-                      style: GoogleFonts.openSans(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
+                      style: tt.bodySmall!.copyWith(
                         letterSpacing: 0.5,
                         color: c.text3,
                       ),
@@ -151,6 +150,7 @@ class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -165,49 +165,30 @@ class _WelcomePage extends StatelessWidget {
           ),
           Gap(12.h),
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFF176),
-                Color(0xFFFFB300),
-                Color(0xFFF97316),
-                Color(0xFFE64A19),
-                Color(0xFFBF360C),
-              ],
-              stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
             child: Text(
               'JOBDUN',
-              style: GoogleFonts.oswald(
+              style: tt.headlineSmall!.copyWith(
                 fontSize: 52.sp,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 4.0,
-                color: Colors.white,
                 height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
               ),
             ),
           ),
           Gap(28.h),
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFB300),
-                Color(0xFFF97316),
-                Color(0xFFE64A19),
-              ],
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
             child: Text(
               'GET WORK.\nPOST JOBS.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.oswald(
+              style: tt.headlineSmall!.copyWith(
                 fontSize: 44.sp,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
-                color: Colors.white,
                 height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
               ),
             ),
           ),
@@ -215,12 +196,7 @@ class _WelcomePage extends StatelessWidget {
           Text(
             'Verified jobs. Real builders. Get hired fast.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.openSans(
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w400,
-              color: c.text2,
-              height: 1.6,
-            ),
+            style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
           ),
         ],
       ),
@@ -239,6 +215,7 @@ class _RolePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -248,31 +225,21 @@ class _RolePage extends StatelessWidget {
           Gap(24.h),
           Text(
             'YOUR ROLE',
-            style: GoogleFonts.openSans(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: c.text3,
-            ),
+            style: tt.bodySmall!.copyWith(letterSpacing: 1.2, color: c.text3),
           ),
-          Gap(8.h),
+          Gap(AppSpacing.sm.h),
           Text(
             'What describes you best?',
-            style: GoogleFonts.oswald(
+            style: tt.headlineSmall!.copyWith(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: c.text1,
             ),
           ),
-          Gap(8.h),
+          Gap(AppSpacing.sm.h),
           Text(
             'Choose your role to personalise your experience.',
-            style: GoogleFonts.openSans(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w400,
-              color: c.text2,
-            ),
+            style: tt.bodyLarge!.copyWith(color: c.text2),
           ),
           Gap(24.h),
           _RoleCard(
@@ -302,6 +269,7 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
@@ -318,7 +286,7 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
         child: Padding(
-          padding: EdgeInsets.all(16.r),
+          padding: EdgeInsets.all(AppSpacing.md.r),
           child: Row(
             children: [
               Container(
@@ -331,7 +299,7 @@ class _RoleCard extends StatelessWidget {
                 child: Icon(
                   role == UserRole.builder ? Iconsax.briefcase : Iconsax.personalcard,
                   size: 22.r,
-                  color: selected ? Colors.white : c.text2,
+                  color: selected ? Colors.white : c.text2, // intentional: white-on-action
                 ),
               ),
               Gap(12.w),
@@ -341,8 +309,7 @@ class _RoleCard extends StatelessWidget {
                   children: [
                     Text(
                       role.label,
-                      style: GoogleFonts.openSans(
-                        fontSize: 16.sp,
+                      style: tt.titleLarge!.copyWith(
                         fontWeight: FontWeight.w700,
                         color: c.text1,
                       ),
@@ -350,16 +317,12 @@ class _RoleCard extends StatelessWidget {
                     Gap(2.h),
                     Text(
                       role.description,
-                      style: GoogleFonts.openSans(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w400,
-                        color: c.text2,
-                      ),
+                      style: tt.bodyMedium!.copyWith(color: c.text2),
                     ),
                   ],
                 ),
               ),
-              Gap(8.w),
+              Gap(AppSpacing.sm.w),
               if (selected)
                 Icon(Iconsax.tick_circle, size: 20.r, color: c.action)
               else
@@ -408,6 +371,7 @@ class _ProfileSetupPage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (role == null) return const SizedBox.shrink();
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
@@ -416,33 +380,23 @@ class _ProfileSetupPage extends StatelessWidget {
         children: [
           Text(
             role == UserRole.builder ? 'COMPANY SETUP' : 'YOUR TRADE',
-            style: GoogleFonts.openSans(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-              color: c.text3,
-            ),
+            style: tt.bodySmall!.copyWith(letterSpacing: 1.2, color: c.text3),
           ),
-          Gap(8.h),
+          Gap(AppSpacing.sm.h),
           Text(
             role == UserRole.builder
                 ? 'Tell us about your business.'
                 : 'Tell us about your skills.',
-            style: GoogleFonts.oswald(
+            style: tt.headlineSmall!.copyWith(
               fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: c.text1,
             ),
           ),
-          Gap(8.h),
+          Gap(AppSpacing.sm.h),
           Text(
             'You can update this anytime from your profile.',
-            style: GoogleFonts.openSans(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w400,
-              color: c.text3,
-            ),
+            style: tt.bodyMedium!.copyWith(color: c.text3),
           ),
           Gap(24.h),
           if (role == UserRole.builder)
@@ -483,6 +437,7 @@ class _BuilderForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,7 +447,7 @@ class _BuilderForm extends StatelessWidget {
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.next,
           textCapitalization: TextCapitalization.words,
-          style: TextStyle(color: c.text1),
+          style: tt.bodyLarge!.copyWith(color: c.text1),
           decoration: InputDecoration(
             labelText: 'COMPANY NAME',
             prefixIcon: Icon(Iconsax.building, size: 18.r),
@@ -501,14 +456,9 @@ class _BuilderForm extends StatelessWidget {
         Gap(20.h),
         Text(
           'BUSINESS TYPE',
-          style: GoogleFonts.openSans(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: c.text3,
-          ),
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
         ),
-        Gap(8.h),
+        Gap(AppSpacing.sm.h),
         _ChipGroup(
           options: const ['Sole trader', 'Company', 'Partnership'],
           selected: selectedBusinessType,
@@ -519,7 +469,7 @@ class _BuilderForm extends StatelessWidget {
           controller: locationController,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.done,
-          style: TextStyle(color: c.text1),
+          style: tt.bodyLarge!.copyWith(color: c.text1),
           decoration: InputDecoration(
             labelText: 'CITY OR SUBURB',
             prefixIcon: Icon(Iconsax.location, size: 18.r),
@@ -548,20 +498,16 @@ class _TradeForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'TRADE',
-          style: GoogleFonts.openSans(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: c.text3,
-          ),
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
         ),
-        Gap(8.h),
+        Gap(AppSpacing.sm.h),
         _ChipGroup(
           options: const [
             'Electrician', 'Plumber', 'Carpenter', 'Plasterer',
@@ -576,14 +522,9 @@ class _TradeForm extends StatelessWidget {
         Gap(20.h),
         Text(
           'EXPERIENCE',
-          style: GoogleFonts.openSans(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: c.text3,
-          ),
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
         ),
-        Gap(8.h),
+        Gap(AppSpacing.sm.h),
         _ChipGroup(
           options: const ['<1 yr', '1–3 yrs', '3–5 yrs', '5+ yrs'],
           selected: selectedYearsExp,
@@ -594,7 +535,7 @@ class _TradeForm extends StatelessWidget {
           controller: locationController,
           keyboardType: TextInputType.text,
           textInputAction: TextInputAction.done,
-          style: TextStyle(color: c.text1),
+          style: tt.bodyLarge!.copyWith(color: c.text1),
           decoration: InputDecoration(
             labelText: 'CITY OR SUBURB',
             prefixIcon: Icon(Iconsax.location, size: 18.r),
@@ -619,10 +560,11 @@ class _ChipGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
+      spacing: AppSpacing.sm.w,
+      runSpacing: AppSpacing.sm.h,
       children: options.map((option) {
         final isSelected = selected == option;
         return GestureDetector(
@@ -642,10 +584,8 @@ class _ChipGroup extends StatelessWidget {
             ),
             child: Text(
               option,
-              style: GoogleFonts.openSans(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : c.text2,
+              style: tt.labelMedium!.copyWith(
+                color: isSelected ? Colors.white : c.text2, // intentional: white-on-action
               ),
             ),
           ),
@@ -663,6 +603,7 @@ class _AllSetPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -677,49 +618,30 @@ class _AllSetPage extends StatelessWidget {
           ),
           Gap(12.h),
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFF176),
-                Color(0xFFFFB300),
-                Color(0xFFF97316),
-                Color(0xFFE64A19),
-                Color(0xFFBF360C),
-              ],
-              stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
             child: Text(
               'JOBDUN',
-              style: GoogleFonts.oswald(
+              style: tt.headlineSmall!.copyWith(
                 fontSize: 52.sp,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 4.0,
-                color: Colors.white,
                 height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
               ),
             ),
           ),
           Gap(28.h),
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFB300),
-                Color(0xFFF97316),
-                Color(0xFFE64A19),
-              ],
-            ).createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
             child: Text(
               'PROFILE\nLIVE.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.oswald(
+              style: tt.headlineSmall!.copyWith(
                 fontSize: 44.sp,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 0.8,
-                color: Colors.white,
                 height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
               ),
             ),
           ),
@@ -727,12 +649,7 @@ class _AllSetPage extends StatelessWidget {
           Text(
             'Your profile is active. Start getting work.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.openSans(
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w400,
-              color: c.text2,
-              height: 1.6,
-            ),
+            style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
           ),
         ],
       ),
@@ -768,7 +685,7 @@ class _BottomBar extends StatelessWidget {
     final isRolePage = currentPage == 1;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 32.h),
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.xl.h),
       child: Column(
         children: [
           SmoothPageIndicator(

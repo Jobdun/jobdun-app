@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 import 'status_badge.dart';
@@ -31,6 +30,7 @@ class JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -47,7 +47,7 @@ class JobCard extends StatelessWidget {
           children: [
             if (isUrgent) Container(height: 3.h, color: c.urgent),
             Padding(
-              padding: EdgeInsets.all(16.r),
+              padding: EdgeInsets.all(AppSpacing.md.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -64,8 +64,7 @@ class JobCard extends StatelessWidget {
                             ],
                             Text(
                               title,
-                              style: GoogleFonts.oswald(
-                                fontSize: 20.sp,
+                              style: tt.headlineSmall!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.3,
                                 color: c.text1,
@@ -77,9 +76,7 @@ class JobCard extends StatelessWidget {
                               description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.openSans(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
+                              style: tt.bodyMedium!.copyWith(
                                 color: c.text2,
                                 height: 1.5,
                               ),
@@ -102,11 +99,11 @@ class JobCard extends StatelessWidget {
                             ),
                             child: Text(
                               'APPLY NOW',
-                              style: GoogleFonts.openSans(
+                              style: tt.labelSmall!.copyWith(
                                 fontSize: 11.sp,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.8,
-                                color: Colors.white,
+                                color: Colors.white, // intentional: white-on-action
                               ),
                             ),
                           ),
@@ -119,14 +116,15 @@ class JobCard extends StatelessWidget {
                   Gap(12.h),
                   Row(
                     children: [
-                      _MetaCol(label: 'RATE',     value: rate,     c: c),
-                      Gap(16.w),
-                      _MetaCol(label: 'START',    value: startDate, c: c),
+                      _MetaCol(label: 'RATE',     value: rate,      c: c, tt: tt),
+                      Gap(AppSpacing.md.w),
+                      _MetaCol(label: 'START',    value: startDate, c: c, tt: tt),
                       const Spacer(),
                       _MetaCol(
                         label: 'DISTANCE',
                         value: '${distanceKm.toStringAsFixed(1)} km',
                         c: c,
+                        tt: tt,
                         valueColor: c.action,
                         align: CrossAxisAlignment.end,
                       ),
@@ -147,6 +145,7 @@ class _MetaCol extends StatelessWidget {
     required this.label,
     required this.value,
     required this.c,
+    required this.tt,
     this.valueColor,
     this.align = CrossAxisAlignment.start,
   });
@@ -154,6 +153,7 @@ class _MetaCol extends StatelessWidget {
   final String label;
   final String value;
   final JColors c;
+  final TextTheme tt;
   final Color? valueColor;
   final CrossAxisAlignment align;
 
@@ -164,17 +164,12 @@ class _MetaCol extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.openSans(
-            fontSize: 9.sp,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: c.text3,
-          ),
+          style: tt.labelSmall!.copyWith(color: c.text3),
         ),
         Gap(2.h),
         Text(
           value,
-          style: GoogleFonts.oswald(
+          style: tt.headlineSmall!.copyWith(
             fontSize: 15.sp,
             fontWeight: FontWeight.w700,
             color: valueColor ?? c.text1,

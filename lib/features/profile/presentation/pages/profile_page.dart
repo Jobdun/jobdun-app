@@ -2,25 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/builder_profile.dart';
+import '../../domain/entities/trade_profile.dart';
+import '../providers/profile_provider.dart';
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(profileControllerProvider.notifier).loadProfile();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.c;
     final authState = ref.watch(authControllerProvider);
+    final profileState = ref.watch(profileControllerProvider);
+
     final role = authState.role;
     final isBuilder = role == UserRole.builder;
     final email = authState.email ?? '';
-    final initials = _initials(email);
+
+    final displayName = profileState.profile?.displayName ?? _nameFromEmail(email);
+    final initials = _initials(displayName);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -28,17 +48,32 @@ class ProfilePage extends ConsumerWidget {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: _ProfileHeader(initials: initials, email: email, role: role),
+              child: _ProfileHeader(
+                initials: initials,
+                displayName: displayName,
+                email: email,
+                role: role,
+                avatarUrl: profileState.profile?.avatarUrl,
+                isUploadingAvatar: profileState.isUploadingAvatar,
+              ),
             ),
-            SliverToBoxAdapter(child: Gap(16.h)),
+            if (profileState.isLoading)
+              SliverToBoxAdapter(
+                child: LinearProgressIndicator(
+                  color: c.action,
+                  backgroundColor: c.surface,
+                  minHeight: 2,
+                ),
+              ),
+            SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
             SliverToBoxAdapter(
               child: isBuilder
-                  ? const _BuilderProfile()
-                  : const _TradeProfile(),
+                  ? _BuilderProfile(profile: profileState.builderProfile)
+                  : _TradeProfile(profile: profileState.tradeProfile),
             ),
-            SliverToBoxAdapter(child: Gap(16.h)),
-            SliverToBoxAdapter(child: const _SettingsSection()),
-            SliverToBoxAdapter(child: Gap(24.h)),
+            SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+            const SliverToBoxAdapter(child: _SettingsSection()),
+            SliverToBoxAdapter(child: Gap(AppSpacing.lg.h)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -50,20 +85,27 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(child: Gap(32.h)),
+            SliverToBoxAdapter(child: Gap(AppSpacing.xl.h)),
           ],
         ),
       ),
     );
   }
 
-  static String _initials(String email) {
+  static String _nameFromEmail(String email) {
     final local = email.split('@').first;
     final parts = local.replaceAll(RegExp(r'[._\-]'), ' ').split(' ');
-    if (parts.length >= 2) {
+    final first = parts.isNotEmpty ? parts.first : local;
+    if (first.isEmpty) return 'User';
+    return '${first[0].toUpperCase()}${first.substring(1)}';
+  }
+
+  static String _initials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2 && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return local.isNotEmpty ? local[0].toUpperCase() : '?';
+    return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 }
 
@@ -72,25 +114,55 @@ class ProfilePage extends ConsumerWidget {
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.initials,
+    required this.displayName,
     required this.email,
     required this.role,
+    this.avatarUrl,
+    this.isUploadingAvatar = false,
   });
 
   final String initials;
+  final String displayName;
   final String email;
   final UserRole? role;
+  final String? avatarUrl;
+  final bool isUploadingAvatar;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Container(
       color: c.card,
-      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 24.h),
+      padding: EdgeInsets.fromLTRB(20.w, AppSpacing.lg.h, 20.w, AppSpacing.lg.h),
       child: Row(
         children: [
-          AvatarBlock(initials: initials, size: 72),
-          Gap(16.w),
+          Stack(
+            children: [
+              avatarUrl != null
+                  ? CircleAvatar(
+                      radius: 36.r,
+                      backgroundImage: NetworkImage(avatarUrl!),
+                    )
+                  : AvatarBlock(initials: initials, size: 72),
+              if (isUploadingAvatar)
+                Positioned.fill(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black45,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(
+                      color: Colors.white, // intentional: white-on-dark-overlay
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Gap(AppSpacing.md.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,8 +171,8 @@ class _ProfileHeader extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        email.split('@').first,
-                        style: GoogleFonts.openSans(
+                        displayName,
+                        style: tt.titleMedium!.copyWith(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w700,
                           color: c.text1,
@@ -108,7 +180,7 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () => context.push('/profile/edit'),
                       child: Icon(Iconsax.edit_2, size: 20.r, color: c.text3),
                     ),
                   ],
@@ -116,15 +188,10 @@ class _ProfileHeader extends StatelessWidget {
                 Gap(4.h),
                 Text(
                   email,
-                  style: GoogleFonts.openSans(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
-                    color: c.text3,
-                  ),
+                  style: tt.bodyMedium!.copyWith(color: c.text3),
                 ),
                 if (role != null) ...[
-                  Gap(8.h),
-                  // Orange badge — high-contrast on both light and dark backgrounds
+                  Gap(AppSpacing.sm.h),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
                     decoration: BoxDecoration(
@@ -133,11 +200,10 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     child: Text(
                       role!.label.toUpperCase(),
-                      style: GoogleFonts.openSans(
-                        fontSize: 10.sp,
+                      style: tt.labelSmall!.copyWith(
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.08 * 10,
-                        color: Colors.white,
+                        color: Colors.white, // intentional: white-on-action
                       ),
                     ),
                   ),
@@ -154,11 +220,23 @@ class _ProfileHeader extends StatelessWidget {
 // ── Builder Profile ────────────────────────────────────────────────────────────
 
 class _BuilderProfile extends StatelessWidget {
-  const _BuilderProfile();
+  const _BuilderProfile({this.profile});
+
+  final BuilderProfile? profile;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final p = profile;
+
+    final rating = p?.averageRating?.toStringAsFixed(1) ?? '4.8';
+    final reviews = p?.ratingCount.toString() ?? '23';
+    final jobsPosted = p?.totalJobsPosted.toString() ?? '47';
+
+    final companyName = p?.companyName ?? 'Pinnacle Construct';
+    final abn = p?.abn ?? '12 345 678 901';
+    final location = p?.displayLocation ?? 'Surry Hills NSW 2010';
+    final contact = p?.contactPhone ?? '+61 2 9123 4567';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -167,44 +245,29 @@ class _BuilderProfile extends StatelessWidget {
         children: [
           Row(
             children: [
-              _StatBadge(
-                value: '4.8',
-                label: 'Rating',
-                icon: Iconsax.star,
-                iconColor: c.star,
-              ),
-              Gap(8.w),
-              _StatBadge(
-                value: '23',
-                label: 'Reviews',
-                icon: Iconsax.message_text,
-                iconColor: c.available,
-              ),
-              Gap(8.w),
-              _StatBadge(
-                value: '47',
-                label: 'Jobs posted',
-                icon: Iconsax.briefcase,
-                iconColor: c.action,
-              ),
+              _StatBadge(value: rating, label: 'Rating', icon: Iconsax.star, iconColor: c.star),
+              Gap(AppSpacing.sm.w),
+              _StatBadge(value: reviews, label: 'Reviews', icon: Iconsax.message_text, iconColor: c.available),
+              Gap(AppSpacing.sm.w),
+              _StatBadge(value: jobsPosted, label: 'Jobs posted', icon: Iconsax.briefcase, iconColor: c.action),
             ],
           ),
-          Gap(16.h),
+          Gap(AppSpacing.md.h),
           _InfoCard(
             title: 'COMPANY DETAILS',
             children: [
-              _InfoRow(icon: Iconsax.building_3, label: 'Company', value: 'Pinnacle Construct'),
-              _InfoRow(icon: Iconsax.receipt_1, label: 'ABN', value: '12 345 678 901'),
+              _InfoRow(icon: Iconsax.building_3, label: 'Company', value: companyName),
+              _InfoRow(icon: Iconsax.receipt_1, label: 'ABN', value: abn),
               _InfoRow(icon: Iconsax.briefcase, label: 'Type', value: 'Company'),
-              _InfoRow(icon: Iconsax.location, label: 'Location', value: 'Surry Hills NSW 2010'),
-              _InfoRow(icon: Iconsax.call, label: 'Contact', value: '+61 2 9123 4567'),
+              _InfoRow(icon: Iconsax.location, label: 'Location', value: location),
+              _InfoRow(icon: Iconsax.call, label: 'Contact', value: contact),
             ],
           ),
           Gap(12.h),
           _InfoCard(
             title: 'VERIFICATION',
             children: [
-              _VerificationRow(label: 'ABN verified', isVerified: true),
+              _VerificationRow(label: 'ABN verified', isVerified: p != null),
               _VerificationRow(label: 'Email verified', isVerified: true),
               _VerificationRow(label: 'Insurance docs', isVerified: false),
             ],
@@ -218,11 +281,23 @@ class _BuilderProfile extends StatelessWidget {
 // ── Trade Profile ──────────────────────────────────────────────────────────────
 
 class _TradeProfile extends StatelessWidget {
-  const _TradeProfile();
+  const _TradeProfile({this.profile});
+
+  final TradeProfile? profile;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final p = profile;
+
+    final rating = p?.averageRating?.toStringAsFixed(1) ?? '4.9';
+    final jobsDone = p?.jobsCompleted.toString() ?? '142';
+    final yrsExp = p?.yearsExperience != null ? '${p!.yearsExperience}+' : '5+';
+
+    final trade = p?.displayTrade ?? 'Electrician';
+    final location = p?.displayLocation ?? 'Parramatta NSW 2150';
+    final isVerified = p?.isVerified ?? false;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -231,54 +306,41 @@ class _TradeProfile extends StatelessWidget {
         children: [
           Row(
             children: [
-              _StatBadge(
-                value: '4.9',
-                label: 'Rating',
-                icon: Iconsax.star,
-                iconColor: c.star,
-              ),
-              Gap(8.w),
-              _StatBadge(
-                value: '142',
-                label: 'Jobs done',
-                icon: Iconsax.tick_circle,
-                iconColor: c.verified,
-              ),
-              Gap(8.w),
-              _StatBadge(
-                value: '5+',
-                label: 'Yrs exp',
-                icon: Iconsax.award,
-                iconColor: c.action,
-              ),
+              _StatBadge(value: rating, label: 'Rating', icon: Iconsax.star, iconColor: c.star),
+              Gap(AppSpacing.sm.w),
+              _StatBadge(value: jobsDone, label: 'Jobs done', icon: Iconsax.tick_circle, iconColor: c.verified),
+              Gap(AppSpacing.sm.w),
+              _StatBadge(value: yrsExp, label: 'Yrs exp', icon: Iconsax.award, iconColor: c.action),
             ],
           ),
-          Gap(16.h),
-          // Availability banner
+          Gap(AppSpacing.md.h),
+          // Availability / verification banner
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 12.h),
             decoration: BoxDecoration(
-              color: c.verifiedBg,
+              color: isVerified ? c.verifiedBg : c.surface,
               borderRadius: BorderRadius.circular(AppRadius.card.r),
-              border: Border.all(color: c.border),
+              border: Border.all(color: isVerified ? c.verified : c.border),
             ),
             child: Row(
               children: [
-                Icon(Iconsax.tick_circle, size: 18.r, color: c.verified),
+                Icon(
+                  isVerified ? Iconsax.verify : Iconsax.tick_circle,
+                  size: 18.r,
+                  color: isVerified ? c.verified : c.text3,
+                ),
                 Gap(10.w),
                 Text(
-                  'Available for work',
-                  style: GoogleFonts.openSans(
-                    fontSize: 14.sp,
+                  isVerified ? 'Verified tradie' : 'Available for work',
+                  style: tt.bodyLarge!.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: c.verifiedTx,
+                    color: isVerified ? c.verifiedTx : c.text2,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   'Change',
-                  style: GoogleFonts.openSans(
-                    fontSize: 13.sp,
+                  style: tt.bodyMedium!.copyWith(
                     fontWeight: FontWeight.w500,
                     color: c.available,
                   ),
@@ -290,9 +352,9 @@ class _TradeProfile extends StatelessWidget {
           _InfoCard(
             title: 'TRADE DETAILS',
             children: [
-              _InfoRow(icon: Iconsax.personalcard, label: 'Trade', value: 'Electrician'),
+              _InfoRow(icon: Iconsax.personalcard, label: 'Trade', value: trade),
               _InfoRow(icon: Iconsax.document_text, label: 'Licence', value: 'EL 123456 (NSW)'),
-              _InfoRow(icon: Iconsax.location, label: 'Base suburb', value: 'Parramatta NSW 2150'),
+              _InfoRow(icon: Iconsax.location, label: 'Base suburb', value: location),
               _InfoRow(icon: Iconsax.call, label: 'Phone', value: '+61 4 1234 5678'),
               _InfoRow(icon: Iconsax.calendar_1, label: 'Member since', value: 'May 2026'),
             ],
@@ -302,7 +364,7 @@ class _TradeProfile extends StatelessWidget {
             title: 'VERIFICATION',
             children: [
               _VerificationRow(label: 'Email verified', isVerified: true),
-              _VerificationRow(label: 'Licence verified', isVerified: true),
+              _VerificationRow(label: 'Licence verified', isVerified: isVerified),
               _VerificationRow(label: 'Police check', isVerified: false),
               _VerificationRow(label: 'SWMS uploaded', isVerified: false),
             ],
@@ -353,6 +415,7 @@ class _StatBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Expanded(
       child: Container(
@@ -369,7 +432,7 @@ class _StatBadge extends StatelessWidget {
             Gap(6.h),
             Text(
               value,
-              style: GoogleFonts.oswald(
+              style: tt.headlineSmall!.copyWith(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.w700,
                 color: c.text1,
@@ -378,8 +441,7 @@ class _StatBadge extends StatelessWidget {
             Gap(1.h),
             Text(
               label,
-              style: GoogleFonts.openSans(
-                fontSize: 10.sp,
+              style: tt.labelSmall!.copyWith(
                 fontWeight: FontWeight.w400,
                 color: c.text3,
               ),
@@ -400,6 +462,7 @@ class _InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Container(
       decoration: BoxDecoration(
@@ -411,12 +474,10 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 10.h),
+            padding: EdgeInsets.fromLTRB(AppSpacing.md.w, 14.h, AppSpacing.md.w, 10.h),
             child: Text(
               title,
-              style: GoogleFonts.openSans(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w700,
+              style: tt.labelSmall!.copyWith(
                 letterSpacing: 0.12 * 11,
                 color: c.text3,
               ),
@@ -431,11 +492,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _InfoRow({required this.icon, required this.label, required this.value});
 
   final IconData icon;
   final String label;
@@ -444,28 +501,28 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 12.h),
       child: Row(
         children: [
           Icon(icon, size: 16.r, color: c.text3),
           Gap(12.w),
           Text(
             label,
-            style: GoogleFonts.openSans(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w400,
-              color: c.text2,
-            ),
+            style: tt.bodyMedium!.copyWith(color: c.text2),
           ),
           const Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.openSans(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-              color: c.text1,
+          Flexible(
+            child: Text(
+              value,
+              style: tt.bodyMedium!.copyWith(
+                fontWeight: FontWeight.w600,
+                color: c.text1,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -483,9 +540,10 @@ class _VerificationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 12.h),
       child: Row(
         children: [
           Icon(
@@ -497,17 +555,12 @@ class _VerificationRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.openSans(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w400,
-                color: c.text1,
-              ),
+              style: tt.bodyMedium!.copyWith(color: c.text1),
             ),
           ),
           Text(
             isVerified ? 'Verified' : 'Upload',
-            style: GoogleFonts.openSans(
-              fontSize: 13.sp,
+            style: tt.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
               color: isVerified ? c.verified : c.available,
             ),
@@ -527,12 +580,13 @@ class _ActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 14.h),
         child: Row(
           children: [
             Icon(icon, size: 18.r, color: c.text2),
@@ -540,8 +594,7 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.openSans(
-                  fontSize: 14.sp,
+                style: tt.bodyLarge!.copyWith(
                   fontWeight: FontWeight.w500,
                   color: c.text1,
                 ),

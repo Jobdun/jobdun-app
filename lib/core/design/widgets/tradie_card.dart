@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 import 'avatar_block.dart';
@@ -37,6 +36,7 @@ class TradieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final isOffline = !isAvailable;
 
     return Opacity(
@@ -45,7 +45,7 @@ class TradieCard extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-          padding: EdgeInsets.all(16.r),
+          padding: EdgeInsets.all(AppSpacing.md.r),
           decoration: BoxDecoration(
             color: c.card,
             borderRadius: BorderRadius.circular(AppRadius.card.r),
@@ -69,8 +69,7 @@ class TradieCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 name,
-                                style: GoogleFonts.openSans(
-                                  fontSize: 16.sp,
+                                style: tt.titleMedium!.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: c.text1,
                                 ),
@@ -83,7 +82,7 @@ class TradieCard extends StatelessWidget {
                               children: [
                                 Text(
                                   rating.toStringAsFixed(1),
-                                  style: GoogleFonts.oswald(
+                                  style: tt.headlineSmall!.copyWith(
                                     fontSize: 18.sp,
                                     fontWeight: FontWeight.w700,
                                     color: c.text1,
@@ -92,10 +91,7 @@ class TradieCard extends StatelessWidget {
                                 ),
                                 Text(
                                   '/5',
-                                  style: GoogleFonts.openSans(
-                                    fontSize: 11.sp,
-                                    color: c.text3,
-                                  ),
+                                  style: tt.bodySmall!.copyWith(color: c.text3),
                                 ),
                               ],
                             ),
@@ -104,18 +100,12 @@ class TradieCard extends StatelessWidget {
                         Gap(2.h),
                         Text(
                           '$trade · $suburb',
-                          style: GoogleFonts.openSans(
-                            fontSize: 13.sp,
-                            color: c.text2,
-                          ),
+                          style: tt.bodyMedium!.copyWith(color: c.text2),
                         ),
                         Gap(2.h),
                         Text(
                           '$jobCount jobs completed',
-                          style: GoogleFonts.openSans(
-                            fontSize: 11.sp,
-                            color: c.text3,
-                          ),
+                          style: tt.bodySmall!.copyWith(color: c.text3),
                         ),
                       ],
                     ),
@@ -136,33 +126,27 @@ class TradieCard extends StatelessWidget {
                       color: isOffline ? c.text3 : c.verified,
                     ),
                   ),
-                  Gap(8.w),
+                  Gap(AppSpacing.sm.w),
                   Text(
                     isOffline ? 'Offline' : 'Available',
-                    style: GoogleFonts.openSans(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
+                    style: tt.labelMedium!.copyWith(
                       color: isOffline ? c.text3 : c.verifiedTx,
                     ),
                   ),
                   if (!isOffline && isVerified) ...[
-                    Gap(8.w),
-                    Text('·', style: GoogleFonts.openSans(fontSize: 11.sp, color: c.border)),
-                    Gap(8.w),
+                    Gap(AppSpacing.sm.w),
+                    Text('·', style: tt.bodySmall!.copyWith(color: c.border)),
+                    Gap(AppSpacing.sm.w),
                     Text(
                       '✓ Verified',
-                      style: GoogleFonts.openSans(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
-                        color: c.verifiedTx,
-                      ),
+                      style: tt.labelMedium!.copyWith(color: c.verifiedTx),
                     ),
                   ],
                   if (!isOffline) ...[
                     const Spacer(),
                     Text(
                       '${distanceKm.toStringAsFixed(1)} km',
-                      style: GoogleFonts.oswald(
+                      style: tt.headlineSmall!.copyWith(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w700,
                         color: c.action,

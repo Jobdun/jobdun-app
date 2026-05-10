@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../jobs/domain/entities/job.dart';
+import '../providers/jobs_provider.dart';
+import 'job_detail_page.dart';
 
 class JobsPage extends ConsumerStatefulWidget {
   const JobsPage({super.key});
@@ -18,114 +24,47 @@ class JobsPage extends ConsumerStatefulWidget {
 }
 
 class _JobsPageState extends ConsumerState<JobsPage> {
-  String? _activeFilter;
+  final _searchCtrl = TextEditingController();
+  Timer? _debounce;
 
   static const _filters = [
-    'All',
-    'Electrician',
-    'Plumber',
-    'Carpenter',
-    'Concreter',
-    'Painter',
+    'All', 'Electrician', 'Plumber', 'Carpenter', 'Concreter', 'Painter',
   ];
 
-  static const _jobs = [
-    _JobModel(
-      id: '1',
-      title: 'Install 3-phase switchboard at commercial site',
-      description:
-          'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination. Must hold current NSW electrical licence.',
-      company: 'Pinnacle Construct',
-      suburb: 'Surry Hills, NSW',
-      rate: r'$85/hr',
-      startDate: 'Tomorrow 7am',
-      distanceKm: 2.4,
-      trade: 'Electrician',
-      isUrgent: true,
-      postedAgo: '2h ago',
-    ),
-    _JobModel(
-      id: '2',
-      title: 'Frame internal walls for home renovation',
-      description:
-          'Steel stud framing approximately 120 LM for a full renovation in Newtown. Drawings available on site. Supply your own tools.',
-      company: 'BuildRight Pty Ltd',
-      suburb: 'Newtown, NSW',
-      rate: r'$45/hr',
-      startDate: '12 May',
-      distanceKm: 4.8,
-      trade: 'Carpenter',
-      isUrgent: false,
-      postedAgo: '5h ago',
-    ),
-    _JobModel(
-      id: '3',
-      title: 'Concrete footings for deck extension',
-      description:
-          '8 × 300mm dia pad footings, 600mm deep. Reinforcement supplied by contractor. All approvals in place.',
-      company: 'Coast & Country Builds',
-      suburb: 'Cronulla, NSW',
-      rate: r'$75/hr',
-      startDate: '14 May',
-      distanceKm: 9.1,
-      trade: 'Concreter',
-      isUrgent: false,
-      postedAgo: '1d ago',
-    ),
-    _JobModel(
-      id: '4',
-      title: 'Rough-in plumbing for new bathroom',
-      description:
-          'Rough-in plumbing for a new ensuite bathroom in Mosman. Shower, vanity, toilet, and bath connections. Hot and cold supply, sewer connections to existing stack.',
-      company: 'Prestige Renos',
-      suburb: 'Mosman, NSW',
-      rate: r'$1,800 fixed',
-      startDate: '15 May',
-      distanceKm: 6.3,
-      trade: 'Plumber',
-      isUrgent: false,
-      postedAgo: '2d ago',
-    ),
-    _JobModel(
-      id: '5',
-      title: 'Roof repair — replace tiles and re-bed ridge',
-      description:
-          'Approx 20 broken tiles to replace following storm damage. Ridge re-bedding on east face. Scaffold supplied. Must be available immediately.',
-      company: 'Harbour Homes',
-      suburb: 'Balmain, NSW',
-      rate: r'$55/hr',
-      startDate: 'Today',
-      distanceKm: 3.7,
-      trade: 'Painter',
-      isUrgent: true,
-      postedAgo: '3h ago',
-    ),
-    _JobModel(
-      id: '6',
-      title: 'Interior paint — 4-bedroom home repaint',
-      description:
-          'Full interior repaint of a 4-bedroom home before sale. Walls, ceilings, trims. Paint supplied. 2 coats Dulux Wash&Wear throughout.',
-      company: 'Domain Developments',
-      suburb: 'Randwick, NSW',
-      rate: r'$3,500 fixed',
-      startDate: '18 May',
-      distanceKm: 7.2,
-      trade: 'Painter',
-      isUrgent: false,
-      postedAgo: '4d ago',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(jobsControllerProvider.notifier).loadFeed();
+    });
+  }
 
-  List<_JobModel> get _filtered {
-    if (_activeFilter == null || _activeFilter == 'All') return _jobs;
-    return _jobs.where((j) => j.trade == _activeFilter).toList();
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) ref.read(jobsControllerProvider.notifier).search(query);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final jobsState = ref.watch(jobsControllerProvider);
     final isBuilder = ref.watch(authControllerProvider).role == UserRole.builder;
-    final results = _filtered;
+    final activeFilter = jobsState.filter?.tradeType;
+    final jobs = jobsState.jobs;
+    final isLoading = jobsState.isLoading;
+
+    final displayJobs = jobs.isEmpty && !isLoading ? _mockJobs : null;
+    final count = displayJobs != null ? displayJobs.length : jobs.length;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -148,31 +87,21 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           children: [
                             Text(
                               isBuilder ? 'POSTED JOBS' : 'FIND WORK',
-                              style: GoogleFonts.openSans(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w600,
+                              style: tt.labelSmall!.copyWith(
                                 letterSpacing: 0.12 * 11,
                                 color: c.text3,
                               ),
                             ),
                             Gap(4.h),
                             ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFFFFB300),
-                                  Color(0xFFF97316),
-                                  Color(0xFFE64A19),
-                                ],
-                              ).createShader(bounds),
+                              shaderCallback: (bounds) =>
+                                  AppGradients.brandFlame.createShader(bounds),
                               child: Text(
                                 isBuilder ? 'Your listings' : 'Open near you',
-                                style: GoogleFonts.oswald(
+                                style: tt.headlineSmall!.copyWith(
                                   fontSize: 28.sp,
-                                  fontWeight: FontWeight.w700,
                                   letterSpacing: 0.02 * 28,
-                                  color: Colors.white,
+                                  color: Colors.white, // intentional: ShaderMask requires white for gradient
                                 ),
                               ),
                             ),
@@ -181,7 +110,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       ),
                       if (isBuilder)
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () => context.push('/jobs/create'),
                           child: Container(
                             height: 36.h,
                             padding: EdgeInsets.symmetric(horizontal: 14.w),
@@ -192,15 +121,14 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Iconsax.add, size: 16.r, color: Colors.white),
+                                Icon(Iconsax.add, size: 16.r, color: Colors.white), // intentional: white-on-action
                                 Gap(6.w),
                                 Text(
                                   'POST JOB',
-                                  style: GoogleFonts.openSans(
-                                    fontSize: 13.sp,
+                                  style: tt.bodyMedium!.copyWith(
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.5,
-                                    color: Colors.white,
+                                    color: Colors.white, // intentional: white-on-action
                                   ),
                                 ),
                               ],
@@ -210,7 +138,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                     ],
                   ),
                   Gap(12.h),
-                  // ── Search bar — 40px height per spec
+                  // ── Search bar
                   Container(
                     height: 40.h,
                     decoration: BoxDecoration(
@@ -222,15 +150,36 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       children: [
                         Gap(14.w),
                         Icon(Iconsax.search_normal, size: 16.r, color: c.text3),
-                        Gap(8.w),
-                        Text(
-                          'Search trades, skills, suburbs…',
-                          style: GoogleFonts.openSans(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w400,
-                            color: c.text3,
+                        Gap(AppSpacing.sm.w),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            onChanged: _onSearchChanged,
+                            style: tt.bodyMedium!.copyWith(color: c.text1),
+                            decoration: InputDecoration(
+                              hintText: 'Search trades, skills, suburbs…',
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              filled: false,
+                              contentPadding: EdgeInsets.zero,
+                              isDense: true,
+                            ),
                           ),
                         ),
+                        if (_searchCtrl.text.isNotEmpty) ...[
+                          GestureDetector(
+                            onTap: () {
+                              _searchCtrl.clear();
+                              ref.read(jobsControllerProvider.notifier).search('');
+                            },
+                            child: Icon(Iconsax.close_circle, size: 16.r, color: c.text3),
+                          ),
+                          Gap(10.w),
+                        ],
                       ],
                     ),
                   ),
@@ -241,16 +190,17 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _filters.length,
-                      separatorBuilder: (ctx, idx) => Gap(8.w),
+                      separatorBuilder: (ctx, idx) => Gap(AppSpacing.sm.w),
                       itemBuilder: (context, i) {
                         final f = _filters[i];
                         final isActive =
-                            f == _activeFilter || (i == 0 && _activeFilter == null);
+                            f == 'All' ? activeFilter == null : activeFilter == f;
                         return GvChip(
                           label: f,
                           active: isActive,
-                          onTap: () =>
-                              setState(() => _activeFilter = f == 'All' ? null : f),
+                          onTap: () => ref
+                              .read(jobsControllerProvider.notifier)
+                              .applyFilter(f == 'All' ? null : f),
                         );
                       },
                     ),
@@ -260,13 +210,19 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 ],
               ),
             ),
+            // ── Loading bar
+            if (isLoading)
+              LinearProgressIndicator(
+                color: c.action,
+                backgroundColor: c.surface,
+                minHeight: 2,
+              ),
             // ── Results count
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
               child: Text(
-                '${results.length} ${results.length == 1 ? 'job' : 'jobs'} found',
-                style: GoogleFonts.openSans(
-                  fontSize: 12.sp,
+                '$count ${count == 1 ? 'job' : 'jobs'} found',
+                style: tt.labelMedium!.copyWith(
                   fontWeight: FontWeight.w400,
                   color: c.text3,
                 ),
@@ -274,23 +230,108 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             ),
             // ── Job list
             Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 24.h),
-                itemCount: results.length,
-                separatorBuilder: (ctx, idx) => Gap(9.h),
-                itemBuilder: (context, i) {
-                  final j = results[i];
-                  return JobCard(
-                    title: j.title,
-                    description: j.description,
-                    rate: j.rate,
-                    startDate: j.startDate,
-                    distanceKm: j.distanceKm,
-                    isUrgent: j.isUrgent,
-                    onTap: () {},
-                  );
-                },
+              child: count == 0
+                  ? _EmptyState(hasFilter: activeFilter != null || _searchCtrl.text.isNotEmpty)
+                  : ListView.separated(
+                      padding: EdgeInsets.fromLTRB(20.w, AppSpacing.sm.h, 20.w, AppSpacing.lg.h),
+                      itemCount: count,
+                      separatorBuilder: (ctx, idx) => Gap(9.h),
+                      itemBuilder: (context, i) {
+                        if (displayJobs != null) {
+                          final j = displayJobs[i];
+                          return JobCard(
+                            title: j.title,
+                            description: j.description,
+                            rate: j.rate,
+                            startDate: j.startDate,
+                            distanceKm: j.distanceKm,
+                            isUrgent: j.isUrgent,
+                            onTap: () {
+                              context.push(
+                                '/jobs/mock-$i',
+                                extra: JobDetailArgs(
+                                  title: j.title,
+                                  description: j.description,
+                                  rate: j.rate,
+                                  startDate: j.startDate,
+                                  distanceKm: j.distanceKm,
+                                  isUrgent: j.isUrgent,
+                                ),
+                              );
+                            },
+                          );
+                        }
+                        final j = jobs[i];
+                        return JobCard(
+                          title: j.title,
+                          description: j.description,
+                          rate: j.displayBudget,
+                          startDate: j.startDate != null
+                              ? _fmtDate(j.startDate!)
+                              : j.displayLocation,
+                          distanceKm: 0.0,
+                          isUrgent: j.urgency == JobUrgency.urgent,
+                          onTap: () => context.push(
+                            '/jobs/${j.id}',
+                            extra: JobDetailArgs.fromJob(j),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _fmtDate(DateTime d) {
+    final now = DateTime.now();
+    final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    return '${d.day} ${_months[d.month - 1]}';
+  }
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.hasFilter});
+
+  final bool hasFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Iconsax.search_normal, size: 48.r, color: c.text3),
+            Gap(AppSpacing.md.h),
+            Text(
+              hasFilter ? 'NO JOBS FOUND.' : 'NO OPEN JOBS.',
+              style: tt.headlineSmall!.copyWith(
+                fontSize: 22.sp,
+                color: c.text1,
               ),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.sm.h),
+            Text(
+              hasFilter
+                  ? 'Try a different trade or clear your filters.'
+                  : 'Check back soon — new jobs are posted daily.',
+              style: tt.bodyLarge!.copyWith(color: c.text3),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -299,30 +340,51 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   }
 }
 
-class _JobModel {
-  const _JobModel({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.company,
-    required this.suburb,
-    required this.rate,
-    required this.startDate,
-    required this.distanceKm,
-    required this.trade,
-    required this.isUrgent,
-    required this.postedAgo,
+// ── Sample fallback data ───────────────────────────────────────────────────────
+
+class _MockJobData {
+  const _MockJobData({
+    required this.title, required this.description, required this.rate,
+    required this.startDate, required this.distanceKm, required this.isUrgent,
   });
 
-  final String id;
   final String title;
   final String description;
-  final String company;
-  final String suburb;
   final String rate;
   final String startDate;
   final double distanceKm;
-  final String trade;
   final bool isUrgent;
-  final String postedAgo;
 }
+
+const _mockJobs = [
+  _MockJobData(
+    title: 'Install 3-phase switchboard at commercial site',
+    description: 'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination. Must hold current NSW electrical licence.',
+    rate: r'$85/hr', startDate: 'Tomorrow 7am', distanceKm: 2.4, isUrgent: true,
+  ),
+  _MockJobData(
+    title: 'Frame internal walls for home renovation',
+    description: 'Steel stud framing approximately 120 LM for a full renovation in Newtown. Drawings available on site. Supply your own tools.',
+    rate: r'$45/hr', startDate: '12 May', distanceKm: 4.8, isUrgent: false,
+  ),
+  _MockJobData(
+    title: 'Concrete footings for deck extension',
+    description: '8 × 300mm dia pad footings, 600mm deep. Reinforcement supplied by contractor. All approvals in place.',
+    rate: r'$75/hr', startDate: '14 May', distanceKm: 9.1, isUrgent: false,
+  ),
+  _MockJobData(
+    title: 'Rough-in plumbing for new bathroom',
+    description: 'Rough-in plumbing for a new ensuite bathroom in Mosman. Shower, vanity, toilet, and bath connections.',
+    rate: r'$1,800 fixed', startDate: '15 May', distanceKm: 6.3, isUrgent: false,
+  ),
+  _MockJobData(
+    title: 'Roof repair — replace tiles and re-bed ridge',
+    description: 'Approx 20 broken tiles to replace following storm damage. Ridge re-bedding on east face. Scaffold supplied.',
+    rate: r'$55/hr', startDate: 'Today', distanceKm: 3.7, isUrgent: true,
+  ),
+  _MockJobData(
+    title: 'Interior paint — 4-bedroom home repaint',
+    description: 'Full interior repaint of a 4-bedroom home before sale. Walls, ceilings, trims. Paint supplied.',
+    rate: r'$3,500 fixed', startDate: '18 May', distanceKm: 7.2, isUrgent: false,
+  ),
+];

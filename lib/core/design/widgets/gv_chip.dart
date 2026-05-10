@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 
@@ -19,6 +18,7 @@ class GvChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return GestureDetector(
       onTap: onTap,
@@ -37,11 +37,8 @@ class GvChip extends StatelessWidget {
         ),
         child: Text(
           label.toUpperCase(),
-          style: GoogleFonts.openSans(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            color: active ? Colors.white : c.text2,
+          style: tt.labelMedium!.copyWith(
+            color: active ? Colors.white : c.text2, // intentional: white-on-action
           ),
         ),
       ),

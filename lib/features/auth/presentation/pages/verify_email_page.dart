@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
@@ -17,6 +17,7 @@ class VerifyEmailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final email = authState.pendingVerificationEmail ?? '';
 
@@ -24,7 +25,7 @@ class VerifyEmailPage extends ConsumerWidget {
       backgroundColor: c.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -41,26 +42,15 @@ class VerifyEmailPage extends ConsumerWidget {
               Gap(12.h),
               Center(
                 child: ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFFFF176),
-                      Color(0xFFFFB300),
-                      Color(0xFFF97316),
-                      Color(0xFFE64A19),
-                      Color(0xFFBF360C),
-                    ],
-                    stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                  ).createShader(bounds),
+                  shaderCallback: (bounds) =>
+                      AppGradients.brandFlame.createShader(bounds),
                   child: Text(
                     'JOBDUN',
-                    style: GoogleFonts.oswald(
+                    style: tt.displaySmall!.copyWith(
                       fontSize: 44.sp,
-                      fontWeight: FontWeight.w700,
                       letterSpacing: 4.0,
-                      color: Colors.white,
                       height: 1.0,
+                      color: Colors.white, // intentional: ShaderMask requires white for gradient
                     ),
                   ),
                 ),
@@ -91,9 +81,8 @@ class VerifyEmailPage extends ConsumerWidget {
               // ── Heading ───────────────────────────────────────────────────
               Text(
                 'CHECK YOUR\nEMAIL.',
-                style: GoogleFonts.oswald(
+                style: tt.displaySmall!.copyWith(
                   fontSize: 40.sp,
-                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.8,
                   color: c.text1,
                   height: 1.05,
@@ -102,20 +91,19 @@ class VerifyEmailPage extends ConsumerWidget {
               Gap(12.h),
               Text.rich(
                 TextSpan(
-                  style: GoogleFonts.openSans(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w400,
+                  style: tt.bodyLarge!.copyWith(
                     color: c.text2,
+                    fontSize: 14.sp,
                     height: 1.7,
                   ),
                   children: [
                     const TextSpan(text: 'We sent a verification link to '),
                     TextSpan(
                       text: email,
-                      style: GoogleFonts.openSans(
-                        fontSize: 14.sp,
+                      style: tt.bodyLarge!.copyWith(
                         fontWeight: FontWeight.w600,
                         color: c.action,
+                        fontSize: 14.sp,
                       ),
                     ),
                     const TextSpan(text: '. Tap it to activate your account.'),
@@ -141,10 +129,9 @@ class VerifyEmailPage extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         "Can't find it? Check your spam or junk folder.",
-                        style: GoogleFonts.openSans(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w400,
+                        style: tt.labelMedium!.copyWith(
                           color: c.text3,
+                          fontWeight: FontWeight.w400,
                           height: 1.5,
                         ),
                       ),
@@ -168,7 +155,7 @@ class VerifyEmailPage extends ConsumerWidget {
                 ),
               ],
 
-              Gap(32.h),
+              Gap(AppSpacing.xl.h),
 
               AppButton(
                 label: authState.isLoading
@@ -191,9 +178,7 @@ class VerifyEmailPage extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: 12.w),
                     child: Text(
                       'OR',
-                      style: GoogleFonts.openSans(
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
+                      style: tt.labelSmall!.copyWith(
                         letterSpacing: 1.0,
                         color: c.text3,
                       ),
@@ -213,7 +198,7 @@ class VerifyEmailPage extends ConsumerWidget {
                     .clearPendingVerification(),
               ),
 
-              Gap(32.h),
+              Gap(AppSpacing.xl.h),
             ],
           ),
         ),

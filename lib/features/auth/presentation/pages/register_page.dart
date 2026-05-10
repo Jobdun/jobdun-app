@@ -6,10 +6,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
@@ -49,6 +49,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
@@ -58,7 +59,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           opacity: _ready ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -76,26 +77,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
                     Gap(10.w),
                     ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFFFF176),
-                          Color(0xFFFFB300),
-                          Color(0xFFF97316),
-                          Color(0xFFE64A19),
-                          Color(0xFFBF360C),
-                        ],
-                        stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                      ).createShader(bounds),
+                      shaderCallback: (bounds) =>
+                          AppGradients.brandFlame.createShader(bounds),
                       child: Text(
                         'JOBDUN',
-                        style: GoogleFonts.oswald(
+                        style: tt.headlineSmall!.copyWith(
                           fontSize: 36.sp,
-                          fontWeight: FontWeight.w700,
                           letterSpacing: 3.0,
-                          color: Colors.white,
                           height: 1.0,
+                          color: Colors.white, // intentional: ShaderMask requires white for gradient
                         ),
                       ),
                     ),
@@ -105,11 +95,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 Center(
                   child: Text(
                     'Create your account',
-                    style: GoogleFonts.openSans(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w400,
-                      color: c.text2,
-                    ),
+                    style: tt.bodyMedium!.copyWith(color: c.text2),
                   ),
                 ),
 
@@ -128,14 +114,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         keyboardType: TextInputType.name,
                         textInputAction: TextInputAction.next,
                         textCapitalization: TextCapitalization.words,
-                        style: TextStyle(
+                        style: tt.bodyLarge!.copyWith(
                           color: c.text1,
-                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Your full name',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 13.sp),
                           prefixIcon: Icon(Iconsax.user, size: 16.r),
                           contentPadding: EdgeInsets.symmetric(
                             vertical: 12.h, horizontal: 14.w,
@@ -153,14 +137,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         name: 'email',
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        style: TextStyle(
+                        style: tt.bodyLarge!.copyWith(
                           color: c.text1,
-                          fontSize: 14.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'your@email.com',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 13.sp),
                           prefixIcon: Icon(Iconsax.sms, size: 16.r),
                           contentPadding: EdgeInsets.symmetric(
                             vertical: 12.h, horizontal: 14.w,
@@ -172,7 +154,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ]),
                       ),
                       Gap(12.h),
-                      // Password + Confirm side note on same label row
                       Row(
                         children: [
                           Expanded(
@@ -185,17 +166,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   name: 'password',
                                   obscureText: _obscurePassword,
                                   textInputAction: TextInputAction.next,
-                                  style: TextStyle(
+                                  style: tt.bodyLarge!.copyWith(
                                     color: c.text1,
-                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Min. 8 chars',
-                                    hintStyle: TextStyle(
-                                      color: c.text3,
-                                      fontSize: 13.sp,
-                                    ),
                                     prefixIcon: Icon(Iconsax.lock, size: 16.r),
                                     contentPadding: EdgeInsets.symmetric(
                                       vertical: 12.h, horizontal: 14.w,
@@ -232,17 +208,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   name: 'confirm_password',
                                   obscureText: _obscureConfirm,
                                   textInputAction: TextInputAction.next,
-                                  style: TextStyle(
+                                  style: tt.bodyLarge!.copyWith(
                                     color: c.text1,
-                                    fontSize: 14.sp,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Re-enter',
-                                    hintStyle: TextStyle(
-                                      color: c.text3,
-                                      fontSize: 13.sp,
-                                    ),
                                     prefixIcon: Icon(Iconsax.lock_1, size: 16.r),
                                     contentPadding: EdgeInsets.symmetric(
                                       vertical: 12.h, horizontal: 14.w,
@@ -285,8 +256,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         contentPadding: EdgeInsets.zero,
                         title: RichText(
                           text: TextSpan(
-                            style: GoogleFonts.openSans(
-                              fontSize: 11.sp,
+                            style: tt.bodySmall!.copyWith(
                               color: c.text2,
                               height: 1.4,
                             ),
@@ -294,8 +264,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               const TextSpan(text: 'I agree to the '),
                               TextSpan(
                                 text: 'Terms',
-                                style: GoogleFonts.openSans(
-                                  fontSize: 11.sp,
+                                style: tt.bodySmall!.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: c.action,
                                 ),
@@ -303,8 +272,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               const TextSpan(text: ' & '),
                               TextSpan(
                                 text: 'Privacy Policy',
-                                style: GoogleFonts.openSans(
-                                  fontSize: 11.sp,
+                                style: tt.bodySmall!.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: c.action,
                                 ),
@@ -328,7 +296,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   StatusBanner(message: authState.infoMessage!, isError: false),
                 ],
 
-                Gap(16.h),
+                Gap(AppSpacing.md.h),
 
                 AppButton(
                   label: authState.isLoading
@@ -347,9 +315,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
                       child: Text(
                         'OR',
-                        style: GoogleFonts.openSans(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
+                        style: tt.bodySmall!.copyWith(
                           letterSpacing: 1.0,
                           color: c.text3,
                         ),
@@ -371,7 +337,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
                 const SocialAuthButtons(),
 
-                Gap(24.h),
+                Gap(AppSpacing.lg.h),
               ],
             ),
           ),
@@ -391,13 +357,10 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: GoogleFonts.openSans(
-        fontSize: 10.sp,
-        fontWeight: FontWeight.w700,
+      style: Theme.of(context).textTheme.labelSmall!.copyWith(
         letterSpacing: 0.12 * 11,
         color: c.text2,
       ),
     );
   }
 }
-

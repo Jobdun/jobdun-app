@@ -12,27 +12,28 @@ class UserModel extends AppUser {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final roleStr = json['role'] as String? ?? 'trade';
+    // Role may come from JWT claim 'user_role' OR from a joined user_roles row.
+    final roleStr = json['user_role'] as String? ?? json['role'] as String? ?? 'trade';
     final role = UserRole.values.firstWhere(
       (r) => r.name == roleStr,
       orElse: () => UserRole.trade,
     );
+    // Onboarding tracked by onboarding_completed_at (non-null = complete).
+    final onboardingCompletedAt = json['onboarding_completed_at'];
     return UserModel(
       id: json['id'] as String,
       email: json['email'] as String? ?? '',
       role: role,
-      fullName: json['full_name'] as String?,
+      fullName: json['display_name'] as String? ?? json['full_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      isOnboardingComplete: json['is_onboarding_complete'] as bool? ?? false,
+      isOnboardingComplete: onboardingCompletedAt != null,
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'email': email,
-    'role': role.name,
-    'full_name': fullName,
+    'display_name': fullName,
     'avatar_url': avatarUrl,
-    'is_onboarding_complete': isOnboardingComplete,
   };
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 
@@ -16,6 +15,7 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final s = _spec(c, variant);
 
     return Container(
@@ -38,12 +38,7 @@ class StatusBadge extends StatelessWidget {
           ],
           Text(
             label ?? s.defaultLabel,
-            style: GoogleFonts.openSans(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: s.textColor,
-            ),
+            style: tt.labelMedium!.copyWith(color: s.textColor),
           ),
         ],
       ),

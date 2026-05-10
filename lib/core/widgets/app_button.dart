@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/app_colors.dart';
 
@@ -26,17 +25,13 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
-    final labelStyle = GoogleFonts.oswald(
-      fontSize: 14.sp,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 1.5,
-    );
+    final labelStyle = tt.labelLarge!.copyWith(color: _labelColor(c));
 
     final Widget content = isLoading
-        ? SizedBox(
-            width: 18.r,
-            height: 18.r,
+        ? SizedBox.square(
+            dimension: 18.r,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: _loaderColor(c),
@@ -59,9 +54,9 @@ class AppButton extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: c.action,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.white, // intentional: white-on-action
           disabledBackgroundColor: c.action.withValues(alpha: 0.35),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white.withValues(alpha: 0.5), // intentional: white-on-action
           minimumSize: Size.fromHeight(52.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
@@ -98,8 +93,14 @@ class AppButton extends StatelessWidget {
     };
   }
 
+  Color _labelColor(JColors c) => switch (variant) {
+    AppButtonVariant.primary   => Colors.white, // intentional: white-on-action
+    AppButtonVariant.secondary => c.text1,
+    AppButtonVariant.text      => c.action,
+  };
+
   Color _loaderColor(JColors c) => switch (variant) {
-    AppButtonVariant.primary   => Colors.white,
+    AppButtonVariant.primary   => Colors.white, // intentional: white-on-action
     AppButtonVariant.secondary => c.text1,
     AppButtonVariant.text      => c.action,
   };

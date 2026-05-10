@@ -18,9 +18,9 @@ class JobdunApp extends ConsumerWidget {
       splitScreenMode: true,
       builder: (context, child) => MaterialApp.router(
         title: 'Jobdun',
-        theme: AppTheme.light(),
+        theme: AppTheme.dark(),
         darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.dark,
         routerConfig: router,
         debugShowCheckedModeBanner: false,
       ),

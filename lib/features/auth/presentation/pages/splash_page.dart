@@ -6,11 +6,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
@@ -43,6 +43,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -59,35 +60,22 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               ),
               Gap(20.h),
               ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFFFF176),
-                    Color(0xFFFFB300),
-                    Color(0xFFF97316),
-                    Color(0xFFE64A19),
-                    Color(0xFFBF360C),
-                  ],
-                  stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                ).createShader(bounds),
+                shaderCallback: (bounds) =>
+                    AppGradients.brandFlame.createShader(bounds),
                 child: Text(
                   'JOBDUN',
-                  style: GoogleFonts.oswald(
+                  style: tt.displaySmall!.copyWith(
                     fontSize: 48.sp,
-                    fontWeight: FontWeight.w700,
                     letterSpacing: 4.0,
-                    color: Colors.white,
                     height: 1.0,
+                    color: Colors.white, // intentional: ShaderMask requires white for gradient
                   ),
                 ),
               ),
               Gap(6.h),
               Text(
                 AppConstants.appTagline,
-                style: GoogleFonts.openSans(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w400,
+                style: tt.bodyMedium!.copyWith(
                   color: c.text3,
                   letterSpacing: 0.3,
                 ),
@@ -95,9 +83,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               const Spacer(),
               if (!AppEnv.isSupabaseConfigured)
                 _EnvChip(missingKeys: AppEnv.missingKeysSummary),
-              Gap(16.h),
+              Gap(AppSpacing.md.h),
               _LoadingBar(c: c),
-              Gap(24.h),
+              Gap(AppSpacing.lg.h),
             ],
           ),
         ),
@@ -114,6 +102,7 @@ class _EnvChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
@@ -130,11 +119,7 @@ class _EnvChip extends StatelessWidget {
           Flexible(
             child: Text(
               'Missing $missingKeys. Run with --dart-define-from-file=.env.',
-              style: GoogleFonts.openSans(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w400,
-                color: c.text2,
-              ),
+              style: tt.bodySmall!.copyWith(color: c.text2),
             ),
           ),
         ],

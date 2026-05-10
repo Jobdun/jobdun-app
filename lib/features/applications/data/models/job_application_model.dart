@@ -5,34 +5,69 @@ class JobApplicationModel extends JobApplication {
     required super.id,
     required super.jobId,
     required super.tradeId,
+    required super.builderId,
     required super.status,
     required super.createdAt,
     required super.updatedAt,
-    super.coverMessage,
+    super.coverNote,
+    super.proposedRate,
+    super.proposedRateType,
+    super.availableFrom,
+    super.rejectionReason,
+    super.jobTitle,
+    super.jobSuburb,
+    super.jobState,
+    super.jobStatus,
+    super.tradeFullName,
+    super.tradePrimaryTrade,
+    super.tradeIsVerified,
+    super.builderCompanyName,
   });
 
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
-    final statusStr = json['status'] as String? ?? 'pending';
-    final status = ApplicationStatus.values.firstWhere(
-      (s) => s.name == statusStr,
-      orElse: () => ApplicationStatus.pending,
-    );
+    final status = ApplicationStatusX.fromDb(json['status'] as String? ?? 'pending');
+
+    // Support flat row or nested joins
+    final jobData = json['jobs'] as Map<String, dynamic>?;
+    final tradeData = json['trade_profiles'] as Map<String, dynamic>?;
+    final builderData = json['builder_profiles'] as Map<String, dynamic>?;
+
     return JobApplicationModel(
       id: json['id'] as String,
       jobId: json['job_id'] as String,
       tradeId: json['trade_id'] as String,
+      builderId: json['builder_id'] as String,
       status: status,
-      coverMessage: json['cover_message'] as String?,
+      coverNote: json['cover_note'] as String?,
+      proposedRate: (json['proposed_rate'] as num?)?.toDouble(),
+      proposedRateType: json['proposed_rate_type'] as String?,
+      availableFrom: json['available_from'] != null
+          ? DateTime.parse(json['available_from'] as String)
+          : null,
+      rejectionReason: json['rejection_reason'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      // Joined job fields
+      jobTitle: jobData?['title'] as String?,
+      jobSuburb: jobData?['suburb'] as String?,
+      jobState: jobData?['state'] as String?,
+      jobStatus: jobData?['status'] as String?,
+      // Joined trade profile fields
+      tradeFullName: tradeData?['full_name'] as String?,
+      tradePrimaryTrade: tradeData?['primary_trade'] as String?,
+      tradeIsVerified: tradeData?['is_verified'] as bool?,
+      // Joined builder profile fields
+      builderCompanyName: builderData?['company_name'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
     'job_id': jobId,
     'trade_id': tradeId,
-    'status': status.name,
-    'cover_message': coverMessage,
+    'builder_id': builderId,
+    'cover_note': coverNote,
+    'proposed_rate': proposedRate,
+    'proposed_rate_type': proposedRateType,
+    'available_from': availableFrom?.toIso8601String().split('T').first,
   };
 }

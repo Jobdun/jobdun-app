@@ -6,10 +6,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
@@ -48,6 +48,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
@@ -57,7 +58,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           opacity: _ready ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -71,29 +72,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
                   ),
                 ),
-                Gap(16.h),
+                Gap(AppSpacing.md.h),
                 Center(
                   child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFFFF176),
-                        Color(0xFFFFB300),
-                        Color(0xFFF97316),
-                        Color(0xFFE64A19),
-                        Color(0xFFBF360C),
-                      ],
-                      stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                    ).createShader(bounds),
+                    shaderCallback: (bounds) =>
+                        AppGradients.brandFlame.createShader(bounds),
                     child: Text(
                       'JOBDUN',
-                      style: GoogleFonts.oswald(
+                      style: tt.displaySmall!.copyWith(
                         fontSize: 60.sp,
-                        fontWeight: FontWeight.w700,
                         letterSpacing: 4.0,
-                        color: Colors.white,
                         height: 1.0,
+                        color: Colors.white, // intentional: ShaderMask requires white for gradient
                       ),
                     ),
                   ),
@@ -102,10 +92,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Center(
                   child: Text(
                     'Sign in to your account',
-                    style: GoogleFonts.openSans(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w400,
+                    style: tt.bodyMedium!.copyWith(
                       color: c.text2,
+                      fontSize: 14.sp,
                     ),
                   ),
                 ),
@@ -124,17 +113,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         name: 'email',
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
-                        style: TextStyle(
+                        style: tt.bodyLarge!.copyWith(
                           color: c.text1,
-                          fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter your email',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
                           prefixIcon: Icon(Iconsax.sms, size: 18.r),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
+                            vertical: AppSpacing.md.h,
+                            horizontal: AppSpacing.md.w,
                           ),
                         ),
                         validator: FormBuilderValidators.compose([
@@ -150,17 +138,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         obscureText: _obscurePassword,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _submit(),
-                        style: TextStyle(
+                        style: tt.bodyLarge!.copyWith(
                           color: c.text1,
-                          fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter your password',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
                           prefixIcon: Icon(Iconsax.lock, size: 18.r),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
+                            vertical: AppSpacing.md.h,
+                            horizontal: AppSpacing.md.w,
                           ),
                           suffixIcon: GestureDetector(
                             onTap: () => setState(
@@ -199,9 +186,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 Gap(6.w),
                                 Text(
                                   'REMEMBER ME',
-                                  style: GoogleFonts.openSans(
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w600,
+                                  style: tt.labelSmall!.copyWith(
                                     letterSpacing: 0.5,
                                     color: c.text3,
                                   ),
@@ -214,10 +199,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             onTap: () => context.go('/forgot-password'),
                             child: Text(
                               'FORGOT PASSWORD',
-                              style: GoogleFonts.openSans(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w700,
+                              style: tt.labelSmall!.copyWith(
                                 letterSpacing: 0.5,
+                                fontWeight: FontWeight.w700,
                                 color: c.action,
                               ),
                             ),
@@ -240,7 +224,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Gap(8.h),
                 ],
 
-                Gap(24.h),
+                Gap(AppSpacing.lg.h),
 
                 // ── Primary CTA ───────────────────────────────────────────────
                 AppButton(
@@ -259,9 +243,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
                       child: Text(
                         'OR',
-                        style: GoogleFonts.openSans(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
+                        style: tt.labelSmall!.copyWith(
                           letterSpacing: 1.0,
                           color: c.text3,
                         ),
@@ -279,12 +261,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: () => context.go('/register'),
                 ),
 
-                Gap(24.h),
+                Gap(AppSpacing.lg.h),
 
                 // ── Social SSO ────────────────────────────────────────────────
                 const SocialAuthButtons(),
 
-                Gap(32.h),
+                Gap(AppSpacing.xl.h),
               ],
             ),
           ),
@@ -304,9 +286,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: GoogleFonts.openSans(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w700,
+      style: Theme.of(context).textTheme.labelSmall!.copyWith(
         letterSpacing: 0.12 * 11,
         color: c.text2,
       ),

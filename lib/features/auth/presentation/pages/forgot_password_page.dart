@@ -6,10 +6,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
@@ -42,6 +42,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
@@ -58,12 +59,12 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           opacity: _ready ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Brand mark ────────────────────────────────────────────────
-                Gap(24.h),
+                Gap(AppSpacing.lg.h),
                 Center(
                   child: SvgPicture.asset(
                     'lib/core/assets/mark-jobdun.svg',
@@ -75,26 +76,15 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 Gap(12.h),
                 Center(
                   child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFFFF176),
-                        Color(0xFFFFB300),
-                        Color(0xFFF97316),
-                        Color(0xFFE64A19),
-                        Color(0xFFBF360C),
-                      ],
-                      stops: [0.0, 0.2, 0.5, 0.75, 1.0],
-                    ).createShader(bounds),
+                    shaderCallback: (bounds) =>
+                        AppGradients.brandFlame.createShader(bounds),
                     child: Text(
                       'JOBDUN',
-                      style: GoogleFonts.oswald(
+                      style: tt.displaySmall!.copyWith(
                         fontSize: 44.sp,
-                        fontWeight: FontWeight.w700,
                         letterSpacing: 4.0,
-                        color: Colors.white,
                         height: 1.0,
+                        color: Colors.white, // intentional: ShaderMask requires white for gradient
                       ),
                     ),
                   ),
@@ -105,9 +95,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 // ── Page heading ──────────────────────────────────────────────
                 Text(
                   'RESET YOUR\nPASSWORD.',
-                  style: GoogleFonts.oswald(
+                  style: tt.displaySmall!.copyWith(
                     fontSize: 40.sp,
-                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: c.text1,
                     height: 1.05,
@@ -116,15 +105,13 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 Gap(10.h),
                 Text(
                   "Enter your email and we'll send a reset link.",
-                  style: GoogleFonts.openSans(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w400,
+                  style: tt.bodyLarge!.copyWith(
                     color: c.text2,
-                    height: 1.6,
+                    fontSize: 14.sp,
                   ),
                 ),
 
-                Gap(32.h),
+                Gap(AppSpacing.xl.h),
 
                 // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
@@ -134,9 +121,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     children: [
                       Text(
                         'EMAIL',
-                        style: GoogleFonts.openSans(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
+                        style: tt.labelSmall!.copyWith(
                           letterSpacing: 0.12 * 11,
                           color: c.text2,
                         ),
@@ -147,17 +132,16 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _submit(),
-                        style: TextStyle(
+                        style: tt.bodyLarge!.copyWith(
                           color: c.text1,
-                          fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                         ),
                         decoration: InputDecoration(
                           hintText: 'your@email.com',
-                          hintStyle: TextStyle(color: c.text3, fontSize: 14.sp),
                           prefixIcon: Icon(Iconsax.sms, size: 18.r),
                           contentPadding: EdgeInsets.symmetric(
-                            vertical: 16.h, horizontal: 16.w,
+                            vertical: AppSpacing.md.h,
+                            horizontal: AppSpacing.md.w,
                           ),
                         ),
                         validator: FormBuilderValidators.compose([
@@ -183,7 +167,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   Gap(8.h),
                 ],
 
-                Gap(24.h),
+                Gap(AppSpacing.lg.h),
 
                 AppButton(
                   label: authState.isLoading ? 'Sending...' : 'Send reset link',
@@ -200,9 +184,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
                       child: Text(
                         'OR',
-                        style: GoogleFonts.openSans(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
+                        style: tt.labelSmall!.copyWith(
                           letterSpacing: 1.0,
                           color: c.text3,
                         ),
@@ -220,7 +202,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   onPressed: () => context.go('/login'),
                 ),
 
-                Gap(32.h),
+                Gap(AppSpacing.xl.h),
               ],
             ),
           ),

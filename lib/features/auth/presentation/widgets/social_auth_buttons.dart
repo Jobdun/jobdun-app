@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +13,7 @@ class SocialAuthButtons extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final isLoading = ref.watch(
       authControllerProvider.select((s) => s.isLoading),
     );
@@ -22,9 +22,7 @@ class SocialAuthButtons extends ConsumerWidget {
       children: [
         Text(
           'OR CONTINUE WITH',
-          style: GoogleFonts.openSans(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w600,
+          style: tt.labelSmall!.copyWith(
             letterSpacing: 0.12 * 10,
             color: c.text3,
           ),
@@ -68,6 +66,7 @@ class _SocialChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Expanded(
       child: GestureDetector(
@@ -89,10 +88,10 @@ class _SocialChip extends StatelessWidget {
                 Gap(8.w),
                 Text(
                   label,
-                  style: GoogleFonts.openSans(
-                    fontSize: 13.sp,
+                  style: tt.bodyMedium!.copyWith(
                     fontWeight: FontWeight.w600,
                     color: c.text1,
+                    fontSize: 13.sp,
                   ),
                 ),
               ],

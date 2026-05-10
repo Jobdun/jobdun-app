@@ -1,14 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pinput/pinput.dart';
 
 import 'app_colors.dart';
 
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData light() => _build(JColors.light, Brightness.light);
-  static ThemeData dark()  => _build(JColors.dark,  Brightness.dark);
+  // Light theme is intentionally private — app is dark-only.
+  // Do NOT pass AppTheme._light() to MaterialApp.theme.
+  // ignore: unused_element
+  static ThemeData _light() => _build(JColors.light, Brightness.light);
+  static ThemeData dark()   => _build(JColors.dark,  Brightness.dark);
+
+  /// Brand wordmark style — Inter Black 900. Use only for logo/wordmark text.
+  /// Example: Text('JOBDUN', style: AppTheme.brandDisplay(context.c.text1))
+  static TextStyle brandDisplay(Color color) => GoogleFonts.inter(
+    fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 3.0, color: color,
+  );
+
+  /// Default Pinput cell theme. Apply to Pinput.defaultPinTheme.
+  static PinTheme pinputTheme(JColors c) => PinTheme(
+    width: 56,
+    height: 56,
+    textStyle: GoogleFonts.oswald(
+      fontSize: 20, fontWeight: FontWeight.w700, color: c.text1,
+    ),
+    decoration: BoxDecoration(
+      color: c.surface,
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      border: Border.all(color: c.border),
+    ),
+  );
+
+  /// Focused Pinput cell theme. Apply to Pinput.focusedPinTheme.
+  static PinTheme pinputFocusedTheme(JColors c) => PinTheme(
+    width: 56,
+    height: 56,
+    textStyle: GoogleFonts.oswald(
+      fontSize: 20, fontWeight: FontWeight.w700, color: c.text1,
+    ),
+    decoration: BoxDecoration(
+      color: c.surface,
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      border: Border.all(color: c.action, width: 2),
+    ),
+  );
 
   static ThemeData _build(JColors c, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -16,7 +54,7 @@ class AppTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary:              c.action,
-      onPrimary:            Colors.white,
+      onPrimary:            Colors.white, // intentional: white-on-action
       primaryContainer:     c.actionBg,
       onPrimaryContainer:   c.actionTx,
       secondary:            c.surfaceRaised,
@@ -24,11 +62,11 @@ class AppTheme {
       secondaryContainer:   c.surface,
       onSecondaryContainer: c.text2,
       tertiary:             c.verified,
-      onTertiary:           Colors.white,
+      onTertiary:           Colors.white, // intentional: white-on-action
       tertiaryContainer:    c.verifiedBg,
       onTertiaryContainer:  c.verifiedTx,
       error:                c.urgent,
-      onError:              Colors.white,
+      onError:              Colors.white, // intentional: white-on-action
       errorContainer:       c.urgentBg,
       onErrorContainer:     c.urgentTx,
       surface:              c.card,
@@ -47,7 +85,7 @@ class AppTheme {
 
     final textTheme = openSansBase.copyWith(
       displayLarge: GoogleFonts.oswald(
-        fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.text1,
+        fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.text1,
       ),
       displaySmall: GoogleFonts.oswald(
         fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: 1.0, color: c.text1,
@@ -104,6 +142,19 @@ class AppTheme {
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         ),
       ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return c.action.withValues(alpha: 0.15);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return c.action.withValues(alpha: 0.08);
+            }
+            return null;
+          }),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.surface,
@@ -126,6 +177,10 @@ class AppTheme {
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: BorderSide(color: c.urgent, width: 1.5),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          borderSide: BorderSide(color: c.border.withValues(alpha: 0.4)),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         labelStyle: GoogleFonts.openSans(
