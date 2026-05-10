@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -10,16 +11,18 @@ import '../../features/auth/presentation/pages/verify_email_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
+import '../../features/jobs/presentation/pages/job_create_page.dart';
+import '../../features/jobs/presentation/pages/job_detail_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
 import '../../features/applications/presentation/pages/applications_page.dart';
+import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
 import '../../features/verification/presentation/pages/verification_page.dart';
 
-// Single GoRouter instance. Auth state changes notify via refreshListenable;
-// the router re-evaluates its redirect without rebuilding the instance.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier();
 
@@ -34,42 +37,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (location == '/splash') return null;
 
-      // Step 1 — email verification pending after registration.
       if (auth.pendingVerificationEmail != null) {
         return location == '/verify-email' ? null : '/verify-email';
       }
 
-      // Step 2 — unauthenticated.
       if (!auth.isAuthenticated) {
-        const publicRoutes = {'/login', '/register'};
+        const publicRoutes = {'/login', '/register', '/forgot-password'};
         return publicRoutes.contains(location) ? null : '/login';
       }
 
-      // Step 3 — authenticated but onboarding not done.
       if (!auth.onboardingComplete) {
         return location == '/onboarding' ? null : '/onboarding';
       }
 
-      // Step 4 — fully authenticated: bounce away from auth pages.
-      const authPages = {'/login', '/register', '/onboarding', '/verify-email'};
+      const authPages = {
+        '/login',
+        '/register',
+        '/onboarding',
+        '/verify-email',
+        '/forgot-password',
+      };
       if (authPages.contains(location)) return '/home';
 
       return null;
     },
     routes: [
-      // ── Pre-shell (no bottom nav) ──────────────────────────────────────
+      // ── Pre-shell ──────────────────────────────────────────────────────────
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
       GoRoute(path: '/verify-email', builder: (_, _) => const VerifyEmailPage()),
+      GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
 
-      // ── Shell (bottom nav — 5 tabs) ────────────────────────────────────
+      // ── Shell (5 tabs) ─────────────────────────────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) =>
             HomeShellPage(navigationShell: shell),
         branches: [
-          // Tab 0 — Home / Dashboard
+          // Tab 0 — Home
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/home', builder: (_, _) => const HomePage()),
@@ -85,11 +91,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'create',
-                    builder: (_, _) => const JobsPage(), // TODO: JobCreatePage
+                    builder: (_, _) => const JobCreatePage(),
                   ),
                   GoRoute(
                     path: ':id',
-                    builder: (_, _) => const JobsPage(), // TODO: JobDetailPage
+                    builder: (context, state) {
+                      final args = state.extra as JobDetailArgs?;
+                      if (args == null) return const JobsPage();
+                      return JobDetailPage(args: args);
+                    },
                   ),
                 ],
               ),
@@ -115,7 +125,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: ':conversationId',
-                    builder: (_, _) => const MessagesPage(), // TODO: MessageThreadPage
+                    builder: (context, state) {
+                      final args = state.extra as ConversationArgs?;
+                      if (args == null) return const MessagesPage();
+                      return MessageThreadPage(args: args);
+                    },
                   ),
                 ],
               ),
@@ -131,7 +145,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'edit',
-                    builder: (_, _) => const ProfilePage(), // TODO: ProfileEditPage
+                    builder: (_, _) => const ProfileEditPage(),
                   ),
                 ],
               ),
@@ -140,16 +154,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── Full-screen routes (no bottom nav) ─────────────────────────────
-      GoRoute(
-        path: '/verification',
-        builder: (_, _) => const VerificationPage(),
-      ),
+      // ── Full-screen (no bottom nav) ────────────────────────────────────────
+      GoRoute(path: '/verification', builder: (_, _) => const VerificationPage()),
       GoRoute(path: '/reviews', builder: (_, _) => const ReviewsPage()),
-      GoRoute(
-        path: '/notifications',
-        builder: (_, _) => const NotificationsPage(),
-      ),
+      GoRoute(path: '/notifications', builder: (_, _) => const NotificationsPage()),
     ],
   );
 

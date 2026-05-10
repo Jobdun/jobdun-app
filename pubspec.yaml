@@ -47,18 +47,62 @@ dependencies:
   # Utilities
   intl: ^0.20.2
   connectivity_plus: ^6.1.4
+  shared_preferences: ^2.3.5
 
   # Media
   image_picker: ^1.1.2
   file_picker: ^8.1.6
   cached_network_image: ^3.4.1
 
-  # UX
+  # UX — Core
   url_launcher: ^6.3.1
   flutter_dotenv: ^6.0.1
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.0.0
   crypto: ^3.0.7
+
+  # === UI/UX — Animations & Motion ===
+  flutter_animate: ^4.5.0
+  lottie: ^3.3.1
+  animations: ^2.0.11
+
+  # === UI/UX — Typography & Icons ===
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.14
+  iconsax: ^0.0.8
+
+  # === UI/UX — Responsive Layout ===
+  flutter_screenutil: ^5.9.3
+  gap: ^3.0.1
+
+  # === UI/UX — Loading & Skeleton States ===
+  shimmer: ^3.0.0
+  skeletonizer: ^1.0.0
+
+  # === UI/UX — Components ===
+  smooth_page_indicator: ^1.2.0
+  flutter_slidable: ^3.1.1
+  badges: ^3.1.2
+  percent_indicator: ^4.2.3
+  expandable: ^5.0.1
+  flutter_staggered_animations: ^1.1.1
+  modal_bottom_sheet: ^3.0.0
+
+  # === UI/UX — Forms & Input ===
+  flutter_form_builder: ^10.3.0
+  form_builder_validators: ^11.1.2
+  pinput: ^5.0.0
+
+  # === UI/UX — Media & Image Handling ===
+  photo_view: ^0.15.0
+  flutter_image_compress: ^2.3.0
+  image_cropper: ^8.0.2
+
+  # === UI/UX — Data Display ===
+  fl_chart: ^0.69.0
+  flutter_rating_bar: ^4.0.1
+  table_calendar: ^3.1.2
+  infinite_scroll_pagination: ^4.1.0
 
 dev_dependencies:
   flutter_test:
@@ -82,6 +126,7 @@ flutter:
 
   assets:
     - .env
+    - lib/core/assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

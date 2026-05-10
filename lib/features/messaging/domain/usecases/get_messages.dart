@@ -8,9 +8,6 @@ class GetMessages {
   const GetMessages(this._repository);
   final MessageRepository _repository;
 
-  Future<Either<Failure, List<Message>>> call({
-    required String jobId,
-    required String otherUserId,
-  }) =>
-      _repository.getMessages(jobId: jobId, otherUserId: otherUserId);
+  Future<Either<Failure, List<Message>>> call(String conversationId) =>
+      _repository.getMessages(conversationId);
 }

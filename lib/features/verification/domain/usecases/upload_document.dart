@@ -11,15 +11,23 @@ class UploadDocument {
   final VerificationRepository _repository;
 
   Future<Either<Failure, VerificationDocument>> call({
-    required String userId,
-    required DocumentType documentType,
+    required String tradeId,
+    required DocType docType,
     required File file,
-    DateTime? expiresAt,
+    String? state,
+    String? issuer,
+    String? documentNumber,
+    DateTime? issuedDate,
+    DateTime? expiryDate,
   }) =>
       _repository.uploadDocument(
-        userId: userId,
-        documentType: documentType,
+        tradeId: tradeId,
+        docType: docType,
         file: file,
-        expiresAt: expiresAt,
+        state: state,
+        issuer: issuer,
+        documentNumber: documentNumber,
+        issuedDate: issuedDate,
+        expiryDate: expiryDate,
       );
 }

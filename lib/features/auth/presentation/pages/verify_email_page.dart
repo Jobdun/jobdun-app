@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
 
 class VerifyEmailPage extends ConsumerWidget {
@@ -9,114 +16,193 @@ class VerifyEmailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
-    final theme = Theme.of(context);
     final email = authState.pendingVerificationEmail ?? '';
 
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(),
+              // ── Brand mark ──────────────────────────────────────────────────
+              Gap(48.h),
+              Center(
+                child: SvgPicture.asset(
+                  'lib/core/assets/mark-jobdun.svg',
+                  width: 52.r,
+                  height: 52.r,
+                  colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
+                ),
+              ),
+              Gap(12.h),
+              Center(
+                child: ShaderMask(
+                  shaderCallback: (bounds) =>
+                      AppGradients.brandFlame.createShader(bounds),
+                  child: Text(
+                    'JOBDUN',
+                    style: tt.displaySmall!.copyWith(
+                      fontSize: 44.sp,
+                      letterSpacing: 4.0,
+                      height: 1.0,
+                      color: Colors.white, // intentional: ShaderMask requires white for gradient
+                    ),
+                  ),
+                ),
+              ),
+
+              Gap(48.h),
+
+              // ── Email icon ────────────────────────────────────────────────
+              Center(
+                child: Container(
+                  width: 80.r,
+                  height: 80.r,
+                  decoration: BoxDecoration(
+                    color: c.surfaceRaised,
+                    borderRadius: BorderRadius.circular(AppRadius.card.r),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Icon(
+                    Iconsax.sms_notification,
+                    size: 36.r,
+                    color: c.action,
+                  ),
+                ),
+              ),
+
+              Gap(28.h),
+
+              // ── Heading ───────────────────────────────────────────────────
+              Text(
+                'CHECK YOUR\nEMAIL.',
+                style: tt.displaySmall!.copyWith(
+                  fontSize: 40.sp,
+                  letterSpacing: 0.8,
+                  color: c.text1,
+                  height: 1.05,
+                ),
+              ),
+              Gap(12.h),
+              Text.rich(
+                TextSpan(
+                  style: tt.bodyLarge!.copyWith(
+                    color: c.text2,
+                    fontSize: 14.sp,
+                    height: 1.7,
+                  ),
+                  children: [
+                    const TextSpan(text: 'We sent a verification link to '),
+                    TextSpan(
+                      text: email,
+                      style: tt.bodyLarge!.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: c.action,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                    const TextSpan(text: '. Tap it to activate your account.'),
+                  ],
+                ),
+              ),
+
+              Gap(12.h),
+
+              // ── Tips row ──────────────────────────────────────────────────
               Container(
-                width: 96,
-                height: 96,
+                padding: EdgeInsets.all(14.r),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.card.r),
+                  border: Border.all(color: c.border),
                 ),
-                child: Icon(
-                  Icons.mark_email_unread_outlined,
-                  size: 48,
-                  color: theme.colorScheme.primary,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Iconsax.info_circle, size: 16.r, color: c.text3),
+                    Gap(10.w),
+                    Expanded(
+                      child: Text(
+                        "Can't find it? Check your spam or junk folder.",
+                        style: tt.labelMedium!.copyWith(
+                          color: c.text3,
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 32),
-              Text('Check your inbox', style: theme.textTheme.headlineMedium),
-              const SizedBox(height: 12),
-              Text(
-                'We sent a verification link to',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF5A5A5A),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                email,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Click the link to verify your account, then come back and sign in.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF5A5A5A),
-                ),
-                textAlign: TextAlign.center,
-              ),
+
               if (authState.infoMessage != null) ...[
-                const SizedBox(height: 20),
-                _StatusBanner(
+                Gap(12.h),
+                StatusBanner(
                   message: authState.infoMessage!,
                   isError: false,
                 ),
               ],
               if (authState.errorMessage != null) ...[
-                const SizedBox(height: 20),
-                _StatusBanner(
+                Gap(12.h),
+                StatusBanner(
                   message: authState.errorMessage!,
                   isError: true,
                 ),
               ],
-              const Spacer(),
+
+              Gap(AppSpacing.xl.h),
+
               AppButton(
-                label: authState.isLoading ? 'Sending...' : 'Resend verification email',
-                variant: AppButtonVariant.secondary,
+                label: authState.isLoading
+                    ? 'Sending...'
+                    : 'Resend verification email',
+                isLoading: authState.isLoading,
                 onPressed: authState.isLoading
                     ? null
                     : () => ref
                         .read(authControllerProvider.notifier)
                         .resendVerificationEmail(),
               ),
-              const SizedBox(height: 12),
+
+              Gap(12.h),
+
+              Row(
+                children: [
+                  Expanded(child: Divider(color: c.border)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                    child: Text(
+                      'OR',
+                      style: tt.labelSmall!.copyWith(
+                        letterSpacing: 1.0,
+                        color: c.text3,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: c.border)),
+                ],
+              ),
+
+              Gap(12.h),
+
               AppButton(
                 label: 'Back to sign in',
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).clearPendingVerification(),
+                variant: AppButtonVariant.secondary,
+                onPressed: () => ref
+                    .read(authControllerProvider.notifier)
+                    .clearPendingVerification(),
               ),
-              const SizedBox(height: 8),
+
+              Gap(AppSpacing.xl.h),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.message, required this.isError});
-
-  final String message;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isError ? const Color(0xFFFCEAEA) : const Color(0xFFEAF4ED),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isError ? const Color(0xFFE7B5B5) : const Color(0xFFB7D4BE),
-        ),
-      ),
-      child: Text(message, textAlign: TextAlign.center),
     );
   }
 }
