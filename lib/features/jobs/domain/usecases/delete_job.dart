@@ -7,5 +7,5 @@ class DeleteJob {
   const DeleteJob(this._repository);
   final JobRepository _repository;
 
-  Future<Either<Failure, void>> call(String id) => _repository.deleteJob(id);
+  Future<Either<Failure, void>> call(String id) => _repository.softDeleteJob(id);
 }

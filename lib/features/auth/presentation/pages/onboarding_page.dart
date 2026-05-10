@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
+import 'package:iconsax/iconsax.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../../../app/constants/app_constants.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 
@@ -14,53 +20,121 @@ class OnboardingPage extends ConsumerStatefulWidget {
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _pageController = PageController();
+  final _locationController = TextEditingController();
+  final _companyNameController = TextEditingController();
+
   int _currentPage = 0;
   UserRole? _selectedRole;
+  String? _businessType;
+  String? _tradeCategory;
+  String? _yearsExperience;
+
+  static const int _totalPages = 4;
 
   @override
   void dispose() {
     _pageController.dispose();
+    _locationController.dispose();
+    _companyNameController.dispose();
     super.dispose();
   }
 
   void _next() {
     _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.ease,
     );
   }
 
-  void _getStarted() {
+  void _finish() {
     final role = _selectedRole;
     if (role == null) return;
-    ref.read(authControllerProvider.notifier).completeOnboarding(role);
-    // Router redirect handles navigation to /home when onboardingComplete flips true.
+    ref.read(authControllerProvider.notifier).completeOnboarding(
+      role,
+      location: _locationController.text.trim().isEmpty
+          ? null
+          : _locationController.text.trim(),
+      companyName: _companyNameController.text.trim().isEmpty
+          ? null
+          : _companyNameController.text.trim(),
+      businessType: _businessType,
+      tradeCategory: _tradeCategory,
+      yearsExperience: _yearsExperience,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final isLoading =
+        ref.watch(authControllerProvider.select((s) => s.isLoading));
+
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (i) => setState(() => _currentPage = i),
-                children: const [
-                  _WelcomePage(),
-                  _RolePage(),
-                ],
+            Column(
+              children: [
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    children: [
+                      const _WelcomePage(),
+                      _RolePage(
+                        selectedRole: _selectedRole,
+                        onRoleChanged: (role) =>
+                            setState(() => _selectedRole = role),
+                      ),
+                      _ProfileSetupPage(
+                        role: _selectedRole,
+                        locationController: _locationController,
+                        companyNameController: _companyNameController,
+                        selectedBusinessType: _businessType,
+                        selectedTradeCategory: _tradeCategory,
+                        selectedYearsExp: _yearsExperience,
+                        onBusinessTypeChanged: (v) =>
+                            setState(() => _businessType = v),
+                        onTradeCategoryChanged: (v) =>
+                            setState(() => _tradeCategory = v),
+                        onYearsExpChanged: (v) =>
+                            setState(() => _yearsExperience = v),
+                      ),
+                      const _AllSetPage(),
+                    ],
+                  ),
+                ),
+                _BottomBar(
+                  currentPage: _currentPage,
+                  totalPages: _totalPages,
+                  selectedRole: _selectedRole,
+                  isLoading: isLoading,
+                  pageController: _pageController,
+                  onNext: _next,
+                  onFinish: _finish,
+                ),
+              ],
+            ),
+            if (_currentPage == 0)
+              Positioned(
+                top: 16.h,
+                right: 20.w,
+                child: GestureDetector(
+                  onTap: _next,
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.sm.r),
+                    child: Text(
+                      'SKIP',
+                      style: tt.bodySmall!.copyWith(
+                        letterSpacing: 0.5,
+                        color: c.text3,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            _BottomBar(
-              currentPage: _currentPage,
-              selectedRole: _selectedRole,
-              onRoleChanged: (role) => setState(() => _selectedRole = role),
-              onNext: _next,
-              onGetStarted: _getStarted,
-            ),
           ],
         ),
       ),
@@ -68,64 +142,61 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 }
 
+// ── Page 0: Welcome ────────────────────────────────────────────────────────────
+
 class _WelcomePage extends StatelessWidget {
   const _WelcomePage();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          SvgPicture.asset(
+            'lib/core/assets/mark-jobdun.svg',
+            width: 72.r,
+            height: 72.r,
+            colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
+          ),
+          Gap(12.h),
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
+            child: Text(
+              'JOBDUN',
+              style: tt.headlineSmall!.copyWith(
+                fontSize: 52.sp,
+                letterSpacing: 4.0,
+                height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
               ),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.construction,
-              size: 60,
-              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 40),
-          Text(
-            'Welcome to ${AppConstants.appName}',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          Gap(28.h),
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
+            child: Text(
+              'GET WORK.\nPOST JOBS.',
+              textAlign: TextAlign.center,
+              style: tt.headlineSmall!.copyWith(
+                fontSize: 44.sp,
+                letterSpacing: 0.8,
+                height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          Gap(14.h),
           Text(
-            AppConstants.appTagline,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
+            'Verified jobs. Real builders. Get hired fast.',
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Connect with verified builders and skilled trades. '
-            'Post jobs, apply for work, and manage projects — all in one place.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: const Color(0xFF5A5A5A),
-              height: 1.6,
-            ),
-            textAlign: TextAlign.center,
+            style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
           ),
         ],
       ),
@@ -133,113 +204,55 @@ class _WelcomePage extends StatelessWidget {
   }
 }
 
+// ── Page 1: Role Selection ─────────────────────────────────────────────────────
+
 class _RolePage extends StatelessWidget {
-  const _RolePage();
+  const _RolePage({required this.selectedRole, required this.onRoleChanged});
+
+  final UserRole? selectedRole;
+  final ValueChanged<UserRole> onRoleChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 40),
+          Gap(24.h),
+          Text(
+            'YOUR ROLE',
+            style: tt.bodySmall!.copyWith(letterSpacing: 1.2, color: c.text3),
+          ),
+          Gap(AppSpacing.sm.h),
           Text(
             'What describes you best?',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+            style: tt.headlineSmall!.copyWith(
+              fontSize: 28.sp,
+              letterSpacing: 0.5,
+              color: c.text1,
             ),
           ),
-          const SizedBox(height: 8),
+          Gap(AppSpacing.sm.h),
           Text(
             'Choose your role to personalise your experience.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: const Color(0xFF5A5A5A),
-            ),
+            style: tt.bodyLarge!.copyWith(color: c.text2),
           ),
-          const SizedBox(height: 32),
-          // Role cards are built by the parent via _BottomBar so they can
-          // access onRoleChanged. We use a placeholder here; the real role
-          // cards live in _BottomBar._RoleCards.
-          const _RoleCardsPlaceholder(),
-        ],
-      ),
-    );
-  }
-}
-
-// Empty widget — role cards are owned by _BottomBar for state access.
-class _RoleCardsPlaceholder extends StatelessWidget {
-  const _RoleCardsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
-class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.currentPage,
-    required this.selectedRole,
-    required this.onRoleChanged,
-    required this.onNext,
-    required this.onGetStarted,
-  });
-
-  final int currentPage;
-  final UserRole? selectedRole;
-  final ValueChanged<UserRole> onRoleChanged;
-  final VoidCallback onNext;
-  final VoidCallback onGetStarted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      child: Column(
-        children: [
-          if (currentPage == 1) ...[
-            _RoleCard(
-              role: UserRole.builder,
-              selected: selectedRole == UserRole.builder,
-              onTap: () => onRoleChanged(UserRole.builder),
-            ),
-            const SizedBox(height: 12),
-            _RoleCard(
-              role: UserRole.trade,
-              selected: selectedRole == UserRole.trade,
-              onTap: () => onRoleChanged(UserRole.trade),
-            ),
-            const SizedBox(height: 24),
-          ],
-          // Dots indicator
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(2, (i) {
-              final active = i == currentPage;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: active ? 24 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: active
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
+          Gap(24.h),
+          _RoleCard(
+            role: UserRole.builder,
+            selected: selectedRole == UserRole.builder,
+            onTap: () => onRoleChanged(UserRole.builder),
           ),
-          const SizedBox(height: 20),
-          if (currentPage == 0)
-            AppButton(label: 'Next', onPressed: onNext)
-          else
-            AppButton(
-              label: 'Get Started',
-              onPressed: selectedRole != null ? onGetStarted : null,
-            ),
+          Gap(12.h),
+          _RoleCard(
+            role: UserRole.trade,
+            selected: selectedRole == UserRole.trade,
+            onTap: () => onRoleChanged(UserRole.trade),
+          ),
         ],
       ),
     );
@@ -247,11 +260,7 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _RoleCard extends StatelessWidget {
-  const _RoleCard({
-    required this.role,
-    required this.selected,
-    required this.onTap,
-  });
+  const _RoleCard({required this.role, required this.selected, required this.onTap});
 
   final UserRole role;
   final bool selected;
@@ -259,68 +268,453 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: selected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outlineVariant,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.ease,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(
+          color: selected ? c.action : c.border,
           width: selected ? 2 : 1,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(AppSpacing.md.r),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44.r,
+                height: 44.r,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? theme.colorScheme.primaryContainer
-                      : theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  color: selected ? c.action : c.surfaceRaised,
+                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
-                  role == UserRole.builder
-                      ? Icons.business_center_outlined
-                      : Icons.construction_outlined,
-                  color: selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+                  role == UserRole.builder ? Iconsax.briefcase : Iconsax.personalcard,
+                  size: 22.r,
+                  color: selected ? Colors.white : c.text2, // intentional: white-on-action
                 ),
               ),
-              const SizedBox(width: 16),
+              Gap(12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(role.label, style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 2),
+                    Text(
+                      role.label,
+                      style: tt.titleLarge!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: c.text1,
+                      ),
+                    ),
+                    Gap(2.h),
                     Text(
                       role.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF5A5A5A),
-                      ),
+                      style: tt.bodyMedium!.copyWith(color: c.text2),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outlineVariant,
-              ),
+              Gap(AppSpacing.sm.w),
+              if (selected)
+                Icon(Iconsax.tick_circle, size: 20.r, color: c.action)
+              else
+                Container(
+                  width: 20.r,
+                  height: 20.r,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.badge.r),
+                    border: Border.all(color: c.border, width: 1.5),
+                  ),
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Page 2: Profile Setup ──────────────────────────────────────────────────────
+
+class _ProfileSetupPage extends StatelessWidget {
+  const _ProfileSetupPage({
+    required this.role,
+    required this.locationController,
+    required this.companyNameController,
+    required this.selectedBusinessType,
+    required this.selectedTradeCategory,
+    required this.selectedYearsExp,
+    required this.onBusinessTypeChanged,
+    required this.onTradeCategoryChanged,
+    required this.onYearsExpChanged,
+  });
+
+  final UserRole? role;
+  final TextEditingController locationController;
+  final TextEditingController companyNameController;
+  final String? selectedBusinessType;
+  final String? selectedTradeCategory;
+  final String? selectedYearsExp;
+  final ValueChanged<String?> onBusinessTypeChanged;
+  final ValueChanged<String?> onTradeCategoryChanged;
+  final ValueChanged<String?> onYearsExpChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (role == null) return const SizedBox.shrink();
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            role == UserRole.builder ? 'COMPANY SETUP' : 'YOUR TRADE',
+            style: tt.bodySmall!.copyWith(letterSpacing: 1.2, color: c.text3),
+          ),
+          Gap(AppSpacing.sm.h),
+          Text(
+            role == UserRole.builder
+                ? 'Tell us about your business.'
+                : 'Tell us about your skills.',
+            style: tt.headlineSmall!.copyWith(
+              fontSize: 28.sp,
+              letterSpacing: 0.5,
+              color: c.text1,
+            ),
+          ),
+          Gap(AppSpacing.sm.h),
+          Text(
+            'You can update this anytime from your profile.',
+            style: tt.bodyMedium!.copyWith(color: c.text3),
+          ),
+          Gap(24.h),
+          if (role == UserRole.builder)
+            _BuilderForm(
+              companyNameController: companyNameController,
+              locationController: locationController,
+              selectedBusinessType: selectedBusinessType,
+              onBusinessTypeChanged: onBusinessTypeChanged,
+            )
+          else
+            _TradeForm(
+              locationController: locationController,
+              selectedTradeCategory: selectedTradeCategory,
+              selectedYearsExp: selectedYearsExp,
+              onTradeCategoryChanged: onTradeCategoryChanged,
+              onYearsExpChanged: onYearsExpChanged,
+            ),
+          Gap(24.h),
+        ],
+      ),
+    );
+  }
+}
+
+class _BuilderForm extends StatelessWidget {
+  const _BuilderForm({
+    required this.companyNameController,
+    required this.locationController,
+    required this.selectedBusinessType,
+    required this.onBusinessTypeChanged,
+  });
+
+  final TextEditingController companyNameController;
+  final TextEditingController locationController;
+  final String? selectedBusinessType;
+  final ValueChanged<String?> onBusinessTypeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: companyNameController,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          textCapitalization: TextCapitalization.words,
+          style: tt.bodyLarge!.copyWith(color: c.text1),
+          decoration: InputDecoration(
+            labelText: 'COMPANY NAME',
+            prefixIcon: Icon(Iconsax.building, size: 18.r),
+          ),
+        ),
+        Gap(20.h),
+        Text(
+          'BUSINESS TYPE',
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
+        ),
+        Gap(AppSpacing.sm.h),
+        _ChipGroup(
+          options: const ['Sole trader', 'Company', 'Partnership'],
+          selected: selectedBusinessType,
+          onSelected: onBusinessTypeChanged,
+        ),
+        Gap(20.h),
+        TextField(
+          controller: locationController,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.done,
+          style: tt.bodyLarge!.copyWith(color: c.text1),
+          decoration: InputDecoration(
+            labelText: 'CITY OR SUBURB',
+            prefixIcon: Icon(Iconsax.location, size: 18.r),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TradeForm extends StatelessWidget {
+  const _TradeForm({
+    required this.locationController,
+    required this.selectedTradeCategory,
+    required this.selectedYearsExp,
+    required this.onTradeCategoryChanged,
+    required this.onYearsExpChanged,
+  });
+
+  final TextEditingController locationController;
+  final String? selectedTradeCategory;
+  final String? selectedYearsExp;
+  final ValueChanged<String?> onTradeCategoryChanged;
+  final ValueChanged<String?> onYearsExpChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TRADE',
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
+        ),
+        Gap(AppSpacing.sm.h),
+        _ChipGroup(
+          options: const [
+            'Electrician', 'Plumber', 'Carpenter', 'Plasterer',
+            'Painter', 'Concreter', 'Welder', 'Bricklayer',
+            'Tiler', 'Steel Fixer', 'Form Worker', 'Rigger',
+            'Scaffolder', 'Crane Operator', 'Boilermaker',
+            'Roof Plumber', 'Cabinet Maker', 'Demolition', 'Other',
+          ],
+          selected: selectedTradeCategory,
+          onSelected: onTradeCategoryChanged,
+        ),
+        Gap(20.h),
+        Text(
+          'EXPERIENCE',
+          style: tt.bodySmall!.copyWith(letterSpacing: 0.8, color: c.text3),
+        ),
+        Gap(AppSpacing.sm.h),
+        _ChipGroup(
+          options: const ['<1 yr', '1–3 yrs', '3–5 yrs', '5+ yrs'],
+          selected: selectedYearsExp,
+          onSelected: onYearsExpChanged,
+        ),
+        Gap(20.h),
+        TextField(
+          controller: locationController,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.done,
+          style: tt.bodyLarge!.copyWith(color: c.text1),
+          decoration: InputDecoration(
+            labelText: 'CITY OR SUBURB',
+            prefixIcon: Icon(Iconsax.location, size: 18.r),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChipGroup extends StatelessWidget {
+  const _ChipGroup({
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<String> options;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Wrap(
+      spacing: AppSpacing.sm.w,
+      runSpacing: AppSpacing.sm.h,
+      children: options.map((option) {
+        final isSelected = selected == option;
+        return GestureDetector(
+          onTap: () => onSelected(isSelected ? null : option),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.ease,
+            height: 32.h,
+            padding: EdgeInsets.symmetric(horizontal: 14.w),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected ? c.action : c.surfaceRaised,
+              border: Border.all(
+                color: isSelected ? c.action : c.border,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.chip.r),
+            ),
+            child: Text(
+              option,
+              style: tt.labelMedium!.copyWith(
+                color: isSelected ? Colors.white : c.text2, // intentional: white-on-action
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// ── Page 3: All Set ────────────────────────────────────────────────────────────
+
+class _AllSetPage extends StatelessWidget {
+  const _AllSetPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            'lib/core/assets/mark-jobdun.svg',
+            width: 72.r,
+            height: 72.r,
+            colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
+          ),
+          Gap(12.h),
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
+            child: Text(
+              'JOBDUN',
+              style: tt.headlineSmall!.copyWith(
+                fontSize: 52.sp,
+                letterSpacing: 4.0,
+                height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
+              ),
+            ),
+          ),
+          Gap(28.h),
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                AppGradients.brandFlame.createShader(bounds),
+            child: Text(
+              'PROFILE\nLIVE.',
+              textAlign: TextAlign.center,
+              style: tt.headlineSmall!.copyWith(
+                fontSize: 44.sp,
+                letterSpacing: 0.8,
+                height: 1.0,
+                color: Colors.white, // intentional: ShaderMask requires white for gradient
+              ),
+            ),
+          ),
+          Gap(14.h),
+          Text(
+            'Your profile is active. Start getting work.',
+            textAlign: TextAlign.center,
+            style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bottom Bar ─────────────────────────────────────────────────────────────────
+
+class _BottomBar extends StatelessWidget {
+  const _BottomBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.selectedRole,
+    required this.isLoading,
+    required this.pageController,
+    required this.onNext,
+    required this.onFinish,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final UserRole? selectedRole;
+  final bool isLoading;
+  final PageController pageController;
+  final VoidCallback onNext;
+  final VoidCallback onFinish;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final isLastPage = currentPage == totalPages - 1;
+    final isRolePage = currentPage == 1;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.xl.h),
+      child: Column(
+        children: [
+          SmoothPageIndicator(
+            controller: pageController,
+            count: totalPages,
+            effect: ExpandingDotsEffect(
+              dotColor: c.surfaceRaised,
+              activeDotColor: c.action,
+              dotHeight: 6.r,
+              dotWidth: 6.r,
+              expansionFactor: 3,
+            ),
+          ),
+          Gap(20.h),
+          if (isLastPage)
+            AppButton(
+              label: isLoading ? 'Setting up...' : 'Get to work',
+              isLoading: isLoading,
+              onPressed: isLoading ? null : onFinish,
+            )
+          else
+            AppButton(
+              label: currentPage == 2 ? 'Continue' : 'Next',
+              variant: (isRolePage && selectedRole == null)
+                  ? AppButtonVariant.secondary
+                  : AppButtonVariant.primary,
+              onPressed: (isRolePage && selectedRole == null) ? null : onNext,
+            ),
+        ],
       ),
     );
   }

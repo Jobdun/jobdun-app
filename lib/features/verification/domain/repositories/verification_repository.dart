@@ -7,14 +7,18 @@ import '../entities/verification_document.dart';
 
 abstract interface class VerificationRepository {
   Future<Either<Failure, List<VerificationDocument>>> getMyDocuments(
-    String userId,
+    String tradeId,
   );
   Future<Either<Failure, VerificationDocument>> uploadDocument({
-    required String userId,
-    required DocumentType documentType,
+    required String tradeId,
+    required DocType docType,
     required File file,
-    DateTime? expiresAt,
+    String? state,
+    String? issuer,
+    String? documentNumber,
+    DateTime? issuedDate,
+    DateTime? expiryDate,
   });
-  Future<Either<Failure, void>> deleteDocument(String documentId);
-  Stream<List<VerificationDocument>> watchMyDocuments(String userId);
+  Future<Either<Failure, void>> softDeleteDocument(String documentId);
+  Stream<List<VerificationDocument>> watchMyDocuments(String tradeId);
 }

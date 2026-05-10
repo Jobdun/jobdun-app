@@ -1,8 +1,6 @@
 # Jobdun App
 
-Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. The app connects **builders** and **trades/crews** so jobs can be posted, discovered, assigned, tracked, reviewed, and verified.
-
-> **Admin panel** is a separate web application (own repository). The Flutter app has no admin UI.
+Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. The app connects **builders**, **trades/crews**, and **admins** in one system so jobs can be posted, discovered, assigned, tracked, reviewed, and verified.
 
 The application is planned as a cross-platform **Android and iOS app** built with **Flutter**, using **Supabase** as the backend for authentication, database, storage, and real-time features.
 
@@ -25,8 +23,14 @@ Jobdun aims to reduce friction in finding reliable tradespeople and managing con
   - Create a professional profile
   - Upload licences, insurance, and verification documents
   - Browse available jobs
-  - Apply for jobs
+  - Apply for jobsf
   - Receive notifications and job updates
+
+- **Admins**
+  - Review user verification documents
+  - Manage users and reported issues
+  - Moderate job posts
+  - Monitor platform activity
 
 ---
 
@@ -39,6 +43,7 @@ Jobdun aims to reduce friction in finding reliable tradespeople and managing con
 - Role-based onboarding:
   - Builder
   - Trade/Crew
+  - Admin
 - Forgot password
 - Email verification
 - Session persistence

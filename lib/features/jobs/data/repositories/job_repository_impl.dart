@@ -49,9 +49,9 @@ class JobRepositoryImpl implements JobRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteJob(String id) async {
+  Future<Either<Failure, void>> softDeleteJob(String id) async {
     try {
-      await _datasource.deleteJob(id);
+      await _datasource.softDeleteJob(id);
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));

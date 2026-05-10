@@ -8,5 +8,5 @@ class DeleteDocument {
   final VerificationRepository _repository;
 
   Future<Either<Failure, void>> call(String documentId) =>
-      _repository.deleteDocument(documentId);
+      _repository.softDeleteDocument(documentId);
 }

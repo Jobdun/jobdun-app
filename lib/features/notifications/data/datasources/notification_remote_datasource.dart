@@ -35,7 +35,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
     try {
       await _client
           .from('notifications')
-          .update({'is_read': true})
+          .update({'read_at': DateTime.now().toIso8601String()})
           .eq('id', notificationId);
     } catch (e) {
       throw ServerException(e.toString());
@@ -47,9 +47,9 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
     try {
       await _client
           .from('notifications')
-          .update({'is_read': true})
+          .update({'read_at': DateTime.now().toIso8601String()})
           .eq('user_id', userId)
-          .eq('is_read', false);
+          .isFilter('read_at', null);
     } catch (e) {
       throw ServerException(e.toString());
     }

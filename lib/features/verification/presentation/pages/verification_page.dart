@@ -1,40 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
+
+import '../../../../app/theme/app_colors.dart';
 
 class VerificationPage extends StatelessWidget {
   const VerificationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Verification')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(AppSpacing.lg),
           children: [
             Text(
               'Verification setup',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: tt.headlineMedium,
             ),
-            const SizedBox(height: 12),
+            Gap(12.h),
             const Text(
               'This screen is ready for licence, insurance, and identity document upload flows.',
             ),
-            const SizedBox(height: 20),
+            Gap(20.h),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       'Planned status pipeline',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: tt.headlineSmall,
                     ),
-                    SizedBox(height: 12),
-                    Text('• Pending review'),
-                    Text('• Approved'),
-                    Text('• Rejected with reason'),
-                    Text('• Expiring soon'),
+                    Gap(12.h),
+                    const Text('• Pending review'),
+                    const Text('• Approved'),
+                    const Text('• Rejected with reason'),
+                    const Text('• Expiring soon'),
                   ],
                 ),
               ),

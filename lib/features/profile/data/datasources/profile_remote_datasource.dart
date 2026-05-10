@@ -22,12 +22,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   const ProfileRemoteDataSourceImpl(this._client);
   final SupabaseClient _client;
 
+  static const _bucket = 'public-media';
+
   @override
   Future<UserProfileModel> getProfile(String userId) async {
     try {
       final data = await _client
           .from('profiles')
-          .select()
+          .select('id, display_name, email, phone, avatar_url, bio, onboarding_completed_at, created_at, updated_at')
           .eq('id', userId)
           .single();
       return UserProfileModel.fromJson(data);
@@ -99,9 +101,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<String> uploadAvatar(String userId, File file) async {
     try {
-      final path = 'avatars/$userId/${file.path.split('/').last}';
-      await _client.storage.from('avatars').upload(path, file);
-      return _client.storage.from('avatars').getPublicUrl(path);
+      // Path: public-media/{userId}/avatar.jpg — RLS requires first segment = auth.uid()
+      const fileName = 'avatar.jpg';
+      final path = '$userId/$fileName';
+      final bytes = await file.readAsBytes();
+      await _client.storage.from(_bucket).uploadBinary(
+        path,
+        bytes,
+        fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
+      );
+      return _client.storage.from(_bucket).getPublicUrl(path);
     } catch (e) {
       throw StorageException(e.toString());
     }

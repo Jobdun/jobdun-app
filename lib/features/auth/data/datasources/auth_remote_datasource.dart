@@ -92,12 +92,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final data = await _client
           .from('profiles')
-          .select()
+          .select('id, display_name, avatar_url, onboarding_completed_at')
           .eq('id', userId)
           .maybeSingle();
       if (data == null) {
         return UserModel(id: userId, email: email, role: UserRole.trade);
       }
+      // Role comes from JWT claim injected by custom_access_token_hook.
+      // UserModel.fromJson handles 'user_role' key from JWT or defaults to trade.
       return UserModel.fromJson({...data, 'email': email});
     } catch (_) {
       return UserModel(id: userId, email: email, role: UserRole.trade);
