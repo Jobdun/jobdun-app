@@ -8,11 +8,8 @@ import 'app_colors.dart';
 class AppTheme {
   const AppTheme._();
 
-  // Light theme is intentionally private — app is dark-only.
-  // Do NOT pass AppTheme._light() to MaterialApp.theme.
-  // ignore: unused_element
-  static ThemeData _light() => _build(JColors.light, Brightness.light);
-  static ThemeData dark()   => _build(JColors.dark,  Brightness.dark);
+  static ThemeData light() => _build(JColors.light, Brightness.light);
+  static ThemeData dark()  => _build(JColors.dark,  Brightness.dark);
 
   /// Brand wordmark style — Inter Black 900. Use only for logo/wordmark text.
   /// Example: Text('JOBDUN', style: AppTheme.brandDisplay(context.c.text1))

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -377,20 +378,39 @@ class _TradeProfile extends StatelessWidget {
 
 // ── Settings ───────────────────────────────────────────────────────────────────
 
-class _SettingsSection extends StatelessWidget {
+class _SettingsSection extends ConsumerWidget {
   const _SettingsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: _InfoCard(
-        title: 'ACCOUNT',
+      child: Column(
         children: [
-          _ActionRow(icon: Iconsax.sms, label: 'Change email'),
-          _ActionRow(icon: Iconsax.lock, label: 'Change password'),
-          _ActionRow(icon: Iconsax.notification, label: 'Notifications'),
-          _ActionRow(icon: Iconsax.shield_tick, label: 'Privacy settings'),
+          _InfoCard(
+            title: 'APPEARANCE',
+            children: [
+              _ToggleRow(
+                icon: isDark ? Iconsax.moon : Iconsax.sun_1,
+                label: 'Dark mode',
+                value: isDark,
+                onChanged: (_) =>
+                    ref.read(themeProvider.notifier).toggle(),
+              ),
+            ],
+          ),
+          Gap(12.h),
+          _InfoCard(
+            title: 'ACCOUNT',
+            children: [
+              _ActionRow(icon: Iconsax.sms, label: 'Change email'),
+              _ActionRow(icon: Iconsax.lock, label: 'Change password'),
+              _ActionRow(icon: Iconsax.notification, label: 'Notifications'),
+              _ActionRow(icon: Iconsax.shield_tick, label: 'Privacy settings'),
+            ],
+          ),
         ],
       ),
     );
@@ -603,6 +623,53 @@ class _ActionRow extends StatelessWidget {
             Icon(Iconsax.arrow_right_3, size: 16.r, color: c.text3),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  const _ToggleRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 10.h),
+      child: Row(
+        children: [
+          Icon(icon, size: 18.r, color: c.text2),
+          Gap(12.w),
+          Expanded(
+            child: Text(
+              label,
+              style: tt.bodyLarge!.copyWith(
+                fontWeight: FontWeight.w500,
+                color: c.text1,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: c.action,
+            activeTrackColor: c.actionBg,
+            inactiveThumbColor: c.text3,
+            inactiveTrackColor: c.surface,
+          ),
+        ],
       ),
     );
   }
