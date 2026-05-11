@@ -13,6 +13,12 @@ CREATE POLICY "profiles_select_own"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
+-- Insert is handled by the handle_new_user trigger (SECURITY DEFINER).
+-- This policy covers any direct inserts the app might make as a fallback.
+CREATE POLICY "profiles_insert_own"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "profiles_update_own"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id)
@@ -26,6 +32,23 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "user_roles_select_own"
   ON public.user_roles FOR SELECT
   USING (auth.uid() = user_id);
+
+-- Authenticated user can set their own role during onboarding.
+-- Restricted to builder/trade — prevents self-escalation to admin.
+CREATE POLICY "user_roles_insert_own"
+  ON public.user_roles FOR INSERT
+  WITH CHECK (
+    auth.uid() = user_id
+    AND role IN ('builder', 'trade')
+  );
+
+CREATE POLICY "user_roles_update_own"
+  ON public.user_roles FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND role IN ('builder', 'trade')
+  );
 
 -- -------------------------------------------------------
 -- builder_profiles
