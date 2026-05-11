@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -26,7 +27,11 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
+enum _ViewMode { list, map }
+
 class _HomePageState extends ConsumerState<HomePage> {
+  _ViewMode _viewMode = _ViewMode.list;
+
   @override
   void initState() {
     super.initState();
@@ -68,9 +73,28 @@ class _HomePageState extends ConsumerState<HomePage> {
     final feedJobs = jobsState.jobs.take(3).toList();
     final hasRealJobs = feedJobs.isNotEmpty;
 
+    final showMapToggle = !isBuilder;
+    final jobsWithLocation = jobsState.jobs
+        .where((j) => j.hasLocation)
+        .toList();
+
     return Scaffold(
       backgroundColor: c.background,
-      body: SafeArea(
+      floatingActionButton: showMapToggle
+          ? FloatingActionButton(
+              backgroundColor: c.action,
+              onPressed: () => setState(() => _viewMode =
+                  _viewMode == _ViewMode.list ? _ViewMode.map : _ViewMode.list),
+              child: Icon(
+                _viewMode == _ViewMode.list ? Iconsax.map : Iconsax.element_4,
+                color: Colors.white, // intentional: white-on-action
+                size: 22.r,
+              ),
+            )
+          : null,
+      body: _viewMode == _ViewMode.map
+          ? _MapView(jobs: jobsWithLocation, onJobTap: (j) => context.push('/jobs/${j.id}', extra: JobDetailArgs.fromJob(j)))
+          : SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
@@ -463,6 +487,57 @@ class _PrimaryActionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ── Map View ──────────────────────────────────────────────────────────────────
+
+class _MapView extends StatefulWidget {
+  const _MapView({required this.jobs, required this.onJobTap});
+
+  final List<Job> jobs;
+  final ValueChanged<Job> onJobTap;
+
+  @override
+  State<_MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends State<_MapView> {
+  static const _sydney = LatLng(-33.8688, 151.2093);
+
+  GoogleMapController? _controller;
+
+  Set<Marker> _buildMarkers() {
+    return {
+      for (final job in widget.jobs)
+        if (job.latitude != null && job.longitude != null)
+          Marker(
+            markerId: MarkerId(job.id),
+            position: LatLng(job.latitude!, job.longitude!),
+            infoWindow: InfoWindow(
+              title: job.title,
+              snippet: job.displayBudget,
+              onTap: () => widget.onJobTap(job),
+            ),
+          ),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GoogleMap(
+      initialCameraPosition: const CameraPosition(target: _sydney, zoom: 11),
+      markers: _buildMarkers(),
+      onMapCreated: (c) => _controller = c,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
   }
 }
 

@@ -268,3 +268,39 @@ Zero meaningful tests exist. `mocktail` is in `dev_dependencies` but never impor
 10. Extract route definitions into per-feature files (e.g. `features/jobs/jobs_routes.dart`).
 11. Add `lottie` empty states to jobs feed, applications list, messages, notifications.
 12. Remove `AppColors` / `AppDarkColors` static fallback classes once all widgets use `context.c`.
+
+---
+
+## Sprint 1 Update (2026-05-11)
+
+The following issues from the original audit have been addressed:
+
+### Fixed — Critical
+- **Zero test coverage** → 21 tests now passing (20 domain unit tests + 1 widget test).
+  Files: `test/features/auth/`, `test/features/jobs/`, `test/features/applications/`, `test/widget_test.dart`
+
+### Fixed — High
+- **No error message catalogue** → `lib/core/errors/error_messages.dart` created. All auth providers now use `ErrorMessages.from(Failure)` instead of raw `.toString()`.
+- **Silent catch blocks** → All silent `catch (_)` blocks in `auth_provider.dart` and `auth_remote_datasource.dart` now log via `debugPrint` with stack traces.
+- **Mock data in jobs_page** → `_MockJobData` class removed. Real `jobsControllerProvider` data used with proper error banner + retry.
+
+### Fixed — Medium
+- **connectivity_plus unused** → `_connectivityProvider` added to `home_shell_page.dart` with `_OfflineBanner` shown when offline.
+- **No CI/CD** → `.github/workflows/ci.yml` created. Runs `flutter analyze --fatal-infos` + `flutter test --coverage` on push/PR to `main`/`develop`.
+- **Utility method duplication** → `lib/core/utils/string_utils.dart` created with `nameFromEmail`, `initials`, `fmtDate`. Duplicate implementations in `jobs_page.dart`, `job_detail_page.dart`, `profile_page.dart` replaced.
+- **Dark/light toggle missing** → `lib/app/theme/theme_provider.dart` added. Toggle in profile settings persisted via `shared_preferences`.
+
+### Added — Sprint 1 New Features
+- **Supabase migrations** → `supabase/migrations/` directory created with 8 SQL files covering all 11 tables, RLS policies, `handle_new_user` trigger, and `custom_access_token_hook`. This resolves the `PostgrestException: Could not find the table 'public.profiles'` crash.
+- **Phone/OTP auth** → `phone_auth_page.dart` added. `AuthController` extended with `signInWithPhone`, `verifyPhoneOtp`, `resendPhoneOtp`. `/phone-auth` route added. "Sign in with Phone" link added to login page.
+- **Logout confirmation sheet** → `logout_confirm_sheet.dart` using `modal_bottom_sheet`. Profile page now shows sheet instead of direct signOut.
+- **Google Maps** → `google_maps_flutter: ^2.9.0` added. Home page has list/map toggle FAB (trade users only). `Job` entity extended with `latitude`/`longitude`. `_MapView` widget renders job pins. Android manifest and iOS AppDelegate updated.
+- **AdaptiveIcon widget** → `lib/core/design/widgets/adaptive_icon.dart` — platform-adaptive icon (Cupertino on iOS, Iconsax elsewhere).
+- **JobdunLogo widget** → `lib/core/design/widgets/jobdun_logo.dart` — `LogoVariant.full` and `LogoVariant.mark` SVG rendering via `flutter_svg`.
+
+### Still Open
+- Role-based route guards (builder vs trade visibility in GoRouter redirect)
+- Lottie empty states for jobs feed, applications, messages, notifications
+- 13 unused packages to implement or prune
+- `flutter analyze` pre-commit git hook
+- Freezed unblocked when riverpod 3.x compatibility is resolved

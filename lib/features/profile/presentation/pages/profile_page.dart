@@ -11,6 +11,7 @@ import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
@@ -82,8 +83,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: AppButton(
                   label: 'Sign out',
                   variant: AppButtonVariant.secondary,
-                  onPressed: () =>
-                      ref.read(authControllerProvider.notifier).signOut(),
+                  onPressed: () => showLogoutSheet(context, ref),
                 ),
               ),
             ),

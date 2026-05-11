@@ -261,6 +261,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: () => context.go('/register'),
                 ),
 
+                Gap(12.h),
+
+                AppButton(
+                  label: 'Sign in with Phone',
+                  variant: AppButtonVariant.text,
+                  icon: Iconsax.call,
+                  onPressed: () => context.go('/phone-auth'),
+                ),
+
                 Gap(AppSpacing.lg.h),
 
                 // ── Social SSO ────────────────────────────────────────────────

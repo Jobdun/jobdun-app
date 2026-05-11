@@ -29,6 +29,8 @@ class JobModel extends Job {
     super.publishedAt,
     super.hiredTradeId,
     super.deletedAt,
+    super.latitude,
+    super.longitude,
   });
 
   factory JobModel.fromJson(Map<String, dynamic> json) => JobModel(
@@ -70,6 +72,8 @@ class JobModel extends Job {
     deletedAt: json['deleted_at'] != null
         ? DateTime.parse(json['deleted_at'] as String)
         : null,
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
   );
 
   Map<String, dynamic> toJson() => {

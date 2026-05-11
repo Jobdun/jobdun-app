@@ -532,6 +532,104 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  // ── Phone / OTP ────────────────────────────────────────────────────────────
+
+  Future<bool> signInWithPhone(String phone) async {
+    if (!SupabaseConfig.isInitialized) {
+      state = state.copyWith(
+        errorMessage: 'Supabase is not configured.',
+        isLoading: false,
+        infoMessage: null,
+      );
+      return false;
+    }
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    try {
+      await SupabaseConfig.client.auth.signInWithOtp(phone: phone.trim());
+      state = state.copyWith(
+        isLoading: false,
+        pendingPhoneNumber: phone.trim(),
+        infoMessage: 'Code sent — check your SMS.',
+      );
+      return true;
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+        infoMessage: null,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+        infoMessage: null,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> verifyPhoneOtp(String token) async {
+    final phone = state.pendingPhoneNumber;
+    if (phone == null || !SupabaseConfig.isInitialized) return false;
+
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    try {
+      final response = await SupabaseConfig.client.auth.verifyOTP(
+        phone: phone,
+        token: token.trim(),
+        type: supabase.OtpType.sms,
+      );
+      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
+      state = state.copyWith(
+        isAuthenticated: response.user != null,
+        onboardingComplete: onboardingDone,
+        email: response.user?.email,
+        isLoading: false,
+        clearPhone: true,
+      );
+      return state.isAuthenticated;
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+        infoMessage: null,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+        infoMessage: null,
+      );
+      return false;
+    }
+  }
+
+  Future<void> resendPhoneOtp() async {
+    final phone = state.pendingPhoneNumber;
+    if (phone == null || !SupabaseConfig.isInitialized) return;
+    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    try {
+      await SupabaseConfig.client.auth.signInWithOtp(phone: phone);
+      state = state.copyWith(isLoading: false, infoMessage: 'New code sent.');
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+      );
+    }
+  }
+
+  void clearPendingPhone() {
+    state = state.copyWith(clearPhone: true);
+  }
+
   Future<void> signOut() async {
     if (SupabaseConfig.isInitialized) {
       await SupabaseConfig.client.auth.signOut();
@@ -548,6 +646,7 @@ class AuthState {
     this.role,
     this.email,
     this.pendingVerificationEmail,
+    this.pendingPhoneNumber,
     this.errorMessage,
     this.infoMessage,
   });
@@ -558,6 +657,7 @@ class AuthState {
   final UserRole? role;
   final String? email;
   final String? pendingVerificationEmail;
+  final String? pendingPhoneNumber;
   final String? errorMessage;
   final String? infoMessage;
 
@@ -568,10 +668,12 @@ class AuthState {
     UserRole? role,
     String? email,
     String? pendingVerificationEmail,
+    String? pendingPhoneNumber,
     String? errorMessage,
     String? infoMessage,
     bool clearRole = false,
     bool clearPendingVerification = false,
+    bool clearPhone = false,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -582,6 +684,7 @@ class AuthState {
       pendingVerificationEmail: clearPendingVerification
           ? null
           : pendingVerificationEmail ?? this.pendingVerificationEmail,
+      pendingPhoneNumber: clearPhone ? null : pendingPhoneNumber ?? this.pendingPhoneNumber,
       errorMessage: errorMessage,
       infoMessage: infoMessage,
     );

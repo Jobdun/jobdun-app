@@ -73,6 +73,8 @@ class Job extends Equatable {
     this.publishedAt,
     this.hiredTradeId,
     this.deletedAt,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
@@ -102,6 +104,8 @@ class Job extends Equatable {
   final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final double? latitude;
+  final double? longitude;
 
   String get displayBudget {
     if (budgetMin == null && budgetMax == null) return 'Negotiable';
@@ -114,6 +118,8 @@ class Job extends Equatable {
   }
 
   String get displayLocation => '$suburb, $state';
+
+  bool get hasLocation => latitude != null && longitude != null;
 
   @override
   List<Object?> get props => [id, builderId, title, status, tradeTypeRequired];

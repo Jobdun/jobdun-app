@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/onboarding_page.dart';
+import '../../features/auth/presentation/pages/phone_auth_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/verify_email_page.dart';
@@ -42,7 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (!auth.isAuthenticated) {
-        const publicRoutes = {'/login', '/register', '/forgot-password'};
+        const publicRoutes = {'/login', '/register', '/forgot-password', '/phone-auth'};
         return publicRoutes.contains(location) ? null : '/login';
       }
 
@@ -56,6 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/onboarding',
         '/verify-email',
         '/forgot-password',
+        '/phone-auth',
       };
       if (authPages.contains(location)) return '/home';
 
@@ -68,6 +70,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
       GoRoute(path: '/verify-email', builder: (_, _) => const VerifyEmailPage()),
       GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordPage()),
+      GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
 
       // ── Shell (5 tabs) ─────────────────────────────────────────────────────
