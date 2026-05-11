@@ -28,6 +28,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Maps API key: set MAPS_API_KEY in local.properties or pass via -PMAPS_API_KEY=...
+        // App loads the key at runtime from .env — this manifest value is only needed for
+        // the native Maps SDK tile renderer on Android.
+        manifestPlaceholders["MAPS_API_KEY"] = project.findProperty("MAPS_API_KEY") as String? ?: ""
     }
 
     buildTypes {

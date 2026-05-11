@@ -17,8 +17,9 @@ import '../../domain/entities/user_role.dart';
 
 export '../../domain/entities/user_role.dart';
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
 
 class AuthController extends Notifier<AuthState> {
   StreamSubscription<supabase.AuthState>? _authSubscription;
@@ -106,7 +107,10 @@ class AuthController extends Notifier<AuthState> {
       state = state.copyWith(role: role, onboardingComplete: onboardingDone);
     } catch (e, st) {
       // Best-effort — don't disrupt the session if profile fetch fails.
-      assert(() { debugPrint('[AuthController] _loadProfileForCurrentUser: $e\n$st'); return true; }());
+      assert(() {
+        debugPrint('[AuthController] _loadProfileForCurrentUser: $e\n$st');
+        return true;
+      }());
     }
   }
 
@@ -127,20 +131,21 @@ class AuthController extends Notifier<AuthState> {
 
       return data['onboarding_completed_at'] != null;
     } catch (e, st) {
-      assert(() { debugPrint('[AuthController] _fetchOnboardingStatus: $e\n$st'); return true; }());
+      assert(() {
+        debugPrint('[AuthController] _fetchOnboardingStatus: $e\n$st');
+        return true;
+      }());
       return false;
     }
   }
 
   // ── Auth methods ───────────────────────────────────────────────────────────
 
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> signIn({required String email, required String password}) async {
     if (!SupabaseConfig.isInitialized) {
       state = state.copyWith(
-        errorMessage: 'Supabase is not configured. Fill .env and run with '
+        errorMessage:
+            'Supabase is not configured. Fill .env and run with '
             '--dart-define-from-file=.env.',
         isLoading: false,
         infoMessage: null,
@@ -160,8 +165,7 @@ class AuthController extends Notifier<AuthState> {
         password: password,
       );
 
-      final onboardingDone =
-          await _fetchOnboardingStatus(response.user?.id);
+      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
 
       state = state.copyWith(
         isAuthenticated: response.user != null || response.session != null,
@@ -194,7 +198,8 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     if (!SupabaseConfig.isInitialized) {
       state = state.copyWith(
-        errorMessage: 'Supabase is not configured. Fill .env and run with '
+        errorMessage:
+            'Supabase is not configured. Fill .env and run with '
             '--dart-define-from-file=.env.',
         isLoading: false,
         infoMessage: null,
@@ -289,7 +294,8 @@ class AuthController extends Notifier<AuthState> {
   Future<void> signInWithGoogle() async {
     if (!AppEnv.isGoogleConfigured) {
       state = state.copyWith(
-        errorMessage: 'Google Sign-In is not configured yet. '
+        errorMessage:
+            'Google Sign-In is not configured yet. '
             'Add GOOGLE_WEB_CLIENT_ID to your .env file.',
         isLoading: false,
         infoMessage: null,
@@ -334,8 +340,7 @@ class AuthController extends Notifier<AuthState> {
         idToken: idToken,
       );
 
-      final onboardingDone =
-          await _fetchOnboardingStatus(response.user?.id);
+      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
 
       state = state.copyWith(
         isAuthenticated: response.user != null,
@@ -355,11 +360,17 @@ class AuthController extends Notifier<AuthState> {
         infoMessage: null,
       );
     } on supabase.AuthException catch (e) {
-      state =
-          state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+        infoMessage: null,
+      );
     } catch (e) {
-      state =
-          state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        infoMessage: null,
+      );
     }
   }
 
@@ -402,8 +413,7 @@ class AuthController extends Notifier<AuthState> {
         nonce: rawNonce,
       );
 
-      final onboardingDone =
-          await _fetchOnboardingStatus(response.user?.id);
+      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
 
       state = state.copyWith(
         isAuthenticated: response.user != null,
@@ -413,11 +423,17 @@ class AuthController extends Notifier<AuthState> {
         clearRole: !onboardingDone,
       );
     } on supabase.AuthException catch (e) {
-      state =
-          state.copyWith(isLoading: false, errorMessage: e.message, infoMessage: null);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+        infoMessage: null,
+      );
     } catch (e) {
-      state =
-          state.copyWith(isLoading: false, errorMessage: e.toString(), infoMessage: null);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        infoMessage: null,
+      );
     }
   }
 
@@ -425,7 +441,10 @@ class AuthController extends Notifier<AuthState> {
     const chars =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
     final rng = Random.secure();
-    return List.generate(length, (_) => chars[rng.nextInt(chars.length)]).join();
+    return List.generate(
+      length,
+      (_) => chars[rng.nextInt(chars.length)],
+    ).join();
   }
 
   String _sha256ofString(String input) {
@@ -448,9 +467,12 @@ class AuthController extends Notifier<AuthState> {
         final userId = SupabaseConfig.client.auth.currentUser?.id;
         if (userId != null) {
           // Mark onboarding complete via onboarding_completed_at (schema column).
-          await SupabaseConfig.client.from('profiles').update({
-            'onboarding_completed_at': DateTime.now().toIso8601String(),
-          }).eq('id', userId);
+          await SupabaseConfig.client
+              .from('profiles')
+              .update({
+                'onboarding_completed_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', userId);
 
           // Assign role in user_roles (drives JWT claim via custom_access_token_hook).
           await SupabaseConfig.client.from('user_roles').upsert({
@@ -470,9 +492,12 @@ class AuthController extends Notifier<AuthState> {
           } else if (role == UserRole.trade) {
             // trade_profiles.id is PK = profiles.id (not profile_id)
             final tradeData = <String, dynamic>{'id': userId};
-            if (tradeCategory != null) tradeData['primary_trade'] = tradeCategory;
+            if (tradeCategory != null) {
+              tradeData['primary_trade'] = tradeCategory;
+            }
             if (yearsExperience != null) {
-              tradeData['years_experience'] = int.tryParse(yearsExperience) ?? 0;
+              tradeData['years_experience'] =
+                  int.tryParse(yearsExperience) ?? 0;
             }
             if (tradeData.length > 1) {
               await SupabaseConfig.client
@@ -484,7 +509,10 @@ class AuthController extends Notifier<AuthState> {
       }
     } catch (e, st) {
       // Best-effort — don't block the user from progressing, but surface the error.
-      assert(() { debugPrint('[AuthController] completeOnboarding: $e\n$st'); return true; }());
+      assert(() {
+        debugPrint('[AuthController] completeOnboarding: $e\n$st');
+        return true;
+      }());
       state = state.copyWith(
         infoMessage: 'Profile saved locally. Some details may sync later.',
       );
@@ -543,7 +571,11 @@ class AuthController extends Notifier<AuthState> {
       );
       return false;
     }
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
     try {
       await SupabaseConfig.client.auth.signInWithOtp(phone: phone.trim());
       state = state.copyWith(
@@ -573,7 +605,11 @@ class AuthController extends Notifier<AuthState> {
     final phone = state.pendingPhoneNumber;
     if (phone == null || !SupabaseConfig.isInitialized) return false;
 
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
     try {
       final response = await SupabaseConfig.client.auth.verifyOTP(
         phone: phone,
@@ -609,7 +645,11 @@ class AuthController extends Notifier<AuthState> {
   Future<void> resendPhoneOtp() async {
     final phone = state.pendingPhoneNumber;
     if (phone == null || !SupabaseConfig.isInitialized) return;
-    state = state.copyWith(isLoading: true, errorMessage: null, infoMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
     try {
       await SupabaseConfig.client.auth.signInWithOtp(phone: phone);
       state = state.copyWith(isLoading: false, infoMessage: 'New code sent.');
@@ -684,7 +724,9 @@ class AuthState {
       pendingVerificationEmail: clearPendingVerification
           ? null
           : pendingVerificationEmail ?? this.pendingVerificationEmail,
-      pendingPhoneNumber: clearPhone ? null : pendingPhoneNumber ?? this.pendingPhoneNumber,
+      pendingPhoneNumber: clearPhone
+          ? null
+          : pendingPhoneNumber ?? this.pendingPhoneNumber,
       errorMessage: errorMessage,
       infoMessage: infoMessage,
     );

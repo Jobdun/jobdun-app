@@ -26,7 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Google Maps API key — set MAPS_API_KEY in your .env and pass via --dart-define -->
+        <!-- Google Maps API key: set MAPS_API_KEY in local.properties or pass via dart-define -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
