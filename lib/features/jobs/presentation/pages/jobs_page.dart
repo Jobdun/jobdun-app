@@ -11,6 +11,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/job_card.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../providers/jobs_provider.dart';
@@ -63,8 +64,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final jobs = jobsState.jobs;
     final isLoading = jobsState.isLoading;
 
-    final displayJobs = jobs.isEmpty && !isLoading ? _mockJobs : null;
-    final count = displayJobs != null ? displayJobs.length : jobs.length;
+    final count = jobs.length;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -217,6 +217,35 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 backgroundColor: c.surface,
                 minHeight: 2,
               ),
+            // ── Error banner
+            if (jobsState.error != null)
+              Container(
+                width: double.infinity,
+                color: c.urgentBg,
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                child: Row(
+                  children: [
+                    Icon(Iconsax.warning_2, size: 16.r, color: c.urgentTx),
+                    Gap(8.w),
+                    Expanded(
+                      child: Text(
+                        jobsState.error!,
+                        style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => ref.read(jobsControllerProvider.notifier).refresh(),
+                      child: Text(
+                        'Retry',
+                        style: tt.bodyMedium!.copyWith(
+                          color: c.urgentTx,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // ── Results count
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
@@ -230,44 +259,20 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             ),
             // ── Job list
             Expanded(
-              child: count == 0
+              child: count == 0 && !isLoading
                   ? _EmptyState(hasFilter: activeFilter != null || _searchCtrl.text.isNotEmpty)
                   : ListView.separated(
                       padding: EdgeInsets.fromLTRB(20.w, AppSpacing.sm.h, 20.w, AppSpacing.lg.h),
                       itemCount: count,
                       separatorBuilder: (ctx, idx) => Gap(9.h),
                       itemBuilder: (context, i) {
-                        if (displayJobs != null) {
-                          final j = displayJobs[i];
-                          return JobCard(
-                            title: j.title,
-                            description: j.description,
-                            rate: j.rate,
-                            startDate: j.startDate,
-                            distanceKm: j.distanceKm,
-                            isUrgent: j.isUrgent,
-                            onTap: () {
-                              context.push(
-                                '/jobs/mock-$i',
-                                extra: JobDetailArgs(
-                                  title: j.title,
-                                  description: j.description,
-                                  rate: j.rate,
-                                  startDate: j.startDate,
-                                  distanceKm: j.distanceKm,
-                                  isUrgent: j.isUrgent,
-                                ),
-                              );
-                            },
-                          );
-                        }
                         final j = jobs[i];
                         return JobCard(
                           title: j.title,
                           description: j.description,
                           rate: j.displayBudget,
                           startDate: j.startDate != null
-                              ? _fmtDate(j.startDate!)
+                              ? StringUtils.fmtDate(j.startDate!)
                               : j.displayLocation,
                           distanceKm: 0.0,
                           isUrgent: j.urgency == JobUrgency.urgent,
@@ -285,18 +290,6 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     );
   }
 
-  static String _fmtDate(DateTime d) {
-    final now = DateTime.now();
-    final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
-    return '${d.day} ${_months[d.month - 1]}';
-  }
-
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
 }
 
 class _EmptyState extends StatelessWidget {
@@ -340,51 +333,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Sample fallback data ───────────────────────────────────────────────────────
-
-class _MockJobData {
-  const _MockJobData({
-    required this.title, required this.description, required this.rate,
-    required this.startDate, required this.distanceKm, required this.isUrgent,
-  });
-
-  final String title;
-  final String description;
-  final String rate;
-  final String startDate;
-  final double distanceKm;
-  final bool isUrgent;
-}
-
-const _mockJobs = [
-  _MockJobData(
-    title: 'Install 3-phase switchboard at commercial site',
-    description: 'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination. Must hold current NSW electrical licence.',
-    rate: r'$85/hr', startDate: 'Tomorrow 7am', distanceKm: 2.4, isUrgent: true,
-  ),
-  _MockJobData(
-    title: 'Frame internal walls for home renovation',
-    description: 'Steel stud framing approximately 120 LM for a full renovation in Newtown. Drawings available on site. Supply your own tools.',
-    rate: r'$45/hr', startDate: '12 May', distanceKm: 4.8, isUrgent: false,
-  ),
-  _MockJobData(
-    title: 'Concrete footings for deck extension',
-    description: '8 × 300mm dia pad footings, 600mm deep. Reinforcement supplied by contractor. All approvals in place.',
-    rate: r'$75/hr', startDate: '14 May', distanceKm: 9.1, isUrgent: false,
-  ),
-  _MockJobData(
-    title: 'Rough-in plumbing for new bathroom',
-    description: 'Rough-in plumbing for a new ensuite bathroom in Mosman. Shower, vanity, toilet, and bath connections.',
-    rate: r'$1,800 fixed', startDate: '15 May', distanceKm: 6.3, isUrgent: false,
-  ),
-  _MockJobData(
-    title: 'Roof repair — replace tiles and re-bed ridge',
-    description: 'Approx 20 broken tiles to replace following storm damage. Ridge re-bedding on east face. Scaffold supplied.',
-    rate: r'$55/hr', startDate: 'Today', distanceKm: 3.7, isUrgent: true,
-  ),
-  _MockJobData(
-    title: 'Interior paint — 4-bedroom home repaint',
-    description: 'Full interior repaint of a 4-bedroom home before sale. Walls, ceilings, trims. Paint supplied.',
-    rate: r'$3,500 fixed', startDate: '18 May', distanceKm: 7.2, isUrgent: false,
-  ),
-];

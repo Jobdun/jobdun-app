@@ -1,4 +1,5 @@
 // hide supabase's AuthException so ours from core/errors/exceptions.dart is unambiguous
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 import '../../../../core/errors/exceptions.dart';
@@ -101,7 +102,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // Role comes from JWT claim injected by custom_access_token_hook.
       // UserModel.fromJson handles 'user_role' key from JWT or defaults to trade.
       return UserModel.fromJson({...data, 'email': email});
-    } catch (_) {
+    } catch (e, st) {
+      assert(() { debugPrint('[AuthRemoteDataSource] _fetchProfile: $e\n$st'); return true; }());
       return UserModel(id: userId, email: email, role: UserRole.trade);
     }
   }

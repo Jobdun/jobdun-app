@@ -8,6 +8,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/builder_profile.dart';
@@ -40,8 +41,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final isBuilder = role == UserRole.builder;
     final email = authState.email ?? '';
 
-    final displayName = profileState.profile?.displayName ?? _nameFromEmail(email);
-    final initials = _initials(displayName);
+    final displayName = profileState.profile?.displayName ?? StringUtils.nameFromEmail(email);
+    final initials = StringUtils.initials(displayName);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -93,21 +94,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  static String _nameFromEmail(String email) {
-    final local = email.split('@').first;
-    final parts = local.replaceAll(RegExp(r'[._\-]'), ' ').split(' ');
-    final first = parts.isNotEmpty ? parts.first : local;
-    if (first.isEmpty) return 'User';
-    return '${first[0].toUpperCase()}${first.substring(1)}';
-  }
-
-  static String _initials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2 && parts[1].isNotEmpty) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
-  }
 }
 
 // ── Profile Header ─────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -10,6 +11,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../core/config/env.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/errors/error_messages.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_role.dart';
 
 export '../../domain/entities/user_role.dart';
@@ -101,8 +104,9 @@ class AuthController extends Notifier<AuthState> {
       final onboardingDone = data['onboarding_completed_at'] != null;
       final role = _roleFromSession();
       state = state.copyWith(role: role, onboardingComplete: onboardingDone);
-    } catch (_) {
+    } catch (e, st) {
       // Best-effort — don't disrupt the session if profile fetch fails.
+      assert(() { debugPrint('[AuthController] _loadProfileForCurrentUser: $e\n$st'); return true; }());
     }
   }
 
@@ -122,7 +126,8 @@ class AuthController extends Notifier<AuthState> {
       if (role != null) state = state.copyWith(role: role);
 
       return data['onboarding_completed_at'] != null;
-    } catch (_) {
+    } catch (e, st) {
+      assert(() { debugPrint('[AuthController] _fetchOnboardingStatus: $e\n$st'); return true; }());
       return false;
     }
   }
@@ -168,14 +173,14 @@ class AuthController extends Notifier<AuthState> {
     } on supabase.AuthException catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: error.message,
+        errorMessage: ErrorMessages.from(AuthFailure(error.message)),
         infoMessage: null,
       );
       return false;
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: error.toString(),
+        errorMessage: ErrorMessages.from(ServerFailure(error.toString())),
         infoMessage: null,
       );
       return false;
@@ -236,14 +241,14 @@ class AuthController extends Notifier<AuthState> {
     } on supabase.AuthException catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: error.message,
+        errorMessage: ErrorMessages.from(AuthFailure(error.message)),
         infoMessage: null,
       );
       return false;
     } catch (error) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: error.toString(),
+        errorMessage: ErrorMessages.from(ServerFailure(error.toString())),
         infoMessage: null,
       );
       return false;
@@ -477,8 +482,12 @@ class AuthController extends Notifier<AuthState> {
           }
         }
       }
-    } catch (_) {
-      // Best-effort — don't block the user from progressing.
+    } catch (e, st) {
+      // Best-effort — don't block the user from progressing, but surface the error.
+      assert(() { debugPrint('[AuthController] completeOnboarding: $e\n$st'); return true; }());
+      state = state.copyWith(
+        infoMessage: 'Profile saved locally. Some details may sync later.',
+      );
     }
 
     state = state.copyWith(
@@ -511,9 +520,15 @@ class AuthController extends Notifier<AuthState> {
         infoMessage: 'Check your email for a reset link.',
       );
     } on supabase.AuthException catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+      );
     }
   }
 

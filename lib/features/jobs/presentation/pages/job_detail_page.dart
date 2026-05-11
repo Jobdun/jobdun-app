@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/job.dart';
 
 // Passed via GoRouter `extra` when pushing to /jobs/:id
@@ -46,7 +47,7 @@ class JobDetailArgs {
     title: job.title,
     description: job.description,
     rate: job.displayBudget,
-    startDate: job.startDate != null ? _fmtDate(job.startDate!) : 'TBD',
+    startDate: job.startDate != null ? StringUtils.fmtDate(job.startDate!) : 'TBD',
     distanceKm: 0.0,
     isUrgent: job.urgency == JobUrgency.urgent,
     tradeType: job.tradeTypeRequired,
@@ -56,14 +57,6 @@ class JobDetailArgs {
     requiresLiability: job.requiresPublicLiability,
   );
 
-  static String _fmtDate(DateTime d) {
-    final now = DateTime.now();
-    final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${d.day} ${months[d.month - 1]}';
-  }
 }
 
 class JobDetailPage extends StatefulWidget {
