@@ -18,8 +18,10 @@ import '../../../legal/presentation/widgets/legal_acceptance_checkbox.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/social_auth_buttons.dart';
 
-// Total steps in the flow: role (1) + form (2) + verify email (3, separate page).
-const _kTotalSteps = 3;
+// Two interactive steps: role (1) + form (2). Verify-email is async — the
+// user waits on an inbox, not progresses through a step — so it's not counted
+// here (T3.4 of the friction-reduction sprint).
+const _kTotalSteps = 2;
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});

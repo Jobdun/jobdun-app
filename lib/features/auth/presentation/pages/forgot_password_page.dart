@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
@@ -64,30 +63,29 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Brand mark ────────────────────────────────────────────────
-                Gap(AppSpacing.lg.h),
+                // Compact wordmark — user is mid-flow, they know the app.
+                // Full lockup is reserved for splash + login (T3.2).
+                Gap(24.h),
                 Center(
-                  child: JobdunLogo(variant: LogoVariant.mark, height: 52.r),
-                ),
-                Gap(12.h),
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) =>
-                        AppGradients.brandFlame.createShader(bounds),
-                    child: Text(
-                      'JOBDUN',
-                      style: tt.displaySmall!.copyWith(
-                        fontSize: 44.sp,
-                        letterSpacing: 4.0,
-                        height: 1.0,
-                        color: Colors
-                            .white, // intentional: ShaderMask requires white for gradient
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      JobdunLogo(variant: LogoVariant.mark, height: 24.r),
+                      Gap(8.w),
+                      Text(
+                        'JOBDUN',
+                        style: tt.displaySmall!.copyWith(
+                          fontSize: 18.sp,
+                          letterSpacing: 1.5,
+                          height: 1.0,
+                          color: c.text1,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
 
-                Gap(40.h),
+                Gap(32.h),
 
                 // ── Page heading ──────────────────────────────────────────────
                 Text(

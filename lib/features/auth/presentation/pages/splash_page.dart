@@ -37,7 +37,9 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
   void _continue() {
     if (!mounted) return;
-    context.go('/home');
+    // Route to '/', not '/home' — lets the router redirect decide where the
+    // user actually lands based on auth state (login / verify-email / home).
+    context.go('/');
   }
 
   @override

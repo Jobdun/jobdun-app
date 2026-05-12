@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
@@ -87,30 +86,30 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Brand mark (solid, no gradient) ──────────────────────────
-              Gap(48.h),
+              // Compact wordmark — user is mid-flow, they know the app.
+              // Full lockup is reserved for splash + login (T3.2).
+              Gap(24.h),
               Center(
-                child: SvgPicture.asset(
-                  'lib/core/assets/mark-jobdun.svg',
-                  width: 48.r,
-                  height: 48.r,
-                ),
-              ),
-              Gap(10.h),
-              Center(
-                child: ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppGradients.brandFlame.createShader(bounds),
-                  child: Text(
-                    'JOBDUN',
-                    style: AppTheme.brandDisplay(
-                      Colors.white, // intentional: ShaderMask requires white
-                    ).copyWith(fontSize: 40.sp),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'lib/core/assets/mark-jobdun.svg',
+                      width: 24.r,
+                      height: 24.r,
+                    ),
+                    Gap(8.w),
+                    Text(
+                      'JOBDUN',
+                      style: AppTheme.brandDisplay(
+                        c.text1,
+                      ).copyWith(fontSize: 18.sp, letterSpacing: 1.5),
+                    ),
+                  ],
                 ),
               ),
 
-              Gap(48.h),
+              Gap(32.h),
 
               // ── Email icon ────────────────────────────────────────────────
               Center(

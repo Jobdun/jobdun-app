@@ -41,6 +41,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (location == '/splash') return null;
 
+      // Splash hands off to '/' so the router (not splash) decides where the
+      // user lands. Same auth-aware fork as the onboarding redirect below.
+      if (location == '/') {
+        return auth.isAuthenticated ? '/home' : '/login';
+      }
+
       // Legacy onboarding route — wall was removed in T1.3 (friction-reduction
       // sprint). Anyone landing here from a deep link / stale session goes
       // home, and the ProfileCompletenessBanner handles the nudge.
