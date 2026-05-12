@@ -7,6 +7,12 @@ class SupabaseConfig {
 
   static bool _initialized = false;
 
+  // Custom URL scheme registered in iOS Info.plist + Android Manifest.
+  // Used as `emailRedirectTo` on signUp / resend so the verification email
+  // bounces tappers back into the app instead of a localhost web page.
+  // Hosted Supabase project must allowlist this exact URL.
+  static const String authRedirectUrl = 'com.example.jobdun://login-callback/';
+
   static bool get isConfigured => AppEnv.isSupabaseConfigured;
   static bool get isInitialized => _initialized;
 
@@ -18,6 +24,12 @@ class SupabaseConfig {
     await Supabase.initialize(
       url: AppEnv.supabaseUrl,
       anonKey: AppEnv.supabaseAnonKey,
+      // PKCE is the only flow that lets supabase_flutter exchange the inbound
+      // deep-link code for a session on mobile. app_links is pulled in
+      // transitively, so no extra pubspec dep.
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
     );
 
     _initialized = true;

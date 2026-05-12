@@ -38,12 +38,18 @@ class AuthController extends Notifier<AuthState> {
         state = const AuthState();
         return;
       }
+      // If the user just landed back via the email-verify deep link, the
+      // incoming session's emailConfirmedAt is non-null. Clear the pending
+      // gate so the router stops pinning them to /verify-email.
+      final verified = session.user.emailConfirmedAt != null;
       state = state.copyWith(
         isAuthenticated: true,
         email: session.user.email,
         isLoading: false,
         errorMessage: null,
         infoMessage: null,
+        clearPendingVerification: verified,
+        clearRegisterDraft: verified,
       );
       // Critical: load role from JWT after every session change (e.g. when
       // the email-verify deep link returns to the app). Without this, home
@@ -240,6 +246,9 @@ class AuthController extends Notifier<AuthState> {
       final response = await SupabaseConfig.client.auth.signUp(
         email: email.trim(),
         password: password,
+        // Sends the user back into the app via the registered URL scheme.
+        // Hosted Supabase Dashboard must allowlist SupabaseConfig.authRedirectUrl.
+        emailRedirectTo: SupabaseConfig.authRedirectUrl,
         // 'full_name' + 'role' are read by handle_new_user() trigger to write
         // profiles + user_roles + role-specific stub on auth.users INSERT.
         data: {
@@ -301,6 +310,7 @@ class AuthController extends Notifier<AuthState> {
       await SupabaseConfig.client.auth.resend(
         type: supabase.OtpType.signup,
         email: email,
+        emailRedirectTo: SupabaseConfig.authRedirectUrl,
       );
       state = state.copyWith(
         isLoading: false,
