@@ -35,7 +35,8 @@ class ReviewRepositoryImpl implements ReviewRepository {
     try {
       final reviews = await _datasource.getReviewsForUser(userId);
       if (reviews.isEmpty) return right(0.0);
-      final avg = reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
+      final avg =
+          reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
       return right(avg);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));

@@ -25,7 +25,9 @@ class JobApplicationModel extends JobApplication {
   });
 
   factory JobApplicationModel.fromJson(Map<String, dynamic> json) {
-    final status = ApplicationStatusX.fromDb(json['status'] as String? ?? 'pending');
+    final status = ApplicationStatusX.fromDb(
+      json['status'] as String? ?? 'pending',
+    );
 
     // Support flat row or nested joins
     final jobData = json['jobs'] as Map<String, dynamic>?;

@@ -16,8 +16,8 @@ class Message extends Equatable {
   final String conversationId;
   final String senderId;
   final String body;
-  final DateTime? readAt;      // null = unread
-  final DateTime? deletedAt;   // null = not deleted
+  final DateTime? readAt; // null = unread
+  final DateTime? deletedAt; // null = not deleted
   final DateTime? editedAt;
   final DateTime createdAt;
 

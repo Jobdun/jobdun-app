@@ -47,7 +47,9 @@ class JobDetailArgs {
     title: job.title,
     description: job.description,
     rate: job.displayBudget,
-    startDate: job.startDate != null ? StringUtils.fmtDate(job.startDate!) : 'TBD',
+    startDate: job.startDate != null
+        ? StringUtils.fmtDate(job.startDate!)
+        : 'TBD',
     distanceKm: 0.0,
     isUrgent: job.urgency == JobUrgency.urgent,
     tradeType: job.tradeTypeRequired,
@@ -56,7 +58,6 @@ class JobDetailArgs {
     requiresWhiteCard: job.requiresWhiteCard,
     requiresLiability: job.requiresPublicLiability,
   );
-
 }
 
 class JobDetailPage extends StatefulWidget {
@@ -118,7 +119,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                   if (args.isUrgent) ...[
                     Gap(AppSpacing.sm.w),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         color: c.action,
                         borderRadius: BorderRadius.circular(AppRadius.chip.r),
@@ -150,11 +154,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       runSpacing: AppSpacing.sm.h,
                       children: [
                         _InfoChip(icon: Iconsax.money_3, label: args.rate),
-                        _InfoChip(icon: Iconsax.calendar_1, label: args.startDate),
+                        _InfoChip(
+                          icon: Iconsax.calendar_1,
+                          label: args.startDate,
+                        ),
                         if (args.distanceKm > 0)
                           _InfoChip(
                             icon: Iconsax.location,
-                            label: '${args.distanceKm.toStringAsFixed(1)} km away',
+                            label:
+                                '${args.distanceKm.toStringAsFixed(1)} km away',
                           ),
                       ],
                     ),
@@ -169,9 +177,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           Icon(Iconsax.location, size: 15.r, color: c.text3),
                           Gap(AppSpacing.sm.w),
                           Text(
-                            [args.suburb, args.state]
-                                .whereType<String>()
-                                .join(', '),
+                            [
+                              args.suburb,
+                              args.state,
+                            ].whereType<String>().join(', '),
                             style: tt.bodyLarge!.copyWith(
                               fontWeight: FontWeight.w600,
                               color: c.text1,
@@ -186,11 +195,16 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     _SectionLabel('TRADE REQUIRED'),
                     Gap(AppSpacing.sm.h),
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
+                      ),
                       decoration: BoxDecoration(
                         color: c.action.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                        border: Border.all(color: c.action.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: c.action.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Text(
                         args.tradeType,
@@ -207,7 +221,10 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     Gap(AppSpacing.sm.h),
                     Text(
                       args.description,
-                      style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
+                      style: tt.bodyLarge!.copyWith(
+                        color: c.text2,
+                        height: 1.6,
+                      ),
                     ),
                     Gap(20.h),
 
@@ -255,11 +272,17 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 Gap(3.h),
                                 Row(
                                   children: [
-                                    Icon(Iconsax.star1, size: 13.r, color: c.star),
+                                    Icon(
+                                      Iconsax.star1,
+                                      size: 13.r,
+                                      color: c.star,
+                                    ),
                                     Gap(4.w),
                                     Text(
                                       '4.8 · 23 reviews',
-                                      style: tt.labelMedium!.copyWith(color: c.text3),
+                                      style: tt.labelMedium!.copyWith(
+                                        color: c.text3,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -322,7 +345,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Iconsax.tick_circle, size: 18.r, color: c.verified),
+                          Icon(
+                            Iconsax.tick_circle,
+                            size: 18.r,
+                            color: c.verified,
+                          ),
                           Gap(AppSpacing.sm.w),
                           Text(
                             'APPLICATION SUBMITTED',
@@ -415,7 +442,9 @@ class _ApplySheetState extends State<_ApplySheet> {
     final tt = Theme.of(context).textTheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        20.w, AppSpacing.lg.h, 20.w,
+        20.w,
+        AppSpacing.lg.h,
+        20.w,
         MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg.h,
       ),
       child: Column(
@@ -458,14 +487,20 @@ class _ApplySheetState extends State<_ApplySheet> {
               children: [
                 Text(
                   '\$',
-                  style: tt.headlineSmall!.copyWith(fontSize: 20.sp, color: c.text3),
+                  style: tt.headlineSmall!.copyWith(
+                    fontSize: 20.sp,
+                    color: c.text3,
+                  ),
                 ),
                 Gap(4.w),
                 Expanded(
                   child: TextField(
                     controller: _rateCtrl,
                     keyboardType: TextInputType.number,
-                    style: tt.headlineSmall!.copyWith(fontSize: 20.sp, color: c.action),
+                    style: tt.headlineSmall!.copyWith(
+                      fontSize: 20.sp,
+                      color: c.action,
+                    ),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -560,10 +595,7 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 13.r, color: c.text3),
           Gap(6.w),
-          Text(
-            label,
-            style: tt.labelMedium!.copyWith(color: c.text2),
-          ),
+          Text(label, style: tt.labelMedium!.copyWith(color: c.text2)),
         ],
       ),
     );
@@ -605,9 +637,7 @@ class _ReqRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: tt.bodyMedium!.copyWith(
-                color: met ? c.text2 : c.text3,
-              ),
+              style: tt.bodyMedium!.copyWith(color: met ? c.text2 : c.text3),
             ),
           ),
         ],

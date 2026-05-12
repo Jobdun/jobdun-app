@@ -17,10 +17,7 @@ class VerificationPage extends StatelessWidget {
         child: ListView(
           padding: EdgeInsets.all(AppSpacing.lg),
           children: [
-            Text(
-              'Verification setup',
-              style: tt.headlineMedium,
-            ),
+            Text('Verification setup', style: tt.headlineMedium),
             Gap(12.h),
             const Text(
               'This screen is ready for licence, insurance, and identity document upload flows.',
@@ -32,10 +29,7 @@ class VerificationPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Planned status pipeline',
-                      style: tt.headlineSmall,
-                    ),
+                    Text('Planned status pipeline', style: tt.headlineSmall),
                     Gap(12.h),
                     const Text('• Pending review'),
                     const Text('• Approved'),

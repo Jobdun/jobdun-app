@@ -19,15 +19,14 @@ class UploadDocument {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
-  }) =>
-      _repository.uploadDocument(
-        tradeId: tradeId,
-        docType: docType,
-        file: file,
-        state: state,
-        issuer: issuer,
-        documentNumber: documentNumber,
-        issuedDate: issuedDate,
-        expiryDate: expiryDate,
-      );
+  }) => _repository.uploadDocument(
+    tradeId: tradeId,
+    docType: docType,
+    file: file,
+    state: state,
+    issuer: issuer,
+    documentNumber: documentNumber,
+    issuedDate: issuedDate,
+    expiryDate: expiryDate,
+  );
 }

@@ -107,6 +107,9 @@ dependencies:
   # === Maps ===
   google_maps_flutter: ^2.9.0
 
+  # === Legal document rendering ===
+  flutter_markdown_plus: ^1.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -129,7 +132,12 @@ flutter:
 
   assets:
     - .env
+    - assets/legal/
     - lib/core/assets/
+    - lib/core/assets/logo-concepts/hammer-j-above/
+    - lib/core/assets/logo-concepts/hammer-j-fused/
+    - lib/core/assets/logo-concepts/hammer-j-side/
+    - lib/core/assets/logo-concepts/hammer-j-head/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

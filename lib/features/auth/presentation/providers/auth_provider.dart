@@ -38,7 +38,6 @@ class AuthController extends Notifier<AuthState> {
         state = const AuthState();
         return;
       }
-      // Only update auth flag — role / onboarding status loaded separately.
       state = state.copyWith(
         isAuthenticated: true,
         email: session.user.email,
@@ -46,6 +45,10 @@ class AuthController extends Notifier<AuthState> {
         errorMessage: null,
         infoMessage: null,
       );
+      // Critical: load role from JWT after every session change (e.g. when
+      // the email-verify deep link returns to the app). Without this, home
+      // would race-fire RoleSelectionSheet for users who already picked.
+      _loadProfileForCurrentUser();
     });
     ref.onDispose(() => _authSubscription?.cancel());
 
@@ -93,48 +96,59 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _loadProfileForCurrentUser() async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      state = state.copyWith(isRoleLoaded: true);
+      return;
+    }
     try {
       final data = await SupabaseConfig.client
           .from('profiles')
           .select('onboarding_completed_at')
           .eq('id', userId)
           .maybeSingle();
-      if (data == null) return;
 
-      final onboardingDone = data['onboarding_completed_at'] != null;
+      final onboardingDone = data?['onboarding_completed_at'] != null;
       final role = _roleFromSession();
-      state = state.copyWith(role: role, onboardingComplete: onboardingDone);
+      state = state.copyWith(
+        role: role,
+        onboardingComplete: onboardingDone,
+        isRoleLoaded: true,
+      );
     } catch (e, st) {
       // Best-effort — don't disrupt the session if profile fetch fails.
+      // Mark loaded even on failure so the sheet doesn't hang waiting forever.
       assert(() {
         debugPrint('[AuthController] _loadProfileForCurrentUser: $e\n$st');
         return true;
       }());
+      state = state.copyWith(isRoleLoaded: true);
     }
   }
 
   // Returns true if the authenticated user has completed onboarding in the DB.
   Future<bool> _fetchOnboardingStatus(String? userId) async {
-    if (userId == null || !SupabaseConfig.isInitialized) return false;
+    if (userId == null || !SupabaseConfig.isInitialized) {
+      state = state.copyWith(isRoleLoaded: true);
+      return false;
+    }
     try {
       final data = await SupabaseConfig.client
           .from('profiles')
           .select('onboarding_completed_at')
           .eq('id', userId)
           .maybeSingle();
-      if (data == null) return false;
 
       // Role comes from JWT after sign-in — refresh it from the token.
       final role = _roleFromSession();
-      if (role != null) state = state.copyWith(role: role);
+      state = state.copyWith(role: role, isRoleLoaded: true);
 
-      return data['onboarding_completed_at'] != null;
+      return data?['onboarding_completed_at'] != null;
     } catch (e, st) {
       assert(() {
         debugPrint('[AuthController] _fetchOnboardingStatus: $e\n$st');
         return true;
       }());
+      state = state.copyWith(isRoleLoaded: true);
       return false;
     }
   }
@@ -195,6 +209,8 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
     required String fullName,
+    UserRole? role,
+    String? phone,
   }) async {
     if (!SupabaseConfig.isInitialized) {
       state = state.copyWith(
@@ -211,14 +227,26 @@ class AuthController extends Notifier<AuthState> {
       isLoading: true,
       errorMessage: null,
       infoMessage: null,
+      // Stash the form values so "Wrong email? Change it" on /verify-email
+      // can route back to /register step 2 with everything pre-filled.
+      registerDraft: RegisterDraft(
+        fullName: fullName.trim(),
+        email: email.trim(),
+        role: role,
+      ),
     );
 
     try {
       final response = await SupabaseConfig.client.auth.signUp(
         email: email.trim(),
         password: password,
-        // Use 'full_name' — matches the DB trigger and UserModel.fromJson key.
-        data: {'full_name': fullName.trim()},
+        // 'full_name' + 'role' are read by handle_new_user() trigger to write
+        // profiles + user_roles + role-specific stub on auth.users INSERT.
+        data: {
+          'full_name': fullName.trim(),
+          if (role != null) 'role': role.name,
+          if (phone != null && phone.isNotEmpty) 'phone': phone,
+        },
       );
 
       if (response.session == null) {
@@ -289,6 +317,59 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(clearPendingVerification: true);
   }
 
+  void clearRegisterDraft() {
+    state = state.copyWith(clearRegisterDraft: true);
+  }
+
+  // Manual "I've verified — continue" check from /verify-email. Tries to pull
+  // a fresh session token (works if the email-link round-trip already created
+  // a session that the app hasn't picked up yet) and confirms email status.
+  // Returns true if confirmed — caller can route forward.
+  Future<bool> checkEmailVerified() async {
+    if (!SupabaseConfig.isInitialized) return false;
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
+
+    try {
+      if (SupabaseConfig.client.auth.currentSession != null) {
+        await SupabaseConfig.client.auth.refreshSession();
+      }
+      final user = SupabaseConfig.client.auth.currentUser;
+      final verified = user?.emailConfirmedAt != null;
+
+      if (verified) {
+        // Clear the verification gate so the router sends them to /home.
+        // The onAuthStateChange listener will load role from JWT.
+        state = state.copyWith(
+          isLoading: false,
+          clearPendingVerification: true,
+          clearRegisterDraft: true,
+        );
+        return true;
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage:
+            "We don't see a verification yet. Check your inbox or resend.",
+      );
+      return false;
+    } catch (e, st) {
+      assert(() {
+        debugPrint('[AuthController] checkEmailVerified: $e\n$st');
+        return true;
+      }());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: "Couldn't check status. Try again in a moment.",
+      );
+      return false;
+    }
+  }
+
   static bool _googleInitialized = false;
 
   Future<void> signInWithGoogle() async {
@@ -342,12 +423,13 @@ class AuthController extends Notifier<AuthState> {
 
       final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
 
+      // Role stays whatever the JWT says (set in _fetchOnboardingStatus).
+      // Null role + authenticated → RoleSelectionSheet handles it on home.
       state = state.copyWith(
         isAuthenticated: response.user != null,
         onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
-        clearRole: !onboardingDone,
       );
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
@@ -415,12 +497,13 @@ class AuthController extends Notifier<AuthState> {
 
       final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
 
+      // Role stays whatever the JWT says (set in _fetchOnboardingStatus).
+      // Null role + authenticated → RoleSelectionSheet handles it on home.
       state = state.copyWith(
         isAuthenticated: response.user != null,
         onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
-        clearRole: !onboardingDone,
       );
     } on supabase.AuthException catch (e) {
       state = state.copyWith(
@@ -670,6 +753,66 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(clearPhone: true);
   }
 
+  // Used by the phone-auth restore flow: rehydrates the pending phone from
+  // SharedPreferences without sending another SMS (Supabase imposes a 60s
+  // resend cooldown, so re-sending would just error out the user).
+  void setPendingPhone(String e164) {
+    state = state.copyWith(pendingPhoneNumber: e164);
+  }
+
+  // ── Role assignment for SSO / fallback ─────────────────────────────────────
+  //
+  // Called from RoleSelectionSheet when an authenticated user lands on home
+  // without a role (typically SSO sign-ups, who don't pass role in metadata).
+  // Writes user_roles, creates the role-specific stub profile, refreshes the
+  // JWT so the new claim is live, and updates local state.
+  Future<bool> setRoleAndStubProfile(UserRole role) async {
+    if (!SupabaseConfig.isInitialized) return false;
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      // Ensure profiles row exists before inserting role-specific child table.
+      // The handle_new_user trigger normally creates this, but may race on SSO.
+      await SupabaseConfig.client.from('profiles').upsert({
+        'id': userId,
+      }, onConflict: 'id');
+
+      await SupabaseConfig.client.from('user_roles').upsert({
+        'user_id': userId,
+        'role': role.name,
+      }, onConflict: 'user_id');
+
+      if (role == UserRole.builder) {
+        await SupabaseConfig.client.from('builder_profiles').upsert({
+          'id': userId,
+        }, onConflict: 'id');
+      } else if (role == UserRole.trade) {
+        await SupabaseConfig.client.from('trade_profiles').upsert({
+          'id': userId,
+        }, onConflict: 'id');
+      }
+
+      // Force a JWT refresh so the new user_role claim is in the session.
+      await SupabaseConfig.client.auth.refreshSession();
+
+      state = state.copyWith(role: role, isLoading: false);
+      return true;
+    } catch (e, st) {
+      assert(() {
+        debugPrint('[AuthController] setRoleAndStubProfile: $e\n$st');
+        return true;
+      }());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+      );
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     if (SupabaseConfig.isInitialized) {
       await SupabaseConfig.client.auth.signOut();
@@ -678,15 +821,31 @@ class AuthController extends Notifier<AuthState> {
   }
 }
 
+// Snapshot of what the user entered at /register — held in AuthState so the
+// "Wrong email? Change it" affordance on /verify-email can return them to
+// step 2 of /register with the form pre-filled instead of starting over.
+class RegisterDraft {
+  const RegisterDraft({required this.fullName, required this.email, this.role});
+
+  final String fullName;
+  final String email;
+  final UserRole? role;
+}
+
 class AuthState {
   const AuthState({
     this.isAuthenticated = false,
     this.onboardingComplete = false,
     this.isLoading = false,
+    // Goes true once we've actually tried to read role from the JWT/DB.
+    // Distinguishes "role is null because user hasn't picked" from "role is
+    // null because the load hasn't finished yet" — drives RoleSelectionSheet.
+    this.isRoleLoaded = false,
     this.role,
     this.email,
     this.pendingVerificationEmail,
     this.pendingPhoneNumber,
+    this.registerDraft,
     this.errorMessage,
     this.infoMessage,
   });
@@ -694,10 +853,12 @@ class AuthState {
   final bool isAuthenticated;
   final bool onboardingComplete;
   final bool isLoading;
+  final bool isRoleLoaded;
   final UserRole? role;
   final String? email;
   final String? pendingVerificationEmail;
   final String? pendingPhoneNumber;
+  final RegisterDraft? registerDraft;
   final String? errorMessage;
   final String? infoMessage;
 
@@ -705,20 +866,24 @@ class AuthState {
     bool? isAuthenticated,
     bool? onboardingComplete,
     bool? isLoading,
+    bool? isRoleLoaded,
     UserRole? role,
     String? email,
     String? pendingVerificationEmail,
     String? pendingPhoneNumber,
+    RegisterDraft? registerDraft,
     String? errorMessage,
     String? infoMessage,
     bool clearRole = false,
     bool clearPendingVerification = false,
     bool clearPhone = false,
+    bool clearRegisterDraft = false,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       isLoading: isLoading ?? this.isLoading,
+      isRoleLoaded: isRoleLoaded ?? this.isRoleLoaded,
       role: clearRole ? null : role ?? this.role,
       email: email ?? this.email,
       pendingVerificationEmail: clearPendingVerification
@@ -727,6 +892,9 @@ class AuthState {
       pendingPhoneNumber: clearPhone
           ? null
           : pendingPhoneNumber ?? this.pendingPhoneNumber,
+      registerDraft: clearRegisterDraft
+          ? null
+          : registerDraft ?? this.registerDraft,
       errorMessage: errorMessage,
       infoMessage: infoMessage,
     );

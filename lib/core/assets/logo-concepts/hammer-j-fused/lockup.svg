@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <g>
+    <rect x="0" y="10" width="54" height="14" fill="#F97316"/>
+    <path d="M54 10 L54 24 L46 24 L50 17 L46 10 Z" fill="#0F172A"/>
+    <rect x="28" y="24" width="12" height="26" fill="#F97316"/>
+    <path d="M0 50 H40 V64 H8 A6 6 0 0 1 0 58 Z" fill="#F1F5F9"/>
+  </g>
+  <g font-family="'Barlow Condensed', 'Arial Narrow', sans-serif" font-weight="800" letter-spacing="0.02em">
+    <text x="74" y="54" font-size="44" fill="#F1F5F9">JOB</text>
+    <text x="156" y="54" font-size="44" fill="#F97316">DUN</text>
+  </g>
+</svg>

@@ -19,7 +19,11 @@ class AvatarBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final fs = size >= 64 ? 22.0 : size >= 50 ? 16.0 : 14.0;
+    final fs = size >= 64
+        ? 22.0
+        : size >= 50
+        ? 16.0
+        : 14.0;
 
     return Container(
       width: size.r,

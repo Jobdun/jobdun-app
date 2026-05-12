@@ -17,8 +17,9 @@ final _jobRepositoryProvider = Provider<JobRepository>(
   (ref) => JobRepositoryImpl(ref.read(_jobDatasourceProvider)),
 );
 
-final jobsControllerProvider =
-    NotifierProvider<JobsController, JobsState>(JobsController.new);
+final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
+  JobsController.new,
+);
 
 class JobsController extends Notifier<JobsState> {
   late JobRepository _repo;
@@ -75,10 +76,12 @@ class JobsController extends Notifier<JobsState> {
 
   void watchBuilderJobs(String builderId) {
     _builderJobsSub?.cancel();
-    _builderJobsSub = _repo.watchBuilderJobs(builderId).listen(
-      (jobs) => state = state.copyWith(jobs: jobs),
-      onError: (Object e) => state = state.copyWith(error: e.toString()),
-    );
+    _builderJobsSub = _repo
+        .watchBuilderJobs(builderId)
+        .listen(
+          (jobs) => state = state.copyWith(jobs: jobs),
+          onError: (Object e) => state = state.copyWith(error: e.toString()),
+        );
   }
 }
 
@@ -101,11 +104,10 @@ class JobsState {
     bool clearFilter = false,
     bool? isLoading,
     String? error,
-  }) =>
-      JobsState(
-        jobs: jobs ?? this.jobs,
-        filter: clearFilter ? null : (filter ?? this.filter),
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => JobsState(
+    jobs: jobs ?? this.jobs,
+    filter: clearFilter ? null : (filter ?? this.filter),
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }

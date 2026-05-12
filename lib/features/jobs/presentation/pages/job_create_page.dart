@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/widgets/field_label.dart';
 
 class JobCreatePage extends StatefulWidget {
   const JobCreatePage({super.key});
@@ -27,8 +28,14 @@ class _JobCreatePageState extends State<JobCreatePage> {
   bool _isPosting = false;
 
   static const _trades = [
-    'Electrician', 'Plumber', 'Carpenter', 'Concreter',
-    'Painter', 'Roofer', 'Welder', 'Labourer',
+    'Electrician',
+    'Plumber',
+    'Carpenter',
+    'Concreter',
+    'Painter',
+    'Roofer',
+    'Welder',
+    'Labourer',
   ];
 
   static const _rateTypes = ['Hourly', 'Daily', 'Fixed'];
@@ -69,7 +76,11 @@ class _JobCreatePageState extends State<JobCreatePage> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Iconsax.tick_circle, size: 18.r, color: Colors.white), // intentional: white-on-action
+            Icon(
+              Iconsax.tick_circle,
+              size: 18.r,
+              color: Colors.white, // intentional
+            ),
             Gap(10.w),
             Text(
               'Job posted successfully!',
@@ -104,7 +115,11 @@ class _JobCreatePageState extends State<JobCreatePage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.close_circle, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      Iconsax.close_circle,
+                      size: 22.r,
+                      color: c.text1,
+                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -125,7 +140,8 @@ class _JobCreatePageState extends State<JobCreatePage> {
                             'Post a Job',
                             style: tt.headlineSmall!.copyWith(
                               fontSize: 22.sp,
-                              color: Colors.white, // intentional: ShaderMask requires white for gradient
+                              color: Colors
+                                  .white, // intentional: ShaderMask requires white for gradient
                             ),
                           ),
                         ),
@@ -144,13 +160,17 @@ class _JobCreatePageState extends State<JobCreatePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Job title
-                    _FieldLabel('JOB TITLE'),
+                    FieldLabel('JOB TITLE'),
                     Gap(AppSpacing.sm.h),
-                    _InputField(controller: _titleCtrl, hint: 'e.g. Install 3-phase switchboard at commercial site'),
+                    _InputField(
+                      controller: _titleCtrl,
+                      hint:
+                          'e.g. Install 3-phase switchboard at commercial site',
+                    ),
                     Gap(20.h),
 
                     // ── Trade type
-                    _FieldLabel('TRADE REQUIRED'),
+                    FieldLabel('TRADE REQUIRED'),
                     Gap(10.h),
                     Wrap(
                       spacing: AppSpacing.sm.w,
@@ -158,13 +178,20 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       children: _trades.map((t) {
                         final active = _selectedTrade == t;
                         return GestureDetector(
-                          onTap: () => setState(() => _selectedTrade = active ? null : t),
+                          onTap: () => setState(
+                            () => _selectedTrade = active ? null : t,
+                          ),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
-                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 7.h,
+                            ),
                             decoration: BoxDecoration(
                               color: active ? c.action : c.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.chip.r,
+                              ),
                               border: Border.all(
                                 color: active ? c.action : c.border,
                                 width: active ? 1.5 : 1.0,
@@ -174,7 +201,10 @@ class _JobCreatePageState extends State<JobCreatePage> {
                               t,
                               style: tt.bodyMedium!.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: active ? Colors.white : c.text2, // intentional: white-on-action
+                                color: active
+                                    ? Colors
+                                          .white // intentional
+                                    : c.text2,
                               ),
                             ),
                           ),
@@ -184,25 +214,31 @@ class _JobCreatePageState extends State<JobCreatePage> {
                     Gap(20.h),
 
                     // ── Location
-                    _FieldLabel('LOCATION'),
+                    FieldLabel('LOCATION'),
                     Gap(AppSpacing.sm.h),
                     Row(
                       children: [
                         Expanded(
                           flex: 3,
-                          child: _InputField(controller: _suburbCtrl, hint: 'Suburb'),
+                          child: _InputField(
+                            controller: _suburbCtrl,
+                            hint: 'Suburb',
+                          ),
                         ),
                         Gap(10.w),
                         Expanded(
                           flex: 2,
-                          child: _InputField(controller: _stateCtrl, hint: 'State'),
+                          child: _InputField(
+                            controller: _stateCtrl,
+                            hint: 'State',
+                          ),
                         ),
                       ],
                     ),
                     Gap(20.h),
 
                     // ── Rate
-                    _FieldLabel('RATE'),
+                    FieldLabel('RATE'),
                     Gap(AppSpacing.sm.h),
                     Row(
                       children: _rateTypes.map((rt) {
@@ -212,19 +248,30 @@ class _JobCreatePageState extends State<JobCreatePage> {
                             onTap: () => setState(() => _rateType = rt),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
-                              margin: EdgeInsets.only(right: rt != _rateTypes.last ? AppSpacing.sm.w : 0),
+                              margin: EdgeInsets.only(
+                                right: rt != _rateTypes.last
+                                    ? AppSpacing.sm.w
+                                    : 0,
+                              ),
                               padding: EdgeInsets.symmetric(vertical: 10.h),
                               decoration: BoxDecoration(
                                 color: active ? c.action : c.surface,
-                                borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                                border: Border.all(color: active ? c.action : c.border),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.chip.r,
+                                ),
+                                border: Border.all(
+                                  color: active ? c.action : c.border,
+                                ),
                               ),
                               alignment: Alignment.center,
                               child: Text(
                                 rt,
                                 style: tt.bodyMedium!.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: active ? Colors.white : c.text2, // intentional: white-on-action
+                                  color: active
+                                      ? Colors
+                                            .white // intentional
+                                      : c.text2,
                                 ),
                               ),
                             ),
@@ -239,7 +286,10 @@ class _JobCreatePageState extends State<JobCreatePage> {
                         borderRadius: BorderRadius.circular(AppRadius.input.r),
                         border: Border.all(color: c.border),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 14.w,
+                        vertical: 4.h,
+                      ),
                       child: Row(
                         children: [
                           Text(
@@ -270,7 +320,11 @@ class _JobCreatePageState extends State<JobCreatePage> {
                             ),
                           ),
                           Text(
-                            _rateType == 'Hourly' ? '/hr' : _rateType == 'Daily' ? '/day' : 'flat',
+                            _rateType == 'Hourly'
+                                ? '/hr'
+                                : _rateType == 'Daily'
+                                ? '/day'
+                                : 'flat',
                             style: tt.bodyMedium!.copyWith(color: c.text3),
                           ),
                         ],
@@ -279,7 +333,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                     Gap(20.h),
 
                     // ── Description
-                    _FieldLabel('DESCRIPTION'),
+                    FieldLabel('DESCRIPTION'),
                     Gap(AppSpacing.sm.h),
                     Container(
                       decoration: BoxDecoration(
@@ -292,7 +346,8 @@ class _JobCreatePageState extends State<JobCreatePage> {
                         maxLines: 5,
                         style: tt.bodyMedium!.copyWith(color: c.text1),
                         decoration: InputDecoration(
-                          hintText: 'Describe the scope of work, site conditions, tools required…',
+                          hintText:
+                              'Describe the scope of work, site conditions, tools required…',
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -305,11 +360,16 @@ class _JobCreatePageState extends State<JobCreatePage> {
 
                     // ── Urgency toggle
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 14.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md.w,
+                        vertical: 14.h,
+                      ),
                       decoration: BoxDecoration(
                         color: _isUrgent ? c.actionBg : c.surface,
                         borderRadius: BorderRadius.circular(AppRadius.card.r),
-                        border: Border.all(color: _isUrgent ? c.action : c.border),
+                        border: Border.all(
+                          color: _isUrgent ? c.action : c.border,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -333,7 +393,9 @@ class _JobCreatePageState extends State<JobCreatePage> {
                                 Gap(2.h),
                                 Text(
                                   'Shown to more tradies, listed at the top',
-                                  style: tt.labelMedium!.copyWith(color: c.text3),
+                                  style: tt.labelMedium!.copyWith(
+                                    color: c.text3,
+                                  ),
                                 ),
                               ],
                             ),
@@ -341,7 +403,8 @@ class _JobCreatePageState extends State<JobCreatePage> {
                           Switch(
                             value: _isUrgent,
                             onChanged: (v) => setState(() => _isUrgent = v),
-                            activeThumbColor: Colors.white, // intentional: white-on-action
+                            activeThumbColor:
+                                Colors.white, // intentional: white-on-action
                             activeTrackColor: c.action,
                           ),
                         ],
@@ -382,14 +445,19 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Iconsax.send_1, size: 18.r, color: Colors.white), // intentional: white-on-action
+                            Icon(
+                              Iconsax.send_1,
+                              size: 18.r,
+                              color: Colors.white, // intentional
+                            ),
                             Gap(AppSpacing.sm.w),
                             Text(
                               'POST JOB',
                               style: tt.titleMedium!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
-                                color: Colors.white, // intentional: white-on-action
+                                color: Colors
+                                    .white, // intentional: white-on-action
                               ),
                             ),
                           ],
@@ -405,20 +473,6 @@ class _JobCreatePageState extends State<JobCreatePage> {
 }
 
 // ── Sub-widgets ────────────────────────────────────────────────────────────────
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: Theme.of(context).textTheme.labelSmall!.copyWith(
-      letterSpacing: 0.12 * 11,
-      color: context.c.text3,
-    ),
-  );
-}
 
 class _InputField extends StatelessWidget {
   const _InputField({required this.controller, required this.hint});
@@ -444,7 +498,10 @@ class _InputField extends StatelessWidget {
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           filled: false,
-          contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 14.w,
+            vertical: 13.h,
+          ),
           isDense: true,
         ),
       ),

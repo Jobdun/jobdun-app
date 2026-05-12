@@ -41,10 +41,7 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18.r),
-                Gap(8.w),
-              ],
+              if (icon != null) ...[Icon(icon, size: 18.r), Gap(8.w)],
               Text(label.toUpperCase(), style: labelStyle),
             ],
           );
@@ -54,9 +51,9 @@ class AppButton extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: c.action,
-          foregroundColor: Colors.white, // intentional: white-on-action
+          foregroundColor: c.onAction,
           disabledBackgroundColor: c.action.withValues(alpha: 0.35),
-          disabledForegroundColor: Colors.white.withValues(alpha: 0.5), // intentional: white-on-action
+          disabledForegroundColor: c.onAction.withValues(alpha: 0.5),
           minimumSize: Size.fromHeight(52.h),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
@@ -94,14 +91,14 @@ class AppButton extends StatelessWidget {
   }
 
   Color _labelColor(JColors c) => switch (variant) {
-    AppButtonVariant.primary   => Colors.white, // intentional: white-on-action
+    AppButtonVariant.primary => c.onAction,
     AppButtonVariant.secondary => c.text1,
-    AppButtonVariant.text      => c.action,
+    AppButtonVariant.text => c.action,
   };
 
   Color _loaderColor(JColors c) => switch (variant) {
-    AppButtonVariant.primary   => Colors.white, // intentional: white-on-action
+    AppButtonVariant.primary => c.onAction,
     AppButtonVariant.secondary => c.text1,
-    AppButtonVariant.text      => c.action,
+    AppButtonVariant.text => c.action,
   };
 }

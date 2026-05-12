@@ -14,24 +14,30 @@ class JobdunLogo extends StatelessWidget {
 
   final LogoVariant variant;
 
-  /// Widget height in logical pixels. Defaults to 32 (full) or 28 (mark),
-  /// scaled with flutter_screenutil when the library is active.
+  /// Widget height in logical pixels. Defaults to 32 (full) or 28 (mark).
   final double? height;
 
-  /// Tints the SVG with [ColorFilter.mode(color, BlendMode.srcIn)].
-  /// Leave null to render the original SVG colours.
+  /// Force a flat tint over the entire SVG (e.g. white-on-orange surfaces).
+  /// Leave null to use the built-in adaptive dark/light colours.
   final Color? color;
 
-  static const _assetFull = 'lib/core/assets/logo-jobdun.svg';
-  static const _assetMark = 'lib/core/assets/mark-jobdun.svg';
+  static const _markDark = 'lib/core/assets/mark-jobdun.svg';
+  static const _markLight = 'lib/core/assets/mark-jobdun-light.svg';
+  static const _fullDark = 'lib/core/assets/logo-jobdun.svg';
+  static const _fullLight = 'lib/core/assets/logo-jobdun-light.svg';
 
   @override
   Widget build(BuildContext context) {
     final isFull = variant == LogoVariant.full;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final h = height ?? (isFull ? 32.h : 28.h);
 
+    final asset = isFull
+        ? (isDark ? _fullDark : _fullLight)
+        : (isDark ? _markDark : _markLight);
+
     return SvgPicture.asset(
-      isFull ? _assetFull : _assetMark,
+      asset,
       height: h,
       colorFilter: color != null
           ? ColorFilter.mode(color!, BlendMode.srcIn)

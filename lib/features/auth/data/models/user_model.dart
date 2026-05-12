@@ -13,7 +13,8 @@ class UserModel extends AppUser {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // Role may come from JWT claim 'user_role' OR from a joined user_roles row.
-    final roleStr = json['user_role'] as String? ?? json['role'] as String? ?? 'trade';
+    final roleStr =
+        json['user_role'] as String? ?? json['role'] as String? ?? 'trade';
     final role = UserRole.values.firstWhere(
       (r) => r.name == roleStr,
       orElse: () => UserRole.trade,

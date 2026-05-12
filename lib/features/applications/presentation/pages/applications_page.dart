@@ -23,7 +23,13 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
   String _tab = 'All';
 
   static const _tradeTabs = ['All', 'Pending', 'Shortlisted', 'Hired'];
-  static const _builderTabs = ['All', 'Pending', 'Shortlisted', 'Hired', 'Rejected'];
+  static const _builderTabs = [
+    'All',
+    'Pending',
+    'Shortlisted',
+    'Hired',
+    'Rejected',
+  ];
 
   @override
   void initState() {
@@ -36,9 +42,13 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
       if (userId == null) return;
       final role = ref.read(authControllerProvider).role;
       if (role == UserRole.builder) {
-        ref.read(applicationsControllerProvider.notifier).loadIncomingApplications(userId);
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadIncomingApplications(userId);
       } else {
-        ref.read(applicationsControllerProvider.notifier).loadMyApplications(userId);
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadMyApplications(userId);
       }
     });
   }
@@ -65,9 +75,13 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
     final isBuilder = authState.role == UserRole.builder;
     final tabs = isBuilder ? _builderTabs : _tradeTabs;
 
-    final rawList = isBuilder ? appsState.incomingApplications : appsState.myApplications;
+    final rawList = isBuilder
+        ? appsState.incomingApplications
+        : appsState.myApplications;
     final useReal = rawList.isNotEmpty;
-    final filtered = useReal ? _filtered(rawList) : _filtered(_mockApps(isBuilder));
+    final filtered = useReal
+        ? _filtered(rawList)
+        : _filtered(_mockApps(isBuilder));
 
     return Scaffold(
       backgroundColor: c.background,
@@ -98,7 +112,8 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                       style: tt.headlineSmall!.copyWith(
                         fontSize: 28.sp,
                         letterSpacing: 0.02 * 28,
-                        color: Colors.white, // intentional: ShaderMask requires white for gradient
+                        color: Colors
+                            .white, // intentional: ShaderMask requires white for gradient
                       ),
                     ),
                   ),
@@ -133,7 +148,12 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
               child: filtered.isEmpty
                   ? _EmptyTab(tab: _tab, isBuilder: isBuilder)
                   : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(20.w, AppSpacing.md.h, 20.w, AppSpacing.lg.h),
+                      padding: EdgeInsets.fromLTRB(
+                        20.w,
+                        AppSpacing.md.h,
+                        20.w,
+                        AppSpacing.lg.h,
+                      ),
                       itemCount: filtered.length,
                       separatorBuilder: (_, _) => Gap(10.h),
                       itemBuilder: (ctx, i) => _AppCard(
@@ -141,13 +161,13 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                         isBuilder: isBuilder,
                         onUpdateStatus: isBuilder
                             ? (status) => ref
-                                .read(applicationsControllerProvider.notifier)
-                                .updateStatus(filtered[i].id, status)
+                                  .read(applicationsControllerProvider.notifier)
+                                  .updateStatus(filtered[i].id, status)
                             : null,
                         onWithdraw: !isBuilder
                             ? () => ref
-                                .read(applicationsControllerProvider.notifier)
-                                .withdraw(filtered[i].id)
+                                  .read(applicationsControllerProvider.notifier)
+                                  .withdraw(filtered[i].id)
                             : null,
                       ),
                     ),
@@ -215,7 +235,10 @@ class _AppCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 3.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 3.h,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(AppRadius.chip.r),
@@ -277,7 +300,10 @@ class _AppCard extends StatelessWidget {
                     Icon(Iconsax.location, size: 13.r, color: c.text3),
                     Gap(6.w),
                     Text(
-                      [app.jobSuburb, app.jobState].whereType<String>().join(', '),
+                      [
+                        app.jobSuburb,
+                        app.jobState,
+                      ].whereType<String>().join(', '),
                       style: tt.labelMedium!.copyWith(color: c.text3),
                     ),
                     if (app.proposedRate != null) ...[
@@ -301,12 +327,15 @@ class _AppCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => onUpdateStatus?.call(ApplicationStatus.rejected),
+                          onTap: () =>
+                              onUpdateStatus?.call(ApplicationStatus.rejected),
                           child: Container(
                             height: 34.h,
                             decoration: BoxDecoration(
                               color: c.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.btn.r,
+                              ),
                               border: Border.all(color: c.border),
                             ),
                             alignment: Alignment.center,
@@ -324,12 +353,16 @@ class _AppCard extends StatelessWidget {
                       Gap(AppSpacing.sm.w),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => onUpdateStatus?.call(ApplicationStatus.shortlisted),
+                          onTap: () => onUpdateStatus?.call(
+                            ApplicationStatus.shortlisted,
+                          ),
                           child: Container(
                             height: 34.h,
                             decoration: BoxDecoration(
                               color: c.action,
-                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.btn.r,
+                              ),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -337,7 +370,8 @@ class _AppCard extends StatelessWidget {
                               style: tt.labelMedium!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
-                                color: Colors.white, // intentional: white-on-action
+                                color: Colors
+                                    .white, // intentional: white-on-action
                               ),
                             ),
                           ),
@@ -429,8 +463,8 @@ class _EmptyTab extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final message = tab == 'All'
         ? isBuilder
-            ? 'No applicants yet.\nPost a job to start receiving applications.'
-            : 'No applications yet.\nBrowse open jobs to get started.'
+              ? 'No applicants yet.\nPost a job to start receiving applications.'
+              : 'No applications yet.\nBrowse open jobs to get started.'
         : 'No $tab applications.';
 
     return Center(

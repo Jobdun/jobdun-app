@@ -2,7 +2,8 @@ import 'package:intl/intl.dart';
 
 // Pure utility — no Flutter imports.
 abstract final class AppDateUtils {
-  static String formatShort(DateTime date) => DateFormat('d MMM yyyy').format(date);
+  static String formatShort(DateTime date) =>
+      DateFormat('d MMM yyyy').format(date);
 
   static String formatFull(DateTime date) =>
       DateFormat('EEEE, d MMMM yyyy').format(date);

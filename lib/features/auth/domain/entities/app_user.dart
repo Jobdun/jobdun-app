@@ -20,5 +20,12 @@ class AppUser extends Equatable {
   final bool isOnboardingComplete;
 
   @override
-  List<Object?> get props => [id, email, role, fullName, avatarUrl, isOnboardingComplete];
+  List<Object?> get props => [
+    id,
+    email,
+    role,
+    fullName,
+    avatarUrl,
+    isOnboardingComplete,
+  ];
 }

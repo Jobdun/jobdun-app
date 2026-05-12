@@ -13,13 +13,16 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX notifications_user_id_idx ON public.notifications(user_id);
-CREATE INDEX notifications_read_at_idx ON public.notifications(user_id, read_at)
+CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS notifications_read_at_idx ON public.notifications(user_id, read_at)
   WHERE read_at IS NULL;
 
 -- -------------------------------------------------------
 
-CREATE TYPE public.document_status AS ENUM ('pending', 'approved', 'rejected');
+DO $$ BEGIN
+  CREATE TYPE public.document_status AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.verification_documents (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -31,8 +34,9 @@ CREATE TABLE IF NOT EXISTS public.verification_documents (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX verification_documents_trade_id_idx ON public.verification_documents(trade_id);
+CREATE INDEX IF NOT EXISTS verification_documents_trade_id_idx ON public.verification_documents(trade_id);
 
+DROP TRIGGER IF EXISTS verification_documents_updated_at ON public.verification_documents;
 CREATE TRIGGER verification_documents_updated_at
   BEFORE UPDATE ON public.verification_documents
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -51,4 +55,4 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   UNIQUE (job_id, reviewer_id)   -- one review per reviewer per job
 );
 
-CREATE INDEX reviews_reviewee_id_idx ON public.reviews(reviewee_id);
+CREATE INDEX IF NOT EXISTS reviews_reviewee_id_idx ON public.reviews(reviewee_id);

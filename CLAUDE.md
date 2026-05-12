@@ -37,7 +37,7 @@ Available page-specific overrides:
 - Border: `#334155`
 - Error: `#EF4444` | Success: `#22C55E`
 - Style: Aggressive Flat — dark, heavy weight, no shadows, icon-heavy, all-caps buttons
-- Typography: Inter (all weights, 700+ for headings) via `google_fonts`
+- Typography: Oswald (headings, display, buttons) + Open Sans (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_theme.dart`.
 - Transitions: 150–200ms ease, no bounce/spring
 - Anti-patterns: white backgrounds, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
 
@@ -227,3 +227,59 @@ release/*   release prep
 ```
 
 PRs require: passing `flutter analyze` + `flutter test`, at least one reviewer, screenshots for UI changes, migration notes for DB changes.
+
+## CI/CD
+
+### Run validation locally
+
+```bash
+# Fast checks — design system + format + lint + tests (~60s)
+bash scripts/validate.sh
+
+# Full check including debug APK build (~5 min)
+FULL=1 bash scripts/validate.sh
+```
+
+### Install the pre-push hook (run once after cloning)
+
+```bash
+bash scripts/install-hooks.sh
+```
+
+After installation every `git push` automatically runs `bash scripts/validate.sh` (without `FULL=1`).
+
+### GitHub Actions
+
+| Workflow | File | Triggers | What it does |
+|----------|------|----------|--------------|
+| CI | `.github/workflows/ci.yml` | Push/PR to `main` or `develop` | Design checks, format, lint, tests, coverage |
+| CD | `.github/workflows/cd.yml` | Push to `main` only | CI checks + release APK artifact (7-day retention) |
+
+### Required GitHub Secrets
+
+Add in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `SUPABASE_URL` | Supabase project URL (e.g. `https://xxx.supabase.co`) |
+| `SUPABASE_ANON_KEY` | Supabase anon/public key |
+
+`GOOGLE_WEB_CLIENT_ID` and `GOOGLE_IOS_CLIENT_ID` are intentionally left empty in CI — Google Sign-In is not exercised in tests.
+
+### What `scripts/validate.sh` checks
+
+**Design system (grep-based, ~1s):**
+- No `GoogleFonts.*` outside `lib/app/theme/app_theme.dart`
+- No `Colors.white` without `// intentional` comment in `lib/features/`
+- No raw `SizedBox(width:/height:` spacing in `lib/features/` — use `Gap(n)` instead
+- No hardcoded `Color(0xFF...)` in `lib/features/`
+- No inline gradient (`colors: [Color` / `colors: [Colors`) in `lib/features/`
+- No `AppColors.*` static references in `lib/features/`
+
+**Flutter (~30–60s):**
+- `dart format --output=none --set-exit-if-changed .`
+- `flutter analyze --no-fatal-infos`
+- `flutter test --coverage`
+
+**Build (optional, `FULL=1` only, ~5 min):**
+- `flutter build apk --debug --no-pub`

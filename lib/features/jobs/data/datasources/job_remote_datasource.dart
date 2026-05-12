@@ -24,7 +24,9 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     try {
       var query = _client
           .from('jobs')
-          .select('id, builder_id, title, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at')
+          .select(
+            'id, builder_id, title, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
+          )
           .isFilter('deleted_at', null);
 
       if (filter != null && !filter.isEmpty) {
@@ -35,12 +37,22 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
           query = query.eq('trade_type_required', filter.tradeType!) as dynamic;
         }
         if (filter.searchQuery != null && filter.searchQuery!.isNotEmpty) {
-          query = query.textSearch('search_vector', filter.searchQuery!, type: TextSearchType.websearch) as dynamic;
+          query =
+              query.textSearch(
+                    'search_vector',
+                    filter.searchQuery!,
+                    type: TextSearchType.websearch,
+                  )
+                  as dynamic;
         }
       }
 
-      final data = await (query as dynamic).order('published_at', ascending: false) as List<dynamic>;
-      return data.map((e) => JobModel.fromJson(e as Map<String, dynamic>)).toList();
+      final data =
+          await (query as dynamic).order('published_at', ascending: false)
+              as List<dynamic>;
+      return data
+          .map((e) => JobModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -104,7 +116,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   Future<void> updateJobStatus(String id, JobStatus status) async {
     try {
       final update = <String, dynamic>{'status': status.dbValue};
-      if (status == JobStatus.open) update['published_at'] = DateTime.now().toIso8601String();
+      if (status == JobStatus.open)
+        update['published_at'] = DateTime.now().toIso8601String();
       await _client.from('jobs').update(update).eq('id', id);
     } catch (e) {
       throw ServerException(e.toString());
@@ -118,9 +131,11 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         .stream(primaryKey: ['id'])
         .eq('builder_id', builderId)
         .order('created_at', ascending: false)
-        .map((rows) => rows
-            .where((r) => r['deleted_at'] == null)
-            .map(JobModel.fromJson)
-            .toList());
+        .map(
+          (rows) => rows
+              .where((r) => r['deleted_at'] == null)
+              .map(JobModel.fromJson)
+              .toList(),
+        );
   }
 }

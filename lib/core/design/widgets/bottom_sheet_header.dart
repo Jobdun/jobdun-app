@@ -29,7 +29,9 @@ class BottomSheetHeader extends StatelessWidget {
             Gap(AppSpacing.md.h),
             Text(
               title!.toUpperCase(),
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(color: c.text1),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge!.copyWith(color: c.text1),
             ),
           ],
         ],

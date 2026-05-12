@@ -20,8 +20,8 @@ final _messageRepositoryProvider = Provider<MessageRepository>(
 
 final messagingControllerProvider =
     NotifierProvider<MessagingController, MessagingState>(
-  MessagingController.new,
-);
+      MessagingController.new,
+    );
 
 class MessagingController extends Notifier<MessagingState> {
   late MessageRepository _repo;
@@ -56,40 +56,33 @@ class MessagingController extends Notifier<MessagingState> {
 
   void _startConversationsStream(String userId) {
     _conversationsSub?.cancel();
-    _conversationsSub = _repo.watchConversations(userId).listen(
-      (convs) {
-        state = state.copyWith(
-          conversations: convs,
-          totalUnread: _computeUnread(convs),
-        );
-      },
-      onError: (Object e) => state = state.copyWith(error: e.toString()),
-    );
+    _conversationsSub = _repo.watchConversations(userId).listen((convs) {
+      state = state.copyWith(
+        conversations: convs,
+        totalUnread: _computeUnread(convs),
+      );
+    }, onError: (Object e) => state = state.copyWith(error: e.toString()));
   }
 
   Future<void> loadMessages(String conversationId) async {
     final result = await _repo.getMessages(conversationId);
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (msgs) {
-        final updated = Map<String, List<Message>>.from(state.messagesByConvId)
-          ..[conversationId] = msgs;
-        state = state.copyWith(messagesByConvId: updated);
-        _subscribeToMessages(conversationId);
-      },
-    );
+    result.fold((f) => state = state.copyWith(error: f.message), (msgs) {
+      final updated = Map<String, List<Message>>.from(state.messagesByConvId)
+        ..[conversationId] = msgs;
+      state = state.copyWith(messagesByConvId: updated);
+      _subscribeToMessages(conversationId);
+    });
   }
 
   void _subscribeToMessages(String conversationId) {
     if (_messageSubs.containsKey(conversationId)) return;
-    _messageSubs[conversationId] = _repo.watchMessages(conversationId).listen(
-      (msgs) {
-        final updated = Map<String, List<Message>>.from(state.messagesByConvId)
-          ..[conversationId] = msgs;
-        state = state.copyWith(messagesByConvId: updated);
-      },
-      onError: (Object e) => state = state.copyWith(error: e.toString()),
-    );
+    _messageSubs[conversationId] = _repo.watchMessages(conversationId).listen((
+      msgs,
+    ) {
+      final updated = Map<String, List<Message>>.from(state.messagesByConvId)
+        ..[conversationId] = msgs;
+      state = state.copyWith(messagesByConvId: updated);
+    }, onError: (Object e) => state = state.copyWith(error: e.toString()));
   }
 
   void unsubscribeMessages(String conversationId) {
@@ -107,17 +100,13 @@ class MessagingController extends Notifier<MessagingState> {
       senderId: senderId,
       body: body,
     );
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (_) {},
-    );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 
   Future<void> markConversationRead(String conversationId) async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return;
-    final isBuilder =
-        ref.read(authControllerProvider).role == UserRole.builder;
+    final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     await _repo.markConversationRead(
       conversationId: conversationId,
       userId: userId,
@@ -126,8 +115,7 @@ class MessagingController extends Notifier<MessagingState> {
   }
 
   int _computeUnread(List<Conversation> convs) {
-    final isBuilder =
-        ref.read(authControllerProvider).role == UserRole.builder;
+    final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     return convs.fold<int>(
       0,
       (sum, c) => sum + (isBuilder ? c.builderUnreadCount : c.tradeUnreadCount),
@@ -167,12 +155,11 @@ class MessagingState {
     int? totalUnread,
     bool? isLoading,
     String? error,
-  }) =>
-      MessagingState(
-        conversations: conversations ?? this.conversations,
-        messagesByConvId: messagesByConvId ?? this.messagesByConvId,
-        totalUnread: totalUnread ?? this.totalUnread,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => MessagingState(
+    conversations: conversations ?? this.conversations,
+    messagesByConvId: messagesByConvId ?? this.messagesByConvId,
+    totalUnread: totalUnread ?? this.totalUnread,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }

@@ -68,7 +68,7 @@ class AppNotification extends Equatable {
   final NotificationType type;
   final String title;
   final String body;
-  final DateTime? readAt;   // null = unread; matches schema read_at column
+  final DateTime? readAt; // null = unread; matches schema read_at column
   final Map<String, dynamic>? data;
   final DateTime createdAt;
 

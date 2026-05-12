@@ -46,10 +46,9 @@ class TradeProfile extends Equatable {
   final double? averageRating;
   final int ratingCount;
 
-  String get displayLocation =>
-      (baseSuburb != null && baseState != null)
-          ? '$baseSuburb, $baseState'
-          : baseSuburb ?? baseState ?? '';
+  String get displayLocation => (baseSuburb != null && baseState != null)
+      ? '$baseSuburb, $baseState'
+      : baseSuburb ?? baseState ?? '';
 
   String get displayTrade => primaryTrade
       .replaceAll('_', ' ')

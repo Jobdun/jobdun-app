@@ -30,45 +30,62 @@ void main() {
 
   group('SignIn use case', () {
     test('returns AppUser when credentials are correct', () async {
-      when(() => mockRepo.signIn(email: tEmail, password: tPassword))
-          .thenAnswer((_) async => const Right(tUser));
+      when(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).thenAnswer((_) async => const Right(tUser));
 
       final result = await signIn(email: tEmail, password: tPassword);
 
       expect(result, const Right<Failure, AppUser>(tUser));
-      verify(() => mockRepo.signIn(email: tEmail, password: tPassword)).called(1);
+      verify(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).called(1);
       verifyNoMoreInteractions(mockRepo);
     });
 
     test('returns AuthFailure on wrong credentials', () async {
       const failure = AuthFailure('Invalid login credentials');
-      when(() => mockRepo.signIn(email: tEmail, password: tPassword))
-          .thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).thenAnswer((_) async => const Left(failure));
 
       final result = await signIn(email: tEmail, password: tPassword);
 
       expect(result.isLeft(), isTrue);
-      result.fold((f) => expect(f, isA<AuthFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<AuthFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('returns NetworkFailure when offline', () async {
       const failure = NetworkFailure();
-      when(() => mockRepo.signIn(email: tEmail, password: tPassword))
-          .thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).thenAnswer((_) async => const Left(failure));
 
       final result = await signIn(email: tEmail, password: tPassword);
 
-      result.fold((f) => expect(f, isA<NetworkFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<NetworkFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('delegates to repository exactly once per call', () async {
-      when(() => mockRepo.signIn(email: any(named: 'email'), password: any(named: 'password')))
-          .thenAnswer((_) async => const Right(tUser));
+      when(
+        () => mockRepo.signIn(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenAnswer((_) async => const Right(tUser));
 
       await signIn(email: tEmail, password: tPassword);
       await signIn(email: tEmail, password: tPassword);
 
-      verify(() => mockRepo.signIn(email: tEmail, password: tPassword)).called(2);
+      verify(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).called(2);
     });
 
     test('preserves all user fields from repository response', () async {
@@ -79,19 +96,17 @@ void main() {
         fullName: 'Ken Garcia',
         isOnboardingComplete: true,
       );
-      when(() => mockRepo.signIn(email: tEmail, password: tPassword))
-          .thenAnswer((_) async => const Right(detailedUser));
+      when(
+        () => mockRepo.signIn(email: tEmail, password: tPassword),
+      ).thenAnswer((_) async => const Right(detailedUser));
 
       final result = await signIn(email: tEmail, password: tPassword);
 
-      result.fold(
-        (_) => fail('Expected user'),
-        (user) {
-          expect(user.role, UserRole.builder);
-          expect(user.fullName, 'Ken Garcia');
-          expect(user.isOnboardingComplete, isTrue);
-        },
-      );
+      result.fold((_) => fail('Expected user'), (user) {
+        expect(user.role, UserRole.builder);
+        expect(user.fullName, 'Ken Garcia');
+        expect(user.isOnboardingComplete, isTrue);
+      });
     });
   });
 }

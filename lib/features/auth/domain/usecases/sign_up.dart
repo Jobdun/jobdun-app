@@ -12,6 +12,9 @@ class SignUp {
     required String email,
     required String password,
     required String fullName,
-  }) =>
-      _repository.register(email: email, password: password, fullName: fullName);
+  }) => _repository.register(
+    email: email,
+    password: password,
+    fullName: fullName,
+  );
 }

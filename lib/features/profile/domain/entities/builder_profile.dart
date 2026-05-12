@@ -40,10 +40,9 @@ class BuilderProfile extends Equatable {
   final double? averageRating;
   final int ratingCount;
 
-  String get displayLocation =>
-      (serviceSuburb != null && serviceState != null)
-          ? '$serviceSuburb, $serviceState'
-          : serviceSuburb ?? serviceState ?? '';
+  String get displayLocation => (serviceSuburb != null && serviceState != null)
+      ? '$serviceSuburb, $serviceState'
+      : serviceSuburb ?? serviceState ?? '';
 
   @override
   List<Object?> get props => [id, companyName, abn];

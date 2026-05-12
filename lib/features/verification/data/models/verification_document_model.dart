@@ -24,7 +24,9 @@ class VerificationDocumentModel extends VerificationDocument {
         tradeId: json['trade_id'] as String,
         docType: DocTypeX.fromDb(json['doc_type'] as String? ?? 'other'),
         filePath: json['file_path'] as String? ?? '',
-        status: VerificationStatusX.fromDb(json['status'] as String? ?? 'pending'),
+        status: VerificationStatusX.fromDb(
+          json['status'] as String? ?? 'pending',
+        ),
         submittedAt: json['submitted_at'] != null
             ? DateTime.parse(json['submitted_at'] as String)
             : DateTime.parse(json['created_at'] as String),
@@ -52,7 +54,9 @@ class VerificationDocumentModel extends VerificationDocument {
     if (state != null) 'state': state,
     if (issuer != null) 'issuer': issuer,
     if (documentNumber != null) 'document_number': documentNumber,
-    if (issuedDate != null) 'issued_date': issuedDate!.toIso8601String().split('T').first,
-    if (expiryDate != null) 'expiry_date': expiryDate!.toIso8601String().split('T').first,
+    if (issuedDate != null)
+      'issued_date': issuedDate!.toIso8601String().split('T').first,
+    if (expiryDate != null)
+      'expiry_date': expiryDate!.toIso8601String().split('T').first,
   };
 }

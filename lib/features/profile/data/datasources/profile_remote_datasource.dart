@@ -29,7 +29,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       final data = await _client
           .from('profiles')
-          .select('id, display_name, email, phone, avatar_url, bio, onboarding_completed_at, created_at, updated_at')
+          .select(
+            'id, display_name, email, phone, avatar_url, bio, onboarding_completed_at, created_at, updated_at',
+          )
           .eq('id', userId)
           .single();
       return UserProfileModel.fromJson(data);
@@ -105,11 +107,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       const fileName = 'avatar.jpg';
       final path = '$userId/$fileName';
       final bytes = await file.readAsBytes();
-      await _client.storage.from(_bucket).uploadBinary(
-        path,
-        bytes,
-        fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
-      );
+      await _client.storage
+          .from(_bucket)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'image/jpeg',
+              upsert: true,
+            ),
+          );
       return _client.storage.from(_bucket).getPublicUrl(path);
     } catch (e) {
       throw StorageException(e.toString());

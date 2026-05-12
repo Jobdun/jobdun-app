@@ -3,13 +3,9 @@ import 'package:equatable/equatable.dart';
 import 'job.dart';
 
 class JobFilter extends Equatable {
-  const JobFilter({
-    this.tradeType,
-    this.status,
-    this.searchQuery,
-  });
+  const JobFilter({this.tradeType, this.status, this.searchQuery});
 
-  final String? tradeType;     // trade_type_required value
+  final String? tradeType; // trade_type_required value
   final JobStatus? status;
   final String? searchQuery;
 

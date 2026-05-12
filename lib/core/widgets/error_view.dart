@@ -6,12 +6,8 @@ import '../../app/theme/app_colors.dart';
 import '../errors/failures.dart';
 
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    this.failure,
-    this.message,
-    this.onRetry,
-  }) : assert(failure != null || message != null);
+  const ErrorView({super.key, this.failure, this.message, this.onRetry})
+    : assert(failure != null || message != null);
 
   final Failure? failure;
   final String? message;
@@ -28,7 +24,11 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48.r, color: theme.colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 48.r,
+              color: theme.colorScheme.error,
+            ),
             Gap(AppSpacing.md),
             Text(
               text,

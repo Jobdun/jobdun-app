@@ -35,16 +35,18 @@ class VerificationRepositoryImpl implements VerificationRepository {
     DateTime? expiryDate,
   }) async {
     try {
-      return right(await _datasource.uploadDocument(
-        tradeId: tradeId,
-        docType: docType,
-        file: file,
-        state: state,
-        issuer: issuer,
-        documentNumber: documentNumber,
-        issuedDate: issuedDate,
-        expiryDate: expiryDate,
-      ));
+      return right(
+        await _datasource.uploadDocument(
+          tradeId: tradeId,
+          docType: docType,
+          file: file,
+          state: state,
+          issuer: issuer,
+          documentNumber: documentNumber,
+          issuedDate: issuedDate,
+          expiryDate: expiryDate,
+        ),
+      );
     } on StorageException catch (e) {
       return left(StorageFailure(e.message));
     }

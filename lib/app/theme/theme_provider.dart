@@ -8,13 +8,18 @@ const _kThemeKey = 'theme_mode';
 /// dark→light flash on first load for users who chose light mode.
 Future<ThemeMode> loadSavedTheme() async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getString(_kThemeKey) == 'light' ? ThemeMode.light : ThemeMode.dark;
+  final saved = prefs.getString(_kThemeKey);
+  if (saved == 'dark') return ThemeMode.dark;
+  if (saved == 'light') return ThemeMode.light;
+  return ThemeMode.light; // default for new installs
 }
 
-final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);
+final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
+  ThemeNotifier.new,
+);
 
 class ThemeNotifier extends Notifier<ThemeMode> {
-  ThemeNotifier({ThemeMode initial = ThemeMode.dark}) : _initial = initial;
+  ThemeNotifier({ThemeMode initial = ThemeMode.light}) : _initial = initial;
 
   final ThemeMode _initial;
 
@@ -24,7 +29,10 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   Future<void> toggle() async {
     state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kThemeKey, state == ThemeMode.dark ? 'dark' : 'light');
+    await prefs.setString(
+      _kThemeKey,
+      state == ThemeMode.dark ? 'dark' : 'light',
+    );
   }
 
   bool get isDark => state == ThemeMode.dark;

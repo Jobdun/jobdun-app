@@ -47,7 +47,7 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 ## Typography Overrides
 
 **Logo/Brand treatment:**
-- "JOBDUN" in Inter Black (900), letter-spacing 3+, all caps, white `#F1F5F9`
+- "JOBDUN" in Oswald Bold (700), letter-spacing 3+, all caps, white `#F1F5F9`
 - Tagline (if used): Inter Medium (500), `#94A3B8`, smaller — secondary, not competing
 
 **Auth screen headline:**

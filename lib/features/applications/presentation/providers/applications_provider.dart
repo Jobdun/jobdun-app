@@ -21,8 +21,8 @@ final _appRepositoryProvider = Provider<ApplicationRepository>(
 
 final applicationsControllerProvider =
     NotifierProvider<ApplicationsController, ApplicationsState>(
-  ApplicationsController.new,
-);
+      ApplicationsController.new,
+    );
 
 class ApplicationsController extends Notifier<ApplicationsState> {
   late ApplicationRepository _repo;
@@ -60,27 +60,21 @@ class ApplicationsController extends Notifier<ApplicationsState> {
     ApplicationStatus status,
   ) async {
     final result = await _repo.updateStatus(applicationId, status);
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (_) {
-        final builderId = SupabaseConfig.client.auth.currentUser?.id;
-        if (builderId != null) {
-          unawaited(loadIncomingApplications(builderId));
-        }
-      },
-    );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {
+      final builderId = SupabaseConfig.client.auth.currentUser?.id;
+      if (builderId != null) {
+        unawaited(loadIncomingApplications(builderId));
+      }
+    });
   }
 
   // Trade: withdraw their application
   Future<void> withdraw(String applicationId) async {
     final result = await _repo.withdraw(applicationId);
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (_) {
-        final tradeId = SupabaseConfig.client.auth.currentUser?.id;
-        if (tradeId != null) unawaited(loadMyApplications(tradeId));
-      },
-    );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {
+      final tradeId = SupabaseConfig.client.auth.currentUser?.id;
+      if (tradeId != null) unawaited(loadMyApplications(tradeId));
+    });
   }
 }
 
@@ -92,24 +86,24 @@ class ApplicationsState {
     this.error,
   });
 
-  final List<JobApplication> myApplications;      // trade view
+  final List<JobApplication> myApplications; // trade view
   final List<JobApplication> incomingApplications; // builder view
   final bool isLoading;
   final String? error;
 
-  int get pendingIncomingCount =>
-      incomingApplications.where((a) => a.status == ApplicationStatus.pending).length;
+  int get pendingIncomingCount => incomingApplications
+      .where((a) => a.status == ApplicationStatus.pending)
+      .length;
 
   ApplicationsState copyWith({
     List<JobApplication>? myApplications,
     List<JobApplication>? incomingApplications,
     bool? isLoading,
     String? error,
-  }) =>
-      ApplicationsState(
-        myApplications: myApplications ?? this.myApplications,
-        incomingApplications: incomingApplications ?? this.incomingApplications,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => ApplicationsState(
+    myApplications: myApplications ?? this.myApplications,
+    incomingApplications: incomingApplications ?? this.incomingApplications,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }

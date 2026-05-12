@@ -4,8 +4,8 @@ import '../../domain/entities/verification_document.dart';
 
 final verificationControllerProvider =
     NotifierProvider<VerificationController, VerificationState>(
-  VerificationController.new,
-);
+      VerificationController.new,
+    );
 
 class VerificationController extends Notifier<VerificationState> {
   @override
@@ -27,10 +27,9 @@ class VerificationState {
     List<VerificationDocument>? documents,
     bool? isLoading,
     String? error,
-  }) =>
-      VerificationState(
-        documents: documents ?? this.documents,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => VerificationState(
+    documents: documents ?? this.documents,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }

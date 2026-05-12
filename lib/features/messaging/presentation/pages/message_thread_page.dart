@@ -31,11 +31,31 @@ class _Msg {
 }
 
 const _mockThread = [
-  _Msg(text: "Hi, I saw your job posting and I'm interested in the role.", isMine: false, time: '10:22 AM'),
-  _Msg(text: 'Thanks for reaching out! Do you have your current licence handy?', isMine: true, time: '10:25 AM'),
-  _Msg(text: 'Yes — EL 123456 NSW, valid until Dec 2026. Happy to send a copy.', isMine: false, time: '10:28 AM'),
-  _Msg(text: 'Great. Can you start Monday at 7am? Site is in Surry Hills.', isMine: true, time: '10:31 AM'),
-  _Msg(text: "Absolutely, I'll be there. What's the site address?", isMine: false, time: '10:34 AM'),
+  _Msg(
+    text: "Hi, I saw your job posting and I'm interested in the role.",
+    isMine: false,
+    time: '10:22 AM',
+  ),
+  _Msg(
+    text: 'Thanks for reaching out! Do you have your current licence handy?',
+    isMine: true,
+    time: '10:25 AM',
+  ),
+  _Msg(
+    text: 'Yes — EL 123456 NSW, valid until Dec 2026. Happy to send a copy.',
+    isMine: false,
+    time: '10:28 AM',
+  ),
+  _Msg(
+    text: 'Great. Can you start Monday at 7am? Site is in Surry Hills.',
+    isMine: true,
+    time: '10:31 AM',
+  ),
+  _Msg(
+    text: "Absolutely, I'll be there. What's the site address?",
+    isMine: false,
+    time: '10:34 AM',
+  ),
 ];
 
 class MessageThreadPage extends StatefulWidget {
@@ -159,7 +179,10 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
             Expanded(
               child: ListView.builder(
                 controller: _scrollCtrl,
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: AppSpacing.md.h),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md.w,
+                  vertical: AppSpacing.md.h,
+                ),
                 itemCount: allMessages.length,
                 itemBuilder: (ctx, i) {
                   final msg = allMessages[i];
@@ -168,7 +191,9 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                   return Padding(
                     padding: EdgeInsets.only(bottom: 12.h),
                     child: Row(
-                      mainAxisAlignment: isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+                      mainAxisAlignment: isMine
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         if (!isMine) ...[
@@ -193,25 +218,39 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                         ],
                         Flexible(
                           child: Column(
-                            crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                            crossAxisAlignment: isMine
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 14.w,
+                                  vertical: 10.h,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isMine ? c.action : c.card,
                                   borderRadius: BorderRadius.only(
                                     topLeft: Radius.circular(16.r),
                                     topRight: Radius.circular(16.r),
-                                    bottomLeft: Radius.circular(isMine ? 16.r : 4.r),
-                                    bottomRight: Radius.circular(isMine ? 4.r : 16.r),
+                                    bottomLeft: Radius.circular(
+                                      isMine ? 16.r : 4.r,
+                                    ),
+                                    bottomRight: Radius.circular(
+                                      isMine ? 4.r : 16.r,
+                                    ),
                                   ),
-                                  border: isMine ? null : Border.all(color: c.border),
+                                  border: isMine
+                                      ? null
+                                      : Border.all(color: c.border),
                                 ),
                                 child: Text(
                                   msg.text,
                                   style: tt.bodyLarge!.copyWith(
                                     fontWeight: FontWeight.w400,
-                                    color: isMine ? Colors.white : c.text1, // intentional: white-on-action
+                                    color: isMine
+                                        ? Colors
+                                              .white // intentional
+                                        : c.text1,
                                     height: 1.45,
                                   ),
                                 ),
@@ -238,7 +277,12 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                 color: c.card,
                 border: Border(top: BorderSide(color: c.border)),
               ),
-              padding: EdgeInsets.fromLTRB(AppSpacing.md.w, 10.h, AppSpacing.md.w, 10.h),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                10.h,
+                AppSpacing.md.w,
+                10.h,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -248,7 +292,10 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                         borderRadius: BorderRadius.circular(24.r),
                         border: Border.all(color: c.border),
                       ),
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md.w,
+                        vertical: 4.h,
+                      ),
                       child: TextField(
                         controller: _textCtrl,
                         style: tt.bodyLarge!.copyWith(color: c.text1),
@@ -277,7 +324,11 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: Icon(Iconsax.send_1, size: 18.r, color: Colors.white), // intentional: white-on-action
+                      child: Icon(
+                        Iconsax.send_1,
+                        size: 18.r,
+                        color: Colors.white, // intentional
+                      ),
                     ),
                   ),
                 ],

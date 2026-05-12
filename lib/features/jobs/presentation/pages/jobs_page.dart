@@ -29,7 +29,12 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   Timer? _debounce;
 
   static const _filters = [
-    'All', 'Electrician', 'Plumber', 'Carpenter', 'Concreter', 'Painter',
+    'All',
+    'Electrician',
+    'Plumber',
+    'Carpenter',
+    'Concreter',
+    'Painter',
   ];
 
   @override
@@ -59,7 +64,8 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final jobsState = ref.watch(jobsControllerProvider);
-    final isBuilder = ref.watch(authControllerProvider).role == UserRole.builder;
+    final isBuilder =
+        ref.watch(authControllerProvider).role == UserRole.builder;
     final activeFilter = jobsState.filter?.tradeType;
     final jobs = jobsState.jobs;
     final isLoading = jobsState.isLoading;
@@ -101,7 +107,8 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 style: tt.headlineSmall!.copyWith(
                                   fontSize: 28.sp,
                                   letterSpacing: 0.02 * 28,
-                                  color: Colors.white, // intentional: ShaderMask requires white for gradient
+                                  color: Colors
+                                      .white, // intentional: ShaderMask requires white for gradient
                                 ),
                               ),
                             ),
@@ -109,29 +116,40 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                         ),
                       ),
                       if (isBuilder)
-                        GestureDetector(
-                          onTap: () => context.push('/jobs/create'),
-                          child: Container(
-                            height: 36.h,
-                            padding: EdgeInsets.symmetric(horizontal: 14.w),
-                            decoration: BoxDecoration(
-                              color: c.action,
-                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Iconsax.add, size: 16.r, color: Colors.white), // intentional: white-on-action
-                                Gap(6.w),
-                                Text(
-                                  'POST JOB',
-                                  style: tt.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                    color: Colors.white, // intentional: white-on-action
-                                  ),
+                        Semantics(
+                          button: true,
+                          label: 'Post a new job',
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => context.push('/jobs/create'),
+                            child: Container(
+                              height: 44.h,
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              decoration: BoxDecoration(
+                                color: c.action,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.btn.r,
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Iconsax.add,
+                                    size: 16.r,
+                                    color: c.onAction,
+                                  ),
+                                  Gap(6.w),
+                                  Text(
+                                    'POST JOB',
+                                    style: tt.bodyMedium!.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.5,
+                                      color: c.onAction,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -170,31 +188,45 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             ),
                           ),
                         ),
-                        if (_searchCtrl.text.isNotEmpty) ...[
-                          GestureDetector(
-                            onTap: () {
-                              _searchCtrl.clear();
-                              ref.read(jobsControllerProvider.notifier).search('');
-                            },
-                            child: Icon(Iconsax.close_circle, size: 16.r, color: c.text3),
+                        if (_searchCtrl.text.isNotEmpty)
+                          Semantics(
+                            button: true,
+                            label: 'Clear search',
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                _searchCtrl.clear();
+                                ref
+                                    .read(jobsControllerProvider.notifier)
+                                    .search('');
+                              },
+                              child: SizedBox(
+                                width: 44.w,
+                                height: 44.h,
+                                child: Icon(
+                                  Iconsax.close_circle,
+                                  size: 16.r,
+                                  color: c.text3,
+                                ),
+                              ),
+                            ),
                           ),
-                          Gap(10.w),
-                        ],
                       ],
                     ),
                   ),
                   Gap(12.h),
                   // ── Filter chips
                   SizedBox(
-                    height: 30.h,
+                    height: 44.h,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _filters.length,
                       separatorBuilder: (ctx, idx) => Gap(AppSpacing.sm.w),
                       itemBuilder: (context, i) {
                         final f = _filters[i];
-                        final isActive =
-                            f == 'All' ? activeFilter == null : activeFilter == f;
+                        final isActive = f == 'All'
+                            ? activeFilter == null
+                            : activeFilter == f;
                         return GvChip(
                           label: f,
                           active: isActive,
@@ -233,13 +265,24 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                         style: tt.bodyMedium!.copyWith(color: c.urgentTx),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => ref.read(jobsControllerProvider.notifier).refresh(),
-                      child: Text(
-                        'Retry',
-                        style: tt.bodyMedium!.copyWith(
-                          color: c.urgentTx,
-                          fontWeight: FontWeight.w700,
+                    Semantics(
+                      button: true,
+                      label: 'Retry loading jobs',
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () =>
+                            ref.read(jobsControllerProvider.notifier).refresh(),
+                        child: SizedBox(
+                          height: 44.h,
+                          child: Center(
+                            child: Text(
+                              'Retry',
+                              style: tt.bodyMedium!.copyWith(
+                                color: c.urgentTx,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -260,9 +303,17 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             // ── Job list
             Expanded(
               child: count == 0 && !isLoading
-                  ? _EmptyState(hasFilter: activeFilter != null || _searchCtrl.text.isNotEmpty)
+                  ? _EmptyState(
+                      hasFilter:
+                          activeFilter != null || _searchCtrl.text.isNotEmpty,
+                    )
                   : ListView.separated(
-                      padding: EdgeInsets.fromLTRB(20.w, AppSpacing.sm.h, 20.w, AppSpacing.lg.h),
+                      padding: EdgeInsets.fromLTRB(
+                        20.w,
+                        AppSpacing.sm.h,
+                        20.w,
+                        AppSpacing.lg.h,
+                      ),
                       itemCount: count,
                       separatorBuilder: (ctx, idx) => Gap(9.h),
                       itemBuilder: (context, i) {
@@ -289,7 +340,6 @@ class _JobsPageState extends ConsumerState<JobsPage> {
       ),
     );
   }
-
 }
 
 class _EmptyState extends StatelessWidget {
@@ -332,4 +382,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-

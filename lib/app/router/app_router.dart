@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/logo_compare_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/pages/phone_auth_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/verify_email_page.dart';
+import '../../features/legal/domain/legal_document.dart';
+import '../../features/legal/presentation/pages/legal_document_page.dart';
+import '../../features/legal/presentation/pages/legal_index_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
@@ -38,23 +41,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (location == '/splash') return null;
 
+      // Legacy onboarding route — wall was removed in T1.3 (friction-reduction
+      // sprint). Anyone landing here from a deep link / stale session goes
+      // home, and the ProfileCompletenessBanner handles the nudge.
+      if (location == '/onboarding') {
+        return auth.isAuthenticated ? '/home' : '/login';
+      }
+
       if (auth.pendingVerificationEmail != null) {
         return location == '/verify-email' ? null : '/verify-email';
       }
 
       if (!auth.isAuthenticated) {
-        const publicRoutes = {'/login', '/register', '/forgot-password', '/phone-auth'};
+        final publicRoutes = <String>{
+          '/login',
+          '/register',
+          '/forgot-password',
+          '/phone-auth',
+          '/legal',
+          '/legal/terms',
+          '/legal/privacy',
+          if (kDebugMode) '/logo-compare',
+        };
         return publicRoutes.contains(location) ? null : '/login';
-      }
-
-      if (!auth.onboardingComplete) {
-        return location == '/onboarding' ? null : '/onboarding';
       }
 
       const authPages = {
         '/login',
         '/register',
-        '/onboarding',
         '/verify-email',
         '/forgot-password',
         '/phone-auth',
@@ -68,10 +82,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
-      GoRoute(path: '/verify-email', builder: (_, _) => const VerifyEmailPage()),
-      GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordPage()),
+      GoRoute(
+        path: '/verify-email',
+        builder: (_, _) => const VerifyEmailPage(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, _) => const ForgotPasswordPage(),
+      ),
       GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
-      GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
+      if (kDebugMode)
+        GoRoute(
+          path: '/logo-compare',
+          builder: (_, _) => const LogoComparePage(),
+        ),
 
       // ── Shell (5 tabs) ─────────────────────────────────────────────────────
       StatefulShellRoute.indexedStack(
@@ -158,9 +182,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Full-screen (no bottom nav) ────────────────────────────────────────
-      GoRoute(path: '/verification', builder: (_, _) => const VerificationPage()),
+      GoRoute(
+        path: '/verification',
+        builder: (_, _) => const VerificationPage(),
+      ),
       GoRoute(path: '/reviews', builder: (_, _) => const ReviewsPage()),
-      GoRoute(path: '/notifications', builder: (_, _) => const NotificationsPage()),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsPage(),
+      ),
+
+      // ── Legal (public — accessible before auth) ────────────────────────────
+      GoRoute(
+        path: '/legal',
+        builder: (_, _) => const LegalIndexPage(),
+        routes: [
+          GoRoute(
+            path: 'terms',
+            builder: (_, _) =>
+                const LegalDocumentPage(type: LegalDocumentType.termsOfService),
+          ),
+          GoRoute(
+            path: 'privacy',
+            builder: (_, _) =>
+                const LegalDocumentPage(type: LegalDocumentType.privacyPolicy),
+          ),
+        ],
+      ),
     ],
   );
 

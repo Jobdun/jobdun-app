@@ -11,8 +11,15 @@ abstract interface class ApplicationRepository {
     double? proposedRate,
     String? proposedRateType,
   });
-  Future<Either<Failure, List<JobApplication>>> getMyApplications(String tradeId);
-  Future<Either<Failure, List<JobApplication>>> getApplicationsForMyJobs(String builderId);
-  Future<Either<Failure, void>> updateStatus(String applicationId, ApplicationStatus status);
+  Future<Either<Failure, List<JobApplication>>> getMyApplications(
+    String tradeId,
+  );
+  Future<Either<Failure, List<JobApplication>>> getApplicationsForMyJobs(
+    String builderId,
+  );
+  Future<Either<Failure, void>> updateStatus(
+    String applicationId,
+    ApplicationStatus status,
+  );
   Future<Either<Failure, void>> withdraw(String applicationId);
 }

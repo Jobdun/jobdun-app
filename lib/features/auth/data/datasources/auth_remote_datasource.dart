@@ -56,7 +56,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final user = response.user;
       if (user == null) return null; // email confirmation pending
-      return UserModel(id: user.id, email: user.email ?? email, role: UserRole.trade);
+      return UserModel(
+        id: user.id,
+        email: user.email ?? email,
+        role: UserRole.trade,
+      );
     } on AuthApiException catch (e) {
       throw AuthException(e.message);
     } catch (e) {
@@ -103,7 +107,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // UserModel.fromJson handles 'user_role' key from JWT or defaults to trade.
       return UserModel.fromJson({...data, 'email': email});
     } catch (e, st) {
-      assert(() { debugPrint('[AuthRemoteDataSource] _fetchProfile: $e\n$st'); return true; }());
+      assert(() {
+        debugPrint('[AuthRemoteDataSource] _fetchProfile: $e\n$st');
+        return true;
+      }());
       return UserModel(id: userId, email: email, role: UserRole.trade);
     }
   }

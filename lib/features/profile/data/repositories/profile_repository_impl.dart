@@ -27,7 +27,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, BuilderProfile?>> getBuilderProfile(String userId) async {
+  Future<Either<Failure, BuilderProfile?>> getBuilderProfile(
+    String userId,
+  ) async {
     try {
       return right(await _datasource.getBuilderProfile(userId));
     } on ServerException catch (e) {
@@ -55,7 +57,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile) async {
+  Future<Either<Failure, void>> upsertBuilderProfile(
+    BuilderProfile profile,
+  ) async {
     try {
       await _datasource.upsertBuilderProfile(profile as BuilderProfileModel);
       return right(null);

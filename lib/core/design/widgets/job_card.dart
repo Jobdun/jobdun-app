@@ -86,24 +86,30 @@ class JobCard extends StatelessWidget {
                       ),
                       if (onApply != null) ...[
                         Gap(12.w),
-                        GestureDetector(
-                          onTap: onApply,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12.w,
-                              vertical: 8.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: c.action,
-                              borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                            ),
-                            child: Text(
-                              'APPLY NOW',
-                              style: tt.labelSmall!.copyWith(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: Colors.white, // intentional: white-on-action
+                        Semantics(
+                          button: true,
+                          label: 'Apply to $title',
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: onApply,
+                            child: Container(
+                              constraints: BoxConstraints(minHeight: 44.h),
+                              alignment: Alignment.center,
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              decoration: BoxDecoration(
+                                color: c.action,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.btn.r,
+                                ),
+                              ),
+                              child: Text(
+                                'APPLY NOW',
+                                style: tt.labelSmall!.copyWith(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: c.onAction,
+                                ),
                               ),
                             ),
                           ),
@@ -116,9 +122,9 @@ class JobCard extends StatelessWidget {
                   Gap(12.h),
                   Row(
                     children: [
-                      _MetaCol(label: 'RATE',     value: rate,      c: c, tt: tt),
+                      _MetaCol(label: 'RATE', value: rate, c: c, tt: tt),
                       Gap(AppSpacing.md.w),
-                      _MetaCol(label: 'START',    value: startDate, c: c, tt: tt),
+                      _MetaCol(label: 'START', value: startDate, c: c, tt: tt),
                       const Spacer(),
                       _MetaCol(
                         label: 'DISTANCE',
@@ -162,10 +168,7 @@ class _MetaCol extends StatelessWidget {
     return Column(
       crossAxisAlignment: align,
       children: [
-        Text(
-          label,
-          style: tt.labelSmall!.copyWith(color: c.text3),
-        ),
+        Text(label, style: tt.labelSmall!.copyWith(color: c.text3)),
         Gap(2.h),
         Text(
           value,

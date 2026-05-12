@@ -6,10 +6,12 @@ import 'package:jobdun/app/app.dart';
 void main() {
   setUpAll(() async {
     // Provide stub env values so dotenv doesn't throw during widget tests.
-    await dotenv.load(mergeWith: {
-      'SUPABASE_URL': 'https://test.supabase.co',
-      'SUPABASE_ANON_KEY': 'test_anon_key',
-    });
+    await dotenv.load(
+      mergeWith: {
+        'SUPABASE_URL': 'https://test.supabase.co',
+        'SUPABASE_ANON_KEY': 'test_anon_key',
+      },
+    );
   });
 
   testWidgets('shows Jobdun splash content', (tester) async {

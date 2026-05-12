@@ -31,7 +31,12 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Lottie.asset(lottieAsset, width: 200.w, height: 200.h, repeat: false),
+            Lottie.asset(
+              lottieAsset,
+              width: 200.w,
+              height: 200.h,
+              repeat: false,
+            ),
             Gap(AppSpacing.md.h),
             Text(
               headline.toUpperCase(),
@@ -45,7 +50,9 @@ class EmptyState extends StatelessWidget {
               Gap(AppSpacing.sm.h),
               Text(
                 body!,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: c.text2),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium!.copyWith(color: c.text2),
                 textAlign: TextAlign.center,
               ),
             ],

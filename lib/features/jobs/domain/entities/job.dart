@@ -25,8 +25,10 @@ enum JobUrgency { standard, urgent }
 
 extension JobUrgencyX on JobUrgency {
   String get dbValue => name;
-  static JobUrgency fromDb(String v) =>
-      JobUrgency.values.firstWhere((u) => u.dbValue == v, orElse: () => JobUrgency.standard);
+  static JobUrgency fromDb(String v) => JobUrgency.values.firstWhere(
+    (u) => u.dbValue == v,
+    orElse: () => JobUrgency.standard,
+  );
 }
 
 // Matches schema enum budget_type
@@ -40,8 +42,10 @@ extension BudgetTypeX on BudgetType {
     BudgetType.fixed => 'flat',
     BudgetType.negotiable => 'neg.',
   };
-  static BudgetType fromDb(String v) =>
-      BudgetType.values.firstWhere((b) => b.dbValue == v, orElse: () => BudgetType.fixed);
+  static BudgetType fromDb(String v) => BudgetType.values.firstWhere(
+    (b) => b.dbValue == v,
+    orElse: () => BudgetType.fixed,
+  );
 }
 
 class Job extends Equatable {

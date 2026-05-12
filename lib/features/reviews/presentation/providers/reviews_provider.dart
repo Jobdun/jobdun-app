@@ -28,11 +28,10 @@ class ReviewsState {
     double? averageRating,
     bool? isLoading,
     String? error,
-  }) =>
-      ReviewsState(
-        reviews: reviews ?? this.reviews,
-        averageRating: averageRating ?? this.averageRating,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => ReviewsState(
+    reviews: reviews ?? this.reviews,
+    averageRating: averageRating ?? this.averageRating,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }

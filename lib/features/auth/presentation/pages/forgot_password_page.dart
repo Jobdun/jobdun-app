@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +9,9 @@ import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
 
@@ -66,12 +67,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 // ── Brand mark ────────────────────────────────────────────────
                 Gap(AppSpacing.lg.h),
                 Center(
-                  child: SvgPicture.asset(
-                    'lib/core/assets/mark-jobdun.svg',
-                    width: 52.r,
-                    height: 52.r,
-                    colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
-                  ),
+                  child: JobdunLogo(variant: LogoVariant.mark, height: 52.r),
                 ),
                 Gap(12.h),
                 Center(
@@ -84,7 +80,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                         fontSize: 44.sp,
                         letterSpacing: 4.0,
                         height: 1.0,
-                        color: Colors.white, // intentional: ShaderMask requires white for gradient
+                        color: Colors
+                            .white, // intentional: ShaderMask requires white for gradient
                       ),
                     ),
                   ),
@@ -116,40 +113,23 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
                   key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'EMAIL',
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.12 * 11,
-                          color: c.text2,
-                        ),
+                  child: JTextField(
+                    name: 'email',
+                    label: 'Email',
+                    hint: 'your@email.com',
+                    prefixIcon: Iconsax.sms,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.email],
+                    onSubmitted: (_) => _submit(),
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required(
+                        errorText: 'Email is required.',
                       ),
-                      Gap(6.h),
-                      FormBuilderTextField(
-                        name: 'email',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _submit(),
-                        style: tt.bodyLarge!.copyWith(
-                          color: c.text1,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'your@email.com',
-                          prefixIcon: Icon(Iconsax.sms, size: 18.r),
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: AppSpacing.md.h,
-                            horizontal: AppSpacing.md.w,
-                          ),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.email(),
-                        ]),
+                      FormBuilderValidators.email(
+                        errorText: 'Enter a valid email.',
                       ),
-                    ],
+                    ]),
                   ),
                 ),
 
@@ -160,10 +140,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   Gap(8.h),
                 ],
                 if (authState.infoMessage != null) ...[
-                  StatusBanner(
-                    message: authState.infoMessage!,
-                    isError: false,
-                  ),
+                  StatusBanner(message: authState.infoMessage!, isError: false),
                   Gap(8.h),
                 ],
 

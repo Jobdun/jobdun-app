@@ -9,12 +9,15 @@ class AppTheme {
   const AppTheme._();
 
   static ThemeData light() => _build(JColors.light, Brightness.light);
-  static ThemeData dark()  => _build(JColors.dark,  Brightness.dark);
+  static ThemeData dark() => _build(JColors.dark, Brightness.dark);
 
   /// Brand wordmark style — Inter Black 900. Use only for logo/wordmark text.
   /// Example: Text('JOBDUN', style: AppTheme.brandDisplay(context.c.text1))
-  static TextStyle brandDisplay(Color color) => GoogleFonts.inter(
-    fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 3.0, color: color,
+  static TextStyle brandDisplay(Color color) => GoogleFonts.oswald(
+    fontSize: 40,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 3.0,
+    color: color,
   );
 
   /// Default Pinput cell theme. Apply to Pinput.defaultPinTheme.
@@ -22,7 +25,9 @@ class AppTheme {
     width: 56,
     height: 56,
     textStyle: GoogleFonts.oswald(
-      fontSize: 20, fontWeight: FontWeight.w700, color: c.text1,
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      color: c.text1,
     ),
     decoration: BoxDecoration(
       color: c.surface,
@@ -36,7 +41,9 @@ class AppTheme {
     width: 56,
     height: 56,
     textStyle: GoogleFonts.oswald(
-      fontSize: 20, fontWeight: FontWeight.w700, color: c.text1,
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+      color: c.text1,
     ),
     decoration: BoxDecoration(
       color: c.surface,
@@ -50,30 +57,30 @@ class AppTheme {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary:              c.action,
-      onPrimary:            Colors.white, // intentional: white-on-action
-      primaryContainer:     c.actionBg,
-      onPrimaryContainer:   c.actionTx,
-      secondary:            c.surfaceRaised,
-      onSecondary:          c.text1,
-      secondaryContainer:   c.surface,
+      primary: c.action,
+      onPrimary: c.onAction,
+      primaryContainer: c.actionBg,
+      onPrimaryContainer: c.actionTx,
+      secondary: c.surfaceRaised,
+      onSecondary: c.text1,
+      secondaryContainer: c.surface,
       onSecondaryContainer: c.text2,
-      tertiary:             c.verified,
-      onTertiary:           Colors.white, // intentional: white-on-action
-      tertiaryContainer:    c.verifiedBg,
-      onTertiaryContainer:  c.verifiedTx,
-      error:                c.urgent,
-      onError:              Colors.white, // intentional: white-on-action
-      errorContainer:       c.urgentBg,
-      onErrorContainer:     c.urgentTx,
-      surface:              c.card,
-      onSurface:            c.text1,
+      tertiary: c.verified,
+      onTertiary: Colors.white, // intentional: white-on-action
+      tertiaryContainer: c.verifiedBg,
+      onTertiaryContainer: c.verifiedTx,
+      error: c.urgent,
+      onError: Colors.white, // intentional: white-on-action
+      errorContainer: c.urgentBg,
+      onErrorContainer: c.urgentTx,
+      surface: c.card,
+      onSurface: c.text1,
       surfaceContainerHighest: c.surface,
-      onSurfaceVariant:     c.text2,
-      outline:              c.border,
-      outlineVariant:       c.border,
-      inverseSurface:       isDark ? c.text1 : c.text1,
-      onInverseSurface:     isDark ? c.background : c.background,
+      onSurfaceVariant: c.text2,
+      outline: c.border,
+      outlineVariant: c.border,
+      inverseSurface: isDark ? c.text1 : c.text1,
+      onInverseSurface: isDark ? c.background : c.background,
     );
 
     final openSansBase = GoogleFonts.openSansTextTheme(
@@ -82,43 +89,79 @@ class AppTheme {
 
     final textTheme = openSansBase.copyWith(
       displayLarge: GoogleFonts.oswald(
-        fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: c.text1,
+        fontSize: 40,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.2,
+        color: c.text1,
       ),
       displaySmall: GoogleFonts.oswald(
-        fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: 1.0, color: c.text1,
+        fontSize: 40,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.0,
+        color: c.text1,
       ),
       headlineLarge: GoogleFonts.oswald(
-        fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.text1,
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: c.text1,
       ),
       headlineMedium: GoogleFonts.oswald(
-        fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: c.text1,
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+        color: c.text1,
       ),
       headlineSmall: GoogleFonts.oswald(
-        fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: 0.3, color: c.text1,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.3,
+        color: c.text1,
       ),
       titleLarge: GoogleFonts.oswald(
-        fontSize: 16, fontWeight: FontWeight.w600, color: c.text1,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: c.text1,
       ),
       titleMedium: GoogleFonts.openSans(
-        fontSize: 15, fontWeight: FontWeight.w600, height: 1.6, color: c.text1,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        height: 1.6,
+        color: c.text1,
       ),
       bodyLarge: GoogleFonts.openSans(
-        fontSize: 15, fontWeight: FontWeight.w400, height: 1.6, color: c.text1,
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+        color: c.text1,
       ),
       bodyMedium: GoogleFonts.openSans(
-        fontSize: 13, fontWeight: FontWeight.w400, color: c.text2,
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: c.text2,
       ),
       bodySmall: GoogleFonts.openSans(
-        fontSize: 11, fontWeight: FontWeight.w500, color: c.text2,
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: c.text2,
       ),
       labelLarge: GoogleFonts.oswald(
-        fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: c.text1,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.5,
+        color: c.text1,
       ),
       labelMedium: GoogleFonts.openSans(
-        fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5, color: c.text2,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+        color: c.text2,
       ),
       labelSmall: GoogleFonts.openSans(
-        fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8, color: c.text3,
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.8,
+        color: c.text3,
       ),
     );
 
@@ -179,18 +222,31 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: BorderSide(color: c.border.withValues(alpha: 0.4)),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         labelStyle: GoogleFonts.openSans(
-          fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.text3,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: c.text3,
         ),
         floatingLabelStyle: GoogleFonts.openSans(
-          fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: c.action,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: c.action,
         ),
         hintStyle: GoogleFonts.openSans(
-          fontSize: 13, fontWeight: FontWeight.w400, color: c.text3,
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          color: c.text3,
         ),
         errorStyle: GoogleFonts.openSans(
-          fontSize: 11, fontWeight: FontWeight.w500, color: c.urgentTx,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: c.urgentTx,
         ),
         prefixIconColor: c.text3,
         suffixIconColor: c.text3,
@@ -214,9 +270,7 @@ class AppTheme {
           return c.surface;
         }),
         side: BorderSide(color: c.border, width: 1.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(3),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
       ),
     );
   }

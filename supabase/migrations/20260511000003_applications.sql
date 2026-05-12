@@ -5,14 +5,17 @@
 -- ============================================================
 
 -- Enum values match ApplicationStatus.dbValue in job_application.dart exactly
-CREATE TYPE public.application_status AS ENUM (
-  'pending',
-  'shortlisted',
-  'rejected',
-  'withdrawn',
-  'hired',
-  'declined_by_trade'   -- maps to ApplicationStatus.declinedByTrade
-);
+DO $$ BEGIN
+  CREATE TYPE public.application_status AS ENUM (
+    'pending',
+    'shortlisted',
+    'rejected',
+    'withdrawn',
+    'hired',
+    'declined_by_trade'   -- maps to ApplicationStatus.declinedByTrade
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.applications (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -37,10 +40,11 @@ CREATE TABLE IF NOT EXISTS public.applications (
   UNIQUE (job_id, trade_id)
 );
 
-CREATE INDEX applications_job_id_idx ON public.applications(job_id);
-CREATE INDEX applications_trade_id_idx ON public.applications(trade_id);
-CREATE INDEX applications_builder_id_idx ON public.applications(builder_id);
+CREATE INDEX IF NOT EXISTS applications_job_id_idx ON public.applications(job_id);
+CREATE INDEX IF NOT EXISTS applications_trade_id_idx ON public.applications(trade_id);
+CREATE INDEX IF NOT EXISTS applications_builder_id_idx ON public.applications(builder_id);
 
+DROP TRIGGER IF EXISTS applications_updated_at ON public.applications;
 CREATE TRIGGER applications_updated_at
   BEFORE UPDATE ON public.applications
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

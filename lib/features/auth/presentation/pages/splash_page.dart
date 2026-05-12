@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
@@ -12,6 +11,7 @@ import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -52,12 +52,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
           child: Column(
             children: [
               const Spacer(),
-              SvgPicture.asset(
-                'lib/core/assets/mark-jobdun.svg',
-                width: 64.r,
-                height: 64.r,
-                colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
-              ),
+              JobdunLogo(variant: LogoVariant.mark, height: 64.r),
               Gap(20.h),
               ShaderMask(
                 shaderCallback: (bounds) =>
@@ -68,7 +63,8 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                     fontSize: 48.sp,
                     letterSpacing: 4.0,
                     height: 1.0,
-                    color: Colors.white, // intentional: ShaderMask requires white for gradient
+                    color: Colors
+                        .white, // intentional: ShaderMask requires white for gradient
                   ),
                 ),
               ),

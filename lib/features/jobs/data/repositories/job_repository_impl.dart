@@ -59,7 +59,10 @@ class JobRepositoryImpl implements JobRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateJobStatus(String id, JobStatus status) async {
+  Future<Either<Failure, void>> updateJobStatus(
+    String id,
+    JobStatus status,
+  ) async {
     try {
       await _datasource.updateJobStatus(id, status);
       return right(null);

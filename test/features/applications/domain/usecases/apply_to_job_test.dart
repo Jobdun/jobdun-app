@@ -12,16 +12,15 @@ class MockApplicationRepository extends Mock implements ApplicationRepository {}
 JobApplication _makeApplication({
   String id = 'app-1',
   ApplicationStatus status = ApplicationStatus.pending,
-}) =>
-    JobApplication(
-      id: id,
-      jobId: 'job-1',
-      tradeId: 'trade-1',
-      builderId: 'builder-1',
-      status: status,
-      createdAt: DateTime(2026, 5, 11),
-      updatedAt: DateTime(2026, 5, 11),
-    );
+}) => JobApplication(
+  id: id,
+  jobId: 'job-1',
+  tradeId: 'trade-1',
+  builderId: 'builder-1',
+  status: status,
+  createdAt: DateTime(2026, 5, 11),
+  updatedAt: DateTime(2026, 5, 11),
+);
 
 void main() {
   late ApplyToJob applyToJob;
@@ -38,13 +37,15 @@ void main() {
   group('ApplyToJob use case', () {
     test('returns JobApplication with pending status on success', () async {
       final application = _makeApplication();
-      when(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: any(named: 'coverNote'),
-        proposedRate: any(named: 'proposedRate'),
-        proposedRateType: any(named: 'proposedRateType'),
-      )).thenAnswer((_) async => Right(application));
+      when(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: any(named: 'coverNote'),
+          proposedRate: any(named: 'proposedRate'),
+          proposedRateType: any(named: 'proposedRateType'),
+        ),
+      ).thenAnswer((_) async => Right(application));
 
       final result = await applyToJob(jobId: tJobId, builderId: tBuilderId);
 
@@ -57,13 +58,15 @@ void main() {
 
     test('passes cover note and proposed rate to repository', () async {
       final application = _makeApplication();
-      when(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: 'Available immediately',
-        proposedRate: 85.0,
-        proposedRateType: 'hourly',
-      )).thenAnswer((_) async => Right(application));
+      when(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: 'Available immediately',
+          proposedRate: 85.0,
+          proposedRateType: 'hourly',
+        ),
+      ).thenAnswer((_) async => Right(application));
 
       await applyToJob(
         jobId: tJobId,
@@ -73,58 +76,75 @@ void main() {
         proposedRateType: 'hourly',
       );
 
-      verify(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: 'Available immediately',
-        proposedRate: 85.0,
-        proposedRateType: 'hourly',
-      )).called(1);
+      verify(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: 'Available immediately',
+          proposedRate: 85.0,
+          proposedRateType: 'hourly',
+        ),
+      ).called(1);
     });
 
     test('returns PermissionFailure when already applied', () async {
       const failure = PermissionFailure('Already applied to this job.');
-      when(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: any(named: 'coverNote'),
-        proposedRate: any(named: 'proposedRate'),
-        proposedRateType: any(named: 'proposedRateType'),
-      )).thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: any(named: 'coverNote'),
+          proposedRate: any(named: 'proposedRate'),
+          proposedRateType: any(named: 'proposedRateType'),
+        ),
+      ).thenAnswer((_) async => const Left(failure));
 
       final result = await applyToJob(jobId: tJobId, builderId: tBuilderId);
 
-      result.fold((f) => expect(f, isA<PermissionFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<PermissionFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('returns ServerFailure on database error', () async {
       const failure = ServerFailure('Insert failed');
-      when(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: any(named: 'coverNote'),
-        proposedRate: any(named: 'proposedRate'),
-        proposedRateType: any(named: 'proposedRateType'),
-      )).thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: any(named: 'coverNote'),
+          proposedRate: any(named: 'proposedRate'),
+          proposedRateType: any(named: 'proposedRateType'),
+        ),
+      ).thenAnswer((_) async => const Left(failure));
 
       final result = await applyToJob(jobId: tJobId, builderId: tBuilderId);
 
-      result.fold((f) => expect(f, isA<ServerFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<ServerFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('returns NetworkFailure when offline', () async {
       const failure = NetworkFailure();
-      when(() => mockRepo.applyToJob(
-        jobId: tJobId,
-        builderId: tBuilderId,
-        coverNote: any(named: 'coverNote'),
-        proposedRate: any(named: 'proposedRate'),
-        proposedRateType: any(named: 'proposedRateType'),
-      )).thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.applyToJob(
+          jobId: tJobId,
+          builderId: tBuilderId,
+          coverNote: any(named: 'coverNote'),
+          proposedRate: any(named: 'proposedRate'),
+          proposedRateType: any(named: 'proposedRateType'),
+        ),
+      ).thenAnswer((_) async => const Left(failure));
 
       final result = await applyToJob(jobId: tJobId, builderId: tBuilderId);
 
-      result.fold((f) => expect(f, isA<NetworkFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<NetworkFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
   });
 }

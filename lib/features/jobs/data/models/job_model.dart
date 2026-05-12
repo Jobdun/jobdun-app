@@ -62,7 +62,8 @@ class JobModel extends Job {
     requiresPublicLiability: json['requires_public_liability'] as bool? ?? true,
     requiresVerified: json['requires_verified'] as bool? ?? true,
     requiredCertifications:
-        (json['required_certifications'] as List<dynamic>?)?.cast<String>() ?? [],
+        (json['required_certifications'] as List<dynamic>?)?.cast<String>() ??
+        [],
     applicationCount: json['application_count'] as int? ?? 0,
     viewCount: json['view_count'] as int? ?? 0,
     publishedAt: json['published_at'] != null

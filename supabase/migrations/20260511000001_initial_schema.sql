@@ -61,14 +61,17 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles;
 CREATE TRIGGER profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS builder_profiles_updated_at ON public.builder_profiles;
 CREATE TRIGGER builder_profiles_updated_at
   BEFORE UPDATE ON public.builder_profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS trade_profiles_updated_at ON public.trade_profiles;
 CREATE TRIGGER trade_profiles_updated_at
   BEFORE UPDATE ON public.trade_profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

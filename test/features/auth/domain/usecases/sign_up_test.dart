@@ -32,52 +32,109 @@ void main() {
 
   group('SignUp use case', () {
     test('returns AppUser on successful registration', () async {
-      when(() => mockRepo.register(email: tEmail, password: tPassword, fullName: tName))
-          .thenAnswer((_) async => const Right(tUser));
+      when(
+        () => mockRepo.register(
+          email: tEmail,
+          password: tPassword,
+          fullName: tName,
+        ),
+      ).thenAnswer((_) async => const Right(tUser));
 
-      final result = await signUp(email: tEmail, password: tPassword, fullName: tName);
+      final result = await signUp(
+        email: tEmail,
+        password: tPassword,
+        fullName: tName,
+      );
 
       expect(result, const Right<Failure, AppUser>(tUser));
-      verify(() => mockRepo.register(
-        email: tEmail, password: tPassword, fullName: tName,
-      )).called(1);
+      verify(
+        () => mockRepo.register(
+          email: tEmail,
+          password: tPassword,
+          fullName: tName,
+        ),
+      ).called(1);
     });
 
     test('returns AuthFailure when email is already registered', () async {
       const failure = AuthFailure('User already registered');
-      when(() => mockRepo.register(email: tEmail, password: tPassword, fullName: tName))
-          .thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.register(
+          email: tEmail,
+          password: tPassword,
+          fullName: tName,
+        ),
+      ).thenAnswer((_) async => const Left(failure));
 
-      final result = await signUp(email: tEmail, password: tPassword, fullName: tName);
+      final result = await signUp(
+        email: tEmail,
+        password: tPassword,
+        fullName: tName,
+      );
 
-      result.fold((f) => expect(f, isA<AuthFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<AuthFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('returns ValidationFailure when password is too weak', () async {
-      const failure = ValidationFailure('Password must be at least 8 characters.');
-      when(() => mockRepo.register(email: tEmail, password: '123', fullName: tName))
-          .thenAnswer((_) async => const Left(failure));
+      const failure = ValidationFailure(
+        'Password must be at least 8 characters.',
+      );
+      when(
+        () =>
+            mockRepo.register(email: tEmail, password: '123', fullName: tName),
+      ).thenAnswer((_) async => const Left(failure));
 
-      final result = await signUp(email: tEmail, password: '123', fullName: tName);
+      final result = await signUp(
+        email: tEmail,
+        password: '123',
+        fullName: tName,
+      );
 
-      result.fold((f) => expect(f, isA<ValidationFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<ValidationFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('returns NetworkFailure when offline', () async {
       const failure = NetworkFailure();
-      when(() => mockRepo.register(email: tEmail, password: tPassword, fullName: tName))
-          .thenAnswer((_) async => const Left(failure));
+      when(
+        () => mockRepo.register(
+          email: tEmail,
+          password: tPassword,
+          fullName: tName,
+        ),
+      ).thenAnswer((_) async => const Left(failure));
 
-      final result = await signUp(email: tEmail, password: tPassword, fullName: tName);
+      final result = await signUp(
+        email: tEmail,
+        password: tPassword,
+        fullName: tName,
+      );
 
-      result.fold((f) => expect(f, isA<NetworkFailure>()), (_) => fail('Expected failure'));
+      result.fold(
+        (f) => expect(f, isA<NetworkFailure>()),
+        (_) => fail('Expected failure'),
+      );
     });
 
     test('new user has onboarding incomplete', () async {
-      when(() => mockRepo.register(email: tEmail, password: tPassword, fullName: tName))
-          .thenAnswer((_) async => const Right(tUser));
+      when(
+        () => mockRepo.register(
+          email: tEmail,
+          password: tPassword,
+          fullName: tName,
+        ),
+      ).thenAnswer((_) async => const Right(tUser));
 
-      final result = await signUp(email: tEmail, password: tPassword, fullName: tName);
+      final result = await signUp(
+        email: tEmail,
+        password: tPassword,
+        fullName: tName,
+      );
 
       result.fold(
         (_) => fail('Expected user'),

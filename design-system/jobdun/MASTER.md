@@ -7,9 +7,15 @@
 ---
 
 **Project:** Jobdun
-**Updated:** 2026-05-07
+**Updated:** 2026-05-12
 **Audience:** Construction/trades workers and builders — not a SaaS startup, not a consumer lifestyle app.
 **Design Character:** Aggressive. Every UI decision asserts authority. Nothing apologizes for itself.
+
+---
+
+## Sources of Truth
+
+When docs disagree with code, **code wins**. Tokens live in `lib/app/theme/` (`app_colors.dart`, `app_theme.dart`). This file describes intent; the tokens enforce it.
 
 ---
 
@@ -246,7 +252,7 @@ Before delivering any UI code, verify:
 - [ ] Background is `#0F172A`, never white
 - [ ] All buttons are filled (no ghost buttons)
 - [ ] Button text is uppercase + bold (FontWeight.w700+)
-- [ ] All text uses Barlow / Barlow Condensed via AppTheme (no per-widget GoogleFonts calls)
+- [ ] All text uses Oswald / Open Sans via AppTheme (no per-widget GoogleFonts calls)
 - [ ] Gap(n) used for all spacing, never SizedBox
 - [ ] All sizes use .w / .h / .sp / .r from flutter_screenutil
 - [ ] Icons from Iconsax (with Icons.* fallback only)

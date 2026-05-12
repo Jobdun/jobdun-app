@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/field_label.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
+import '../providers/trade_categories_provider.dart';
+import '../widgets/trade_category_picker.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
   const ProfileEditPage({super.key});
@@ -17,76 +22,112 @@ class ProfileEditPage extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
-  final _displayNameCtrl = TextEditingController();
-  final _suburbCtrl = TextEditingController();
-  final _stateCtrl = TextEditingController();
-  final _aboutCtrl = TextEditingController();
-  final _companyCtrl = TextEditingController();
-  final _abnCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  bool _isSaving = false;
+  final _formKey = GlobalKey<FormBuilderState>();
+
+  // Trade picker is state-managed (not a FormBuilder field) — validated in
+  // _save alongside the FormBuilder validators.
+  String? _tradeSlug;
+  String? _tradeOther;
+  bool _showTradeError = false;
 
   @override
   void initState() {
     super.initState();
-    final profileState = ref.read(profileControllerProvider);
-    _displayNameCtrl.text = profileState.profile?.displayName ?? '';
-    final bp = profileState.builderProfile;
-    final tp = profileState.tradeProfile;
-    if (bp != null) {
-      _companyCtrl.text = bp.companyName;
-      _abnCtrl.text = bp.abn ?? '';
-      _suburbCtrl.text = bp.serviceSuburb ?? '';
-      _stateCtrl.text = bp.serviceState ?? '';
-      _phoneCtrl.text = bp.contactPhone ?? '';
-    } else if (tp != null) {
-      _displayNameCtrl.text = tp.fullName;
-      _suburbCtrl.text = tp.baseSuburb ?? '';
-      _stateCtrl.text = tp.baseState ?? '';
-      _aboutCtrl.text = tp.about ?? '';
+    final tp = ref.read(profileControllerProvider).tradeProfile;
+    if (tp != null && tp.primaryTrade.isNotEmpty) {
+      _tradeSlug = tp.primaryTrade;
     }
   }
 
-  @override
-  void dispose() {
-    _displayNameCtrl.dispose();
-    _suburbCtrl.dispose();
-    _stateCtrl.dispose();
-    _aboutCtrl.dispose();
-    _companyCtrl.dispose();
-    _abnCtrl.dispose();
-    _phoneCtrl.dispose();
-    super.dispose();
+  Future<void> _pickTrade() async {
+    final selection = await showTradeCategoryPicker(
+      context,
+      initialSlug: _tradeSlug,
+      initialOtherText: _tradeOther,
+    );
+    if (selection == null) return;
+    setState(() {
+      _tradeSlug = selection.slug;
+      _tradeOther = selection.slug == 'other' ? selection.otherText : null;
+      _showTradeError = false;
+    });
   }
 
-  Future<void> _save(BuildContext context, JColors c) async {
-    final tt = Theme.of(context).textTheme;
-    setState(() => _isSaving = true);
+  Future<void> _save() async {
+    final auth = ref.read(authControllerProvider);
+    final role = auth.role;
+    if (role == null) return;
+
+    final formOk = _formKey.currentState?.saveAndValidate() ?? false;
+    final isTrade = role == UserRole.trade;
+    final tradeMissing = isTrade && (_tradeSlug == null || _tradeSlug!.isEmpty);
+    if (tradeMissing) {
+      setState(() => _showTradeError = true);
+    }
+    if (!formOk || tradeMissing) return;
+
+    final values = _formKey.currentState!.value;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
-    await Future.delayed(const Duration(milliseconds: 700));
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    final ok = await ref
+        .read(profileControllerProvider.notifier)
+        .saveProfile(
+          role: role,
+          displayName: values['display_name'] as String,
+          suburb: values['suburb'] as String,
+          auState: values['state'] as String?,
+          about: values['about'] as String?,
+          companyName: values['company_name'] as String?,
+          abn: values['abn'] as String?,
+          contactPhone: values['contact_phone'] as String?,
+          fullName: values['full_name'] as String?,
+          primaryTrade: _tradeSlug,
+          tradeOther: _tradeOther,
+        );
+
     if (!mounted) return;
-    setState(() => _isSaving = false);
-    router.pop();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Iconsax.tick_circle, size: 18.r, color: Colors.white), // intentional: white-on-action
-            Gap(10.w),
-            Text(
-              'Profile updated.',
-              style: tt.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.white, // intentional: white-on-action
+    if (ok) {
+      router.pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Iconsax.tick_circle,
+                size: 18.r,
+                color: Colors.white, // intentional: white-on-success
               ),
-            ),
-          ],
+              Gap(10.w),
+              Text(
+                'Profile updated.',
+                style: tt.bodyMedium!.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white, // intentional: white-on-success
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: c.verified,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: c.verified,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            "Couldn't save changes. Try again.",
+            style: tt.bodyMedium!.copyWith(
+              color: Colors.white, // intentional: white-on-error
+            ),
+          ),
+          backgroundColor: c.urgent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -95,6 +136,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final isBuilder = authState.role == UserRole.builder;
+    final profileState = ref.watch(profileControllerProvider);
+    final profile = profileState.profile;
+    final bp = profileState.builderProfile;
+    final tp = profileState.tradeProfile;
+    final isSaving = profileState.isLoading;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -140,79 +186,138 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             Divider(height: 1, color: c.border),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, AppSpacing.lg.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isBuilder) ...[
-                      _FieldLabel('COMPANY NAME'),
-                      Gap(AppSpacing.sm.h),
-                      _InputField(controller: _companyCtrl, hint: 'e.g. Pinnacle Construct'),
-                      Gap(AppSpacing.md.h),
-                      _FieldLabel('ABN'),
-                      Gap(AppSpacing.sm.h),
-                      _InputField(controller: _abnCtrl, hint: '12 345 678 901', keyboardType: TextInputType.number),
-                      Gap(AppSpacing.md.h),
-                    ] else ...[
-                      _FieldLabel('FULL NAME'),
-                      Gap(AppSpacing.sm.h),
-                      _InputField(controller: _displayNameCtrl, hint: 'Your full name'),
-                      Gap(AppSpacing.md.h),
-                    ],
-                    _FieldLabel('DISPLAY NAME'),
-                    Gap(AppSpacing.sm.h),
-                    _InputField(controller: _displayNameCtrl, hint: 'How you appear in the app'),
-                    Gap(AppSpacing.md.h),
-                    _FieldLabel('BASE ${isBuilder ? 'SERVICE' : ''} SUBURB'),
-                    Gap(AppSpacing.sm.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _InputField(controller: _suburbCtrl, hint: 'Suburb'),
+              child: FormBuilder(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    20.h,
+                    20.w,
+                    AppSpacing.lg.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isBuilder) ...[
+                        const FieldLabel('COMPANY NAME'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'company_name',
+                          hint: 'e.g. Pinnacle Construct',
+                          initialValue: bp?.companyName,
+                          validator: FormBuilderValidators.required(
+                            errorText: 'Company name is required.',
+                          ),
                         ),
-                        Gap(10.w),
-                        Expanded(
-                          flex: 2,
-                          child: _InputField(controller: _stateCtrl, hint: 'State'),
+                        Gap(AppSpacing.md.h),
+                        const FieldLabel('ABN'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'abn',
+                          hint: '12 345 678 901',
+                          initialValue: bp?.abn,
+                          keyboardType: TextInputType.number,
                         ),
+                        Gap(AppSpacing.md.h),
+                      ] else ...[
+                        const FieldLabel('FULL NAME'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'full_name',
+                          hint: 'Your full name',
+                          initialValue: tp?.fullName,
+                          validator: FormBuilderValidators.required(
+                            errorText: 'Full name is required.',
+                          ),
+                        ),
+                        Gap(AppSpacing.md.h),
+                        const FieldLabel('TRADE'),
+                        Gap(AppSpacing.sm.h),
+                        _TradePickerTile(
+                          slug: _tradeSlug,
+                          otherText: _tradeOther,
+                          onTap: _pickTrade,
+                          hasError: _showTradeError && _tradeSlug == null,
+                        ),
+                        if (_showTradeError && _tradeSlug == null) ...[
+                          Gap(4.h),
+                          Text(
+                            'Pick a trade to continue.',
+                            style: tt.bodySmall!.copyWith(
+                              color: c.urgent,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ],
+                        Gap(AppSpacing.md.h),
                       ],
-                    ),
-                    Gap(AppSpacing.md.h),
-                    _FieldLabel('CONTACT PHONE'),
-                    Gap(AppSpacing.sm.h),
-                    _InputField(
-                      controller: _phoneCtrl,
-                      hint: '+61 4 1234 5678',
-                      keyboardType: TextInputType.phone,
-                    ),
-                    Gap(AppSpacing.md.h),
-                    _FieldLabel('ABOUT'),
-                    Gap(AppSpacing.sm.h),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: c.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.input.r),
-                        border: Border.all(color: c.border),
-                      ),
-                      child: TextField(
-                        controller: _aboutCtrl,
-                        maxLines: 4,
-                        style: tt.bodyLarge!.copyWith(color: c.text1),
-                        decoration: InputDecoration(
-                          hintText: isBuilder
-                              ? 'Tell tradies about your company…'
-                              : 'Tell builders about your experience…',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          contentPadding: EdgeInsets.all(14.r),
+                      const FieldLabel('DISPLAY NAME'),
+                      Gap(AppSpacing.sm.h),
+                      _FormField(
+                        name: 'display_name',
+                        hint: 'How you appear in the app',
+                        initialValue: profile?.displayName,
+                        validator: FormBuilderValidators.required(
+                          errorText: 'Display name is required.',
                         ),
                       ),
-                    ),
-                  ],
+                      Gap(AppSpacing.md.h),
+                      FieldLabel(isBuilder ? 'SERVICE SUBURB' : 'BASE SUBURB'),
+                      Gap(AppSpacing.sm.h),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: _FormField(
+                              name: 'suburb',
+                              hint: 'Suburb',
+                              initialValue: isBuilder
+                                  ? bp?.serviceSuburb
+                                  : tp?.baseSuburb,
+                              validator: FormBuilderValidators.required(
+                                errorText: 'Suburb is required.',
+                              ),
+                            ),
+                          ),
+                          Gap(10.w),
+                          Expanded(
+                            flex: 2,
+                            child: _FormField(
+                              name: 'state',
+                              hint: 'State',
+                              initialValue: isBuilder
+                                  ? bp?.serviceState
+                                  : tp?.baseState,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Gap(AppSpacing.md.h),
+                      if (isBuilder) ...[
+                        const FieldLabel('CONTACT PHONE'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'contact_phone',
+                          hint: '+61 4 1234 5678',
+                          initialValue: bp?.contactPhone,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        Gap(AppSpacing.md.h),
+                      ],
+                      const FieldLabel('ABOUT'),
+                      Gap(AppSpacing.sm.h),
+                      _FormField(
+                        name: 'about',
+                        hint: isBuilder
+                            ? 'Tell tradies about your company…'
+                            : 'Tell builders about your experience…',
+                        initialValue: isBuilder ? bp?.about : tp?.about,
+                        maxLines: 4,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -225,21 +330,24 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
               ),
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
               child: GestureDetector(
-                onTap: _isSaving ? null : () => _save(context, c),
+                onTap: isSaving ? null : _save,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   width: double.infinity,
                   height: 48.h,
                   decoration: BoxDecoration(
-                    color: _isSaving ? c.surfaceRaised : c.action,
+                    color: isSaving ? c.surfaceRaised : c.action,
                     borderRadius: BorderRadius.circular(AppRadius.btn.r),
                   ),
                   alignment: Alignment.center,
-                  child: _isSaving
+                  child: isSaving
                       ? SizedBox(
                           width: 20.r,
                           height: 20.r,
-                          child: CircularProgressIndicator(color: c.text1, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: c.text1,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(
                           'SAVE CHANGES',
@@ -259,51 +367,134 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   }
 }
 
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: Theme.of(context).textTheme.labelSmall!.copyWith(
-      letterSpacing: 0.12 * 11,
-      color: context.c.text3,
-    ),
-  );
-}
-
-class _InputField extends StatelessWidget {
-  const _InputField({
-    required this.controller,
+// FormBuilder-aware text field with the bordered-surface chrome that matches
+// the rest of /profile/edit. Helper-space is reserved so validation errors
+// don't push the form's layout around.
+class _FormField extends StatelessWidget {
+  const _FormField({
+    required this.name,
     required this.hint,
+    this.initialValue,
+    this.validator,
     this.keyboardType,
+    this.maxLines = 1,
   });
-  final TextEditingController controller;
+
+  final String name;
   final String hint;
+  final String? initialValue;
+  final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.input.r),
         border: Border.all(color: c.border),
       ),
-      child: TextField(
-        controller: controller,
+      child: FormBuilderTextField(
+        name: name,
+        initialValue: initialValue,
+        validator: validator,
         keyboardType: keyboardType,
-        style: Theme.of(context).textTheme.bodyLarge!.copyWith(color: c.text1),
+        maxLines: maxLines,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        style: tt.bodyLarge!.copyWith(color: c.text1),
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
           filled: false,
-          contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
+          contentPadding: maxLines > 1
+              ? EdgeInsets.all(14.r)
+              : EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
           isDense: true,
+          // Reserves a line of space so the field doesn't jump when an error
+          // appears; matches the JTextField pattern used in auth flows.
+          helperText: ' ',
+          helperMaxLines: 2,
+          errorMaxLines: 2,
+        ),
+      ),
+    );
+  }
+}
+
+// Tappable input-shaped tile that mirrors _FormField's chrome and opens the
+// TradeCategoryPicker. Resolves display label from the cached categories list;
+// falls back to the slug if the row isn't in the live list (renamed category).
+class _TradePickerTile extends ConsumerWidget {
+  const _TradePickerTile({
+    required this.slug,
+    required this.otherText,
+    required this.onTap,
+    required this.hasError,
+  });
+
+  final String? slug;
+  final String? otherText;
+  final VoidCallback onTap;
+  final bool hasError;
+
+  String _label(AsyncValue<dynamic> async) {
+    if (slug == null) return 'Pick your trade';
+    if (slug == 'other') {
+      return (otherText == null || otherText!.isEmpty)
+          ? 'Other'
+          : 'Other — $otherText';
+    }
+    return async.maybeWhen(
+      data: (rows) {
+        final list = rows as List<dynamic>;
+        for (final r in list) {
+          if (r.slug == slug) return r.displayName as String;
+        }
+        return slug!;
+      },
+      orElse: () => slug!,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final async = ref.watch(tradeCategoriesProvider);
+    final hasValue = slug != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.input.r),
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(AppRadius.input.r),
+            border: Border.all(color: hasError ? c.urgent : c.border),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _label(async),
+                  style: tt.bodyLarge!.copyWith(
+                    color: hasValue ? c.text1 : c.text3,
+                  ),
+                ),
+              ),
+              Icon(Iconsax.arrow_down_1, size: 16.r, color: c.text3),
+            ],
+          ),
         ),
       ),
     );

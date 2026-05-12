@@ -6,13 +6,15 @@ class AppEnv {
   const AppEnv._();
 
   static String get supabaseUrl {
-    final raw = dotenv.env['SUPABASE_URL'] ??
+    final raw =
+        dotenv.env['SUPABASE_URL'] ??
         const String.fromEnvironment('SUPABASE_URL');
     return raw.trim().replaceAll(RegExp(r'/$'), '');
   }
 
   static String get supabaseAnonKey {
-    final raw = dotenv.env['SUPABASE_ANON_KEY'] ??
+    final raw =
+        dotenv.env['SUPABASE_ANON_KEY'] ??
         dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ??
         const String.fromEnvironment('SUPABASE_ANON_KEY');
     return raw.trim();

@@ -1,25 +1,83 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
 
-class VerifyEmailPage extends ConsumerWidget {
+class VerifyEmailPage extends ConsumerStatefulWidget {
   const VerifyEmailPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VerifyEmailPage> createState() => _VerifyEmailPageState();
+}
+
+class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
+  Timer? _cooldownTimer;
+  int _cooldownSeconds = 0;
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _resend() {
+    ref.read(authControllerProvider.notifier).resendVerificationEmail();
+    _startCooldown();
+  }
+
+  Future<void> _checkVerified() async {
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .checkEmailVerified();
+    // On success, clearing pendingVerificationEmail flips the router redirect
+    // → user lands on /home automatically. Nothing else to do here.
+    if (ok && mounted) {
+      // No-op: redirect handles navigation.
+    }
+  }
+
+  void _changeEmail() {
+    // Keep the registerDraft so /register can pre-fill the form, but drop
+    // the verification gate so the router doesn't pull the user straight back.
+    ref.read(authControllerProvider.notifier).clearPendingVerification();
+    context.go('/register');
+  }
+
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _cooldownSeconds = 60);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _cooldownSeconds--;
+        if (_cooldownSeconds <= 0) timer.cancel();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final email = authState.pendingVerificationEmail ?? '';
+    final onCooldown = _cooldownSeconds > 0;
+    final isLoading = authState.isLoading;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -29,29 +87,25 @@ class VerifyEmailPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Brand mark ──────────────────────────────────────────────────
+              // ── Brand mark (solid, no gradient) ──────────────────────────
               Gap(48.h),
               Center(
                 child: SvgPicture.asset(
                   'lib/core/assets/mark-jobdun.svg',
-                  width: 52.r,
-                  height: 52.r,
-                  colorFilter: ColorFilter.mode(c.action, BlendMode.srcIn),
+                  width: 48.r,
+                  height: 48.r,
                 ),
               ),
-              Gap(12.h),
+              Gap(10.h),
               Center(
                 child: ShaderMask(
                   shaderCallback: (bounds) =>
                       AppGradients.brandFlame.createShader(bounds),
                   child: Text(
                     'JOBDUN',
-                    style: tt.displaySmall!.copyWith(
-                      fontSize: 44.sp,
-                      letterSpacing: 4.0,
-                      height: 1.0,
-                      color: Colors.white, // intentional: ShaderMask requires white for gradient
-                    ),
+                    style: AppTheme.brandDisplay(
+                      Colors.white, // intentional: ShaderMask requires white
+                    ).copyWith(fontSize: 40.sp),
                   ),
                 ),
               ),
@@ -97,7 +151,7 @@ class VerifyEmailPage extends ConsumerWidget {
                     height: 1.7,
                   ),
                   children: [
-                    const TextSpan(text: 'We sent a verification link to '),
+                    const TextSpan(text: 'Verification link sent to '),
                     TextSpan(
                       text: email,
                       style: tt.bodyLarge!.copyWith(
@@ -113,7 +167,7 @@ class VerifyEmailPage extends ConsumerWidget {
 
               Gap(12.h),
 
-              // ── Tips row ──────────────────────────────────────────────────
+              // ── Tips ──────────────────────────────────────────────────────
               Container(
                 padding: EdgeInsets.all(14.r),
                 decoration: BoxDecoration(
@@ -140,62 +194,69 @@ class VerifyEmailPage extends ConsumerWidget {
                 ),
               ),
 
+              // ── Status banners ────────────────────────────────────────────
               if (authState.infoMessage != null) ...[
                 Gap(12.h),
-                StatusBanner(
-                  message: authState.infoMessage!,
-                  isError: false,
-                ),
+                StatusBanner(message: authState.infoMessage!, isError: false),
               ],
               if (authState.errorMessage != null) ...[
                 Gap(12.h),
-                StatusBanner(
-                  message: authState.errorMessage!,
-                  isError: true,
-                ),
+                StatusBanner(message: authState.errorMessage!, isError: true),
               ],
 
               Gap(AppSpacing.xl.h),
 
+              // ── Primary CTA: "I've verified — continue" ──────────────────
+              // Closes the email-link round-trip into an in-app tap. Pulls a
+              // fresh session, checks emailConfirmedAt, routes to /home on ok.
               AppButton(
-                label: authState.isLoading
-                    ? 'Sending...'
-                    : 'Resend verification email',
-                isLoading: authState.isLoading,
-                onPressed: authState.isLoading
-                    ? null
-                    : () => ref
-                        .read(authControllerProvider.notifier)
-                        .resendVerificationEmail(),
+                label: isLoading ? 'Checking...' : "I've verified — continue",
+                isLoading: isLoading,
+                onPressed: isLoading ? null : _checkVerified,
               ),
 
               Gap(12.h),
 
-              Row(
-                children: [
-                  Expanded(child: Divider(color: c.border)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w),
-                    child: Text(
-                      'OR',
-                      style: tt.labelSmall!.copyWith(
-                        letterSpacing: 1.0,
-                        color: c.text3,
+              // ── Resend — disabled during cooldown ─────────────────────────
+              AppButton(
+                label: onCooldown
+                    ? 'Resend in ${_cooldownSeconds}s'
+                    : 'Resend verification email',
+                variant: AppButtonVariant.secondary,
+                onPressed: (isLoading || onCooldown) ? null : _resend,
+              ),
+
+              Gap(AppSpacing.md.h),
+
+              // ── Tertiary: "Wrong email?" muted link, parked below buttons
+              //    so it doesn't compete with the primary CTA for focus. ────
+              Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: isLoading ? null : _changeEmail,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
+                    child: Text.rich(
+                      TextSpan(
+                        style: tt.bodySmall!.copyWith(color: c.text3),
+                        children: [
+                          const TextSpan(text: 'Wrong email? '),
+                          TextSpan(
+                            text: 'Change it',
+                            style: tt.bodySmall!.copyWith(
+                              color: c.text3,
+                              decoration: TextDecoration.underline,
+                              decorationColor: c.text3,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: c.border)),
-                ],
-              ),
-
-              Gap(12.h),
-
-              AppButton(
-                label: 'Back to sign in',
-                variant: AppButtonVariant.secondary,
-                onPressed: () => ref
-                    .read(authControllerProvider.notifier)
-                    .clearPendingVerification(),
+                ),
               ),
 
               Gap(AppSpacing.xl.h),

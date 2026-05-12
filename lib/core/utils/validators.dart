@@ -21,7 +21,8 @@ abstract final class Validators {
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) return null; // optional
     final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 8 || digits.length > 15) return 'Enter a valid phone number.';
+    if (digits.length < 8 || digits.length > 15)
+      return 'Enter a valid phone number.';
     return null;
   }
 
@@ -40,9 +41,14 @@ abstract final class Validators {
     return null;
   }
 
-  static String? minLength(String? value, int min, {String fieldName = 'This field'}) {
+  static String? minLength(
+    String? value,
+    int min, {
+    String fieldName = 'This field',
+  }) {
     if (value == null || value.trim().isEmpty) return '$fieldName is required.';
-    if (value.trim().length < min) return '$fieldName must be at least $min characters.';
+    if (value.trim().length < min)
+      return '$fieldName must be at least $min characters.';
     return null;
   }
 }

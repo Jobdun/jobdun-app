@@ -32,7 +32,10 @@ class StatusBadge extends StatelessWidget {
             Container(
               width: 6.r,
               height: 6.r,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: s.dotColor),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: s.dotColor,
+              ),
             ),
             Gap(5.w),
           ],
@@ -47,23 +50,33 @@ class StatusBadge extends StatelessWidget {
 
   _BadgeSpec _spec(JColors c, BadgeVariant v) => switch (v) {
     BadgeVariant.verified => _BadgeSpec(
-      bg: c.verifiedBg, textColor: c.verifiedTx, dotColor: c.verified,
+      bg: c.verifiedBg,
+      textColor: c.verifiedTx,
+      dotColor: c.verified,
       defaultLabel: 'Licenced & Verified',
     ),
     BadgeVariant.available => _BadgeSpec(
-      bg: c.availableBg, textColor: c.availableTx, dotColor: c.available,
+      bg: c.availableBg,
+      textColor: c.availableTx,
+      dotColor: c.available,
       defaultLabel: 'Available now',
     ),
     BadgeVariant.urgent => _BadgeSpec(
-      bg: c.urgentBg, textColor: c.urgentTx, dotColor: c.urgent,
+      bg: c.urgentBg,
+      textColor: c.urgentTx,
+      dotColor: c.urgent,
       defaultLabel: 'Urgent',
     ),
     BadgeVariant.pending => _BadgeSpec(
-      bg: c.actionBg, textColor: c.actionTx, dotColor: c.action,
+      bg: c.actionBg,
+      textColor: c.actionTx,
+      dotColor: c.action,
       defaultLabel: 'Pending',
     ),
     BadgeVariant.pro => _BadgeSpec(
-      bg: c.surfaceRaised, textColor: c.text1, dotColor: null,
+      bg: c.surfaceRaised,
+      textColor: c.text1,
+      dotColor: null,
       defaultLabel: 'Tradie Pro',
     ),
   };

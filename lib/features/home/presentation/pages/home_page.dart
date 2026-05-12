@@ -13,6 +13,8 @@ import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/role_selection_sheet.dart';
+import '../widgets/profile_completeness_banner.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../jobs/presentation/pages/job_detail_page.dart';
@@ -31,6 +33,11 @@ enum _ViewMode { list, map }
 
 class _HomePageState extends ConsumerState<HomePage> {
   _ViewMode _viewMode = _ViewMode.list;
+  bool _roleSheetShown = false;
+
+  // Once-per-process flag — welcome toast fires on the first home visit of a
+  // session, then never again until the app is killed and relaunched.
+  static bool _welcomeToastShown = false;
 
   @override
   void initState() {
@@ -45,15 +52,65 @@ class _HomePageState extends ConsumerState<HomePage> {
       ref.read(jobsControllerProvider.notifier).loadFeed();
       final role = ref.read(authControllerProvider).role;
       if (role == UserRole.builder) {
-        ref.read(applicationsControllerProvider.notifier).loadIncomingApplications(userId);
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadIncomingApplications(userId);
       } else {
-        ref.read(applicationsControllerProvider.notifier).loadMyApplications(userId);
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadMyApplications(userId);
       }
+      // Catches the case where state was already settled before mount.
+      _maybeShowRoleSheet(ref.read(authControllerProvider));
+      _maybeShowWelcomeToast();
     });
+  }
+
+  // Fires the role sheet ONLY after isRoleLoaded is true and role is still
+  // null. Without isRoleLoaded the sheet races the JWT load and asks users
+  // who already picked at /register a second time.
+  void _maybeShowRoleSheet(AuthState auth) {
+    if (_roleSheetShown) return;
+    if (!auth.isAuthenticated || !auth.isRoleLoaded || auth.role != null)
+      return;
+    _roleSheetShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) RoleSelectionSheet.show(context);
+    });
+  }
+
+  // Replaces the deleted _AllSetPage marketing screen — short, dismissible,
+  // 4s auto-hide. Once per process so tab switching doesn't replay it.
+  void _maybeShowWelcomeToast() {
+    if (_welcomeToastShown) return;
+    final auth = ref.read(authControllerProvider);
+    if (!auth.isAuthenticated || auth.role == null) return;
+    _welcomeToastShown = true;
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final name = _firstName(auth.email ?? '');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: c.surfaceRaised,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        content: Text(
+          'Welcome to Jobdun, $name. Here\'s how to get started.',
+          style: tt.bodyMedium!.copyWith(color: c.text1),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Reactive: if role-load completes after HomePage mounts (typical for the
+    // email-verify deep-link flow), this fires the sheet then — not earlier.
+    ref.listen<AuthState>(
+      authControllerProvider,
+      (_, next) => _maybeShowRoleSheet(next),
+    );
+
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
@@ -83,8 +140,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       floatingActionButton: showMapToggle
           ? FloatingActionButton(
               backgroundColor: c.action,
-              onPressed: () => setState(() => _viewMode =
-                  _viewMode == _ViewMode.list ? _ViewMode.map : _ViewMode.list),
+              onPressed: () => setState(
+                () => _viewMode = _viewMode == _ViewMode.list
+                    ? _ViewMode.map
+                    : _ViewMode.list,
+              ),
               child: Icon(
                 _viewMode == _ViewMode.list ? Iconsax.map : Iconsax.element_4,
                 color: Colors.white, // intentional: white-on-action
@@ -93,120 +153,131 @@ class _HomePageState extends ConsumerState<HomePage> {
             )
           : null,
       body: _viewMode == _ViewMode.map
-          ? _MapView(jobs: jobsWithLocation, onJobTap: (j) => context.push('/jobs/${j.id}', extra: JobDetailArgs.fromJob(j)))
+          ? _MapView(
+              jobs: jobsWithLocation,
+              onJobTap: (j) => context.push(
+                '/jobs/${j.id}',
+                extra: JobDetailArgs.fromJob(j),
+              ),
+            )
           : SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: _Header(
-                role: role,
-                displayName: displayName,
-                isBuilder: isBuilder,
-                location: location,
-              ),
-            ),
-            SliverToBoxAdapter(child: Gap(20.h)),
-            SliverToBoxAdapter(
-              child: _StatsRow(
-                isBuilder: isBuilder,
-                builderProfile: profileState.builderProfile,
-                tradeProfile: profileState.tradeProfile,
-                pendingCount: appsState.pendingIncomingCount,
-                myAppsCount: appsState.myApplications.length,
-                shortlistedCount: appsState.myApplications
-                    .where((a) => a.status.name == 'shortlisted')
-                    .length,
-              ),
-            ),
-            SliverToBoxAdapter(child: Gap(24.h)),
-            SliverToBoxAdapter(child: _PrimaryActionCard(isBuilder: isBuilder)),
-            SliverToBoxAdapter(child: Gap(24.h)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                child: Text(
-                  isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
-                  style: tt.labelSmall!.copyWith(
-                    letterSpacing: 0.12 * 11,
-                    color: c.text3,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _Header(
+                      role: role,
+                      displayName: displayName,
+                      isBuilder: isBuilder,
+                      location: location,
+                    ),
                   ),
-                ),
-              ),
-            ),
-            if (isBuilder)
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                sliver: SliverList.separated(
-                  itemCount: _tradies.length,
-                  separatorBuilder: (ctx, idx) => Gap(9.h),
-                  itemBuilder: (_, i) {
-                    final t = _tradies[i];
-                    return TradieCard(
-                      name: t.name,
-                      trade: t.trade,
-                      suburb: t.suburb,
-                      rating: t.rating,
-                      jobCount: t.jobCount,
-                      isVerified: t.isVerified,
-                      isAvailable: t.isAvailable,
-                      distanceKm: t.distanceKm,
-                      initials: t.initials,
-                      onTap: () {},
-                    );
-                  },
-                ),
-              )
-            else
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                sliver: SliverList.separated(
-                  itemCount: hasRealJobs ? feedJobs.length : _mockJobs.length,
-                  separatorBuilder: (ctx, idx) => Gap(9.h),
-                  itemBuilder: (_, i) {
-                    if (hasRealJobs) {
-                      final j = feedJobs[i];
-                      return JobCard(
-                        title: j.title,
-                        description: j.description,
-                        rate: j.displayBudget,
-                        startDate: j.startDate != null
-                            ? _fmtDate(j.startDate!)
-                            : j.displayLocation,
-                        distanceKm: 0.0,
-                        isUrgent: j.urgency == JobUrgency.urgent,
-                        onTap: () => context.push(
-                          '/jobs/${j.id}',
-                          extra: JobDetailArgs.fromJob(j),
-                        ),
-                      );
-                    }
-                    final j = _mockJobs[i];
-                    return JobCard(
-                      title: j.title,
-                      description: j.description,
-                      rate: j.rate,
-                      startDate: j.startDate,
-                      distanceKm: j.distanceKm,
-                      isUrgent: j.isUrgent,
-                      onTap: () => context.push(
-                        '/jobs/mock-home-$i',
-                        extra: JobDetailArgs(
-                          title: j.title,
-                          description: j.description,
-                          rate: j.rate,
-                          startDate: j.startDate,
-                          distanceKm: j.distanceKm,
-                          isUrgent: j.isUrgent,
+                  const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
+                  SliverToBoxAdapter(child: Gap(20.h)),
+                  SliverToBoxAdapter(
+                    child: _StatsRow(
+                      isBuilder: isBuilder,
+                      builderProfile: profileState.builderProfile,
+                      tradeProfile: profileState.tradeProfile,
+                      pendingCount: appsState.pendingIncomingCount,
+                      myAppsCount: appsState.myApplications.length,
+                      shortlistedCount: appsState.myApplications
+                          .where((a) => a.status.name == 'shortlisted')
+                          .length,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: Gap(24.h)),
+                  SliverToBoxAdapter(
+                    child: _PrimaryActionCard(isBuilder: isBuilder),
+                  ),
+                  SliverToBoxAdapter(child: Gap(24.h)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                      child: Text(
+                        isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
+                        style: tt.labelSmall!.copyWith(
+                          letterSpacing: 0.12 * 11,
+                          color: c.text3,
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  if (isBuilder)
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.w),
+                      sliver: SliverList.separated(
+                        itemCount: _tradies.length,
+                        separatorBuilder: (ctx, idx) => Gap(9.h),
+                        itemBuilder: (_, i) {
+                          final t = _tradies[i];
+                          return TradieCard(
+                            name: t.name,
+                            trade: t.trade,
+                            suburb: t.suburb,
+                            rating: t.rating,
+                            jobCount: t.jobCount,
+                            isVerified: t.isVerified,
+                            isAvailable: t.isAvailable,
+                            distanceKm: t.distanceKm,
+                            initials: t.initials,
+                            onTap: () {},
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.w),
+                      sliver: SliverList.separated(
+                        itemCount: hasRealJobs
+                            ? feedJobs.length
+                            : _mockJobs.length,
+                        separatorBuilder: (ctx, idx) => Gap(9.h),
+                        itemBuilder: (_, i) {
+                          if (hasRealJobs) {
+                            final j = feedJobs[i];
+                            return JobCard(
+                              title: j.title,
+                              description: j.description,
+                              rate: j.displayBudget,
+                              startDate: j.startDate != null
+                                  ? _fmtDate(j.startDate!)
+                                  : j.displayLocation,
+                              distanceKm: 0.0,
+                              isUrgent: j.urgency == JobUrgency.urgent,
+                              onTap: () => context.push(
+                                '/jobs/${j.id}',
+                                extra: JobDetailArgs.fromJob(j),
+                              ),
+                            );
+                          }
+                          final j = _mockJobs[i];
+                          return JobCard(
+                            title: j.title,
+                            description: j.description,
+                            rate: j.rate,
+                            startDate: j.startDate,
+                            distanceKm: j.distanceKm,
+                            isUrgent: j.isUrgent,
+                            onTap: () => context.push(
+                              '/jobs/mock-home-$i',
+                              extra: JobDetailArgs(
+                                title: j.title,
+                                description: j.description,
+                                rate: j.rate,
+                                startDate: j.startDate,
+                                distanceKm: j.distanceKm,
+                                isUrgent: j.isUrgent,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  SliverToBoxAdapter(child: Gap(24.h)),
+                ],
               ),
-            SliverToBoxAdapter(child: Gap(24.h)),
-          ],
-        ),
-      ),
+            ),
     );
   }
 
@@ -227,8 +298,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 }
 
@@ -282,7 +363,8 @@ class _Header extends StatelessWidget {
                       fontSize: 40.sp,
                       letterSpacing: 0.02 * 40,
                       height: 1.0,
-                      color: Colors.white, // intentional: ShaderMask requires white for gradient
+                      color: Colors
+                          .white, // intentional: ShaderMask requires white for gradient
                     ),
                   ),
                 ),
@@ -358,7 +440,10 @@ class _StatsRow extends StatelessWidget {
       final done = tradeProfile?.jobsCompleted.toString() ?? '—';
       stats = [
         (myAppsCount > 0 ? myAppsCount.toString() : '—', 'Applied'),
-        (shortlistedCount > 0 ? shortlistedCount.toString() : '—', 'Shortlisted'),
+        (
+          shortlistedCount > 0 ? shortlistedCount.toString() : '—',
+          'Shortlisted',
+        ),
         (done, 'Jobs done'),
       ];
     }
@@ -437,7 +522,8 @@ class _PrimaryActionCard extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: GestureDetector(
-        onTap: () => isBuilder ? context.push('/jobs/create') : context.go('/jobs'),
+        onTap: () =>
+            isBuilder ? context.push('/jobs/create') : context.go('/jobs'),
         child: Container(
           padding: EdgeInsets.all(20.r),
           decoration: BoxDecoration(
@@ -587,36 +673,66 @@ class _MockJob {
 
 const _tradies = [
   _TradieData(
-    name: 'Marcus Webb', trade: 'Electrician', suburb: 'Parramatta',
-    rating: 4.9, jobCount: 142, isVerified: true, isAvailable: true,
-    distanceKm: 3.2, initials: 'MW',
+    name: 'Marcus Webb',
+    trade: 'Electrician',
+    suburb: 'Parramatta',
+    rating: 4.9,
+    jobCount: 142,
+    isVerified: true,
+    isAvailable: true,
+    distanceKm: 3.2,
+    initials: 'MW',
   ),
   _TradieData(
-    name: "Sarah O'Brien", trade: 'Plumber', suburb: 'Bondi',
-    rating: 4.7, jobCount: 89, isVerified: true, isAvailable: true,
-    distanceKm: 5.1, initials: 'SO',
+    name: "Sarah O'Brien",
+    trade: 'Plumber',
+    suburb: 'Bondi',
+    rating: 4.7,
+    jobCount: 89,
+    isVerified: true,
+    isAvailable: true,
+    distanceKm: 5.1,
+    initials: 'SO',
   ),
   _TradieData(
-    name: 'Jake Kowalski', trade: 'Carpenter', suburb: 'Newtown',
-    rating: 4.6, jobCount: 67, isVerified: false, isAvailable: false,
-    distanceKm: 7.8, initials: 'JK',
+    name: 'Jake Kowalski',
+    trade: 'Carpenter',
+    suburb: 'Newtown',
+    rating: 4.6,
+    jobCount: 67,
+    isVerified: false,
+    isAvailable: false,
+    distanceKm: 7.8,
+    initials: 'JK',
   ),
 ];
 
 const _mockJobs = [
   _MockJob(
     title: 'Install 3-phase switchboard at commercial site',
-    description: 'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination.',
-    rate: r'$85/hr', startDate: 'Tomorrow', distanceKm: 2.4, isUrgent: true,
+    description:
+        'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination.',
+    rate: r'$85/hr',
+    startDate: 'Tomorrow',
+    distanceKm: 2.4,
+    isUrgent: true,
   ),
   _MockJob(
     title: 'Frame internal walls for home renovation',
-    description: 'Steel stud framing approximately 120 LM for a full home renovation in Newtown. Drawings available on site.',
-    rate: r'$45/hr', startDate: '12 May', distanceKm: 4.8, isUrgent: false,
+    description:
+        'Steel stud framing approximately 120 LM for a full home renovation in Newtown. Drawings available on site.',
+    rate: r'$45/hr',
+    startDate: '12 May',
+    distanceKm: 4.8,
+    isUrgent: false,
   ),
   _MockJob(
     title: 'Concrete footings for deck extension',
-    description: '8 × 300mm dia pad footings, 600mm deep. Reinforcement to be supplied by contractor.',
-    rate: r'$75/hr', startDate: '14 May', distanceKm: 9.1, isUrgent: false,
+    description:
+        '8 × 300mm dia pad footings, 600mm deep. Reinforcement to be supplied by contractor.',
+    rate: r'$75/hr',
+    startDate: '14 May',
+    distanceKm: 9.1,
+    isUrgent: false,
   ),
 ];

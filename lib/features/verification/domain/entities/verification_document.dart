@@ -57,10 +57,11 @@ extension VerificationStatusX on VerificationStatus {
     VerificationStatus.rejected => 'Rejected',
     VerificationStatus.expired => 'Expired',
   };
-  static VerificationStatus fromDb(String v) => VerificationStatus.values.firstWhere(
-    (s) => s.dbValue == v,
-    orElse: () => VerificationStatus.pending,
-  );
+  static VerificationStatus fromDb(String v) =>
+      VerificationStatus.values.firstWhere(
+        (s) => s.dbValue == v,
+        orElse: () => VerificationStatus.pending,
+      );
 }
 
 class VerificationDocument extends Equatable {
@@ -87,7 +88,7 @@ class VerificationDocument extends Equatable {
   final String filePath;
   final VerificationStatus status;
   final DateTime submittedAt;
-  final String? state;            // AU state for state-scoped licences
+  final String? state; // AU state for state-scoped licences
   final String? issuer;
   final String? documentNumber;
   final DateTime? issuedDate;

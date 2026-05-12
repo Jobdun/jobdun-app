@@ -2,6 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -62,7 +63,7 @@ class _OfflineBanner extends StatelessWidget {
         child: Row(
           children: [
             Icon(Iconsax.wifi, size: 14.r, color: c.urgentTx),
-            SizedBox(width: 8.w),
+            Gap(8.w),
             Text(
               'No internet connection',
               style: tt.bodySmall!.copyWith(
@@ -84,11 +85,11 @@ class _BottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _tabs = [
-    (Iconsax.home_2,        Iconsax.home_25),
-    (Iconsax.briefcase,     Iconsax.briefcase5),
+    (Iconsax.home_2, Iconsax.home_25),
+    (Iconsax.briefcase, Iconsax.briefcase5),
     (Iconsax.document_text, Iconsax.document_text1),
-    (Iconsax.message,       Iconsax.message5),
-    (Iconsax.user,          Iconsax.user5),
+    (Iconsax.message, Iconsax.message5),
+    (Iconsax.user, Iconsax.user5),
   ];
 
   @override

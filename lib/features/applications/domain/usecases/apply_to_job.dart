@@ -14,12 +14,11 @@ class ApplyToJob {
     String? coverNote,
     double? proposedRate,
     String? proposedRateType,
-  }) =>
-      _repository.applyToJob(
-        jobId: jobId,
-        builderId: builderId,
-        coverNote: coverNote,
-        proposedRate: proposedRate,
-        proposedRateType: proposedRateType,
-      );
+  }) => _repository.applyToJob(
+    jobId: jobId,
+    builderId: builderId,
+    coverNote: coverNote,
+    proposedRate: proposedRate,
+    proposedRateType: proposedRateType,
+  );
 }

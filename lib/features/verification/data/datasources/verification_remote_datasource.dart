@@ -39,7 +39,10 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
           .isFilter('deleted_at', null)
           .order('submitted_at', ascending: false);
       return (data as List)
-          .map((e) => VerificationDocumentModel.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                VerificationDocumentModel.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       throw ServerException(e.toString());
@@ -59,19 +62,22 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
   }) async {
     try {
       final ext = file.path.split('.').last;
-      final fileName = '${docType.dbValue}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final fileName =
+          '${docType.dbValue}_${DateTime.now().millisecondsSinceEpoch}.$ext';
       // Path must start with trade_id to satisfy RLS: (storage.foldername(name))[1] = auth.uid()
       final path = '$tradeId/verification/${docType.dbValue}/$fileName';
       final fileBytes = await file.readAsBytes();
 
-      await _client.storage.from(_bucket).uploadBinary(
-        path,
-        fileBytes,
-        fileOptions: FileOptions(
-          contentType: _mimeFromExt(ext),
-          upsert: false,
-        ),
-      );
+      await _client.storage
+          .from(_bucket)
+          .uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: FileOptions(
+              contentType: _mimeFromExt(ext),
+              upsert: false,
+            ),
+          );
 
       final record = await _client
           .from('verification_documents')
@@ -86,8 +92,10 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
             if (issuer != null) 'issuer': issuer,
             // ignore: use_null_aware_elements
             if (documentNumber != null) 'document_number': documentNumber,
-            if (issuedDate != null) 'issued_date': issuedDate.toIso8601String().split('T').first,
-            if (expiryDate != null) 'expiry_date': expiryDate.toIso8601String().split('T').first,
+            if (issuedDate != null)
+              'issued_date': issuedDate.toIso8601String().split('T').first,
+            if (expiryDate != null)
+              'expiry_date': expiryDate.toIso8601String().split('T').first,
           })
           .select()
           .single();
@@ -117,10 +125,12 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
         .stream(primaryKey: ['id'])
         .eq('trade_id', tradeId)
         .order('submitted_at', ascending: false)
-        .map((rows) => rows
-            .where((r) => r['deleted_at'] == null)
-            .map(VerificationDocumentModel.fromJson)
-            .toList());
+        .map(
+          (rows) => rows
+              .where((r) => r['deleted_at'] == null)
+              .map(VerificationDocumentModel.fromJson)
+              .toList(),
+        );
   }
 
   static String _mimeFromExt(String ext) => switch (ext.toLowerCase()) {

@@ -76,7 +76,8 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                             style: tt.headlineSmall!.copyWith(
                               fontSize: 28.sp,
                               letterSpacing: 0.02 * 28,
-                              color: Colors.white, // intentional: ShaderMask requires white for gradient
+                              color: Colors
+                                  .white, // intentional: ShaderMask requires white for gradient
                             ),
                           ),
                         ),
@@ -85,7 +86,10 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                   ),
                   if (totalUnread > 0)
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 4.h,
+                      ),
                       decoration: BoxDecoration(
                         color: c.action,
                         borderRadius: BorderRadius.circular(AppRadius.chip.r),
@@ -113,57 +117,61 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
               child: (!useReal && _mockConvos.isEmpty)
                   ? _EmptyState(isBuilder: isBuilder)
                   : useReal
-                      ? ListView.separated(
-                          itemCount: msgState.conversations.length,
-                          separatorBuilder: (_, _) => Divider(height: 1, color: c.border),
-                          itemBuilder: (ctx, i) {
-                            final conv = msgState.conversations[i];
-                            final unread = conv.unreadCountFor(userId);
-                            return _ConvoRow(
-                              initials: _initials(conv.otherUserDisplayName ?? '?'),
-                              name: conv.otherUserDisplayName ?? 'Unknown',
-                              preview: conv.lastMessagePreview ?? '',
-                              time: conv.lastMessageAt != null
-                                  ? _relTime(conv.lastMessageAt!)
-                                  : '',
-                              unreadCount: unread,
+                  ? ListView.separated(
+                      itemCount: msgState.conversations.length,
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: c.border),
+                      itemBuilder: (ctx, i) {
+                        final conv = msgState.conversations[i];
+                        final unread = conv.unreadCountFor(userId);
+                        return _ConvoRow(
+                          initials: _initials(conv.otherUserDisplayName ?? '?'),
+                          name: conv.otherUserDisplayName ?? 'Unknown',
+                          preview: conv.lastMessagePreview ?? '',
+                          time: conv.lastMessageAt != null
+                              ? _relTime(conv.lastMessageAt!)
+                              : '',
+                          unreadCount: unread,
+                          jobTitle: conv.jobTitle,
+                          onTap: () => context.push(
+                            '/messages/${conv.id}',
+                            extra: ConversationArgs(
+                              conversationId: conv.id,
+                              otherName: conv.otherUserDisplayName ?? 'Unknown',
                               jobTitle: conv.jobTitle,
-                              onTap: () => context.push(
-                                '/messages/${conv.id}',
-                                extra: ConversationArgs(
-                                  conversationId: conv.id,
-                                  otherName: conv.otherUserDisplayName ?? 'Unknown',
-                                  jobTitle: conv.jobTitle,
-                                  otherInitials: _initials(conv.otherUserDisplayName ?? '?'),
-                                ),
+                              otherInitials: _initials(
+                                conv.otherUserDisplayName ?? '?',
                               ),
-                            );
-                          },
-                        )
-                      : ListView.separated(
-                          itemCount: _mockConvos.length,
-                          separatorBuilder: (_, _) => Divider(height: 1, color: c.border),
-                          itemBuilder: (ctx, i) {
-                            final m = _mockConvos[i];
-                            return _ConvoRow(
-                              initials: m.initials,
-                              name: m.name,
-                              preview: m.preview,
-                              time: m.time,
-                              unreadCount: m.unread,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : ListView.separated(
+                      itemCount: _mockConvos.length,
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: c.border),
+                      itemBuilder: (ctx, i) {
+                        final m = _mockConvos[i];
+                        return _ConvoRow(
+                          initials: m.initials,
+                          name: m.name,
+                          preview: m.preview,
+                          time: m.time,
+                          unreadCount: m.unread,
+                          jobTitle: m.jobTitle,
+                          onTap: () => context.push(
+                            '/messages/mock-${m.initials}',
+                            extra: ConversationArgs(
+                              conversationId: 'mock-${m.initials}',
+                              otherName: m.name,
                               jobTitle: m.jobTitle,
-                              onTap: () => context.push(
-                                '/messages/mock-${m.initials}',
-                                extra: ConversationArgs(
-                                  conversationId: 'mock-${m.initials}',
-                                  otherName: m.name,
-                                  jobTitle: m.jobTitle,
-                                  otherInitials: m.initials,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                              otherInitials: m.initials,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -250,7 +258,9 @@ class _ConvoRow extends StatelessWidget {
                         child: Text(
                           name,
                           style: tt.titleMedium!.copyWith(
-                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: hasUnread
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                             color: c.text1,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -284,7 +294,9 @@ class _ConvoRow extends StatelessWidget {
                         child: Text(
                           preview,
                           style: tt.bodyMedium!.copyWith(
-                            fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: hasUnread
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             color: hasUnread ? c.text1 : c.text3,
                           ),
                           maxLines: 1,
@@ -305,7 +317,8 @@ class _ConvoRow extends StatelessWidget {
                             unreadCount > 9 ? '9+' : '$unreadCount',
                             style: tt.labelSmall!.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: Colors.white, // intentional: white-on-action
+                              color:
+                                  Colors.white, // intentional: white-on-action
                             ),
                           ),
                         ),

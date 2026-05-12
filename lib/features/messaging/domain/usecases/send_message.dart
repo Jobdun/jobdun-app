@@ -11,10 +11,9 @@ class SendMessage {
     required String conversationId,
     required String senderId,
     required String body,
-  }) =>
-      _repository.sendMessage(
-        conversationId: conversationId,
-        senderId: senderId,
-        body: body,
-      );
+  }) => _repository.sendMessage(
+    conversationId: conversationId,
+    senderId: senderId,
+    body: body,
+  );
 }

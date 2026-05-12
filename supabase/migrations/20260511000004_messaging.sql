@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   UNIQUE (job_id, builder_id, trade_id)
 );
 
-CREATE INDEX conversations_builder_id_idx ON public.conversations(builder_id);
-CREATE INDEX conversations_trade_id_idx ON public.conversations(trade_id);
+CREATE INDEX IF NOT EXISTS conversations_builder_id_idx ON public.conversations(builder_id);
+CREATE INDEX IF NOT EXISTS conversations_trade_id_idx ON public.conversations(trade_id);
 
 CREATE TABLE IF NOT EXISTS public.messages (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS public.messages (
   created_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX messages_conversation_id_idx ON public.messages(conversation_id);
-CREATE INDEX messages_sender_id_idx ON public.messages(sender_id);
+CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON public.messages(conversation_id);
+CREATE INDEX IF NOT EXISTS messages_sender_id_idx ON public.messages(sender_id);
 
 -- Keep conversations.last_message_at in sync
 CREATE OR REPLACE FUNCTION public.update_conversation_last_message()
@@ -39,6 +39,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS messages_update_last_message ON public.messages;
 CREATE TRIGGER messages_update_last_message
   AFTER INSERT ON public.messages
   FOR EACH ROW EXECUTE FUNCTION public.update_conversation_last_message();

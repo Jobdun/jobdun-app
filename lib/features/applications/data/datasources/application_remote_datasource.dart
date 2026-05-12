@@ -44,7 +44,8 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
             // ignore: use_null_aware_elements
             if (proposedRate != null) 'proposed_rate': proposedRate,
             // ignore: use_null_aware_elements
-            if (proposedRateType != null) 'proposed_rate_type': proposedRateType,
+            if (proposedRateType != null)
+              'proposed_rate_type': proposedRateType,
           })
           .select()
           .single();
@@ -59,31 +60,44 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     try {
       final data = await _client
           .from('applications')
-          .select('*, jobs(title, suburb, state, status), builder_profiles(company_name)')
+          .select(
+            '*, jobs(title, suburb, state, status), builder_profiles(company_name)',
+          )
           .eq('trade_id', tradeId)
           .order('created_at', ascending: false);
-      return (data as List).map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>)).toList();
+      return (data as List)
+          .map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<List<JobApplicationModel>> getApplicationsForMyJobs(String builderId) async {
+  Future<List<JobApplicationModel>> getApplicationsForMyJobs(
+    String builderId,
+  ) async {
     try {
       final data = await _client
           .from('applications')
-          .select('*, trade_profiles(full_name, primary_trade, is_verified), jobs(title, suburb, state)')
+          .select(
+            '*, trade_profiles(full_name, primary_trade, is_verified), jobs(title, suburb, state)',
+          )
           .eq('builder_id', builderId)
           .order('created_at', ascending: false);
-      return (data as List).map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>)).toList();
+      return (data as List)
+          .map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
   }
 
   @override
-  Future<void> updateStatus(String applicationId, ApplicationStatus status) async {
+  Future<void> updateStatus(
+    String applicationId,
+    ApplicationStatus status,
+  ) async {
     try {
       await _client
           .from('applications')

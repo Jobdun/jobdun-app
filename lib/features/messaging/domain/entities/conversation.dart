@@ -5,10 +5,11 @@ enum ConversationStatus { active, archived, blocked }
 
 extension ConversationStatusX on ConversationStatus {
   String get dbValue => name;
-  static ConversationStatus fromDb(String v) => ConversationStatus.values.firstWhere(
-    (s) => s.dbValue == v,
-    orElse: () => ConversationStatus.active,
-  );
+  static ConversationStatus fromDb(String v) =>
+      ConversationStatus.values.firstWhere(
+        (s) => s.dbValue == v,
+        orElse: () => ConversationStatus.active,
+      );
 }
 
 class Conversation extends Equatable {

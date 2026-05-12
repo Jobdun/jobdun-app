@@ -5,9 +5,20 @@
 -- ============================================================
 
 -- Enums matching Dart entity values exactly
-CREATE TYPE public.job_status AS ENUM ('draft', 'open', 'filled', 'closed', 'cancelled');
-CREATE TYPE public.job_urgency AS ENUM ('standard', 'urgent');
-CREATE TYPE public.budget_type AS ENUM ('hourly', 'daily', 'fixed', 'negotiable');
+DO $$ BEGIN
+  CREATE TYPE public.job_status AS ENUM ('draft', 'open', 'filled', 'closed', 'cancelled');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.job_urgency AS ENUM ('standard', 'urgent');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.budget_type AS ENUM ('hourly', 'daily', 'fixed', 'negotiable');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.jobs (
   id                       uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -55,10 +66,11 @@ CREATE TABLE IF NOT EXISTS public.jobs (
   updated_at               timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX jobs_builder_id_idx ON public.jobs(builder_id);
-CREATE INDEX jobs_status_idx ON public.jobs(status);
-CREATE INDEX jobs_trade_type_idx ON public.jobs(trade_type_required);
+CREATE INDEX IF NOT EXISTS jobs_builder_id_idx ON public.jobs(builder_id);
+CREATE INDEX IF NOT EXISTS jobs_status_idx ON public.jobs(status);
+CREATE INDEX IF NOT EXISTS jobs_trade_type_idx ON public.jobs(trade_type_required);
 
+DROP TRIGGER IF EXISTS jobs_updated_at ON public.jobs;
 CREATE TRIGGER jobs_updated_at
   BEFORE UPDATE ON public.jobs
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

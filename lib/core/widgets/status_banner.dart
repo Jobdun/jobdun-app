@@ -6,11 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../app/theme/app_colors.dart';
 
 class StatusBanner extends StatelessWidget {
-  const StatusBanner({
-    super.key,
-    required this.message,
-    required this.isError,
-  });
+  const StatusBanner({super.key, required this.message, required this.isError});
 
   final String message;
   final bool isError;
@@ -18,11 +14,11 @@ class StatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final bg     = isError ? c.urgentBg  : c.verifiedBg;
-    final border = isError ? c.urgent    : c.verified;
-    final icon   = isError ? Iconsax.warning_2 : Iconsax.tick_circle;
-    final color  = isError ? c.urgent    : c.verified;
-    final tx     = isError ? c.urgentTx  : c.verifiedTx;
+    final bg = isError ? c.urgentBg : c.verifiedBg;
+    final border = isError ? c.urgent : c.verified;
+    final icon = isError ? Iconsax.warning_2 : Iconsax.tick_circle;
+    final color = isError ? c.urgent : c.verified;
+    final tx = isError ? c.urgentTx : c.verifiedTx;
 
     return Container(
       width: double.infinity,
@@ -40,7 +36,9 @@ class StatusBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tx),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: tx),
             ),
           ),
         ],
