@@ -17,12 +17,7 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
-.env
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -44,3 +39,50 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google OAuth secrets — never commit these
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+client_secret_*.json
+client_*.plist
+
+# Environment and local secret files
+.env
+.env.*
+!.env.example
+*.local
+*.secret
+*.secrets
+
+# Private keys, certificates, signing assets
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+*.crt
+
+# Local databases, dumps, and runtime state
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.pid
+*.seed
+
+# Logs and reports
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+firebase-debug.log*
+
+# Tooling caches and local overrides
+.firebase/
+.turbo/
+.vercel/
+.parcel-cache/
+*.orig

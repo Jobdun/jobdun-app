@@ -15,6 +15,8 @@ class TradeProfileModel extends TradeProfile {
     super.baseState,
     super.basePostcode,
     super.about,
+    super.licenceUrl,
+    super.portfolioUrls,
     super.isVerified,
     super.verifiedAt,
     super.totalApplications,
@@ -39,6 +41,9 @@ class TradeProfileModel extends TradeProfile {
         baseState: json['base_state'] as String?,
         basePostcode: json['base_postcode'] as String?,
         about: json['about'] as String?,
+        licenceUrl: json['licence_url'] as String?,
+        portfolioUrls:
+            (json['portfolio_urls'] as List?)?.cast<String>() ?? const [],
         isVerified: json['is_verified'] as bool? ?? false,
         verifiedAt: json['verified_at'] != null
             ? DateTime.parse(json['verified_at'] as String)

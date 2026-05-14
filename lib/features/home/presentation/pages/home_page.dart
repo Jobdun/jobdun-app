@@ -11,6 +11,8 @@ import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
+import '../../../../core/services/ftue_service.dart';
+import '../../../../core/services/profile_analytics.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/role_selection_sheet.dart';
@@ -35,9 +37,12 @@ class _HomePageState extends ConsumerState<HomePage> {
   _ViewMode _viewMode = _ViewMode.list;
   bool _roleSheetShown = false;
 
-  // Once-per-process flag — welcome toast fires on the first home visit of a
-  // session, then never again until the app is killed and relaunched.
-  static bool _welcomeToastShown = false;
+  // Once-per-device flag — welcome toast fires on the first home visit after
+  // email verification, then never again. Backed by FtueService /
+  // has_seen_first_home_toast in SharedPreferences. The in-memory guard
+  // below stops a second showSnackBar in the same process while the async
+  // mark-seen is still in flight.
+  bool _welcomeToastInflight = false;
 
   @override
   void initState() {
@@ -79,37 +84,54 @@ class _HomePageState extends ConsumerState<HomePage> {
     });
   }
 
-  // Replaces the deleted _AllSetPage marketing screen — short, dismissible,
-  // 4s auto-hide. Once per process so tab switching doesn't replay it.
-  void _maybeShowWelcomeToast() {
-    if (_welcomeToastShown) return;
+  // First-home welcome toast — T1 audit spec. Fires once per device the
+  // first time the user reaches /home after email verification. Persistent
+  // flag lives in SharedPreferences so cold-starts don't replay it.
+  // Reactive: also called from the auth-state listener in build() so a
+  // late JWT role load still triggers the toast.
+  Future<void> _maybeShowWelcomeToast() async {
     final auth = ref.read(authControllerProvider);
     if (!auth.isAuthenticated || auth.role == null) return;
-    _welcomeToastShown = true;
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final name = _firstName(auth.email ?? '');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: c.surfaceRaised,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-        content: Text(
-          'Welcome to Jobdun, $name. Here\'s how to get started.',
-          style: tt.bodyMedium!.copyWith(color: c.text1),
+    if (_welcomeToastInflight) return;
+    _welcomeToastInflight = true;
+    try {
+      if (await FtueService.hasSeenFirstHomeToast()) return;
+      if (!mounted) return;
+
+      final c = context.c;
+      final tt = Theme.of(context).textTheme;
+      final action = auth.role == UserRole.builder
+          ? 'posting jobs'
+          : 'applying';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: c.surfaceRaised,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          content: Text(
+            "You're in. Finish your profile to start $action.",
+            style: tt.bodyMedium!.copyWith(color: c.text1),
+          ),
         ),
-      ),
-    );
+      );
+      await FtueService.markFirstHomeToastSeen();
+      ProfileAnalytics.firstToastShown(role: auth.role!.name);
+    } catch (_) {
+      _welcomeToastInflight = false;
+      rethrow;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     // Reactive: if role-load completes after HomePage mounts (typical for the
-    // email-verify deep-link flow), this fires the sheet then — not earlier.
-    ref.listen<AuthState>(
-      authControllerProvider,
-      (_, next) => _maybeShowRoleSheet(next),
-    );
+    // email-verify deep-link flow), this fires the sheet AND the first-home
+    // toast then — not earlier. _maybeShowWelcomeToast is idempotent at
+    // both the in-process and per-device layers.
+    ref.listen<AuthState>(authControllerProvider, (_, next) {
+      _maybeShowRoleSheet(next);
+      _maybeShowWelcomeToast();
+    });
 
     final c = context.c;
     final tt = Theme.of(context).textTheme;

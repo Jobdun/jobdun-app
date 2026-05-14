@@ -30,7 +30,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       final data = await _client
           .from('profiles')
           .select(
-            'id, display_name, email, phone, avatar_url, bio, onboarding_completed_at, created_at, updated_at',
+            'id, display_name, email, phone, phone_verified_at, avatar_url, bio, onboarding_completed_at, created_at, updated_at',
           )
           .eq('id', userId)
           .single();

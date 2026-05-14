@@ -68,15 +68,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Hero — mark + gradient wordmark ──────────────────────────
-                Gap(56.h),
+                // Reduced ~30% (mark 64→44, wordmark 60→42, top gap 56→32) so
+                // the full login screen fits a 360×640 viewport without
+                // scrolling. New-user marketing now lives in the FTUE
+                // carousel, freeing this surface for returning users only.
+                Gap(32.h),
                 Center(
                   child: SvgPicture.asset(
                     'lib/core/assets/mark-jobdun.svg',
-                    width: 64.r,
-                    height: 64.r,
+                    width: 44.r,
+                    height: 44.r,
                   ),
                 ),
-                Gap(AppSpacing.md.h),
+                Gap(AppSpacing.sm.h),
                 Center(
                   child: ShaderMask(
                     shaderCallback: (bounds) =>
@@ -85,12 +89,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       'JOBDUN',
                       style: AppTheme.brandDisplay(
                         Colors.white, // intentional: ShaderMask requires white
-                      ).copyWith(fontSize: 60.sp),
+                      ).copyWith(fontSize: 42.sp),
                     ),
                   ),
                 ),
 
-                Gap(48.h),
+                Gap(AppSpacing.xl.h),
 
                 // ── Form ─────────────────────────────────────────────────────
                 FormBuilder(
@@ -149,15 +153,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   label: authState.isLoading ? 'LOGGING IN...' : 'LOG IN',
                   isLoading: authState.isLoading,
                   onPressed: authState.isLoading ? null : _submit,
-                ),
-
-                Gap(12.h),
-
-                // ── Secondary — create account (slate, NOT ghost) ─────────────
-                AppButton(
-                  label: 'CREATE ACCOUNT',
-                  variant: AppButtonVariant.secondary,
-                  onPressed: () => context.go('/register'),
                 ),
 
                 Gap(AppSpacing.md.h),

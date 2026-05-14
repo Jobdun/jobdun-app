@@ -16,6 +16,8 @@ class TradeProfile extends Equatable {
     this.baseState,
     this.basePostcode,
     this.about,
+    this.licenceUrl,
+    this.portfolioUrls = const [],
     this.isVerified = false,
     this.verifiedAt,
     this.totalApplications = 0,
@@ -38,6 +40,11 @@ class TradeProfile extends Equatable {
   final String? baseState;
   final String? basePostcode;
   final String? about;
+  // Trade-licence storage path (private-docs bucket). Drives the
+  // licence_uploaded slot in profile_completeness — null/empty = no licence.
+  final String? licenceUrl;
+  // Portfolio image URLs (public-media bucket). Mirrors trade_profiles.portfolio_urls.
+  final List<String> portfolioUrls;
   final bool isVerified;
   final DateTime? verifiedAt;
   final int totalApplications;
@@ -45,6 +52,9 @@ class TradeProfile extends Equatable {
   final int jobsCompleted;
   final double? averageRating;
   final int ratingCount;
+
+  bool get hasLicence => licenceUrl != null && licenceUrl!.isNotEmpty;
+  int get portfolioCount => portfolioUrls.length;
 
   String get displayLocation => (baseSuburb != null && baseState != null)
       ? '$baseSuburb, $baseState'

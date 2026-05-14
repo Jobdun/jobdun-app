@@ -330,7 +330,7 @@ class _PhoneStep extends StatelessWidget {
           ),
           Gap(6.h),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Country selector — tap to open picker.
               InkWell(
@@ -504,21 +504,15 @@ class _OtpStep extends StatelessWidget {
           Gap(AppSpacing.xl.h),
 
           Center(
-            child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: otpController,
-              builder: (context, value, _) {
-                return Pinput(
-                  controller: otpController,
-                  length: 6,
-                  enabled: !isLoading,
-                  defaultPinTheme: pinTheme,
-                  focusedPinTheme: pinTheme.copyDecorationWith(
-                    border: Border.all(color: c.action, width: 2),
-                  ),
-                  onCompleted: isLoading ? null : onOtpComplete,
-                  autofocus: true,
-                );
-              },
+            child: Pinput(
+              controller: otpController,
+              length: 6,
+              enabled: !isLoading,
+              defaultPinTheme: pinTheme,
+              focusedPinTheme: pinTheme.copyDecorationWith(
+                border: Border.all(color: c.action, width: 2),
+              ),
+              onCompleted: isLoading ? null : onOtpComplete,
             ),
           ),
 

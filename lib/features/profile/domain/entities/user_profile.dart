@@ -8,6 +8,7 @@ class UserProfile extends Equatable {
     this.displayName,
     this.email,
     this.phone,
+    this.phoneVerifiedAt,
     this.avatarUrl,
     this.bio,
     this.onboardingCompletedAt,
@@ -19,6 +20,9 @@ class UserProfile extends Equatable {
   final String? displayName;
   final String? email;
   final String? phone;
+  // Set when the phone-verify OTP flow confirms the number. Drives the
+  // phone_verified slot in profile_completeness — NULL = unverified.
+  final DateTime? phoneVerifiedAt;
   final String? avatarUrl;
   final String? bio;
   final DateTime? onboardingCompletedAt;
@@ -26,7 +30,15 @@ class UserProfile extends Equatable {
   final DateTime? updatedAt;
 
   bool get isOnboardingComplete => onboardingCompletedAt != null;
+  bool get isPhoneVerified => phoneVerifiedAt != null;
 
   @override
-  List<Object?> get props => [id, displayName, email, phone, avatarUrl];
+  List<Object?> get props => [
+    id,
+    displayName,
+    email,
+    phone,
+    phoneVerifiedAt,
+    avatarUrl,
+  ];
 }

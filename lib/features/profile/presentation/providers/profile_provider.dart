@@ -193,39 +193,43 @@ class ProfileState {
     return false;
   }
 
-  // Drives ProfileCompletenessBanner on home. Fields counted are the same ones
-  // /profile/edit exposes — the banner hits 100% when the edit form is filled.
+  // Drives ProfileCompletenessBanner on /home. Field list is locked by the
+  // T1 audit and mirrors supabase/migrations/20260514000001_profile_completeness.sql
+  // so the client-side number matches the server view exactly:
+  //
+  //   builder → company_name · abn · service_suburb · phone_verified  (×25)
+  //   trade   → primary_trade · licence_url · base_suburb ·
+  //             phone_verified · portfolio (≥1 image)                (×20)
+  //
+  // Anything not in this list (about, years_experience, contact_phone, etc.)
+  // is "nice to have" and intentionally not counted.
   int get profileCompletenessPct {
     if (profile == null) return 0;
-    var done = 0;
-    var total = 0;
-
-    void add(bool isDone) {
-      total++;
-      if (isDone) done++;
-    }
-
-    add((profile!.displayName ?? '').isNotEmpty);
+    final phoneVerified = profile!.isPhoneVerified;
 
     if (builderProfile != null) {
       final bp = builderProfile!;
-      add(bp.companyName.isNotEmpty);
-      add(bp.abn != null && bp.abn!.isNotEmpty);
-      add(bp.serviceSuburb != null && bp.serviceSuburb!.isNotEmpty);
-      add(bp.contactPhone != null && bp.contactPhone!.isNotEmpty);
-      add(bp.about != null && bp.about!.isNotEmpty);
-    } else if (tradeProfile != null) {
-      final tp = tradeProfile!;
-      add(tp.primaryTrade.isNotEmpty);
-      add(tp.yearsExperience != null);
-      add(tp.baseSuburb != null && tp.baseSuburb!.isNotEmpty);
-      add(tp.about != null && tp.about!.isNotEmpty);
-    } else {
-      // Authenticated but no role-specific profile yet (role sheet pending).
-      return 0;
+      final done =
+          (bp.companyName.isNotEmpty ? 1 : 0) +
+          ((bp.abn != null && bp.abn!.isNotEmpty) ? 1 : 0) +
+          ((bp.serviceSuburb != null && bp.serviceSuburb!.isNotEmpty) ? 1 : 0) +
+          (phoneVerified ? 1 : 0);
+      return done * 25;
     }
 
-    return total == 0 ? 0 : ((done / total) * 100).round();
+    if (tradeProfile != null) {
+      final tp = tradeProfile!;
+      final done =
+          (tp.primaryTrade.isNotEmpty ? 1 : 0) +
+          (tp.hasLicence ? 1 : 0) +
+          ((tp.baseSuburb != null && tp.baseSuburb!.isNotEmpty) ? 1 : 0) +
+          (phoneVerified ? 1 : 0) +
+          (tp.portfolioCount > 0 ? 1 : 0);
+      return done * 20;
+    }
+
+    // Authenticated but no role-specific profile yet (role sheet pending).
+    return 0;
   }
 
   ProfileState copyWith({

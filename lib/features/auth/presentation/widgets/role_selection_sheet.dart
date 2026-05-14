@@ -5,12 +5,14 @@ import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 
 // Non-dismissible sheet shown when an authenticated user has no role yet —
 // typically SSO sign-ups, since their user_metadata doesn't carry a role.
-// Email sign-ups already picked at /register step 1 so never see this.
+// Email sign-ups already picked at /register so never see this.
+//
+// Tap-to-confirm: a single card tap saves the role and dismisses. No
+// Continue button — matches the /register step-1 tap-to-advance behaviour.
 class RoleSelectionSheet extends ConsumerStatefulWidget {
   const RoleSelectionSheet({super.key});
 
@@ -30,15 +32,20 @@ class RoleSelectionSheet extends ConsumerStatefulWidget {
 }
 
 class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
-  UserRole? _selected;
+  UserRole? _pending;
 
-  Future<void> _submit() async {
-    final role = _selected;
-    if (role == null) return;
+  Future<void> _pickAndConfirm(UserRole role) async {
+    // Optimistic highlight so the user sees their choice register before the
+    // network roundtrip finishes.
+    setState(() => _pending = role);
     final ok = await ref
         .read(authControllerProvider.notifier)
         .setRoleAndStubProfile(role);
-    if (ok && mounted) Navigator.of(context).pop();
+    if (!ok && mounted) {
+      setState(() => _pending = null);
+      return;
+    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -86,7 +93,7 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(AppSpacing.lg.h),
               Text(
-                'WHO ARE YOU?',
+                'ONE LAST THING',
                 style: tt.headlineMedium!.copyWith(
                   color: c.text1,
                   letterSpacing: 0.5,
@@ -94,36 +101,30 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(6.h),
               Text(
-                'Pick your role to finish setting up.',
+                'Which side are you on?',
                 style: tt.bodyMedium!.copyWith(color: c.text2),
               ),
               Gap(AppSpacing.lg.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: _RoleCard(
-                      icon: Iconsax.buildings,
-                      label: 'BUILDER',
-                      description: 'Post jobs, hire crews',
-                      selected: _selected == UserRole.builder,
-                      onTap: () => setState(() => _selected = UserRole.builder),
-                      c: c,
-                      tt: tt,
-                    ),
-                  ),
-                  Gap(12.w),
-                  Expanded(
-                    child: _RoleCard(
-                      icon: Iconsax.cpu_charge,
-                      label: 'TRADES',
-                      description: 'Find work, get paid',
-                      selected: _selected == UserRole.trade,
-                      onTap: () => setState(() => _selected = UserRole.trade),
-                      c: c,
-                      tt: tt,
-                    ),
-                  ),
-                ],
+              _SheetRoleCard(
+                icon: Iconsax.buildings,
+                label: "I'M HIRING",
+                description: 'Post jobs, review applications, manage crews.',
+                pending: _pending == UserRole.builder,
+                disabled: isLoading,
+                onTap: () => _pickAndConfirm(UserRole.builder),
+                c: c,
+                tt: tt,
+              ),
+              Gap(12.h),
+              _SheetRoleCard(
+                icon: Iconsax.briefcase,
+                label: "I'M LOOKING FOR WORK",
+                description: 'Browse jobs, apply, get hired.',
+                pending: _pending == UserRole.trade,
+                disabled: isLoading,
+                onTap: () => _pickAndConfirm(UserRole.trade),
+                c: c,
+                tt: tt,
               ),
               if (errorMessage != null) ...[
                 Gap(AppSpacing.sm.h),
@@ -132,12 +133,6 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
                   style: tt.bodySmall!.copyWith(color: c.urgent),
                 ),
               ],
-              Gap(AppSpacing.lg.h),
-              AppButton(
-                label: isLoading ? 'Saving...' : 'Continue',
-                isLoading: isLoading,
-                onPressed: (_selected == null || isLoading) ? null : _submit,
-              ),
             ],
           ),
         ),
@@ -146,12 +141,13 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
   }
 }
 
-class _RoleCard extends StatelessWidget {
-  const _RoleCard({
+class _SheetRoleCard extends StatelessWidget {
+  const _SheetRoleCard({
     required this.icon,
     required this.label,
     required this.description,
-    required this.selected,
+    required this.pending,
+    required this.disabled,
     required this.onTap,
     required this.c,
     required this.tt,
@@ -160,45 +156,85 @@ class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String description;
-  final bool selected;
+  final bool pending;
+  final bool disabled;
   final VoidCallback onTap;
   final JColors c;
   final TextTheme tt;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: EdgeInsets.all(AppSpacing.md.r),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(
-            color: selected ? c.action : c.border,
-            width: selected ? 2 : 1,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: disabled ? null : onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.all(AppSpacing.lg.r),
+          decoration: BoxDecoration(
+            color: c.card,
+            borderRadius: BorderRadius.circular(AppRadius.card.r),
+            border: Border.all(
+              color: pending ? c.action : c.border,
+              width: pending ? 2 : 1,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32.r, color: selected ? c.action : c.text3),
-            Gap(AppSpacing.md.h),
-            Text(
-              label,
-              style: tt.labelLarge!.copyWith(
-                color: c.text1,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+          child: Row(
+            children: [
+              Container(
+                width: 44.r,
+                height: 44.r,
+                decoration: BoxDecoration(
+                  color: pending ? c.action : c.surfaceRaised,
+                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+                ),
+                child: pending
+                    ? SizedBox.square(
+                        dimension: 18.r,
+                        child: Padding(
+                          padding: EdgeInsets.all(6.r),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white, // intentional: white-on-action
+                          ),
+                        ),
+                      )
+                    : Icon(icon, size: 22.r, color: c.text2),
               ),
-            ),
-            Gap(4.h),
-            Text(
-              description,
-              style: tt.bodySmall!.copyWith(color: c.text2, fontSize: 12.sp),
-            ),
-          ],
+              Gap(AppSpacing.md.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: tt.labelLarge!.copyWith(
+                        color: c.text1,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Gap(4.h),
+                    Text(
+                      description,
+                      style: tt.bodySmall!.copyWith(
+                        color: c.text2,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Gap(AppSpacing.sm.w),
+              Icon(
+                Iconsax.arrow_right_3,
+                size: 18.r,
+                color: pending ? c.action : c.text3,
+              ),
+            ],
+          ),
         ),
       ),
     );

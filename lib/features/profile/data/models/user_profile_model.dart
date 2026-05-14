@@ -6,6 +6,7 @@ class UserProfileModel extends UserProfile {
     super.displayName,
     super.email,
     super.phone,
+    super.phoneVerifiedAt,
     super.avatarUrl,
     super.bio,
     super.onboardingCompletedAt,
@@ -19,6 +20,9 @@ class UserProfileModel extends UserProfile {
         displayName: json['display_name'] as String?,
         email: json['email'] as String?,
         phone: json['phone'] as String?,
+        phoneVerifiedAt: json['phone_verified_at'] != null
+            ? DateTime.parse(json['phone_verified_at'] as String)
+            : null,
         avatarUrl: json['avatar_url'] as String?,
         bio: json['bio'] as String?,
         onboardingCompletedAt: json['onboarding_completed_at'] != null

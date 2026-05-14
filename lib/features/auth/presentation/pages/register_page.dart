@@ -18,13 +18,12 @@ import '../../../legal/presentation/widgets/legal_acceptance_checkbox.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/social_auth_buttons.dart';
 
-// Two interactive steps: role (1) + form (2). Verify-email is async — the
-// user waits on an inbox, not progresses through a step — so it's not counted
-// here (T3.4 of the friction-reduction sprint).
-const _kTotalSteps = 2;
-
 class RegisterPage extends ConsumerStatefulWidget {
-  const RegisterPage({super.key});
+  const RegisterPage({super.key, this.initialRole});
+
+  // When set (via /register?role=…), step 1 is skipped — the user already
+  // chose on /login. The form shows a CHANGE chip so a misclick is fixable.
+  final UserRole? initialRole;
 
   @override
   ConsumerState<RegisterPage> createState() => _RegisterPageState();
@@ -33,7 +32,6 @@ class RegisterPage extends ConsumerStatefulWidget {
 class _RegisterPageState extends ConsumerState<RegisterPage> {
   int _step = 1;
   UserRole? _selectedRole;
-  bool _showRoleError = false;
 
   final _formKey = GlobalKey<FormBuilderState>();
   bool _ready = false;
@@ -44,12 +42,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    // If the user came back via "Wrong email? Change it" on /verify-email, the
-    // auth provider still has the draft. Jump straight to step 2 with role
-    // + name + email pre-filled (FormBuilder uses each JTextField's initialValue).
+    // Priority order for initial role:
+    //   1. registerDraft.role — user bounced back from /verify-email
+    //   2. widget.initialRole — entered via /register?role=…
+    //   3. null — show step 1 picker
     final draft = ref.read(authControllerProvider).registerDraft;
     if (draft != null) {
       _selectedRole = draft.role;
+      _step = 2;
+    } else if (widget.initialRole != null) {
+      _selectedRole = widget.initialRole;
       _step = 2;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,15 +59,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     });
   }
 
-  void _advanceToForm() {
-    if (_selectedRole == null) {
-      setState(() => _showRoleError = true);
-      return;
-    }
+  void _pickRole(UserRole role) {
+    // Tap-to-advance: no Continue button. Card tap = step 1 done.
     setState(() {
-      _showRoleError = false;
+      _selectedRole = role;
       _step = 2;
     });
+  }
+
+  void _goBackToPicker() {
+    setState(() => _step = 1);
   }
 
   void _submit() {
@@ -104,7 +107,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           duration: const Duration(milliseconds: 150),
           child: Column(
             children: [
-              // ── Top bar ───────────────────────────────────────────────────
+              // ── Top bar — back arrow only when we have somewhere to go ────
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg.w,
@@ -112,45 +115,32 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
                 child: Row(
                   children: [
-                    if (_step == 2)
-                      IconButton(
-                        onPressed: () => setState(() => _step = 1),
-                        icon: Icon(
-                          Iconsax.arrow_left,
-                          color: c.text1,
-                          size: 20.r,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(
-                          minWidth: 40.r,
-                          minHeight: 40.r,
-                        ),
-                      )
-                    else
-                      Gap(40.r),
-                    const Spacer(),
-                    Text(
-                      '$_step / $_kTotalSteps',
-                      style: tt.labelMedium!.copyWith(
-                        color: c.text3,
-                        letterSpacing: 0.5,
+                    IconButton(
+                      onPressed: () {
+                        if (_step == 2 && widget.initialRole == null) {
+                          // User picked role inline — back returns to picker.
+                          _goBackToPicker();
+                        } else {
+                          // Pre-picked from /login or already on step 1 —
+                          // back exits the whole flow.
+                          context.go('/login');
+                        }
+                      },
+                      icon: Icon(
+                        Iconsax.arrow_left,
+                        color: c.text1,
+                        size: 20.r,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(
+                        minWidth: 40.r,
+                        minHeight: 40.r,
                       ),
                     ),
+                    const Spacer(),
                   ],
                 ),
               ),
-
-              // ── Step progress bar ─────────────────────────────────────────
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                child: _StepProgressBar(
-                  currentStep: _step,
-                  totalSteps: _kTotalSteps,
-                  c: c,
-                ),
-              ),
-
-              Gap(AppSpacing.lg.h),
 
               // ── Step content ──────────────────────────────────────────────
               Expanded(
@@ -162,24 +152,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       ? _RoleStep(
                           key: const ValueKey(1),
                           selectedRole: _selectedRole,
-                          showError: _showRoleError,
-                          onRoleChanged: (r) => setState(() {
-                            _selectedRole = r;
-                            _showRoleError = false;
-                          }),
-                          onContinue: _advanceToForm,
+                          onRolePicked: _pickRole,
                           onGoToLogin: () => context.go('/login'),
                           c: c,
                           tt: tt,
                         )
                       : _FormStep(
                           key: const ValueKey(2),
+                          role: _selectedRole!,
                           formKey: _formKey,
                           authState: authState,
                           draft: authState.registerDraft,
                           passwordValue: _passwordValue,
                           termsAccepted: _termsAccepted,
                           showTermsError: _showTermsError,
+                          // CHANGE chip — let the user fix a misclick.
+                          // When initialRole was supplied via deep-link, go
+                          // back to the picker rather than just /login so
+                          // they can flip role without losing the funnel.
+                          onChangeRole: _goBackToPicker,
                           onTermsChanged: (v) => setState(() {
                             _termsAccepted = v;
                             if (v) _showTermsError = false;
@@ -201,57 +192,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 }
 
-// ── Step progress bar ─────────────────────────────────────────────────────────
-
-class _StepProgressBar extends StatelessWidget {
-  const _StepProgressBar({
-    required this.currentStep,
-    required this.totalSteps,
-    required this.c,
-  });
-
-  final int currentStep;
-  final int totalSteps;
-  final JColors c;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(totalSteps, (i) {
-        final active = i < currentStep;
-        return Expanded(
-          child: Container(
-            height: 3.h,
-            margin: EdgeInsets.only(right: i < totalSteps - 1 ? 4.w : 0),
-            decoration: BoxDecoration(
-              color: active ? c.action : c.border,
-              borderRadius: BorderRadius.circular(2.r),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
 // ── Step 1: Role selection ────────────────────────────────────────────────────
 
 class _RoleStep extends StatelessWidget {
   const _RoleStep({
     super.key,
     required this.selectedRole,
-    required this.showError,
-    required this.onRoleChanged,
-    required this.onContinue,
+    required this.onRolePicked,
     required this.onGoToLogin,
     required this.c,
     required this.tt,
   });
 
   final UserRole? selectedRole;
-  final bool showError;
-  final ValueChanged<UserRole> onRoleChanged;
-  final VoidCallback onContinue;
+  final ValueChanged<UserRole> onRolePicked;
   final VoidCallback onGoToLogin;
   final JColors c;
   final TextTheme tt;
@@ -289,7 +243,7 @@ class _RoleStep extends StatelessWidget {
           Gap(AppSpacing.xl.h),
 
           Text(
-            'WHO ARE YOU?',
+            'WHICH SIDE ARE YOU ON?',
             style: tt.headlineMedium!.copyWith(
               color: c.text1,
               letterSpacing: 0.5,
@@ -297,56 +251,36 @@ class _RoleStep extends StatelessWidget {
           ),
           Gap(6.h),
           Text(
-            'Select your role to get started.',
+            'Tap to continue — you can switch later.',
             style: tt.bodyMedium!.copyWith(color: c.text2),
           ),
 
           Gap(AppSpacing.lg.h),
 
-          // ── Role cards ────────────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _RoleCard(
-                  role: UserRole.builder,
-                  icon: Iconsax.buildings,
-                  label: 'BUILDER',
-                  description: 'Post jobs, hire crews',
-                  selected: selectedRole == UserRole.builder,
-                  onTap: () => onRoleChanged(UserRole.builder),
-                  c: c,
-                  tt: tt,
-                ),
-              ),
-              Gap(12.w),
-              Expanded(
-                child: _RoleCard(
-                  role: UserRole.trade,
-                  icon: Iconsax.cpu_charge,
-                  label: 'TRADES',
-                  description: 'Find work, get paid',
-                  selected: selectedRole == UserRole.trade,
-                  onTap: () => onRoleChanged(UserRole.trade),
-                  c: c,
-                  tt: tt,
-                ),
-              ),
-            ],
+          // ── Role cards — tap-to-advance ───────────────────────────────────
+          _RoleCard(
+            role: UserRole.builder,
+            icon: Iconsax.buildings,
+            label: "I'M HIRING",
+            description: 'Post jobs. Review applicants. Manage crews.',
+            selected: selectedRole == UserRole.builder,
+            onTap: () => onRolePicked(UserRole.builder),
+            c: c,
+            tt: tt,
+          ),
+          Gap(12.h),
+          _RoleCard(
+            role: UserRole.trade,
+            icon: Iconsax.briefcase,
+            label: "I'M LOOKING FOR WORK",
+            description: 'Browse jobs. Apply. Get hired.',
+            selected: selectedRole == UserRole.trade,
+            onTap: () => onRolePicked(UserRole.trade),
+            c: c,
+            tt: tt,
           ),
 
-          if (showError) ...[
-            Gap(8.h),
-            Text(
-              'Select a role to continue.',
-              style: tt.bodySmall!.copyWith(color: c.urgent, fontSize: 12.sp),
-            ),
-          ],
-
           Gap(AppSpacing.xl.h),
-
-          AppButton(label: 'Continue', onPressed: onContinue),
-
-          Gap(AppSpacing.lg.h),
 
           // ── SSO alternative ───────────────────────────────────────────────
           const SocialAuthButtons(),
@@ -406,38 +340,73 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: EdgeInsets.all(AppSpacing.md.r),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(
-            color: selected ? c.action : c.border,
-            width: selected ? 2 : 1,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.all(AppSpacing.lg.r),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(AppRadius.card.r),
+            border: Border.all(
+              color: selected ? c.action : c.border,
+              width: selected ? 2 : 1,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32.r, color: selected ? c.action : c.text3),
-            Gap(AppSpacing.md.h),
-            Text(
-              label,
-              style: tt.labelLarge!.copyWith(
-                color: c.text1,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+          child: Row(
+            children: [
+              Container(
+                width: 48.r,
+                height: 48.r,
+                decoration: BoxDecoration(
+                  color: selected ? c.action : c.surfaceRaised,
+                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+                ),
+                child: Icon(
+                  icon,
+                  size: 22.r,
+                  color: selected
+                      ? Colors
+                            .white // intentional: white-on-action
+                      : c.text2,
+                ),
               ),
-            ),
-            Gap(4.h),
-            Text(
-              description,
-              style: tt.bodySmall!.copyWith(color: c.text2, fontSize: 12.sp),
-            ),
-          ],
+              Gap(AppSpacing.md.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: tt.labelLarge!.copyWith(
+                        color: c.text1,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Gap(4.h),
+                    Text(
+                      description,
+                      style: tt.bodySmall!.copyWith(
+                        color: c.text2,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Gap(AppSpacing.sm.w),
+              Icon(
+                Iconsax.arrow_right_3,
+                size: 18.r,
+                color: selected ? c.action : c.text3,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -449,12 +418,14 @@ class _RoleCard extends StatelessWidget {
 class _FormStep extends StatelessWidget {
   const _FormStep({
     super.key,
+    required this.role,
     required this.formKey,
     required this.authState,
     required this.draft,
     required this.passwordValue,
     required this.termsAccepted,
     required this.showTermsError,
+    required this.onChangeRole,
     required this.onTermsChanged,
     required this.onPasswordChanged,
     required this.onSubmit,
@@ -463,12 +434,14 @@ class _FormStep extends StatelessWidget {
     required this.tt,
   });
 
+  final UserRole role;
   final GlobalKey<FormBuilderState> formKey;
   final AuthState authState;
   final RegisterDraft? draft;
   final String passwordValue;
   final bool termsAccepted;
   final bool showTermsError;
+  final VoidCallback onChangeRole;
   final ValueChanged<bool> onTermsChanged;
   final ValueChanged<String?> onPasswordChanged;
   final VoidCallback? onSubmit;
@@ -479,12 +452,21 @@ class _FormStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strength = _passwordStrength(passwordValue);
+    final isBuilder = role == UserRole.builder;
+    final headline = isBuilder
+        ? "Let's get your jobs in front of the right crews."
+        : "Let's get you on the tools.";
 
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Role chip with CHANGE affordance ──────────────────────────────
+          _RoleChip(role: role, onChange: onChangeRole, c: c, tt: tt),
+
+          Gap(AppSpacing.md.h),
+
           Text(
             'CREATE ACCOUNT',
             style: tt.headlineMedium!.copyWith(
@@ -492,11 +474,8 @@ class _FormStep extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
-          Gap(4.h),
-          Text(
-            'Your details — we keep it tight.',
-            style: tt.bodyMedium!.copyWith(color: c.text2),
-          ),
+          Gap(6.h),
+          Text(headline, style: tt.bodyMedium!.copyWith(color: c.text2)),
 
           Gap(AppSpacing.lg.h),
 
@@ -635,6 +614,78 @@ class _FormStep extends StatelessWidget {
 
           Gap(AppSpacing.xl.h),
         ],
+      ),
+    );
+  }
+}
+
+// ── Role chip ─────────────────────────────────────────────────────────────────
+
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({
+    required this.role,
+    required this.onChange,
+    required this.c,
+    required this.tt,
+  });
+
+  final UserRole role;
+  final VoidCallback onChange;
+  final JColors c;
+  final TextTheme tt;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBuilder = role == UserRole.builder;
+    final label = isBuilder ? 'HIRING' : 'LOOKING FOR WORK';
+    final icon = isBuilder ? Iconsax.buildings : Iconsax.briefcase;
+
+    return Semantics(
+      button: true,
+      label: 'Currently signing up as $label. Tap to change.',
+      child: GestureDetector(
+        onTap: onChange,
+        behavior: HitTestBehavior.opaque,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md.w,
+              vertical: 8.h,
+            ),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(AppRadius.btn.r),
+              border: Border.all(color: c.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14.r, color: c.action),
+                Gap(8.w),
+                Text(
+                  label,
+                  style: tt.labelSmall!.copyWith(
+                    color: c.text1,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Gap(8.w),
+                Container(width: 1, height: 12.h, color: c.border),
+                Gap(8.w),
+                Text(
+                  'CHANGE',
+                  style: tt.labelSmall!.copyWith(
+                    color: c.action,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

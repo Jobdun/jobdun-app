@@ -13,6 +13,9 @@ import '../../features/legal/domain/legal_document.dart';
 import '../../features/legal/presentation/pages/legal_document_page.dart';
 import '../../features/legal/presentation/pages/legal_index_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/ftue/presentation/pages/dev_ftue_reset_page.dart';
+import '../../features/ftue/presentation/pages/ftue_page.dart';
+import '../../features/ftue/presentation/providers/ftue_gate_provider.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
 import '../../features/jobs/presentation/pages/job_create_page.dart';
@@ -30,21 +33,37 @@ import '../../features/verification/presentation/pages/verification_page.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier();
 
-  ref.listen<AuthState>(authControllerProvider, (_, _) => notifier.refresh());
+  ref.listen<AuthState>(authControllerProvider, (_, next) {
+    // Safety net for upgraded users: anyone who completes auth has, by
+    // definition, made it past the marketing surface — flip the gate so the
+    // carousel never reappears retroactively.
+    if (next.isAuthenticated) {
+      ref.read(ftueGateProvider.notifier).markCompleted();
+    }
+    notifier.refresh();
+  });
+  ref.listen<FtueGateState>(ftueGateProvider, (_, _) => notifier.refresh());
 
   final router = GoRouter(
     initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
+      final ftue = ref.read(ftueGateProvider);
       final location = state.matchedLocation;
 
       if (location == '/splash') return null;
 
+      // While the FTUE flag is still being read from SharedPreferences keep
+      // unauthenticated users on splash — otherwise we'd flash /login before
+      // a first-launch user ever sees the carousel.
+      if (!ftue.isLoaded && !auth.isAuthenticated) return '/splash';
+
       // Splash hands off to '/' so the router (not splash) decides where the
       // user lands. Same auth-aware fork as the onboarding redirect below.
       if (location == '/') {
-        return auth.isAuthenticated ? '/home' : '/login';
+        if (auth.isAuthenticated) return '/home';
+        return ftue.hasCompleted ? '/login' : '/ftue';
       }
 
       // Legacy onboarding route — wall was removed in T1.3 (friction-reduction
@@ -58,8 +77,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return location == '/verify-email' ? null : '/verify-email';
       }
 
+      // Authenticated users never see the FTUE — including direct deep links.
+      if (auth.isAuthenticated && location == '/ftue') return '/home';
+
       if (!auth.isAuthenticated) {
         final publicRoutes = <String>{
+          '/ftue',
           '/login',
           '/register',
           '/forgot-password',
@@ -68,6 +91,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '/legal/terms',
           '/legal/privacy',
           if (kDebugMode) '/logo-compare',
+          if (kDebugMode) '/dev/reset-ftue',
         };
         return publicRoutes.contains(location) ? null : '/login';
       }
@@ -86,8 +110,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       // ── Pre-shell ──────────────────────────────────────────────────────────
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
+      GoRoute(path: '/ftue', builder: (_, _) => const FtuePage()),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
-      GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) {
+          // ?role=builder|trade pre-picks step 1 so users who entered via
+          // the "I'M HIRING" / "I'M LOOKING FOR WORK" CTAs on /login skip
+          // straight to the form. Unknown values fall through to picker.
+          final raw = state.uri.queryParameters['role'];
+          final initialRole = switch (raw) {
+            'builder' => UserRole.builder,
+            'trade' => UserRole.trade,
+            _ => null,
+          };
+          return RegisterPage(initialRole: initialRole);
+        },
+      ),
       GoRoute(
         path: '/verify-email',
         builder: (_, _) => const VerifyEmailPage(),
@@ -97,11 +136,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const ForgotPasswordPage(),
       ),
       GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
-      if (kDebugMode)
+      if (kDebugMode) ...[
         GoRoute(
           path: '/logo-compare',
           builder: (_, _) => const LogoComparePage(),
         ),
+        GoRoute(
+          path: '/dev/reset-ftue',
+          builder: (_, _) => const DevFtueResetPage(),
+        ),
+      ],
 
       // ── Shell (5 tabs) ─────────────────────────────────────────────────────
       StatefulShellRoute.indexedStack(
