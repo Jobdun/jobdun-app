@@ -15,11 +15,22 @@ import '../../../../core/services/phone_auth_storage.dart';
 import '../../../../core/validators/phone_validator.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/status_banner.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/country_picker_sheet.dart';
 
+// Two callers:
+//   PhoneAuthMode.signIn      — public route /phone-auth, creates a session
+//                               from a phone OTP (alternative to email auth)
+//   PhoneAuthMode.addToAccount — gated route /profile/verify-phone, attaches
+//                               a verified phone to the already-authed user
+//                               so the T1 banner's phone slot can hit 100%.
+enum PhoneAuthMode { signIn, addToAccount }
+
 class PhoneAuthPage extends ConsumerStatefulWidget {
-  const PhoneAuthPage({super.key});
+  const PhoneAuthPage({super.key, this.mode = PhoneAuthMode.signIn});
+
+  final PhoneAuthMode mode;
 
   @override
   ConsumerState<PhoneAuthPage> createState() => _PhoneAuthPageState();
@@ -40,13 +51,16 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   @override
   void initState() {
     super.initState();
-    // On mount, check for an in-flight OTP from a previous app session.
-    // If present and still within Supabase's 10-min code window, offer
-    // "continue with this number" instead of forcing a fresh send.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _restorePendingPhone();
-    });
+    // The "continue with the in-flight OTP from last session" prompt only
+    // makes sense for the sign-in flow. In add-to-account mode the user
+    // is already authed and any persisted record predates them attaching
+    // a phone — restore would just confuse.
+    if (widget.mode == PhoneAuthMode.signIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _restorePendingPhone();
+      });
+    }
   }
 
   @override
@@ -159,12 +173,20 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
     setState(() => _phoneError = null);
 
     final e164 = _country.toE164(raw);
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .signInWithPhone(e164);
+    final notifier = ref.read(authControllerProvider.notifier);
+    final ok = widget.mode == PhoneAuthMode.signIn
+        ? await notifier.signInWithPhone(e164)
+        : await notifier.sendPhoneVerification(e164);
 
     if (ok && mounted) {
-      await PhoneAuthStorage.save(e164Phone: e164, countryCode: _country.code);
+      // Only persist for sign-in — add-to-account resume after kill is a
+      // weaker UX win (user is already authed; they can just re-tap).
+      if (widget.mode == PhoneAuthMode.signIn) {
+        await PhoneAuthStorage.save(
+          e164Phone: e164,
+          countryCode: _country.code,
+        );
+      }
       setState(() {
         _step = 1;
         _submittedPhone = e164;
@@ -180,13 +202,19 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
 
   Future<void> _submitOtp(String token) async {
     if (token.length < 6) return;
-    final ok = await ref
-        .read(authControllerProvider.notifier)
-        .verifyPhoneOtp(token);
+    final notifier = ref.read(authControllerProvider.notifier);
+    final ok = widget.mode == PhoneAuthMode.signIn
+        ? await notifier.verifyPhoneOtp(token)
+        : await notifier.confirmPhoneVerification(token);
     if (ok) {
-      // Verified — wipe the persisted record so a future visit doesn't see
-      // a stale "continue with this number?" prompt.
       await PhoneAuthStorage.clear();
+      // In add-to-account mode we don't navigate — the user came from
+      // /profile/edit and the trigger has now flipped phone_verified_at,
+      // so we just pop back. Reload profile so the new state is visible.
+      if (widget.mode == PhoneAuthMode.addToAccount && mounted) {
+        await ref.read(profileControllerProvider.notifier).loadProfile();
+        if (mounted) context.pop();
+      }
     }
   }
 

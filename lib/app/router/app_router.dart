@@ -110,7 +110,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       // ── Pre-shell ──────────────────────────────────────────────────────────
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
-      GoRoute(path: '/ftue', builder: (_, _) => const FtuePage()),
+      GoRoute(
+        path: '/ftue',
+        builder: (context, state) {
+          // ?from=login signals the user already has an account path open
+          // (came from "Create account →" on /login). Show a back-arrow on
+          // slide 1 and hide the redundant "I already have an account" link
+          // on slide 3.
+          final fromLogin = state.uri.queryParameters['from'] == 'login';
+          return FtuePage(fromLogin: fromLogin);
+        },
+      ),
       GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
       GoRoute(
         path: '/register',
@@ -136,6 +146,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const ForgotPasswordPage(),
       ),
       GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
+      // Authed users land here from /profile/edit when their phone slot in
+      // the completeness banner is still missing. Same widget as /phone-auth
+      // but uses updateUser+phoneChange semantics so the existing session
+      // stays put.
+      GoRoute(
+        path: '/profile/verify-phone',
+        builder: (_, _) =>
+            const PhoneAuthPage(mode: PhoneAuthMode.addToAccount),
+      ),
       if (kDebugMode) ...[
         GoRoute(
           path: '/logo-compare',

@@ -86,4 +86,41 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return left(StorageFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> uploadTradeLicence(
+    String userId,
+    File file,
+  ) async {
+    try {
+      return right(await _datasource.uploadTradeLicence(userId, file));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> addPortfolioImage(
+    String userId,
+    File file,
+  ) async {
+    try {
+      return right(await _datasource.addPortfolioImage(userId, file));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removePortfolioImage(
+    String userId,
+    String publicUrl,
+  ) async {
+    try {
+      await _datasource.removePortfolioImage(userId, publicUrl);
+      return right(null);
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
 }

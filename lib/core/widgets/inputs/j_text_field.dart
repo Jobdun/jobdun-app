@@ -36,6 +36,7 @@ class JTextField extends StatefulWidget {
     this.inputFormatters,
     this.maxLength,
     this.autofillHints,
+    this.labelTrailing,
   });
 
   final String name;
@@ -58,6 +59,11 @@ class JTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
   final Iterable<String>? autofillHints;
+
+  /// Optional widget rendered on the right side of the label row. Used on
+  /// /login to inline "Forgot?" next to the Password label so the escape
+  /// hatch lives in industry-standard position.
+  final Widget? labelTrailing;
 
   @override
   State<JTextField> createState() => _JTextFieldState();
@@ -94,18 +100,33 @@ class _JTextFieldState extends State<JTextField> {
           )
         : widget.suffixIcon;
 
-    return MergeSemantics(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.label,
-            style: tt.labelMedium!.copyWith(
-              color: widget.enabled ? c.text2 : c.text3,
-            ),
-          ),
-          Gap(AppSpacing.sm.h),
-          FormBuilderTextField(
+    // Label row is rendered outside MergeSemantics so a tappable
+    // labelTrailing (e.g. "Forgot?") keeps its own button semantics — merging
+    // it with the input's text-field semantics trips the framework's
+    // semantics-flush assertion at runtime.
+    final labelWidget = Text(
+      widget.label,
+      style: tt.labelMedium!.copyWith(
+        color: widget.enabled ? c.text2 : c.text3,
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.labelTrailing != null)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: labelWidget),
+              widget.labelTrailing!,
+            ],
+          )
+        else
+          labelWidget,
+        Gap(AppSpacing.sm.h),
+        MergeSemantics(
+          child: FormBuilderTextField(
             name: widget.name,
             enabled: widget.enabled,
             initialValue: widget.initialValue,
@@ -140,8 +161,8 @@ class _JTextFieldState extends State<JTextField> {
               counterText: widget.maxLength == null ? '' : null,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

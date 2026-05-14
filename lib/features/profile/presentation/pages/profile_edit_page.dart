@@ -12,6 +12,7 @@ import '../../../../core/design/widgets/field_label.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
+import '../widgets/portfolio_strip.dart';
 import '../widgets/trade_category_picker.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
@@ -316,6 +317,35 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         initialValue: isBuilder ? bp?.about : tp?.about,
                         maxLines: 4,
                       ),
+
+                      // ── Verification + portfolio ─────────────────────
+                      // Status rows for the slots the T1 completeness banner
+                      // grades on. Each row reads the same field the SQL view
+                      // does so the screen and the banner always agree.
+                      Gap(AppSpacing.lg.h),
+                      const FieldLabel('VERIFICATION'),
+                      Gap(AppSpacing.sm.h),
+                      _StatusRow(
+                        icon: Iconsax.call,
+                        label: 'Phone',
+                        done: profile?.isPhoneVerified ?? false,
+                        ctaLabel: 'VERIFY',
+                        onCta: () => context.push('/profile/verify-phone'),
+                      ),
+                      if (!isBuilder) ...[
+                        Gap(8.h),
+                        _StatusRow(
+                          icon: Iconsax.document_text,
+                          label: 'Trade licence',
+                          done: tp?.hasLicence ?? false,
+                          ctaLabel: 'UPLOAD',
+                          onCta: () => context.push('/verification'),
+                        ),
+                        Gap(AppSpacing.lg.h),
+                        const FieldLabel('PORTFOLIO'),
+                        Gap(AppSpacing.sm.h),
+                        const PortfolioStrip(),
+                      ],
                     ],
                   ),
                 ),
@@ -496,6 +526,80 @@ class _TradePickerTile extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Inline status row used in the VERIFICATION section. Done = check mark in
+// the verified accent; not-done = small uppercase CTA that pushes the
+// relevant fix-it screen.
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.icon,
+    required this.label,
+    required this.done,
+    required this.ctaLabel,
+    required this.onCta,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool done;
+  final String ctaLabel;
+  final VoidCallback onCta;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.input.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18.r, color: done ? c.verified : c.text3),
+          Gap(12.w),
+          Expanded(
+            child: Text(label, style: tt.bodyMedium!.copyWith(color: c.text1)),
+          ),
+          if (done)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Iconsax.tick_circle, size: 16.r, color: c.verified),
+                Gap(6.w),
+                Text(
+                  'VERIFIED',
+                  style: tt.labelSmall!.copyWith(
+                    color: c.verified,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            )
+          else
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onCta,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                child: Text(
+                  ctaLabel,
+                  style: tt.labelSmall!.copyWith(
+                    color: c.action,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

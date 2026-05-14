@@ -735,6 +735,86 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  // Add-phone-to-existing-account flow. Distinct from signInWithPhone:
+  //   • signInWithOtp creates a brand-new user when the phone is unknown
+  //   • updateUser(phone: …) attaches the phone to the currently signed-in
+  //     user and sends an SMS challenge that flips auth.users.phone_confirmed_at
+  //     when verified via type=phoneChange. The 20260514000002 trigger then
+  //     mirrors that into profiles.phone_verified_at.
+  Future<bool> sendPhoneVerification(String phone) async {
+    if (!SupabaseConfig.isInitialized) return false;
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
+    try {
+      await SupabaseConfig.client.auth.updateUser(
+        supabase.UserAttributes(phone: phone.trim()),
+      );
+      state = state.copyWith(
+        isLoading: false,
+        pendingPhoneNumber: phone.trim(),
+        infoMessage: 'Code sent — check your SMS.',
+      );
+      return true;
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+        infoMessage: null,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+        infoMessage: null,
+      );
+      return false;
+    }
+  }
+
+  // Confirms the SMS code sent by sendPhoneVerification. type=phoneChange so
+  // Supabase Auth flips phone_confirmed_at instead of trying to create a new
+  // session (the existing one stays valid).
+  Future<bool> confirmPhoneVerification(String token) async {
+    final phone = state.pendingPhoneNumber;
+    if (phone == null || !SupabaseConfig.isInitialized) return false;
+    state = state.copyWith(
+      isLoading: true,
+      errorMessage: null,
+      infoMessage: null,
+    );
+    try {
+      await SupabaseConfig.client.auth.verifyOTP(
+        phone: phone,
+        token: token.trim(),
+        type: supabase.OtpType.phoneChange,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        clearPhone: true,
+        infoMessage: 'Phone verified.',
+      );
+      return true;
+    } on supabase.AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(AuthFailure(e.message)),
+        infoMessage: null,
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: ErrorMessages.from(ServerFailure(e.toString())),
+        infoMessage: null,
+      );
+      return false;
+    }
+  }
+
   Future<void> resendPhoneOtp() async {
     final phone = state.pendingPhoneNumber;
     if (phone == null || !SupabaseConfig.isInitialized) return;

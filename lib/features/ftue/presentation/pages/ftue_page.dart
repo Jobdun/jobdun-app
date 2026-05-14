@@ -15,8 +15,15 @@ import '../widgets/ftue_slide.dart';
 // Three-slide FTUE carousel. New installs land here straight out of splash;
 // every exit path (CTA tap, SKIP, login link) sets has_completed_ftue=true so
 // the user never sees it again.
+//
+// [fromLogin] is true when the user tapped "Create account →" on /login —
+// they already know the app, just need a signup path. In that case slide 1
+// shows a back-arrow (return to /login) and slide 3 hides the redundant
+// "I already have an account · LOG IN" footer link.
 class FtuePage extends ConsumerStatefulWidget {
-  const FtuePage({super.key});
+  const FtuePage({super.key, this.fromLogin = false});
+
+  final bool fromLogin;
 
   @override
   ConsumerState<FtuePage> createState() => _FtuePageState();
@@ -40,7 +47,9 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     final now = DateTime.now();
     _startedAt = now;
     _slideEnteredAt = now;
-    FtueAnalytics.started(entry: 'first_launch');
+    FtueAnalytics.started(
+      entry: widget.fromLogin ? 'create_account_link' : 'first_launch',
+    );
     // Slide 0 view fires here so the funnel has a "saw slide 1" event even
     // for users who exit before swiping.
     FtueAnalytics.slideViewed(slideIndex: 0, timeOnPreviousMs: 0);
@@ -89,17 +98,36 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     _exit(exitPath: 'login_link', route: '/login');
   }
 
+  // Slide-1 back-arrow tap (only rendered when fromLogin=true). Doesn't mark
+  // the FTUE as complete — the user is bailing out to /login, not finishing
+  // onboarding, and they may yet return through "Create account" later.
+  void _onBackToLogin() {
+    if (_exited) return;
+    _exited = true;
+    context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final isFinalSlide = _currentSlide == _slideCount - 1;
+
+    // Back arrow shown only when the user arrived from /login (Create
+    // account → link) AND they're still on the first slide — once they
+    // swipe forward, the carousel is the path of least resistance.
+    final showBack = widget.fromLogin && _currentSlide == 0;
 
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
         child: Column(
           children: [
-            _TopBar(showSkip: !isFinalSlide, onSkip: _onSkip),
+            _TopBar(
+              showSkip: !isFinalSlide,
+              onSkip: _onSkip,
+              showBack: showBack,
+              onBack: _onBackToLogin,
+            ),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -131,7 +159,10 @@ class _FtuePageState extends ConsumerState<FtuePage> {
                     footer: _FinalSlideCtas(
                       onHiring: () => _onCta('builder'),
                       onWorking: () => _onCta('trade'),
-                      onLoginLink: _onLoginLink,
+                      // Hide the login footer link when the user came from
+                      // /login — they already know that path; rendering it
+                      // again would just bounce them in a loop.
+                      onLoginLink: widget.fromLogin ? null : _onLoginLink,
                     ),
                   ),
                 ],
@@ -157,10 +188,17 @@ class _FtuePageState extends ConsumerState<FtuePage> {
 // layout shift when SKIP disappears.
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.showSkip, required this.onSkip});
+  const _TopBar({
+    required this.showSkip,
+    required this.onSkip,
+    this.showBack = false,
+    this.onBack,
+  });
 
   final bool showSkip;
   final VoidCallback onSkip;
+  final bool showBack;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +211,26 @@ class _TopBar extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
         child: Row(
           children: [
+            if (showBack && onBack != null)
+              Semantics(
+                button: true,
+                label: 'Back to log in.',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onBack,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 10.h,
+                    ),
+                    child: Icon(
+                      Iconsax.arrow_left_2,
+                      size: 22.r,
+                      color: c.text2,
+                    ),
+                  ),
+                ),
+              ),
             const Spacer(),
             if (showSkip)
               Semantics(
@@ -217,7 +275,9 @@ class _FinalSlideCtas extends StatelessWidget {
 
   final VoidCallback onHiring;
   final VoidCallback onWorking;
-  final VoidCallback onLoginLink;
+  // null when the user arrived via /login → /ftue?from=login. The "I already
+  // have an account · LOG IN" link is hidden in that case to avoid a loop.
+  final VoidCallback? onLoginLink;
 
   @override
   Widget build(BuildContext context) {
@@ -240,44 +300,46 @@ class _FinalSlideCtas extends StatelessWidget {
           subtitle: 'Find jobs near you. Built for Aussie trades.',
           onTap: onWorking,
         ),
-        Gap(AppSpacing.md.h),
-        // Two-line stack (not a single Row) keeps the link readable on
-        // narrow 360-wide devices and gives the test harness a generously
-        // sized, always-on-screen tap target — Ahem-font glyphs in widget
-        // tests are wide enough to push a single-row layout off-bounds.
-        Semantics(
-          button: true,
-          label: 'I already have an account. Log in.',
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onLoginLink,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'I already have an account',
-                    textAlign: TextAlign.center,
-                    style: tt.bodySmall!.copyWith(color: c.text3),
-                  ),
-                  Gap(4.h),
-                  Text(
-                    'LOG IN',
-                    textAlign: TextAlign.center,
-                    style: tt.bodySmall!.copyWith(
-                      color: c.text2,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      decoration: TextDecoration.underline,
-                      decorationColor: c.text2,
+        if (onLoginLink != null) ...[
+          Gap(AppSpacing.md.h),
+          // Two-line stack (not a single Row) keeps the link readable on
+          // narrow 360-wide devices and gives the test harness a generously
+          // sized, always-on-screen tap target — Ahem-font glyphs in widget
+          // tests are wide enough to push a single-row layout off-bounds.
+          Semantics(
+            button: true,
+            label: 'I already have an account. Log in.',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onLoginLink,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'I already have an account',
+                      textAlign: TextAlign.center,
+                      style: tt.bodySmall!.copyWith(color: c.text3),
                     ),
-                  ),
-                ],
+                    Gap(4.h),
+                    Text(
+                      'LOG IN',
+                      textAlign: TextAlign.center,
+                      style: tt.bodySmall!.copyWith(
+                        color: c.text2,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        decoration: TextDecoration.underline,
+                        decorationColor: c.text2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

@@ -15,4 +15,19 @@ abstract interface class ProfileRepository {
   Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile);
   Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile);
   Future<Either<Failure, String>> uploadAvatar(String userId, File file);
+
+  // Uploads a trade-licence file (image/PDF) to the private-docs bucket,
+  // writes a verification_documents row with status 'pending', and stamps
+  // trade_profiles.licence_url. Returns the storage path.
+  Future<Either<Failure, String>> uploadTradeLicence(String userId, File file);
+
+  // Uploads one portfolio image to public-media and appends its URL to
+  // trade_profiles.portfolio_urls. Returns the appended public URL.
+  Future<Either<Failure, String>> addPortfolioImage(String userId, File file);
+
+  // Removes a portfolio image both from storage and from the array column.
+  Future<Either<Failure, void>> removePortfolioImage(
+    String userId,
+    String publicUrl,
+  );
 }

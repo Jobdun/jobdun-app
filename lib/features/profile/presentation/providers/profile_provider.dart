@@ -149,6 +149,7 @@ class ProfileController extends Notifier<ProfileState> {
             displayName: current.displayName,
             email: current.email,
             phone: current.phone,
+            phoneVerifiedAt: current.phoneVerifiedAt,
             avatarUrl: url,
             bio: current.bio,
             onboardingCompletedAt: current.onboardingCompletedAt,
@@ -162,6 +163,63 @@ class ProfileController extends Notifier<ProfileState> {
       },
     );
   }
+
+  // Returns true on success so the UI can pop / snack. Reloads the trade
+  // profile after upload so /profile/edit picks up licence_url without a
+  // round-trip ping-pong.
+  Future<bool> uploadTradeLicence(File file) async {
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    state = state.copyWith(isUploadingLicence: true, error: null);
+    final result = await _repo.uploadTradeLicence(userId, file);
+    return result.fold(
+      (f) {
+        state = state.copyWith(isUploadingLicence: false, error: f.message);
+        return false;
+      },
+      (_) async {
+        await loadProfile();
+        state = state.copyWith(isUploadingLicence: false);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> addPortfolioImage(File file) async {
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    state = state.copyWith(isUploadingPortfolio: true, error: null);
+    final result = await _repo.addPortfolioImage(userId, file);
+    return result.fold(
+      (f) {
+        state = state.copyWith(isUploadingPortfolio: false, error: f.message);
+        return false;
+      },
+      (_) async {
+        await loadProfile();
+        state = state.copyWith(isUploadingPortfolio: false);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> removePortfolioImage(String publicUrl) async {
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    state = state.copyWith(isUploadingPortfolio: true, error: null);
+    final result = await _repo.removePortfolioImage(userId, publicUrl);
+    return result.fold(
+      (f) {
+        state = state.copyWith(isUploadingPortfolio: false, error: f.message);
+        return false;
+      },
+      (_) async {
+        await loadProfile();
+        state = state.copyWith(isUploadingPortfolio: false);
+        return true;
+      },
+    );
+  }
 }
 
 class ProfileState {
@@ -171,6 +229,8 @@ class ProfileState {
     this.tradeProfile,
     this.isLoading = false,
     this.isUploadingAvatar = false,
+    this.isUploadingLicence = false,
+    this.isUploadingPortfolio = false,
     this.error,
   });
 
@@ -179,6 +239,8 @@ class ProfileState {
   final TradeProfile? tradeProfile;
   final bool isLoading;
   final bool isUploadingAvatar;
+  final bool isUploadingLicence;
+  final bool isUploadingPortfolio;
   final String? error;
 
   bool get isProfileComplete {
@@ -238,6 +300,8 @@ class ProfileState {
     TradeProfile? tradeProfile,
     bool? isLoading,
     bool? isUploadingAvatar,
+    bool? isUploadingLicence,
+    bool? isUploadingPortfolio,
     String? error,
   }) => ProfileState(
     profile: profile ?? this.profile,
@@ -245,6 +309,8 @@ class ProfileState {
     tradeProfile: tradeProfile ?? this.tradeProfile,
     isLoading: isLoading ?? this.isLoading,
     isUploadingAvatar: isUploadingAvatar ?? this.isUploadingAvatar,
+    isUploadingLicence: isUploadingLicence ?? this.isUploadingLicence,
+    isUploadingPortfolio: isUploadingPortfolio ?? this.isUploadingPortfolio,
     error: error,
   );
 }
