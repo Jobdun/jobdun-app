@@ -1,0 +1,50 @@
+-- ============================================================
+-- Migration: schema reconciliation (Sprint 1 / F-SCH-01,02,13 + perf/realtime)
+-- Pre-launch, no data: additive ALTERs, idempotent, safe to replay.
+-- Brings the schema up to the canonical Dart data-layer contract.
+-- ============================================================
+
+-- ---------- verification_documents (F-SCH-01) ----------
+
+-- doc_type enum — exactly DocType.dbValue in verification_document.dart:16-22
+DO $$ BEGIN
+  CREATE TYPE public.document_doc_type AS ENUM (
+    'trade_licence', 'public_liability', 'workers_compensation',
+    'white_card', 'photo_id', 'abn_certificate', 'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- VerificationStatus has 4 values (verification_document.dart:50); enum has 3.
+DO $$ BEGIN
+  ALTER TYPE public.document_status ADD VALUE IF NOT EXISTS 'expired';
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE public.verification_documents
+  ADD COLUMN IF NOT EXISTS doc_type         public.document_doc_type,
+  ADD COLUMN IF NOT EXISTS file_path        text,
+  ADD COLUMN IF NOT EXISTS submitted_at     timestamptz,
+  ADD COLUMN IF NOT EXISTS state            text,
+  ADD COLUMN IF NOT EXISTS issuer           text,
+  ADD COLUMN IF NOT EXISTS document_number  text,
+  ADD COLUMN IF NOT EXISTS issued_date      date,
+  ADD COLUMN IF NOT EXISTS expiry_date      date,
+  ADD COLUMN IF NOT EXISTS rejection_reason text,
+  ADD COLUMN IF NOT EXISTS review_notes     text,
+  ADD COLUMN IF NOT EXISTS reviewed_by      uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS reviewed_at      timestamptz,
+  ADD COLUMN IF NOT EXISTS deleted_at       timestamptz;
+
+-- THE GAP the audit's F-SCH-01 SQL missed: legacy type/url are NOT NULL but
+-- the app's insert payload (verification_document_model.dart:49-61) never
+-- sends them. Without this, every upload still fails a NOT NULL violation
+-- after the columns exist. No data → straight DROP NOT NULL, no backfill.
+ALTER TABLE public.verification_documents
+  ALTER COLUMN type DROP NOT NULL,
+  ALTER COLUMN url  DROP NOT NULL;
+
+-- "expiring soon" path (F-SCH-06): partial index on live approved docs.
+CREATE INDEX IF NOT EXISTS verification_documents_expiry_idx
+  ON public.verification_documents (expiry_date)
+  WHERE status = 'approved' AND deleted_at IS NULL AND expiry_date IS NOT NULL;
