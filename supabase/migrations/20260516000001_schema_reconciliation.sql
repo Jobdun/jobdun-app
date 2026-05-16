@@ -68,3 +68,29 @@ END $$;
 CREATE INDEX IF NOT EXISTS messages_thread_feed_idx
   ON public.messages (conversation_id, created_at DESC)
   WHERE deleted_at IS NULL;
+
+-- ---------- conversations (F-SCH-13 + realtime F-RT-01) ----------
+DO $$ BEGIN
+  CREATE TYPE public.conversation_status AS ENUM ('active','archived','blocked');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE public.conversations
+  ADD COLUMN IF NOT EXISTS status                 public.conversation_status NOT NULL DEFAULT 'active',
+  ADD COLUMN IF NOT EXISTS builder_unread_count   int  NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS trade_unread_count     int  NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_message_preview   text,
+  ADD COLUMN IF NOT EXISTS last_message_sender_id uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+-- F-SCH-13: NULL job_id makes the UNIQUE(job_id,builder_id,trade_id) constraint
+-- non-deduping (NULLs are distinct). Replace with two partial unique indexes.
+ALTER TABLE public.conversations
+  DROP CONSTRAINT IF EXISTS conversations_job_id_builder_id_trade_id_key;
+
+CREATE UNIQUE INDEX IF NOT EXISTS conversations_uniq_with_job
+  ON public.conversations (job_id, builder_id, trade_id)
+  WHERE job_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS conversations_uniq_no_job
+  ON public.conversations (builder_id, trade_id)
+  WHERE job_id IS NULL;
