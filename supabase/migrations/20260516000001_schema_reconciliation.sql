@@ -120,3 +120,12 @@ CREATE INDEX IF NOT EXISTS jobs_search_vector_idx
 -- ---------- applications.status_changed_at (F-SCH / app contract) ----------
 ALTER TABLE public.applications
   ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
+
+-- ---------- profiles (auth/profile feature contract) ----------
+-- profile_remote_datasource.dart:36 selects phone + bio. The completeness
+-- migration comment claims "Number lives on profiles.phone" but the column
+-- was never added. (email is intentionally NOT added — canonical in
+-- auth.users; the offending .select() is corrected in Task 6C.)
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS bio   text;
