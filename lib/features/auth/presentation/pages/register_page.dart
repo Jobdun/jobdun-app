@@ -11,12 +11,13 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
+import '../../../../core/widgets/social_auth_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_acceptance_checkbox.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/social_auth_buttons.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key, this.initialRole});
@@ -69,6 +70,21 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   void _goBackToPicker() {
     setState(() => _step = 1);
+  }
+
+  void _onGoogle() {
+    AuthAnalytics.ssoTapped(provider: 'google');
+    ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
+  void _onApple() {
+    AuthAnalytics.ssoTapped(provider: 'apple');
+    ref.read(authControllerProvider.notifier).signInWithApple();
+  }
+
+  void _onPhone() {
+    AuthAnalytics.phoneTapped();
+    context.push('/phone-auth');
   }
 
   void _submit() {
@@ -154,6 +170,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           selectedRole: _selectedRole,
                           onRolePicked: _pickRole,
                           onGoToLogin: () => context.go('/login'),
+                          onGoogle: _onGoogle,
+                          onApple: _onApple,
+                          onPhone: _onPhone,
+                          isBusy: authState.isLoading,
                           c: c,
                           tt: tt,
                         )
@@ -200,6 +220,10 @@ class _RoleStep extends StatelessWidget {
     required this.selectedRole,
     required this.onRolePicked,
     required this.onGoToLogin,
+    required this.onGoogle,
+    required this.onApple,
+    required this.onPhone,
+    required this.isBusy,
     required this.c,
     required this.tt,
   });
@@ -207,6 +231,10 @@ class _RoleStep extends StatelessWidget {
   final UserRole? selectedRole;
   final ValueChanged<UserRole> onRolePicked;
   final VoidCallback onGoToLogin;
+  final VoidCallback onGoogle;
+  final VoidCallback onApple;
+  final VoidCallback onPhone;
+  final bool isBusy;
   final JColors c;
   final TextTheme tt;
 
@@ -282,8 +310,31 @@ class _RoleStep extends StatelessWidget {
 
           Gap(AppSpacing.xl.h),
 
-          // ── SSO alternative ───────────────────────────────────────────────
-          const SocialAuthButtons(),
+          // ── SSO alternative — matches /login icon-tile row ────────────────
+          // Same Google · Apple · Phone trio as LoginPage so users land on a
+          // single consistent SSO surface across both auth entry points.
+          _OrDivider(c: c, tt: tt),
+          Gap(AppSpacing.md.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              SocialAuthButton.google(
+                key: const Key('register.sso.google'),
+                onTap: isBusy ? () {} : onGoogle,
+                isLoading: isBusy,
+              ),
+              SocialAuthButton.apple(
+                key: const Key('register.sso.apple'),
+                onTap: isBusy ? () {} : onApple,
+                isLoading: isBusy,
+              ),
+              SocialAuthButton.phone(
+                key: const Key('register.sso.phone'),
+                onTap: isBusy ? () {} : onPhone,
+                isLoading: isBusy,
+              ),
+            ],
+          ),
 
           Gap(AppSpacing.lg.h),
 
@@ -748,6 +799,31 @@ class _PasswordStrengthBar extends StatelessWidget {
           label,
           style: tt.labelSmall!.copyWith(color: color, fontSize: 11.sp),
         ),
+      ],
+    );
+  }
+}
+
+// ── "── or ──" section divider ──────────────────────────────────────────────
+// Mirrors the divider on /login above the SSO icon row so both auth pages
+// share the same "email path above, social path below" rhythm.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider({required this.c, required this.tt});
+
+  final JColors c;
+  final TextTheme tt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
+          child: Text('or', style: tt.bodySmall!.copyWith(color: c.text3)),
+        ),
+        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
       ],
     );
   }

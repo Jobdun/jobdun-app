@@ -150,9 +150,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               JTextField(
                                 name: 'email',
                                 label: 'Email',
-                                // No hint — label + prefix icon already
-                                // tell the user this is an email field
-                                // (Hick's Law: cut redundant surfaces).
+                                hint: 'you@example.com',
                                 prefixIcon: Iconsax.sms,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
@@ -169,8 +167,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               JTextField(
                                 name: 'password',
                                 label: 'Password',
-                                // No hint — "Enter your password" just
-                                // repeats the label verb.
+                                hint: 'Enter your password',
                                 prefixIcon: Iconsax.lock,
                                 obscureText: true,
                                 textInputAction: TextInputAction.done,
@@ -223,12 +220,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         Gap(AppSpacing.md.h),
 
                         // ── Icon row: Google · Apple · Phone ─────────────────
-                        // Three peer-level entry points rendered as 56x56 icon
-                        // tiles with captions underneath. Brand colours
-                        // preserved (multi-colour Google G, white Apple).
-                        // Phone is in the same row — equal visual weight; the
-                        // caption keeps it discoverable for tradies who lean
-                        // on phone OTP.
+                        // Three peer-level icon-only entry points rendered as
+                        // 56x56 tiles. Brand colours preserved (multi-colour
+                        // Google G, white Apple, neutral phone).
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [

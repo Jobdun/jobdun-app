@@ -7,8 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../app/theme/app_colors.dart';
 
 /// Compact icon button used for Google / Apple / Phone auth entry points on
-/// /login. Renders a 56x56 rounded-square tile with the brand mark inside
-/// plus a small caption underneath ("Google" / "Apple" / "Phone").
+/// /login. Renders a 56x56 rounded-square tile with the brand mark inside.
 ///
 /// Sits in a centred Row of three peers — same visual weight, brand colours
 /// preserved (multi-colour Google G, white Apple, neutral phone). Aligns
@@ -44,15 +43,14 @@ class SocialAuthButton extends StatelessWidget {
        caption = null,
        semanticsLabel = 'Continue with Apple';
 
-  /// Phone — Iconsax call glyph keeps its 'Phone' caption: the icon is a
-  /// generic UI glyph (not a brand mark), so without the label AU tradies
-  /// may not pattern-match it to "OTP sign-in". This asymmetry is intentional.
+  /// Phone — Iconsax call glyph. No caption: matches Google/Apple peers for
+  /// a clean icon-only row; screen readers still get the semantics label.
   const SocialAuthButton.phone({
     super.key,
     required VoidCallback this.onTap,
     this.isLoading = false,
   }) : iconBuilder = _phoneIcon,
-       caption = 'Phone',
+       caption = null,
        semanticsLabel = 'Continue with phone number';
 
   /// Returns the icon widget for this button. A function (not a Widget) so

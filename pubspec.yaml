@@ -133,6 +133,7 @@ flutter:
   assets:
     - .env
     - assets/legal/
+    - assets/images/ftue/
     - lib/core/assets/
     - lib/core/assets/logo-concepts/hammer-j-above/
     - lib/core/assets/logo-concepts/hammer-j-fused/

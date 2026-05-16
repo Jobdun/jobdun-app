@@ -9,7 +9,9 @@ import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/features/auth/domain/entities/user_role.dart';
 import 'package:jobdun/features/auth/presentation/pages/login_page.dart';
 import 'package:jobdun/features/auth/presentation/pages/register_page.dart';
+import 'package:jobdun/features/ftue/data/geo_service.dart';
 import 'package:jobdun/features/ftue/presentation/pages/ftue_page.dart';
+import 'package:jobdun/features/ftue/presentation/providers/ftue_geo_provider.dart';
 
 // Verifies every login-page entry point routes to the right destination:
 // - Email submit (covered by auth_test/sign_in usecase tests, not here)
@@ -79,6 +81,10 @@ void main() {
 
   Widget wrap(GoRouter router) {
     return ProviderScope(
+      // FTUE's geo provider would otherwise call ipapi.co under test —
+      // stub to the non-AU outcome so slide 2 renders generic copy and
+      // no real HTTP call leaks out.
+      overrides: [geoServiceProvider.overrideWithValue(_NoOpGeoService())],
       child: ScreenUtilInit(
         designSize: const Size(390, 844),
         builder: (_, _) => MaterialApp.router(
@@ -88,6 +94,25 @@ void main() {
         ),
       ),
     );
+  }
+
+  // Drain the FTUE's missing-asset errors after any pump that mounts
+  // /ftue. The wow-pass slides precache hero photos that aren't checked in
+  // yet; FtueHeroPhoto.errorBuilder renders a navy placeholder, so this is
+  // documented graceful degradation — just keep the binding from failing
+  // the test on it.
+  void drainAssetErrors(WidgetTester tester) {
+    while (true) {
+      final exc = tester.takeException();
+      if (exc == null) return;
+      final msg = exc.toString();
+      if (msg.contains('Unable to load asset') ||
+          msg.contains('image failed to precache') ||
+          msg.contains('Multiple exceptions')) {
+        continue;
+      }
+      throw exc;
+    }
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -106,6 +131,9 @@ void main() {
 
     await tester.tap(link, warnIfMissed: false);
     await tester.pumpAndSettle();
+    // Once routing lands on /ftue, the hero-photo precache fires its known
+    // missing-asset errors — drain them so the binding doesn't fail.
+    drainAssetErrors(tester);
 
     expect(router.state.uri.toString(), '/ftue?from=login');
   });
@@ -121,6 +149,7 @@ void main() {
     final router = buildRouter(initial: '/ftue?from=login');
     await tester.pumpWidget(wrap(router));
     await tester.pumpAndSettle();
+    drainAssetErrors(tester);
 
     // Back arrow has the "Back to log in." semantics label.
     final back = find.bySemanticsLabel('Back to log in.');
@@ -138,12 +167,15 @@ void main() {
       final router = buildRouter(initial: '/ftue?from=login');
       await tester.pumpWidget(wrap(router));
       await tester.pumpAndSettle();
+      drainAssetErrors(tester);
 
-      // Swipe to slide 2 then slide 3.
-      await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
+      // jumpToPage(2) is more deterministic than flinging through pages —
+      // the new wow-pass slide layout uses SingleChildScrollView and a
+      // single -400px fling can overshoot to slide 3 when content is tall.
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      pageView.controller!.jumpToPage(2);
       await tester.pumpAndSettle();
-      await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-      await tester.pumpAndSettle();
+      drainAssetErrors(tester);
 
       // Both CTAs render.
       expect(find.text("I'M HIRING"), findsOneWidget);
@@ -207,12 +239,18 @@ void main() {
     expect(find.byKey(const Key('login.sso.apple')), findsOneWidget);
     expect(find.byKey(const Key('login.sso.phone')), findsOneWidget);
 
-    // Only Phone shows a visible caption — Google + Apple use Semantics for
-    // screen readers but no visible label (Jakob's Law: brand marks are
-    // universally recognised). Phone keeps its caption for AU tradie
-    // OTP-path discoverability.
-    expect(find.text('Phone'), findsOneWidget);
+    // All three are icon-only — no visible captions. Screen readers get the
+    // accessible name via the SocialAuthButton's Semantics wrapper.
+    expect(find.text('Phone'), findsNothing);
     expect(find.text('Google'), findsNothing);
     expect(find.text('Apple'), findsNothing);
   });
+}
+
+/// Stub that fails the lookup with the non-AU outcome — keeps slide 2 on
+/// the generic copy path with zero network traffic.
+class _NoOpGeoService implements GeoService {
+  @override
+  Future<GeoLookupOutcome> lookup() async =>
+      GeoLookupOutcome.failure(GeoFailureReason.nonAu, 0);
 }

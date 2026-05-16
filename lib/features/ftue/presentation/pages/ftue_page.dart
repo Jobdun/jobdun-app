@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../../../core/services/ftue_service.dart';
-import '../../../auth/presentation/widgets/role_intent_cta.dart';
+import '../providers/ftue_geo_provider.dart';
+import '../slides/slide_one_trust.dart';
+import '../slides/slide_three_action.dart';
+import '../slides/slide_two_speed.dart';
 import '../widgets/ftue_page_indicator.dart';
-import '../widgets/ftue_slide.dart';
 
 // Three-slide FTUE carousel. New installs land here straight out of splash;
-// every exit path (CTA tap, SKIP, login link) sets has_completed_ftue=true so
-// the user never sees it again.
+// every exit path (CTA tap, SKIP, login link) sets has_completed_ftue=true
+// so the user never sees it again.
 //
 // [fromLogin] is true when the user tapped "Create account →" on /login —
 // they already know the app, just need a signup path. In that case slide 1
@@ -34,12 +35,10 @@ class _FtuePageState extends ConsumerState<FtuePage> {
 
   final _pageController = PageController();
   int _currentSlide = 0;
-  // Per-slide enter timestamps drive the time_on_previous_ms analytics
-  // payload — without this, the "are slides 1 and 2 too long?" question is
-  // unanswerable.
   late final DateTime _startedAt;
   late DateTime _slideEnteredAt;
   bool _exited = false;
+  bool _heroPrecached = false;
 
   @override
   void initState() {
@@ -50,9 +49,31 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     FtueAnalytics.started(
       entry: widget.fromLogin ? 'create_account_link' : 'first_launch',
     );
-    // Slide 0 view fires here so the funnel has a "saw slide 1" event even
-    // for users who exit before swiping.
     FtueAnalytics.slideViewed(slideIndex: 0, timeOnPreviousMs: 0);
+    // Kick off the IP-geo lookup in parallel with the user reading slide 1
+    // so by the time they swipe to slide 2 the personalised copy is ready.
+    // listenManual (vs ref.read) keeps the autoDispose provider alive for
+    // the lifetime of the FTUE — without a subscription it would dispose
+    // immediately after the initial read and slide 2 would have to refire
+    // the lookup on mount, defeating the parallelism.
+    ref.listenManual(ftueGeoProvider, (_, _) {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // precacheImage needs a BuildContext with an attached ImageConfiguration,
+    // which isn't available in initState. Guard so we only fire once across
+    // route rebuilds. Errors swallowed — the FtueHeroPhoto errorBuilder
+    // takes over for missing assets.
+    if (_heroPrecached) return;
+    _heroPrecached = true;
+    for (final asset in const [
+      SlideOneTrust.heroAsset,
+      SlideThreeAction.heroAsset,
+    ]) {
+      precacheImage(AssetImage(asset), context).catchError((_) {});
+    }
   }
 
   @override
@@ -98,9 +119,6 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     _exit(exitPath: 'login_link', route: '/login');
   }
 
-  // Slide-1 back-arrow tap (only rendered when fromLogin=true). Doesn't mark
-  // the FTUE as complete — the user is bailing out to /login, not finishing
-  // onboarding, and they may yet return through "Create account" later.
   void _onBackToLogin() {
     if (_exited) return;
     _exited = true;
@@ -111,10 +129,6 @@ class _FtuePageState extends ConsumerState<FtuePage> {
   Widget build(BuildContext context) {
     final c = context.c;
     final isFinalSlide = _currentSlide == _slideCount - 1;
-
-    // Back arrow shown only when the user arrived from /login (Create
-    // account → link) AND they're still on the first slide — once they
-    // swipe forward, the carousel is the path of least resistance.
     final showBack = widget.fromLogin && _currentSlide == 0;
 
     return Scaffold(
@@ -133,37 +147,12 @@ class _FtuePageState extends ConsumerState<FtuePage> {
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
                 children: [
-                  FtueSlide(
-                    headlineLine1: 'VERIFIED TRADIES.',
-                    headlineLine2: 'REAL JOBS.',
-                    body:
-                        'Every trade is licence-checked. Every builder is '
-                        'verified. No timewasters.',
-                    visual: const _VerifiedBadgeStack(),
-                  ),
-                  FtueSlide(
-                    headlineLine1: 'FIND WORK.',
-                    headlineLine2: 'FAST.',
-                    body:
-                        'Jobs near you, sorted by your suburb. Apply in '
-                        'three taps.',
-                    visual: const _MapPinCluster(),
-                  ),
-                  FtueSlide(
-                    headlineLine1: 'BUILT FOR',
-                    headlineLine2: 'AUSSIE SITES.',
-                    body:
-                        'Made in Australia. For builders, sparkies, chippies, '
-                        'plumbers, and crews.',
-                    visual: const _AussieMark(),
-                    footer: _FinalSlideCtas(
-                      onHiring: () => _onCta('builder'),
-                      onWorking: () => _onCta('trade'),
-                      // Hide the login footer link when the user came from
-                      // /login — they already know that path; rendering it
-                      // again would just bounce them in a loop.
-                      onLoginLink: widget.fromLogin ? null : _onLoginLink,
-                    ),
+                  const SlideOneTrust(),
+                  const SlideTwoSpeed(),
+                  SlideThreeAction(
+                    onHiring: () => _onCta('builder'),
+                    onWorking: () => _onCta('trade'),
+                    onLoginLink: widget.fromLogin ? null : _onLoginLink,
                   ),
                 ],
               ),
@@ -186,7 +175,6 @@ class _FtuePageState extends ConsumerState<FtuePage> {
 // Indicator lives at the bottom; this just hosts the SKIP affordance.
 // Always-mounted with a fixed height so swiping to slide 3 doesn't cause a
 // layout shift when SKIP disappears.
-
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.showSkip,
@@ -258,193 +246,6 @@ class _TopBar extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Final-slide CTA stack ───────────────────────────────────────────────────
-// Reuses RoleIntentCta from the auth feature — same role-deep-link pattern
-// the login page used before this refactor moved them here.
-
-class _FinalSlideCtas extends StatelessWidget {
-  const _FinalSlideCtas({
-    required this.onHiring,
-    required this.onWorking,
-    required this.onLoginLink,
-  });
-
-  final VoidCallback onHiring;
-  final VoidCallback onWorking;
-  // null when the user arrived via /login → /ftue?from=login. The "I already
-  // have an account · LOG IN" link is hidden in that case to avoid a loop.
-  final VoidCallback? onLoginLink;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        RoleIntentCta(
-          icon: Iconsax.buildings,
-          label: "I'M HIRING",
-          subtitle: 'Post a job. Get quotes from verified crews.',
-          onTap: onHiring,
-        ),
-        Gap(12.h),
-        RoleIntentCta(
-          icon: Iconsax.briefcase,
-          label: "I'M LOOKING FOR WORK",
-          subtitle: 'Find jobs near you. Built for Aussie trades.',
-          onTap: onWorking,
-        ),
-        if (onLoginLink != null) ...[
-          Gap(AppSpacing.md.h),
-          // Two-line stack (not a single Row) keeps the link readable on
-          // narrow 360-wide devices and gives the test harness a generously
-          // sized, always-on-screen tap target — Ahem-font glyphs in widget
-          // tests are wide enough to push a single-row layout off-bounds.
-          Semantics(
-            button: true,
-            label: 'I already have an account. Log in.',
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onLoginLink,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'I already have an account',
-                      textAlign: TextAlign.center,
-                      style: tt.bodySmall!.copyWith(color: c.text3),
-                    ),
-                    Gap(4.h),
-                    Text(
-                      'LOG IN',
-                      textAlign: TextAlign.center,
-                      style: tt.bodySmall!.copyWith(
-                        color: c.text2,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        decoration: TextDecoration.underline,
-                        decorationColor: c.text2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-// ── Visual placeholders ─────────────────────────────────────────────────────
-// Static Iconsax compositions. Lottie ships in the next sprint and slots into
-// the `visual:` parameter without touching FtueSlide.
-
-class _VerifiedBadgeStack extends StatelessWidget {
-  const _VerifiedBadgeStack();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          left: 0,
-          child: _Badge(icon: Iconsax.shield_tick, color: c.verified),
-        ),
-        Positioned(
-          right: 0,
-          child: _Badge(icon: Iconsax.verify, color: c.action),
-        ),
-        _Badge(icon: Iconsax.shield_tick, color: c.action, large: true),
-      ],
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.icon, required this.color, this.large = false});
-
-  final IconData icon;
-  final Color color;
-  final bool large;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final size = large ? 96.r : 64.r;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Icon(icon, size: large ? 48.r : 28.r, color: color),
-    );
-  }
-}
-
-class _MapPinCluster extends StatelessWidget {
-  const _MapPinCluster();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          top: 6.h,
-          left: 24.w,
-          child: Icon(Iconsax.location, size: 40.r, color: c.text3),
-        ),
-        Positioned(
-          bottom: 6.h,
-          right: 28.w,
-          child: Icon(Iconsax.location, size: 36.r, color: c.text2),
-        ),
-        Container(
-          width: 96.r,
-          height: 96.r,
-          decoration: BoxDecoration(
-            color: c.surface,
-            shape: BoxShape.circle,
-            border: Border.all(color: c.border),
-          ),
-          child: Icon(Iconsax.location5, size: 48.r, color: c.action),
-        ),
-      ],
-    );
-  }
-}
-
-class _AussieMark extends StatelessWidget {
-  const _AussieMark();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Container(
-      width: 120.r,
-      height: 120.r,
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Icon(Iconsax.building_4, size: 64.r, color: c.action),
     );
   }
 }

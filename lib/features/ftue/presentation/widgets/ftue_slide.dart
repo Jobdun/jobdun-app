@@ -5,24 +5,31 @@ import 'package:gap/gap.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme.dart';
 
-// Single-slide template for the FTUE carousel. Visual sits at the top, then a
-// two-line Oswald headline, then a single body paragraph, then an optional
-// footer (the slide-3 CTA stack). Visual slot is intentionally a Widget so
-// the next sprint can drop a Lottie in without touching this layout.
+// Single-slide template for the FTUE carousel. Photo (or custom visual) at
+// the top, two-line Oswald headline below, two-line body paragraph under
+// that, optional footer (slide 3's CTA stack). The `visual` slot is
+// optional so a slide can be text-only when its own elements (e.g. slide
+// 2's map-pin chip row) carry the visual weight.
 class FtueSlide extends StatelessWidget {
   const FtueSlide({
     super.key,
     required this.headlineLine1,
     required this.headlineLine2,
-    required this.body,
-    required this.visual,
+    required this.bodyLine1,
+    required this.bodyLine2,
+    this.visual,
     this.footer,
   });
 
   final String headlineLine1;
   final String headlineLine2;
-  final String body;
-  final Widget visual;
+  final String bodyLine1;
+  final String bodyLine2;
+
+  /// Hero photo / custom Flutter widget rendered above the headline. Null =
+  /// no visual block (slide 2 owns its own pin chips below the copy).
+  final Widget? visual;
+
   final Widget? footer;
 
   @override
@@ -30,36 +37,36 @@ class FtueSlide extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Gap(AppSpacing.xxl.h),
-          // Visual area — sized generously so static icons + future Lotties
-          // both feel anchored. Bounded so the headline never gets pushed
-          // off a 360×640 viewport. Container (not SizedBox) keeps the
-          // design-system lint happy — Gap is reserved for spacing.
-          Container(
-            height: 180.h,
-            child: Center(child: visual),
-          ),
-          Gap(AppSpacing.xl.h),
+          Gap(AppSpacing.lg.h),
+          if (visual != null) ...[visual!, Gap(AppSpacing.lg.h)],
           Text(
             headlineLine1,
             style: AppTheme.brandDisplay(
               c.text1,
-            ).copyWith(fontSize: 38.sp, height: 1.05, letterSpacing: 2.0),
+            ).copyWith(fontSize: 32.sp, height: 1.05, letterSpacing: 2.0),
           ),
           Text(
             headlineLine2,
             style: AppTheme.brandDisplay(
               c.action,
-            ).copyWith(fontSize: 38.sp, height: 1.05, letterSpacing: 2.0),
+            ).copyWith(fontSize: 32.sp, height: 1.05, letterSpacing: 2.0),
           ),
           Gap(AppSpacing.md.h),
           Text(
-            body,
+            bodyLine1,
+            style: tt.bodyMedium!.copyWith(
+              color: c.text2,
+              height: 1.45,
+              fontSize: 14.sp,
+            ),
+          ),
+          Text(
+            bodyLine2,
             style: tt.bodyMedium!.copyWith(
               color: c.text2,
               height: 1.45,
@@ -67,10 +74,7 @@ class FtueSlide extends StatelessWidget {
             ),
           ),
           if (footer != null) ...[Gap(AppSpacing.lg.h), footer!],
-          // Spacer pushes content up so the page indicator at the parent's
-          // bottom edge stays glued to the bottom; without it the body
-          // crowds the dots on tall screens.
-          const Spacer(),
+          Gap(AppSpacing.lg.h),
         ],
       ),
     );

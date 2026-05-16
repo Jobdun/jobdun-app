@@ -44,6 +44,57 @@ class FtueAnalytics {
     });
   }
 
+  // ── Wow-pass events (IP geo personalisation + hero photography) ──────────
+  // Boss-facing metric: ftue.slide_two_rendered tells us what % of users get
+  // the personalised wow (variant: 'personalised') vs the generic fallback
+  // (variant: 'generic'). The geo_lookup_* trio is the operational diagnostic
+  // — distinguishes "ipapi is slow" from "user is overseas".
+
+  static void geoLookupStarted() {
+    _emit('ftue.geo_lookup_started', const {});
+  }
+
+  static void geoLookupSucceeded({
+    String? city,
+    String? region,
+    required String country,
+    required int latencyMs,
+  }) {
+    _emit('ftue.geo_lookup_succeeded', {
+      'city': city,
+      'region': region,
+      'country': country,
+      'latency_ms': latencyMs,
+    });
+  }
+
+  static void geoLookupFailed({
+    required String reason, // 'timeout' | 'non_au' | 'network' | 'parse'
+    required int latencyMs,
+  }) {
+    _emit('ftue.geo_lookup_failed', {
+      'reason': reason,
+      'latency_ms': latencyMs,
+    });
+  }
+
+  static void slideTwoRendered({
+    required String variant, // 'personalised' | 'generic'
+    String? city,
+  }) {
+    _emit('ftue.slide_two_rendered', {'variant': variant, 'city': city});
+  }
+
+  static void imageLoadFailed({
+    required int slideIndex,
+    required String assetPath,
+  }) {
+    _emit('ftue.image_load_failed', {
+      'slide_index': slideIndex,
+      'asset_path': assetPath,
+    });
+  }
+
   static void _emit(String event, Map<String, Object?> props) {
     if (kDebugMode) {
       debugPrint('[analytics] $event $props');

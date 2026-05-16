@@ -39,9 +39,9 @@ void main() {
   });
 
   // Real fonts (Inter, Oswald, Iconsax) don't load in widget tests, so the
-  // Ahem fallback renders glyphs wider than production. That triggers a
-  // harmless RenderFlex overflow in SocialAuthButtons. Drain it after each
-  // pump so the binding doesn't fail the test on the known artifact.
+  // Ahem fallback renders glyphs wider than production. That can trigger a
+  // harmless RenderFlex overflow in tight rows on auth surfaces. Drain it
+  // after each pump so the binding doesn't fail the test on the artifact.
   void drainKnownOverflow(WidgetTester tester) {
     final exc = tester.takeException();
     if (exc == null) return;
