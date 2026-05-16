@@ -48,3 +48,23 @@ ALTER TABLE public.verification_documents
 CREATE INDEX IF NOT EXISTS verification_documents_expiry_idx
   ON public.verification_documents (expiry_date)
   WHERE status = 'approved' AND deleted_at IS NULL AND expiry_date IS NOT NULL;
+
+-- ---------- messages (F-SCH-02 + realtime F-RT) ----------
+-- message_model.dart:23-28 reads deleted_at AND edited_at; neither exists.
+ALTER TABLE public.messages
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS edited_at  timestamptz;
+
+-- Sender may soft-delete / edit their own message.
+DO $$ BEGIN
+  CREATE POLICY "messages_modify_own"
+    ON public.messages FOR UPDATE
+    USING (sender_id = auth.uid())
+    WITH CHECK (sender_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Realtime thread feed: newest-first within a thread, tombstones excluded.
+CREATE INDEX IF NOT EXISTS messages_thread_feed_idx
+  ON public.messages (conversation_id, created_at DESC)
+  WHERE deleted_at IS NULL;
