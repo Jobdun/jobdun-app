@@ -80,6 +80,15 @@ grep_check "No AppColors.* in lib/features/" \
 
 echo ""
 
+# ── Schema-diff guard ──────────────────────────────────────────────────────────
+if command -v supabase >/dev/null 2>&1; then
+  bash scripts/schema-diff.sh
+else
+  echo "schema-diff: SKIPPED (supabase CLI not installed)"
+fi
+
+echo ""
+
 # ── Section 2: Flutter checks ──────────────────────────────────────────────────
 echo -e "${BOLD}[2/3] Flutter${RESET}"
 
