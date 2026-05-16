@@ -100,6 +100,28 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  // Fallback when the JWT carries no user_role claim — e.g. the
+  // custom_access_token_hook isn't active in the dashboard, or a post-
+  // refreshSession race. user_roles is the source of truth; without this the
+  // role sheet re-appears on /home even though the user already picked a role.
+  Future<UserRole?> _roleFromDb(String userId) async {
+    try {
+      final row = await SupabaseConfig.client
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
+      final roleStr = row?['role'] as String?;
+      if (roleStr == null) return null;
+      return UserRole.values.firstWhere(
+        (r) => r.name == roleStr,
+        orElse: () => UserRole.trade,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _loadProfileForCurrentUser() async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) {
@@ -114,7 +136,9 @@ class AuthController extends Notifier<AuthState> {
           .maybeSingle();
 
       final onboardingDone = data?['onboarding_completed_at'] != null;
-      final role = _roleFromSession();
+      // JWT claim first (cheap, no round-trip); DB fallback so an absent
+      // claim doesn't make a role-bearing user look role-less.
+      final role = _roleFromSession() ?? await _roleFromDb(userId);
       state = state.copyWith(
         role: role,
         onboardingComplete: onboardingDone,

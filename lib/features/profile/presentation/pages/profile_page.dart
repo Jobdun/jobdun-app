@@ -430,12 +430,16 @@ class _TradeProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          _VerificationBadges(
-            badges: [
-              ('LICENSED', isVerified),
-              ('INSURED', false),
-              ('ID VERIFIED', false),
-              ('BACKGROUND CHECK', false),
+          _InfoCard(
+            title: 'VERIFICATION',
+            children: [
+              _VerificationRow(label: 'Email verified', isVerified: true),
+              _VerificationRow(
+                label: 'Licence verified',
+                isVerified: isVerified,
+              ),
+              _VerificationRow(label: 'Police check', isVerified: false),
+              _VerificationRow(label: 'SWMS uploaded', isVerified: false),
             ],
           ),
         ],
@@ -685,107 +689,6 @@ class _VerificationRow extends StatelessWidget {
             style: tt.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
               color: isVerified ? c.verified : c.available,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Design-system "Verification Badges" (profile-dashboard.md): a row of compact
-// chips. Verified = green border/text; pending/missing = muted border/text.
-// Honest by construction — an unverified item shows as a pending chip, never
-// a fabricated "verified".
-class _VerificationBadges extends StatelessWidget {
-  const _VerificationBadges({required this.badges});
-
-  /// (label, isVerified) in display order.
-  final List<(String, bool)> badges;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: c.card,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.md.w,
-              14.h,
-              AppSpacing.md.w,
-              10.h,
-            ),
-            child: Text(
-              'VERIFICATION',
-              style: tt.labelSmall!.copyWith(
-                letterSpacing: 0.12 * 11,
-                color: c.text3,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: c.border),
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.md.w),
-            child: Wrap(
-              spacing: 8.w,
-              runSpacing: 8.h,
-              children: [
-                for (final (label, verified) in badges)
-                  _VerificationBadge(label: label, verified: verified),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VerificationBadge extends StatelessWidget {
-  const _VerificationBadge({required this.label, required this.verified});
-
-  final String label;
-  final bool verified;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      height: 28.h,
-      padding: EdgeInsets.symmetric(horizontal: 8.w),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(4.r),
-        border: Border.all(color: verified ? c.verified : c.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            verified ? Iconsax.verify : Iconsax.clock,
-            size: 13.r,
-            color: verified ? c.verified : c.text3,
-          ),
-          Gap(5.w),
-          Text(
-            label,
-            style: tt.labelSmall!.copyWith(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: verified ? c.verified : c.text3,
             ),
           ),
         ],
