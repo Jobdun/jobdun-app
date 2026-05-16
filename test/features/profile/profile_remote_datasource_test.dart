@@ -8,11 +8,13 @@ void main() {
     ).readAsStringSync();
     expect(
       RegExp(r"\bemail\b").hasMatch(
-        RegExp(r"\.from\('profiles'\)[\s\S]*?\.select\(\s*'([^']*)'")
-            .firstMatch(src)!.group(1)!,
+        RegExp(
+          r"\.from\('profiles'\)[\s\S]*?\.select\(\s*'([^']*)'",
+        ).firstMatch(src)!.group(1)!,
       ),
       isFalse,
-      reason: 'profiles .select() must not request email — it lives in auth.users',
+      reason:
+          'profiles .select() must not request email — it lives in auth.users',
     );
   });
 }
