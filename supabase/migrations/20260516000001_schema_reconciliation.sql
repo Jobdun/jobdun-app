@@ -116,3 +116,7 @@ ALTER TABLE public.jobs
 
 CREATE INDEX IF NOT EXISTS jobs_search_vector_idx
   ON public.jobs USING gin (search_vector);
+
+-- ---------- applications.status_changed_at (F-SCH / app contract) ----------
+ALTER TABLE public.applications
+  ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
