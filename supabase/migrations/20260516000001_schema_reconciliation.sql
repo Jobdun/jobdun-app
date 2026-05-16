@@ -104,3 +104,15 @@ CREATE OR REPLACE VIEW public.profiles_public
   FROM public.profiles;
 
 GRANT SELECT ON public.profiles_public TO authenticated;
+
+-- ---------- jobs.search_vector (F-PERF-01) ----------
+-- websearch_to_tsquery target for job_remote_datasource.dart:41.
+ALTER TABLE public.jobs
+  ADD COLUMN IF NOT EXISTS search_vector tsvector
+  GENERATED ALWAYS AS (
+    to_tsvector('english',
+      coalesce(title,'') || ' ' || coalesce(description,''))
+  ) STORED;
+
+CREATE INDEX IF NOT EXISTS jobs_search_vector_idx
+  ON public.jobs USING gin (search_vector);
