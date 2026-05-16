@@ -129,3 +129,14 @@ ALTER TABLE public.applications
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS phone text,
   ADD COLUMN IF NOT EXISTS bio   text;
+
+-- ---------- trade_profiles (profile save contract) ----------
+-- trade_profile_model.dart:60-71 upsert payload. Defaults mirror the
+-- model's fromJson fallbacks (crew_size ?? 1, service_radius_km ?? 50,
+-- hourly_rate_visible ?? true).
+ALTER TABLE public.trade_profiles
+  ADD COLUMN IF NOT EXISTS crew_size           int           NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS hourly_rate_min     numeric(10,2),
+  ADD COLUMN IF NOT EXISTS hourly_rate_max     numeric(10,2),
+  ADD COLUMN IF NOT EXISTS hourly_rate_visible boolean       NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS service_radius_km   int           NOT NULL DEFAULT 50;
