@@ -421,38 +421,26 @@ class _FormField extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
+    // The themed OutlineInputBorder owns the box, so Material renders the
+    // validation error BELOW/outside the field instead of inside the border.
+    // Mirrors JTextField (the auth-flow pattern) and MASTER “Input Fields”.
+    return FormBuilderTextField(
+      name: name,
+      initialValue: initialValue,
+      validator: validator,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: tt.bodyLarge!.copyWith(
+        color: c.text1,
+        fontWeight: FontWeight.w500,
       ),
-      child: FormBuilderTextField(
-        name: name,
-        initialValue: initialValue,
-        validator: validator,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        style: tt.bodyLarge!.copyWith(color: c.text1),
-        decoration: InputDecoration(
-          hintText: hint,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          filled: false,
-          contentPadding: maxLines > 1
-              ? EdgeInsets.all(14.r)
-              : EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
-          isDense: true,
-          // Reserves a line of space so the field doesn't jump when an error
-          // appears; matches the JTextField pattern used in auth flows.
-          helperText: ' ',
-          helperMaxLines: 2,
-          errorMaxLines: 2,
-        ),
+      decoration: InputDecoration(
+        hintText: hint,
+        // Reserve helper/error space so layout doesn't jump on validation.
+        helperText: ' ',
+        helperMaxLines: 2,
+        errorMaxLines: 2,
       ),
     );
   }

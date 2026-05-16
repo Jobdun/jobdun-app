@@ -94,7 +94,11 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
                     ProfileAnalytics.bannerCtaTapped();
-                    context.push('/profile/edit');
+                    // go() (not push) so GoRouter switches the StatefulShell
+                    // to the Profile branch — otherwise currentIndex stays on
+                    // Home and the bottom-nav Profile icon never activates
+                    // while a profile screen is on screen.
+                    context.go('/profile/edit');
                   },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

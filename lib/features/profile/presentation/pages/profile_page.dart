@@ -173,7 +173,29 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () => context.push('/profile/edit'),
-                      child: Icon(Iconsax.edit_2, size: 20.r, color: c.text3),
+                      child: Container(
+                        height: 36.h,
+                        padding: EdgeInsets.symmetric(horizontal: 12.w),
+                        decoration: BoxDecoration(
+                          color: c.surfaceRaised,
+                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Iconsax.edit, size: 16.r, color: c.text1),
+                            Gap(6.w),
+                            Text(
+                              'EDIT',
+                              style: tt.labelSmall!.copyWith(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: c.text1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -221,14 +243,14 @@ class _BuilderProfile extends StatelessWidget {
     final c = context.c;
     final p = profile;
 
-    final rating = p?.averageRating?.toStringAsFixed(1) ?? '4.8';
-    final reviews = p?.ratingCount.toString() ?? '23';
-    final jobsPosted = p?.totalJobsPosted.toString() ?? '47';
+    final rating = p?.averageRating?.toStringAsFixed(1) ?? '—';
+    final reviews = (p?.ratingCount ?? 0).toString();
+    final jobsPosted = (p?.totalJobsPosted ?? 0).toString();
 
-    final companyName = p?.companyName ?? 'Pinnacle Construct';
-    final abn = p?.abn ?? '12 345 678 901';
-    final location = p?.displayLocation ?? 'Surry Hills NSW 2010';
-    final contact = p?.contactPhone ?? '+61 2 9123 4567';
+    final companyName = _blank(p?.companyName);
+    final abn = _blank(p?.abn);
+    final location = _blank(p?.displayLocation);
+    final contact = _blank(p?.contactPhone);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -310,12 +332,13 @@ class _TradeProfile extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final p = profile;
 
-    final rating = p?.averageRating?.toStringAsFixed(1) ?? '4.9';
-    final jobsDone = p?.jobsCompleted.toString() ?? '142';
-    final yrsExp = p?.yearsExperience != null ? '${p!.yearsExperience}+' : '5+';
+    final rating = p?.averageRating?.toStringAsFixed(1) ?? '—';
+    final jobsDone = (p?.jobsCompleted ?? 0).toString();
+    final yrsExp = p?.yearsExperience != null ? '${p!.yearsExperience}+' : '—';
 
-    final trade = p?.displayTrade ?? 'Electrician';
-    final location = p?.displayLocation ?? 'Parramatta NSW 2150';
+    final trade = _blank(p?.displayTrade);
+    final location = _blank(p?.displayLocation);
+    final hasLicence = p?.hasLicence ?? false;
     final isVerified = p?.isVerified ?? false;
 
     return Padding(
@@ -397,36 +420,22 @@ class _TradeProfile extends StatelessWidget {
               _InfoRow(
                 icon: Iconsax.document_text,
                 label: 'Licence',
-                value: 'EL 123456 (NSW)',
+                value: hasLicence ? 'On file' : null,
               ),
               _InfoRow(
                 icon: Iconsax.location,
                 label: 'Base suburb',
                 value: location,
               ),
-              _InfoRow(
-                icon: Iconsax.call,
-                label: 'Phone',
-                value: '+61 4 1234 5678',
-              ),
-              _InfoRow(
-                icon: Iconsax.calendar_1,
-                label: 'Member since',
-                value: 'May 2026',
-              ),
             ],
           ),
           Gap(12.h),
-          _InfoCard(
-            title: 'VERIFICATION',
-            children: [
-              _VerificationRow(label: 'Email verified', isVerified: true),
-              _VerificationRow(
-                label: 'Licence verified',
-                isVerified: isVerified,
-              ),
-              _VerificationRow(label: 'Police check', isVerified: false),
-              _VerificationRow(label: 'SWMS uploaded', isVerified: false),
+          _VerificationBadges(
+            badges: [
+              ('LICENSED', isVerified),
+              ('INSURED', false),
+              ('ID VERIFIED', false),
+              ('BACKGROUND CHECK', false),
             ],
           ),
         ],
@@ -528,16 +537,18 @@ class _StatBadge extends StatelessWidget {
               value,
               style: tt.headlineSmall!.copyWith(
                 fontSize: 22.sp,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w900,
                 color: c.text1,
               ),
             ),
             Gap(1.h),
             Text(
-              label,
+              label.toUpperCase(),
               style: tt.labelSmall!.copyWith(
-                fontWeight: FontWeight.w400,
-                color: c.text3,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+                color: c.text2,
               ),
             ),
           ],
@@ -599,12 +610,16 @@ class _InfoRow extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final String value;
+
+  /// Null or blank renders a muted "Not set" — never a fabricated value.
+  final String? value;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+
+    final hasValue = value != null && value!.trim().isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -619,10 +634,10 @@ class _InfoRow extends StatelessWidget {
           const Spacer(),
           Flexible(
             child: Text(
-              value,
+              hasValue ? value! : 'Not set',
               style: tt.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w600,
-                color: c.text1,
+                fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
+                color: hasValue ? c.text1 : c.text3,
               ),
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
@@ -633,6 +648,10 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
+
+/// Returns null for null/blank strings so [_InfoRow] shows its empty state
+/// instead of an empty or fabricated value.
+String? _blank(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
 
 class _VerificationRow extends StatelessWidget {
   const _VerificationRow({required this.label, required this.isVerified});
@@ -666,6 +685,107 @@ class _VerificationRow extends StatelessWidget {
             style: tt.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
               color: isVerified ? c.verified : c.available,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Design-system "Verification Badges" (profile-dashboard.md): a row of compact
+// chips. Verified = green border/text; pending/missing = muted border/text.
+// Honest by construction — an unverified item shows as a pending chip, never
+// a fabricated "verified".
+class _VerificationBadges extends StatelessWidget {
+  const _VerificationBadges({required this.badges});
+
+  /// (label, isVerified) in display order.
+  final List<(String, bool)> badges;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md.w,
+              14.h,
+              AppSpacing.md.w,
+              10.h,
+            ),
+            child: Text(
+              'VERIFICATION',
+              style: tt.labelSmall!.copyWith(
+                letterSpacing: 0.12 * 11,
+                color: c.text3,
+              ),
+            ),
+          ),
+          Divider(height: 1, color: c.border),
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.md.w),
+            child: Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                for (final (label, verified) in badges)
+                  _VerificationBadge(label: label, verified: verified),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerificationBadge extends StatelessWidget {
+  const _VerificationBadge({required this.label, required this.verified});
+
+  final String label;
+  final bool verified;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      height: 28.h,
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(4.r),
+        border: Border.all(color: verified ? c.verified : c.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            verified ? Iconsax.verify : Iconsax.clock,
+            size: 13.r,
+            color: verified ? c.verified : c.text3,
+          ),
+          Gap(5.w),
+          Text(
+            label,
+            style: tt.labelSmall!.copyWith(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: verified ? c.verified : c.text3,
             ),
           ),
         ],
