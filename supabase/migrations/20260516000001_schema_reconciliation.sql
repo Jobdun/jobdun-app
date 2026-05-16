@@ -94,3 +94,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS conversations_uniq_with_job
 CREATE UNIQUE INDEX IF NOT EXISTS conversations_uniq_no_job
   ON public.conversations (builder_id, trade_id)
   WHERE job_id IS NULL;
+
+-- ---------- profiles_public (realtime F-RT-01 inbox embed) ----------
+-- Minimal counterparty card for the messaging inbox. Display fields only;
+-- NO contact_phone / location PII (that scoping is F-RLS-03, separate task).
+CREATE OR REPLACE VIEW public.profiles_public
+  WITH (security_invoker = on) AS
+  SELECT id, display_name, avatar_url
+  FROM public.profiles;
+
+GRANT SELECT ON public.profiles_public TO authenticated;
