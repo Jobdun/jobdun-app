@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/models/trade_category_model.dart';
@@ -274,7 +275,11 @@ class _SheetHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onClose,
-            icon: Icon(Iconsax.close_square, size: 20.r, color: c.text3),
+            icon: Icon(
+              Iconsax.close_square,
+              size: AppIconSize.md.r,
+              color: c.text3,
+            ),
             tooltip: 'Close',
           ),
         ],
@@ -317,7 +322,11 @@ class _SearchField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search trades…',
             hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
-            prefixIcon: Icon(Iconsax.search_normal, size: 18.r, color: c.text3),
+            prefixIcon: Icon(
+              Iconsax.search_normal,
+              size: AppIconSize.md.r,
+              color: c.text3,
+            ),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -416,7 +425,11 @@ class _TradeRow extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(Iconsax.tick_circle, size: 20.r, color: c.action),
+                Icon(
+                  Iconsax.tick_circle,
+                  size: AppIconSize.md.r,
+                  color: c.action,
+                ),
             ],
           ),
         ),
@@ -454,25 +467,38 @@ class _OtherSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: onToggle,
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: [
-                Icon(Iconsax.add_circle, size: 18.r, color: c.text2),
-                Gap(10.w),
-                Expanded(
-                  child: Text(
-                    'Other — not listed',
-                    style: tt.bodyLarge!.copyWith(color: c.text1),
-                  ),
+          Semantics(
+            label: 'Other — not listed',
+            button: true,
+            expanded: isOpen,
+            child: GestureDetector(
+              onTap: onToggle,
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                constraints: BoxConstraints(minHeight: AppTouchTarget.min),
+                alignment: Alignment.center,
+                child: Row(
+                  children: [
+                    Icon(
+                      Iconsax.add_circle,
+                      size: AppIconSize.md.r,
+                      color: c.text2,
+                    ),
+                    Gap(10.w),
+                    Expanded(
+                      child: Text(
+                        'Other — not listed',
+                        style: tt.bodyLarge!.copyWith(color: c.text1),
+                      ),
+                    ),
+                    Icon(
+                      isOpen ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
+                      size: AppIconSize.sm.r,
+                      color: c.text3,
+                    ),
+                  ],
                 ),
-                Icon(
-                  isOpen ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
-                  size: 16.r,
-                  color: c.text3,
-                ),
-              ],
+              ),
             ),
           ),
           if (isOpen) ...[

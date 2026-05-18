@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -50,8 +51,13 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
       appBar: AppBar(
         backgroundColor: c.background,
         leading: IconButton(
+          tooltip: 'Back',
           onPressed: () => context.go('/login'),
-          icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text2),
+          icon: Icon(
+            Iconsax.arrow_left,
+            size: AppIconSize.md.r,
+            color: c.text2,
+          ),
         ),
       ),
       body: SafeArea(

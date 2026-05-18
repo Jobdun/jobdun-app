@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 
 // Hero visual for slide 2 — stylized, abstract "your area" map. Pairs with
@@ -59,12 +60,20 @@ class FtueMapHero extends StatelessWidget {
               for (final pin in _suburbPinOffsets(pinCount))
                 Align(
                   alignment: pin,
-                  child: Icon(Iconsax.location5, size: 18.r, color: c.text2),
+                  child: Icon(
+                    Iconsax.location5,
+                    size: AppIconSize.md.r,
+                    color: c.text2,
+                  ),
                 ),
               // "You are here" centre pin — orange, larger, with a soft
               // halo ring drawn underneath by the grid painter above.
               Center(
-                child: Icon(Iconsax.location5, size: 36.r, color: c.action),
+                child: Icon(
+                  Iconsax.location5,
+                  size: AppIconSize.xl.r,
+                  color: c.action,
+                ),
               ),
               // Hi-vis corner accent — matches FtueHeroPhoto so all three
               // slide visuals share the safety-stripe motif.

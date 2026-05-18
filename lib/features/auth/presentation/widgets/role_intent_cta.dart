@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 
 // Role-as-entry-point CTA. Two of these stack on /login under the
@@ -53,7 +54,7 @@ class RoleIntentCta extends StatelessWidget {
                     color: c.surface,
                     borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                   ),
-                  child: Icon(icon, size: 18.r, color: c.action),
+                  child: Icon(icon, size: AppIconSize.md.r, color: c.action),
                 ),
                 Gap(AppSpacing.md.w),
                 Expanded(
@@ -80,7 +81,11 @@ class RoleIntentCta extends StatelessWidget {
                   ),
                 ),
                 Gap(AppSpacing.sm.w),
-                Icon(Iconsax.arrow_right_3, size: 18.r, color: c.text3),
+                Icon(
+                  Iconsax.arrow_right_3,
+                  size: AppIconSize.md.r,
+                  color: c.text3,
+                ),
               ],
             ),
           ),

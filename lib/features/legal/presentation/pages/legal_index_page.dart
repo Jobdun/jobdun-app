@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../domain/legal_document.dart';
 import '../providers/legal_provider.dart';
@@ -25,7 +26,12 @@ class LegalIndexPage extends ConsumerWidget {
         backgroundColor: c.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left, color: c.text1, size: 20.r),
+          tooltip: 'Back',
+          icon: Icon(
+            Iconsax.arrow_left,
+            color: c.text1,
+            size: AppIconSize.md.r,
+          ),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -166,7 +172,7 @@ class _DocTile extends StatelessWidget {
             ? Iconsax.document_text
             : Iconsax.shield_tick,
         color: c.text2,
-        size: 20.r,
+        size: AppIconSize.md.r,
       ),
       title: Text(
         type.displayTitle,
@@ -184,7 +190,11 @@ class _DocTile extends StatelessWidget {
           fontSize: 11.sp,
         ),
       ),
-      trailing: Icon(Iconsax.arrow_right_3, color: c.text3, size: 16.r),
+      trailing: Icon(
+        Iconsax.arrow_right_3,
+        color: c.text3,
+        size: AppIconSize.sm.r,
+      ),
     );
   }
 }

@@ -69,6 +69,17 @@ class JobsController extends Notifier<JobsState> {
 
   Future<void> refresh() => loadFeed();
 
+  /// Find Jobs (T3) paged fetch. Independent of [loadFeed] — does NOT mutate
+  /// the shared home-feed [state]; the PagingController owns the page list.
+  /// Throws on failure so the PagingController can surface the error.
+  Future<List<Job>> fetchPage({
+    required int page,
+    required JobFilter filter,
+  }) async {
+    final result = await _repo.getJobs(filter: filter.copyWith(page: page));
+    return result.fold((f) => throw Exception(f.message), (jobs) => jobs);
+  }
+
   void clearFilter() {
     state = state.copyWith(clearFilter: true);
     loadFeed();

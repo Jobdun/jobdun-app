@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 
 class LogoComparePage extends StatelessWidget {
@@ -81,7 +82,12 @@ class LogoComparePage extends StatelessWidget {
         backgroundColor: c.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: c.text1, size: 20.r),
+          tooltip: 'Back',
+          icon: Icon(
+            Iconsax.arrow_left_2,
+            color: c.text1,
+            size: AppIconSize.md.r,
+          ),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/login'),
         ),
@@ -313,7 +319,11 @@ class _ConceptCard extends StatelessWidget {
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(Iconsax.quote_up, size: 14.r, color: c.action),
+                    Icon(
+                      Iconsax.quote_up,
+                      size: AppIconSize.xs.r,
+                      color: c.action,
+                    ),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -361,7 +371,11 @@ class _ConceptCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Iconsax.info_circle, size: 12.r, color: c.text3),
+                    Icon(
+                      Iconsax.info_circle,
+                      size: AppIconSize.xs.r,
+                      color: c.text3,
+                    ),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -403,7 +417,7 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Iconsax.flash_15, size: 16.r, color: c.action),
+              Icon(Iconsax.flash_15, size: AppIconSize.sm.r, color: c.action),
               Gap(8.w),
               Text(
                 'CURRENT ACTIVE LOGO',

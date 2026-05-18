@@ -207,7 +207,14 @@ Use `modal_bottom_sheet` (not Flutter's built-in). Background is `#1E293B`, hand
 
 Use `Iconsax.*` by default. Fall back to `Icons.*` only when no Iconsax equivalent exists.
 Icon color: `#94A3B8` default, `#F97316` for active/selected, `#F1F5F9` for primary actions.
-Icon size: 20–24dp for navigation, 16–20dp for inline, 32–40dp for feature icons.
+
+**Glyph size — always via `AppIconSize.*` (never a raw `size:` literal):**
+`xs 14` (dense metadata) · `sm 16` (inline secondary) · `md 20` (default inline / nav inactive) · `lg 24` (nav active / prominent) · `xl 32` (hero) · `feature 40` (empty-state). Apply `.r` at the call site.
+
+**Touch target — every tappable icon ≥ `AppTouchTarget.min` (44 iOS / 48 Android).**
+Use `TappableIcon` (`core/design/widgets/tappable_icon.dart`) for icon-only controls — it guarantees the hit area, adds the ripple, and requires a `semanticLabel`. Bare `IconButton` is acceptable (theme enforces the minimum) but must carry a `tooltip`/label. Keep ≥ `AppTouchTarget.gap` (8) between adjacent targets.
+
+**Anti-patterns:** raw `Icon(size: <n>.r)` in `lib/features/` (use `AppIconSize`); a `GestureDetector`/`InkWell` wrapping a bare `Icon` with no min-size constraint (sub-44 hit area); an icon-only control with no semantic label; overriding `IconButton.constraints` below the minimum.
 
 ---
 

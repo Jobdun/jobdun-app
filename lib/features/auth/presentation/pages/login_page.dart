@@ -8,6 +8,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -375,7 +376,7 @@ class _CreateAccountLink extends StatelessWidget {
                   alignment: PlaceholderAlignment.middle,
                   child: Icon(
                     Iconsax.arrow_right_3,
-                    size: 14.r,
+                    size: AppIconSize.xs.r,
                     color: c.action,
                   ),
                 ),

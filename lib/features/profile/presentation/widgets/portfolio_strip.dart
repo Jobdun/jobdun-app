@@ -8,6 +8,7 @@ import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../providers/profile_provider.dart';
 
@@ -161,7 +162,11 @@ class _PortfolioTile extends StatelessWidget {
               placeholder: (_, _) => Container(color: c.surfaceRaised),
               errorWidget: (_, _, _) => Container(
                 color: c.surfaceRaised,
-                child: Icon(Iconsax.gallery_slash, color: c.text3, size: 20.r),
+                child: Icon(
+                  Iconsax.gallery_slash,
+                  color: c.text3,
+                  size: AppIconSize.md.r,
+                ),
               ),
             ),
           ),
@@ -209,7 +214,7 @@ class _AddTile extends StatelessWidget {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Iconsax.add, size: 24.r, color: c.action),
+                    Icon(Iconsax.add, size: AppIconSize.lg.r, color: c.action),
                     Gap(2.h),
                     Text(
                       'ADD',

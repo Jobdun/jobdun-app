@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
@@ -78,7 +79,7 @@ class ProfileCompletenessBanner extends ConsumerWidget {
               ),
               child: Icon(
                 Iconsax.user_edit,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: Colors.white, // intentional: white-on-action
               ),
             ),
@@ -148,9 +149,15 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                     .read(_completenessBannerDismissedProvider.notifier)
                     .dismiss();
               },
-              icon: Icon(Iconsax.close_square, size: 18.r, color: c.text3),
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(minWidth: 32.r, minHeight: 32.r),
+              icon: Icon(
+                Iconsax.close_square,
+                size: AppIconSize.md.r,
+                color: c.text3,
+              ),
+              constraints: BoxConstraints(
+                minWidth: AppTouchTarget.min,
+                minHeight: AppTouchTarget.min,
+              ),
               tooltip: 'Dismiss',
             ),
           ],

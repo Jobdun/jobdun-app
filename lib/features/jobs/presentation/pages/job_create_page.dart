@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/design/widgets/field_label.dart';
@@ -78,7 +79,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
           children: [
             Icon(
               Iconsax.tick_circle,
-              size: 18.r,
+              size: AppIconSize.md.r,
               color: Colors.white, // intentional
             ),
             Gap(10.w),
@@ -114,10 +115,11 @@ class _JobCreatePageState extends State<JobCreatePage> {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: 'Close',
                     onPressed: () => context.pop(),
                     icon: Icon(
                       Iconsax.close_circle,
-                      size: 22.r,
+                      size: AppIconSize.md.r,
                       color: c.text1,
                     ),
                   ),
@@ -375,7 +377,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                         children: [
                           Icon(
                             Iconsax.flash_1,
-                            size: 18.r,
+                            size: AppIconSize.md.r,
                             color: _isUrgent ? c.action : c.text3,
                           ),
                           Gap(12.w),
@@ -447,7 +449,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                           children: [
                             Icon(
                               Iconsax.send_1,
-                              size: 18.r,
+                              size: AppIconSize.md.r,
                               color: Colors.white, // intentional
                             ),
                             Gap(AppSpacing.sm.w),

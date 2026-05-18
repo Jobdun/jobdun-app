@@ -27,6 +27,7 @@ import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/profile_placeholder_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
 import '../../features/verification/presentation/pages/verification_page.dart';
 
@@ -242,6 +243,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (_, _) => const ProfileEditPage(),
+                  ),
+                  GoRoute(
+                    path: 'trades',
+                    builder: (_, _) => const ProfilePlaceholderPage(
+                      title: 'My Trades & Licences',
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'portfolio',
+                    builder: (_, _) =>
+                        const ProfilePlaceholderPage(title: 'Portfolio'),
                   ),
                 ],
               ),

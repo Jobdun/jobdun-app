@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/validators/phone_validator.dart';
 
@@ -77,7 +78,7 @@ class _CountryPickerSheet extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                     icon: Icon(
                       Iconsax.close_square,
-                      size: 20.r,
+                      size: AppIconSize.md.r,
                       color: c.text3,
                     ),
                     tooltip: 'Close',
@@ -129,7 +130,7 @@ class _CountryPickerSheet extends StatelessWidget {
                             Gap(10.w),
                             Icon(
                               Iconsax.tick_circle,
-                              size: 18.r,
+                              size: AppIconSize.md.r,
                               color: c.action,
                             ),
                           ],

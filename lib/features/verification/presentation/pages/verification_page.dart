@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -112,6 +113,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
       appBar: AppBar(
         backgroundColor: c.background,
         leading: IconButton(
+          tooltip: 'Back',
           icon: Icon(Iconsax.arrow_left, color: c.text1),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/profile'),
@@ -223,7 +225,7 @@ class _StatusCard extends StatelessWidget {
             ),
             child: Icon(
               hasLicence ? Iconsax.shield_tick : Iconsax.document_text,
-              size: 20.r,
+              size: AppIconSize.md.r,
               color: tone,
             ),
           ),

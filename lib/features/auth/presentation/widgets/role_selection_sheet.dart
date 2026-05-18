@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../providers/auth_provider.dart';
 
@@ -201,7 +202,7 @@ class _SheetRoleCard extends StatelessWidget {
                           ),
                         ),
                       )
-                    : Icon(icon, size: 22.r, color: c.text2),
+                    : Icon(icon, size: AppIconSize.md.r, color: c.text2),
               ),
               Gap(AppSpacing.md.w),
               Expanded(
@@ -230,7 +231,7 @@ class _SheetRoleCard extends StatelessWidget {
               Gap(AppSpacing.sm.w),
               Icon(
                 Iconsax.arrow_right_3,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: pending ? c.action : c.text3,
               ),
             ],

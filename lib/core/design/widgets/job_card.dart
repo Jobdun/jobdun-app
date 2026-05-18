@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:iconsax/iconsax.dart';
 
+import '../../../app/constants/app_constants.dart';
 import '../../../app/theme/app_colors.dart';
 import 'status_badge.dart';
+import 'tappable_icon.dart';
 
 class JobCard extends StatelessWidget {
   const JobCard({
@@ -16,6 +19,8 @@ class JobCard extends StatelessWidget {
     required this.isUrgent,
     this.onTap,
     this.onApply,
+    this.onSave,
+    this.isSaved = false,
   });
 
   final String title;
@@ -26,6 +31,12 @@ class JobCard extends StatelessWidget {
   final bool isUrgent;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
+
+  /// When non-null a save (heart) affordance is shown. Persistence is a
+  /// deferred T3-backend item (no `saved_jobs` table yet) — callers wire this
+  /// to an honest "coming soon", not a fake local toggle.
+  final VoidCallback? onSave;
+  final bool isSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +95,16 @@ class JobCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (onSave != null) ...[
+                        Gap(4.w),
+                        TappableIcon(
+                          icon: isSaved ? Iconsax.heart5 : Iconsax.heart,
+                          semanticLabel: isSaved ? 'Saved' : 'Save job',
+                          glyphSize: AppIconSize.md,
+                          color: isSaved ? c.action : c.text3,
+                          onTap: onSave,
+                        ),
+                      ],
                       if (onApply != null) ...[
                         Gap(12.w),
                         Semantics(
@@ -126,14 +147,17 @@ class JobCard extends StatelessWidget {
                       Gap(AppSpacing.md.w),
                       _MetaCol(label: 'START', value: startDate, c: c, tt: tt),
                       const Spacer(),
-                      _MetaCol(
-                        label: 'DISTANCE',
-                        value: '${distanceKm.toStringAsFixed(1)} km',
-                        c: c,
-                        tt: tt,
-                        valueColor: c.action,
-                        align: CrossAxisAlignment.end,
-                      ),
+                      // Distance is only shown when real (>0). Geo scoring is
+                      // deferred (PostGIS) — no fake "0.0 km".
+                      if (distanceKm > 0)
+                        _MetaCol(
+                          label: 'DISTANCE',
+                          value: '${distanceKm.toStringAsFixed(1)} km',
+                          c: c,
+                          tt: tt,
+                          valueColor: c.action,
+                          align: CrossAxisAlignment.end,
+                        ),
                     ],
                   ),
                 ],

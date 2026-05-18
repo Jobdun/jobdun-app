@@ -19,13 +19,18 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   const JobRemoteDataSourceImpl(this._client);
   final SupabaseClient _client;
 
+  static String _dateOnly(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
   @override
   Future<List<JobModel>> getJobs({JobFilter? filter}) async {
     try {
       var query = _client
           .from('jobs')
           .select(
-            'id, builder_id, title, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
+            'id, builder_id, title, description, suburb, state, postcode, latitude, longitude, trade_type_required, budget_min, budget_max, budget_type, start_date, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
           )
           .isFilter('deleted_at', null);
 
@@ -36,6 +41,11 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         if (filter.tradeType != null) {
           query = query.eq('trade_type_required', filter.tradeType!) as dynamic;
         }
+        if (filter.tradeTypes != null && filter.tradeTypes!.isNotEmpty) {
+          query =
+              query.inFilter('trade_type_required', filter.tradeTypes!)
+                  as dynamic;
+        }
         if (filter.searchQuery != null && filter.searchQuery!.isNotEmpty) {
           query =
               query.textSearch(
@@ -45,11 +55,32 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
                   )
                   as dynamic;
         }
+        // Budget overlap: job's ceiling >= requested floor and job's floor
+        // <= requested ceiling.
+        if (filter.budgetMin != null) {
+          query = query.gte('budget_max', filter.budgetMin!) as dynamic;
+        }
+        if (filter.budgetMax != null) {
+          query = query.lte('budget_min', filter.budgetMax!) as dynamic;
+        }
+        if (filter.startFrom != null) {
+          query =
+              query.gte('start_date', _dateOnly(filter.startFrom!)) as dynamic;
+        }
+        if (filter.startTo != null) {
+          query =
+              query.lte('start_date', _dateOnly(filter.startTo!)) as dynamic;
+        }
       }
 
-      final data =
-          await (query as dynamic).order('published_at', ascending: false)
-              as List<dynamic>;
+      // Only "newest" is honored — relevance/nearest are deferred
+      // (ts_rank RPC / PostGIS), surfaced as disabled in the UI.
+      var ordered = (query as dynamic).order('published_at', ascending: false);
+      if (filter?.page != null) {
+        final start = filter!.page! * filter.pageSize;
+        ordered = ordered.range(start, start + filter.pageSize - 1);
+      }
+      final data = await ordered as List<dynamic>;
       return data
           .map((e) => JobModel.fromJson(e as Map<String, dynamic>))
           .toList();

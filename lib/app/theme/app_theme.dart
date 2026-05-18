@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 
+import '../constants/app_constants.dart';
 import 'app_colors.dart';
 
 class AppTheme {
@@ -260,7 +261,17 @@ class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
-      iconTheme: IconThemeData(color: c.text3),
+      iconTheme: IconThemeData(color: c.text3, size: AppIconSize.md),
+      // Every bare IconButton gets a >= platform-minimum hit area + a padded
+      // tap target, so untouched sites are compliant without per-call changes.
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(
+            Size(AppTouchTarget.min, AppTouchTarget.min),
+          ),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: c.background,
       ),

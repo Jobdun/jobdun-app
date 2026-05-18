@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:pinput/pinput.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/services/phone_auth_storage.dart';
@@ -249,6 +250,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         backgroundColor: c.background,
         leading: _step == 0
             ? IconButton(
+                tooltip: 'Back',
                 icon: Icon(Iconsax.arrow_left, color: c.text1),
                 onPressed: () {
                   if (context.canPop()) {
@@ -259,6 +261,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
                 },
               )
             : IconButton(
+                tooltip: 'Back',
                 icon: Icon(Iconsax.arrow_left, color: c.text1),
                 onPressed: _backToPhone,
               ),
@@ -386,7 +389,11 @@ class _PhoneStep extends StatelessWidget {
                         ),
                       ),
                       Gap(4.w),
-                      Icon(Iconsax.arrow_down_1, size: 14.r, color: c.text3),
+                      Icon(
+                        Iconsax.arrow_down_1,
+                        size: AppIconSize.xs.r,
+                        color: c.text3,
+                      ),
                     ],
                   ),
                 ),
@@ -511,7 +518,11 @@ class _OtpStep extends StatelessWidget {
                 color: c.actionBg,
                 borderRadius: BorderRadius.circular(AppRadius.card.r),
               ),
-              child: Icon(Iconsax.message, size: 32.r, color: c.action),
+              child: Icon(
+                Iconsax.message,
+                size: AppIconSize.xl.r,
+                color: c.action,
+              ),
             ),
           ),
           Gap(AppSpacing.md.h),

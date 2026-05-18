@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 
 // Passed via GoRouter extra when pushing /messages/:conversationId
@@ -121,8 +122,13 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: 'Back',
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      Iconsax.arrow_left,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
                   ),
                   // Avatar
                   Container(
@@ -169,7 +175,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       ],
                     ),
                   ),
-                  Icon(Iconsax.more, size: 20.r, color: c.text3),
+                  Icon(Iconsax.more, size: AppIconSize.md.r, color: c.text3),
                 ],
               ),
             ),
@@ -314,20 +320,32 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                     ),
                   ),
                   Gap(10.w),
-                  GestureDetector(
-                    onTap: _send,
-                    child: Container(
-                      width: 42.r,
-                      height: 42.r,
-                      decoration: BoxDecoration(
-                        color: c.action,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Iconsax.send_1,
-                        size: 18.r,
-                        color: Colors.white, // intentional
+                  Semantics(
+                    label: 'Send message',
+                    button: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _send,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          minWidth: AppTouchTarget.min,
+                          minHeight: AppTouchTarget.min,
+                        ),
+                        alignment: Alignment.center,
+                        child: Container(
+                          width: 42.r,
+                          height: 42.r,
+                          decoration: BoxDecoration(
+                            color: c.action,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Iconsax.send_1,
+                            size: AppIconSize.md.r,
+                            color: Colors.white, // intentional
+                          ),
+                        ),
                       ),
                     ),
                   ),

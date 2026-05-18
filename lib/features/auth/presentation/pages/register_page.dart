@@ -8,6 +8,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -132,6 +133,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 child: Row(
                   children: [
                     IconButton(
+                      tooltip: 'Back',
                       onPressed: () {
                         if (_step == 2 && widget.initialRole == null) {
                           // User picked role inline — back returns to picker.
@@ -145,7 +147,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       icon: Icon(
                         Iconsax.arrow_left,
                         color: c.text1,
-                        size: 20.r,
+                        size: AppIconSize.md.r,
                       ),
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
@@ -419,7 +421,7 @@ class _RoleCard extends StatelessWidget {
                 ),
                 child: Icon(
                   icon,
-                  size: 22.r,
+                  size: AppIconSize.md.r,
                   color: selected
                       ? Colors
                             .white // intentional: white-on-action
@@ -453,7 +455,7 @@ class _RoleCard extends StatelessWidget {
               Gap(AppSpacing.sm.w),
               Icon(
                 Iconsax.arrow_right_3,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: selected ? c.action : c.text3,
               ),
             ],
@@ -712,7 +714,7 @@ class _RoleChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 14.r, color: c.action),
+                Icon(icon, size: AppIconSize.xs.r, color: c.action),
                 Gap(8.w),
                 Text(
                   label,

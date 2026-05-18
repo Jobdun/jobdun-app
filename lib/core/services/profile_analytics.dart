@@ -26,6 +26,10 @@ class ProfileAnalytics {
     _emit('home.first_toast_shown', {'role': role});
   }
 
+  static void sectionTapped({required String section}) {
+    _emit('profile.section_tapped', {'section': section});
+  }
+
   static void _emit(String event, Map<String, Object?> props) {
     if (kDebugMode) {
       debugPrint('[analytics] $event $props');

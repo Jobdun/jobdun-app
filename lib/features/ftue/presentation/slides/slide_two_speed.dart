@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../data/geo_service.dart';
@@ -139,7 +140,11 @@ class _SuburbChips extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.location5, size: 14.r, color: c.action),
+                Icon(
+                  Iconsax.location5,
+                  size: AppIconSize.xs.r,
+                  color: c.action,
+                ),
                 Gap(6.w),
                 Text(
                   s,

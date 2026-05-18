@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -98,7 +99,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             children: [
               Icon(
                 Iconsax.tick_circle,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: Colors.white, // intentional: white-on-success
               ),
               Gap(10.w),
@@ -155,8 +156,13 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: 'Back',
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      Iconsax.arrow_left,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -510,7 +516,11 @@ class _TradePickerTile extends ConsumerWidget {
                   ),
                 ),
               ),
-              Icon(Iconsax.arrow_down_1, size: 16.r, color: c.text3),
+              Icon(
+                Iconsax.arrow_down_1,
+                size: AppIconSize.sm.r,
+                color: c.text3,
+              ),
             ],
           ),
         ),
@@ -550,7 +560,11 @@ class _StatusRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18.r, color: done ? c.verified : c.text3),
+          Icon(
+            icon,
+            size: AppIconSize.md.r,
+            color: done ? c.verified : c.text3,
+          ),
           Gap(12.w),
           Expanded(
             child: Text(label, style: tt.bodyMedium!.copyWith(color: c.text1)),
@@ -559,7 +573,11 @@ class _StatusRow extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.tick_circle, size: 16.r, color: c.verified),
+                Icon(
+                  Iconsax.tick_circle,
+                  size: AppIconSize.sm.r,
+                  color: c.verified,
+                ),
                 Gap(6.w),
                 Text(
                   'VERIFIED',

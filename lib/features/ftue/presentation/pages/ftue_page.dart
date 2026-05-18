@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/tappable_icon.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../providers/ftue_geo_provider.dart';
@@ -200,24 +201,11 @@ class _TopBar extends StatelessWidget {
         child: Row(
           children: [
             if (showBack && onBack != null)
-              Semantics(
-                button: true,
-                label: 'Back to log in.',
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onBack,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 10.h,
-                    ),
-                    child: Icon(
-                      Iconsax.arrow_left_2,
-                      size: 22.r,
-                      color: c.text2,
-                    ),
-                  ),
-                ),
+              TappableIcon(
+                icon: Iconsax.arrow_left_2,
+                semanticLabel: 'Back to log in.',
+                onTap: onBack,
+                color: c.text2,
               ),
             const Spacer(),
             if (showSkip)

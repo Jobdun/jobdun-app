@@ -6,12 +6,14 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../../core/services/ftue_service.dart';
+import '../../../../core/services/home_analytics.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -149,8 +151,9 @@ class _HomePageState extends ConsumerState<HomePage> {
         ? profileState.builderProfile?.displayLocation ?? 'Sydney, NSW'
         : profileState.tradeProfile?.displayLocation ?? 'Parramatta, NSW';
 
-    final feedJobs = jobsState.jobs.take(3).toList();
-    final hasRealJobs = feedJobs.isNotEmpty;
+    // "Near you" shows the real feed. No pagination/distance scoring yet —
+    // that's the deferred T2-backend work; the list is honest as-is.
+    final feedJobs = jobsState.jobs;
 
     final showMapToggle = !isBuilder;
     final jobsWithLocation = jobsState.jobs
@@ -170,7 +173,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: Icon(
                 _viewMode == _ViewMode.list ? Iconsax.map : Iconsax.element_4,
                 color: Colors.white, // intentional: white-on-action
-                size: 22.r,
+                size: AppIconSize.md.r,
               ),
             )
           : null,
@@ -183,124 +186,184 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             )
           : SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _Header(
-                      role: role,
-                      displayName: displayName,
-                      isBuilder: isBuilder,
-                      location: location,
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  HomeAnalytics.refresh();
+                  await ref.read(jobsControllerProvider.notifier).refresh();
+                },
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _Header(
+                        role: role,
+                        displayName: displayName,
+                        isBuilder: isBuilder,
+                        location: location,
+                      ),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
-                  SliverToBoxAdapter(child: Gap(20.h)),
-                  SliverToBoxAdapter(
-                    child: _StatsRow(
-                      isBuilder: isBuilder,
-                      builderProfile: profileState.builderProfile,
-                      tradeProfile: profileState.tradeProfile,
-                      pendingCount: appsState.pendingIncomingCount,
-                      myAppsCount: appsState.myApplications.length,
-                      shortlistedCount: appsState.myApplications
-                          .where((a) => a.status.name == 'shortlisted')
-                          .length,
+                    const SliverToBoxAdapter(
+                      child: ProfileCompletenessBanner(),
                     ),
-                  ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
-                  SliverToBoxAdapter(
-                    child: _PrimaryActionCard(isBuilder: isBuilder),
-                  ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                      child: Text(
-                        isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.12 * 11,
-                          color: c.text3,
+                    SliverToBoxAdapter(child: Gap(20.h)),
+                    SliverToBoxAdapter(
+                      child: _StatsRow(
+                        isBuilder: isBuilder,
+                        builderProfile: profileState.builderProfile,
+                        tradeProfile: profileState.tradeProfile,
+                        pendingCount: appsState.pendingIncomingCount,
+                        myAppsCount: appsState.myApplications.length,
+                        shortlistedCount: appsState.myApplications
+                            .where((a) => a.status.name == 'shortlisted')
+                            .length,
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: Gap(24.h)),
+                    SliverToBoxAdapter(
+                      child: _PrimaryActionCard(isBuilder: isBuilder),
+                    ),
+                    SliverToBoxAdapter(child: Gap(24.h)),
+                    if (isBuilder) ...[
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                          child: Text(
+                            'AVAILABLE TRADIES',
+                            style: tt.labelSmall!.copyWith(
+                              letterSpacing: 0.12 * 11,
+                              color: c.text3,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  if (isBuilder)
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: SliverList.separated(
-                        itemCount: _tradies.length,
-                        separatorBuilder: (ctx, idx) => Gap(9.h),
-                        itemBuilder: (_, i) {
-                          final t = _tradies[i];
-                          return TradieCard(
-                            name: t.name,
-                            trade: t.trade,
-                            suburb: t.suburb,
-                            rating: t.rating,
-                            jobCount: t.jobCount,
-                            isVerified: t.isVerified,
-                            isAvailable: t.isAvailable,
-                            distanceKm: t.distanceKm,
-                            initials: t.initials,
-                            onTap: () {},
-                          );
-                        },
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: SliverList.separated(
-                        itemCount: hasRealJobs
-                            ? feedJobs.length
-                            : _mockJobs.length,
-                        separatorBuilder: (ctx, idx) => Gap(9.h),
-                        itemBuilder: (_, i) {
-                          if (hasRealJobs) {
-                            final j = feedJobs[i];
-                            return JobCard(
-                              title: j.title,
-                              description: j.description,
-                              rate: j.displayBudget,
-                              startDate: j.startDate != null
-                                  ? _fmtDate(j.startDate!)
-                                  : j.displayLocation,
-                              distanceKm: 0.0,
-                              isUrgent: j.urgency == JobUrgency.urgent,
-                              onTap: () => context.push(
-                                '/jobs/${j.id}',
-                                extra: JobDetailArgs.fromJob(j),
-                              ),
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        sliver: SliverList.separated(
+                          itemCount: _tradies.length,
+                          separatorBuilder: (ctx, idx) => Gap(9.h),
+                          itemBuilder: (_, i) {
+                            final t = _tradies[i];
+                            return TradieCard(
+                              name: t.name,
+                              trade: t.trade,
+                              suburb: t.suburb,
+                              rating: t.rating,
+                              jobCount: t.jobCount,
+                              isVerified: t.isVerified,
+                              isAvailable: t.isAvailable,
+                              distanceKm: t.distanceKm,
+                              initials: t.initials,
+                              onTap: () {},
                             );
-                          }
-                          final j = _mockJobs[i];
-                          return JobCard(
-                            title: j.title,
-                            description: j.description,
-                            rate: j.rate,
-                            startDate: j.startDate,
-                            distanceKm: j.distanceKm,
-                            isUrgent: j.isUrgent,
-                            onTap: () => context.push(
-                              '/jobs/mock-home-$i',
-                              extra: JobDetailArgs(
-                                title: j.title,
-                                description: j.description,
-                                rate: j.rate,
-                                startDate: j.startDate,
-                                distanceKm: j.distanceKm,
-                                isUrgent: j.isUrgent,
-                              ),
-                            ),
-                          );
-                        },
+                          },
+                        ),
                       ),
-                    ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
-                ],
+                    ] else
+                      ..._tradeFeedSlivers(
+                        tt,
+                        c,
+                        feedJobs,
+                        jobsState.isLoading,
+                      ),
+                    SliverToBoxAdapter(child: Gap(24.h)),
+                  ],
+                ),
               ),
             ),
     );
+  }
+
+  // Trade Home feed (Slot 1). "New matches" and "Saved" are honest
+  // placeholders — the scoring RPC / saved_jobs table don't exist yet
+  // (deferred T2-backend). "Near you" is the real jobs feed.
+  List<Widget> _tradeFeedSlivers(
+    TextTheme tt,
+    JColors c,
+    List<Job> feedJobs,
+    bool isLoading,
+  ) {
+    Widget label(String t) => SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+        child: Text(
+          t,
+          style: tt.labelSmall!.copyWith(
+            letterSpacing: 0.12 * 11,
+            color: c.text3,
+          ),
+        ),
+      ),
+    );
+
+    return [
+      label('NEW MATCHES'),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: const _HomeStubCard(
+            icon: Iconsax.flash_1,
+            title: 'Personalised matches coming soon',
+            body:
+                'Once matching goes live, best-fit jobs by trade, licence '
+                'and distance show here.',
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(child: Gap(24.h)),
+      label('NEAR YOU'),
+      if (feedJobs.isEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
+            child: isLoading
+                ? const _HomeStubCard(
+                    icon: Iconsax.clock,
+                    title: 'Loading jobs near you…',
+                    body: '',
+                  )
+                : _TradeEmptyState(onTap: () => context.go('/profile/edit')),
+          ),
+        )
+      else
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          sliver: SliverList.separated(
+            itemCount: feedJobs.length,
+            separatorBuilder: (_, _) => Gap(9.h),
+            itemBuilder: (_, i) {
+              final j = feedJobs[i];
+              return JobCard(
+                title: j.title,
+                description: j.description,
+                rate: j.displayBudget,
+                startDate: j.startDate != null
+                    ? _fmtDate(j.startDate!)
+                    : j.displayLocation,
+                distanceKm: 0.0,
+                isUrgent: j.urgency == JobUrgency.urgent,
+                onTap: () {
+                  HomeAnalytics.cardTapped(jobId: j.id);
+                  context.push(
+                    '/jobs/${j.id}',
+                    extra: JobDetailArgs.fromJob(j),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      SliverToBoxAdapter(child: Gap(24.h)),
+      label('SAVED'),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: const _HomeStubCard(
+            icon: Iconsax.archive_book,
+            title: 'No saved jobs yet',
+            body: 'Saving jobs to revisit later arrives in the next update.',
+          ),
+        ),
+      ),
+    ];
   }
 
   static String _firstName(String email) {
@@ -393,7 +456,11 @@ class _Header extends StatelessWidget {
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 12.r, color: c.action),
+                    Icon(
+                      Iconsax.location,
+                      size: AppIconSize.xs.r,
+                      color: c.action,
+                    ),
                     Gap(4.w),
                     Text(
                       location,
@@ -408,17 +475,33 @@ class _Header extends StatelessWidget {
             ),
           ),
           Gap(12.w),
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 34.r,
-              height: 34.r,
-              decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                border: Border.all(color: c.border),
+          Semantics(
+            label: 'Notifications',
+            button: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {},
+              child: Container(
+                constraints: BoxConstraints(
+                  minWidth: AppTouchTarget.min,
+                  minHeight: AppTouchTarget.min,
+                ),
+                alignment: Alignment.center,
+                child: Container(
+                  width: 34.r,
+                  height: 34.r,
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Icon(
+                    Iconsax.notification,
+                    size: AppIconSize.md.r,
+                    color: c.text2,
+                  ),
+                ),
               ),
-              child: Icon(Iconsax.notification, size: 18.r, color: c.text2),
             ),
           ),
         ],
@@ -563,7 +646,7 @@ class _PrimaryActionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   isBuilder ? Iconsax.add_square : Iconsax.search_normal,
-                  size: 22.r,
+                  size: AppIconSize.md.r,
                   color: Colors.white, // intentional: white-on-action
                 ),
               ),
@@ -589,7 +672,11 @@ class _PrimaryActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Iconsax.arrow_right_3, size: 20.r, color: c.text3),
+              Icon(
+                Iconsax.arrow_right_3,
+                size: AppIconSize.md.r,
+                color: c.text3,
+              ),
             ],
           ),
         ),
@@ -675,24 +762,6 @@ class _TradieData {
   final String initials;
 }
 
-class _MockJob {
-  const _MockJob({
-    required this.title,
-    required this.description,
-    required this.rate,
-    required this.startDate,
-    required this.distanceKm,
-    required this.isUrgent,
-  });
-
-  final String title;
-  final String description;
-  final String rate;
-  final String startDate;
-  final double distanceKm;
-  final bool isUrgent;
-}
-
 const _tradies = [
   _TradieData(
     name: 'Marcus Webb',
@@ -729,32 +798,111 @@ const _tradies = [
   ),
 ];
 
-const _mockJobs = [
-  _MockJob(
-    title: 'Install 3-phase switchboard at commercial site',
-    description:
-        'Install a 3-phase switchboard at our commercial fit-out in Surry Hills. Conduit run, panel installation, and termination.',
-    rate: r'$85/hr',
-    startDate: 'Tomorrow',
-    distanceKm: 2.4,
-    isUrgent: true,
-  ),
-  _MockJob(
-    title: 'Frame internal walls for home renovation',
-    description:
-        'Steel stud framing approximately 120 LM for a full home renovation in Newtown. Drawings available on site.',
-    rate: r'$45/hr',
-    startDate: '12 May',
-    distanceKm: 4.8,
-    isUrgent: false,
-  ),
-  _MockJob(
-    title: 'Concrete footings for deck extension',
-    description:
-        '8 × 300mm dia pad footings, 600mm deep. Reinforcement to be supplied by contractor.',
-    rate: r'$75/hr',
-    startDate: '14 May',
-    distanceKm: 9.1,
-    isUrgent: false,
-  ),
-];
+class _HomeStubCard extends StatelessWidget {
+  const _HomeStubCard({
+    required this.icon,
+    required this.title,
+    required this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppSpacing.md.w),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: AppIconSize.lg.r, color: c.text3),
+          Gap(12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: tt.bodyMedium!.copyWith(
+                    color: c.text1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (body.isNotEmpty) ...[
+                  Gap(4.h),
+                  Text(body, style: tt.bodySmall!.copyWith(color: c.text3)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TradeEmptyState extends StatelessWidget {
+  const _TradeEmptyState({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(AppSpacing.lg.w),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: [
+          Icon(Iconsax.location, size: AppIconSize.xxl.r, color: c.text3),
+          Gap(12.h),
+          Text(
+            'Add your trade + licence to see jobs near you',
+            textAlign: TextAlign.center,
+            style: tt.bodyMedium!.copyWith(
+              color: c.text1,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Gap(16.h),
+          Semantics(
+            button: true,
+            label: 'Complete profile',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              child: Container(
+                constraints: BoxConstraints(minHeight: AppTouchTarget.min),
+                alignment: Alignment.center,
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                decoration: BoxDecoration(
+                  color: c.action,
+                  borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                ),
+                child: Text(
+                  'COMPLETE PROFILE',
+                  style: tt.labelLarge!.copyWith(color: c.onAction),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

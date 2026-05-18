@@ -8,6 +8,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -123,7 +124,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                   ),
                   child: Icon(
                     Iconsax.sms_notification,
-                    size: 36.r,
+                    size: AppIconSize.xl.r,
                     color: c.action,
                   ),
                 ),
@@ -177,7 +178,11 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Iconsax.info_circle, size: 16.r, color: c.text3),
+                    Icon(
+                      Iconsax.info_circle,
+                      size: AppIconSize.sm.r,
+                      color: c.text3,
+                    ),
                     Gap(10.w),
                     Expanded(
                       child: Text(

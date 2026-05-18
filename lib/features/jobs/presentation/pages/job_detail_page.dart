@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/job.dart';
@@ -90,8 +91,13 @@ class _JobDetailPageState extends State<JobDetailPage> {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: 'Back',
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      Iconsax.arrow_left,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
                   ),
                   Expanded(
                     child: Column(
@@ -174,7 +180,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       Gap(AppSpacing.sm.h),
                       Row(
                         children: [
-                          Icon(Iconsax.location, size: 15.r, color: c.text3),
+                          Icon(
+                            Iconsax.location,
+                            size: AppIconSize.xs.r,
+                            color: c.text3,
+                          ),
                           Gap(AppSpacing.sm.w),
                           Text(
                             [
@@ -274,7 +284,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                   children: [
                                     Icon(
                                       Iconsax.star1,
-                                      size: 13.r,
+                                      size: AppIconSize.xs.r,
                                       color: c.star,
                                     ),
                                     Gap(4.w),
@@ -289,7 +299,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ],
                             ),
                           ),
-                          Icon(Iconsax.verify, size: 18.r, color: c.verified),
+                          Icon(
+                            Iconsax.verify,
+                            size: AppIconSize.md.r,
+                            color: c.verified,
+                          ),
                         ],
                       ),
                     ),
@@ -347,7 +361,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         children: [
                           Icon(
                             Iconsax.tick_circle,
-                            size: 18.r,
+                            size: AppIconSize.md.r,
                             color: c.verified,
                           ),
                           Gap(AppSpacing.sm.w),
@@ -593,7 +607,7 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13.r, color: c.text3),
+          Icon(icon, size: AppIconSize.xs.r, color: c.text3),
           Gap(6.w),
           Text(label, style: tt.labelMedium!.copyWith(color: c.text2)),
         ],
@@ -632,7 +646,7 @@ class _ReqRow extends StatelessWidget {
       padding: EdgeInsets.only(bottom: 10.h),
       child: Row(
         children: [
-          Icon(icon, size: 15.r, color: met ? c.text2 : c.text3),
+          Icon(icon, size: AppIconSize.xs.r, color: met ? c.text2 : c.text3),
           Gap(10.w),
           Expanded(
             child: Text(

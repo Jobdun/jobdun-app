@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/supabase_config.dart';
@@ -353,7 +354,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.message, size: 48.r, color: c.text3),
+            Icon(Iconsax.message, size: AppIconSize.xxl.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               'NO MESSAGES YET.',

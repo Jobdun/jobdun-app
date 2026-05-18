@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/supabase_config.dart';
@@ -274,7 +275,7 @@ class _AppCard extends StatelessWidget {
                   children: [
                     Icon(
                       isBuilder ? Iconsax.personalcard : Iconsax.building_3,
-                      size: 13.r,
+                      size: AppIconSize.xs.r,
                       color: c.text3,
                     ),
                     Gap(6.w),
@@ -289,7 +290,11 @@ class _AppCard extends StatelessWidget {
                     ),
                     if (isBuilder && app.tradeIsVerified == true) ...[
                       Gap(6.w),
-                      Icon(Iconsax.verify, size: 13.r, color: c.verified),
+                      Icon(
+                        Iconsax.verify,
+                        size: AppIconSize.xs.r,
+                        color: c.verified,
+                      ),
                     ],
                   ],
                 ),
@@ -297,7 +302,11 @@ class _AppCard extends StatelessWidget {
                 // ── Location
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 13.r, color: c.text3),
+                    Icon(
+                      Iconsax.location,
+                      size: AppIconSize.xs.r,
+                      color: c.text3,
+                    ),
                     Gap(6.w),
                     Text(
                       [
@@ -473,7 +482,11 @@ class _EmptyTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.document_text, size: 48.r, color: c.text3),
+            Icon(
+              Iconsax.document_text,
+              size: AppIconSize.xxl.r,
+              color: c.text3,
+            ),
             Gap(AppSpacing.md.h),
             Text(
               message,

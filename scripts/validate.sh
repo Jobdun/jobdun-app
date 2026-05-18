@@ -78,6 +78,12 @@ grep_check "No inline gradient in lib/features/" \
 grep_check "No AppColors.* in lib/features/" \
   "$(grep -rn --include="*.dart" "AppColors\." lib/features/ || true)"
 
+# No hardcoded icon glyph sizes — must use AppIconSize.* tokens.
+# (All `size: <n>.r` occurrences in lib/features/ are icon contexts.)
+grep_check "No raw Icon size: literal (use AppIconSize.*)" \
+  "$(grep -rnE --include="*.dart" "(size|glyphSize):\s*[0-9]+(\.[0-9]+)?\.r" \
+     lib/features/ || true)"
+
 echo ""
 
 # ── Schema-diff guard ──────────────────────────────────────────────────────────
