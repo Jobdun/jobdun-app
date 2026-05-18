@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -274,7 +274,7 @@ class _AppCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      isBuilder ? Iconsax.personalcard : Iconsax.building_3,
+                      isBuilder ? AppIcons.licence : AppIcons.builder,
                       size: AppIconSize.xs.r,
                       color: c.text3,
                     ),
@@ -291,7 +291,7 @@ class _AppCard extends StatelessWidget {
                     if (isBuilder && app.tradeIsVerified == true) ...[
                       Gap(6.w),
                       Icon(
-                        Iconsax.verify,
+                        AppIcons.verified,
                         size: AppIconSize.xs.r,
                         color: c.verified,
                       ),
@@ -303,7 +303,7 @@ class _AppCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      Iconsax.location,
+                      AppIcons.location,
                       size: AppIconSize.xs.r,
                       color: c.text3,
                     ),
@@ -482,11 +482,7 @@ class _EmptyTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Iconsax.document_text,
-              size: AppIconSize.xxl.r,
-              color: c.text3,
-            ),
+            Icon(AppIcons.document, size: AppIconSize.xxl.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               message,

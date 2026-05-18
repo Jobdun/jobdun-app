@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -141,7 +141,7 @@ class _SuburbChips extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Iconsax.location5,
+                  AppIcons.locationFilled,
                   size: AppIconSize.xs.r,
                   color: c.action,
                 ),

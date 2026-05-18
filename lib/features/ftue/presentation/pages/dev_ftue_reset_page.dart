@@ -53,6 +53,12 @@ class DevFtueResetPage extends ConsumerWidget {
                 variant: AppButtonVariant.secondary,
                 onPressed: () => context.go('/ftue'),
               ),
+              Gap(AppSpacing.md.h),
+              AppButton(
+                label: 'VIEW ICON GALLERY',
+                variant: AppButtonVariant.secondary,
+                onPressed: () => context.go('/dev/icons'),
+              ),
             ],
           ),
         ),

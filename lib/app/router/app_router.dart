@@ -13,6 +13,7 @@ import '../../features/legal/domain/legal_document.dart';
 import '../../features/legal/presentation/pages/legal_document_page.dart';
 import '../../features/legal/presentation/pages/legal_index_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/dev/presentation/pages/icon_gallery_page.dart';
 import '../../features/ftue/presentation/pages/dev_ftue_reset_page.dart';
 import '../../features/ftue/presentation/pages/ftue_page.dart';
 import '../../features/ftue/presentation/providers/ftue_gate_provider.dart';
@@ -93,6 +94,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '/legal/privacy',
           if (kDebugMode) '/logo-compare',
           if (kDebugMode) '/dev/reset-ftue',
+          if (kDebugMode) '/dev/icons',
         };
         return publicRoutes.contains(location) ? null : '/login';
       }
@@ -165,6 +167,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path: '/dev/reset-ftue',
           builder: (_, _) => const DevFtueResetPage(),
         ),
+        GoRoute(path: '/dev/icons', builder: (_, _) => const IconGalleryPage()),
       ],
 
       // ── Shell (5 tabs) ─────────────────────────────────────────────────────

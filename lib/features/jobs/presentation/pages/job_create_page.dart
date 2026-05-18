@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -78,7 +78,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
         content: Row(
           children: [
             Icon(
-              Iconsax.tick_circle,
+              AppIcons.success,
               size: AppIconSize.md.r,
               color: Colors.white, // intentional
             ),
@@ -118,7 +118,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                     tooltip: 'Close',
                     onPressed: () => context.pop(),
                     icon: Icon(
-                      Iconsax.close_circle,
+                      AppIcons.closeCircle,
                       size: AppIconSize.md.r,
                       color: c.text1,
                     ),
@@ -376,7 +376,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       child: Row(
                         children: [
                           Icon(
-                            Iconsax.flash_1,
+                            AppIcons.flash,
                             size: AppIconSize.md.r,
                             color: _isUrgent ? c.action : c.text3,
                           ),
@@ -448,7 +448,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Iconsax.send_1,
+                              AppIcons.send,
                               size: AppIconSize.md.r,
                               color: Colors.white, // intentional
                             ),

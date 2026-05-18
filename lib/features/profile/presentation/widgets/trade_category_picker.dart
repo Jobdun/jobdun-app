@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -275,11 +275,7 @@ class _SheetHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onClose,
-            icon: Icon(
-              Iconsax.close_square,
-              size: AppIconSize.md.r,
-              color: c.text3,
-            ),
+            icon: Icon(AppIcons.close, size: AppIconSize.md.r, color: c.text3),
             tooltip: 'Close',
           ),
         ],
@@ -323,7 +319,7 @@ class _SearchField extends StatelessWidget {
             hintText: 'Search trades…',
             hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
             prefixIcon: Icon(
-              Iconsax.search_normal,
+              AppIcons.search,
               size: AppIconSize.md.r,
               color: c.text3,
             ),
@@ -425,11 +421,7 @@ class _TradeRow extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(
-                  Iconsax.tick_circle,
-                  size: AppIconSize.md.r,
-                  color: c.action,
-                ),
+                Icon(AppIcons.success, size: AppIconSize.md.r, color: c.action),
             ],
           ),
         ),
@@ -480,7 +472,7 @@ class _OtherSection extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      Iconsax.add_circle,
+                      AppIcons.addCircle,
                       size: AppIconSize.md.r,
                       color: c.text2,
                     ),
@@ -492,7 +484,7 @@ class _OtherSection extends StatelessWidget {
                       ),
                     ),
                     Icon(
-                      isOpen ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
+                      isOpen ? AppIcons.collapse : AppIcons.expand,
                       size: AppIconSize.sm.r,
                       color: c.text3,
                     ),

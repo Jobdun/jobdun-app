@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -145,7 +145,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         }
                       },
                       icon: Icon(
-                        Iconsax.arrow_left,
+                        AppIcons.back,
                         color: c.text1,
                         size: AppIconSize.md.r,
                       ),
@@ -290,7 +290,7 @@ class _RoleStep extends StatelessWidget {
           // ── Role cards — tap-to-advance ───────────────────────────────────
           _RoleCard(
             role: UserRole.builder,
-            icon: Iconsax.buildings,
+            icon: AppIcons.builder,
             label: "I'M HIRING",
             description: 'Post jobs. Review applicants. Manage crews.',
             selected: selectedRole == UserRole.builder,
@@ -301,7 +301,7 @@ class _RoleStep extends StatelessWidget {
           Gap(12.h),
           _RoleCard(
             role: UserRole.trade,
-            icon: Iconsax.briefcase,
+            icon: AppIcons.findJobs.outline,
             label: "I'M LOOKING FOR WORK",
             description: 'Browse jobs. Apply. Get hired.',
             selected: selectedRole == UserRole.trade,
@@ -454,7 +454,7 @@ class _RoleCard extends StatelessWidget {
               ),
               Gap(AppSpacing.sm.w),
               Icon(
-                Iconsax.arrow_right_3,
+                AppIcons.forward,
                 size: AppIconSize.md.r,
                 color: selected ? c.action : c.text3,
               ),
@@ -542,7 +542,7 @@ class _FormStep extends StatelessWidget {
                   name: 'full_name',
                   label: 'Full name',
                   hint: 'Your full name',
-                  prefixIcon: Iconsax.user,
+                  prefixIcon: AppIcons.profile.outline,
                   keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
@@ -562,7 +562,7 @@ class _FormStep extends StatelessWidget {
                   name: 'email',
                   label: 'Email',
                   hint: 'your@email.com',
-                  prefixIcon: Iconsax.sms,
+                  prefixIcon: AppIcons.email,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
@@ -582,7 +582,7 @@ class _FormStep extends StatelessWidget {
                   name: 'password',
                   label: 'Password',
                   hint: 'Min. 8 chars',
-                  prefixIcon: Iconsax.lock,
+                  prefixIcon: AppIcons.password,
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.newPassword],
@@ -691,7 +691,7 @@ class _RoleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isBuilder = role == UserRole.builder;
     final label = isBuilder ? 'HIRING' : 'LOOKING FOR WORK';
-    final icon = isBuilder ? Iconsax.buildings : Iconsax.briefcase;
+    final icon = isBuilder ? AppIcons.builder : AppIcons.findJobs.outline;
 
     return Semantics(
       button: true,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/app/constants/app_constants.dart';
 import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/core/design/widgets/tappable_icon.dart';
@@ -21,7 +21,7 @@ void main() {
     await tester.pumpWidget(
       wrap(
         TappableIcon(
-          icon: Iconsax.notification,
+          icon: AppIcons.notifications,
           semanticLabel: 'Notifications',
           onTap: () {},
         ),
@@ -41,7 +41,7 @@ void main() {
     await tester.pumpWidget(
       wrap(
         TappableIcon(
-          icon: Iconsax.info_circle,
+          icon: AppIcons.info,
           semanticLabel: 'Info',
           glyphSize: AppIconSize.xs,
           onTap: () {},
@@ -60,7 +60,7 @@ void main() {
     await tester.pumpWidget(
       wrap(
         TappableIcon(
-          icon: Iconsax.close_square,
+          icon: AppIcons.close,
           semanticLabel: 'Close',
           onTap: () => taps++,
         ),
@@ -77,11 +77,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await tester.pumpWidget(
       wrap(
-        TappableIcon(
-          icon: Iconsax.arrow_left,
-          semanticLabel: 'Back',
-          onTap: () {},
-        ),
+        TappableIcon(icon: AppIcons.back, semanticLabel: 'Back', onTap: () {}),
       ),
     );
     await tester.pumpAndSettle();
@@ -106,7 +102,7 @@ void main() {
     await tester.pumpWidget(
       wrap(
         TappableIcon(
-          icon: Iconsax.notification,
+          icon: AppIcons.notifications,
           semanticLabel: 'Notifications',
           glyphSize: AppIconSize.lg,
           onTap: () {},
@@ -115,7 +111,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final icon = tester.widget<Icon>(find.byIcon(Iconsax.notification));
+    final icon = tester.widget<Icon>(find.byIcon(AppIcons.notifications));
     expect(icon.size, AppIconSize.lg.r);
   });
 
@@ -124,7 +120,7 @@ void main() {
     await tester.pumpWidget(
       wrap(
         const TappableIcon(
-          icon: Iconsax.close_square,
+          icon: AppIcons.close,
           semanticLabel: 'Close',
           onTap: null,
         ),

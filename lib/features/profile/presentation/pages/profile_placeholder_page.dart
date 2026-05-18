@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -25,7 +25,7 @@ class ProfilePlaceholderPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: c.background,
         leading: TappableIcon(
-          icon: Iconsax.arrow_left,
+          icon: AppIcons.back,
           semanticLabel: 'Back',
           onTap: () => context.pop(),
           color: c.text1,
@@ -38,7 +38,7 @@ class ProfilePlaceholderPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Iconsax.size, size: AppIconSize.xxl.r, color: c.text3),
+              Icon(AppIcons.size, size: AppIconSize.xxl.r, color: c.text3),
               Gap(16.h),
               Text(
                 '$title is coming soon',

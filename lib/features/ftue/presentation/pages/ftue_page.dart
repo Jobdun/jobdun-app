@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/tappable_icon.dart';
@@ -202,7 +202,7 @@ class _TopBar extends StatelessWidget {
           children: [
             if (showBack && onBack != null)
               TappableIcon(
-                icon: Iconsax.arrow_left_2,
+                icon: AppIcons.back,
                 semanticLabel: 'Back to log in.',
                 onTap: onBack,
                 color: c.text2,

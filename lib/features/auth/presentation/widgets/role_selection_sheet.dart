@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -107,7 +107,7 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(AppSpacing.lg.h),
               _SheetRoleCard(
-                icon: Iconsax.buildings,
+                icon: AppIcons.builder,
                 label: "I'M HIRING",
                 description: 'Post jobs, review applications, manage crews.',
                 pending: _pending == UserRole.builder,
@@ -118,7 +118,7 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(12.h),
               _SheetRoleCard(
-                icon: Iconsax.briefcase,
+                icon: AppIcons.findJobs.outline,
                 label: "I'M LOOKING FOR WORK",
                 description: 'Browse jobs, apply, get hired.',
                 pending: _pending == UserRole.trade,
@@ -230,7 +230,7 @@ class _SheetRoleCard extends StatelessWidget {
               ),
               Gap(AppSpacing.sm.w),
               Icon(
-                Iconsax.arrow_right_3,
+                AppIcons.forward,
                 size: AppIconSize.md.r,
                 color: pending ? c.action : c.text3,
               ),

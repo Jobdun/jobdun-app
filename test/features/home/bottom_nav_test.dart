@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/app/constants/app_constants.dart';
 import 'package:jobdun/app/theme/app_colors.dart';
 import 'package:jobdun/app/theme/app_theme.dart';
@@ -65,17 +65,28 @@ void main() {
       }
     });
 
-    testWidgets('active slot = Bold glyph, inactive = outline glyph', (
+    testWidgets('single outline glyph for all states; active = colour only', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(build(index: 0)));
       await tester.pumpAndSettle();
 
-      // index 0 active → Bold home; index 1 inactive → outline briefcase.
-      expect(find.byIcon(Iconsax.home_25), findsOneWidget);
-      expect(find.byIcon(Iconsax.home_2), findsNothing);
-      expect(find.byIcon(Iconsax.briefcase), findsOneWidget);
-      expect(find.byIcon(Iconsax.briefcase5), findsNothing);
+      final c = JColors.dark;
+
+      // No glyph swap: every tab renders its OUTLINE glyph regardless of
+      // selection. (home.filled differs from home.outline in Tabler.)
+      expect(find.byIcon(AppIcons.home.outline), findsOneWidget);
+      expect(find.byIcon(AppIcons.home.filled), findsNothing);
+      expect(find.byIcon(AppIcons.findJobs.outline), findsOneWidget);
+      expect(find.byIcon(AppIcons.findJobs.filled), findsNothing);
+
+      // Active state is conveyed by colour only.
+      final homeIcon = tester.widget<Icon>(find.byIcon(AppIcons.home.outline));
+      final jobsIcon = tester.widget<Icon>(
+        find.byIcon(AppIcons.findJobs.outline),
+      );
+      expect(homeIcon.color, c.action); // index 0 = active
+      expect(jobsIcon.color, c.text3); // inactive
     });
 
     testWidgets('active label uses action color + bold weight', (tester) async {

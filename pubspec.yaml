@@ -69,7 +69,7 @@ dependencies:
   # === UI/UX — Typography & Icons ===
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.14
-  iconsax: ^0.0.8
+  flutter_tabler_icons: ^1.43.0
 
   # === UI/UX — Responsive Layout ===
   flutter_screenutil: ^5.9.3

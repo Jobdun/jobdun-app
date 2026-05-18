@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -77,7 +77,7 @@ class _CountryPickerSheet extends StatelessWidget {
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: Icon(
-                      Iconsax.close_square,
+                      AppIcons.close,
                       size: AppIconSize.md.r,
                       color: c.text3,
                     ),
@@ -129,7 +129,7 @@ class _CountryPickerSheet extends StatelessWidget {
                           if (selected) ...[
                             Gap(10.w),
                             Icon(
-                              Iconsax.tick_circle,
+                              AppIcons.success,
                               size: AppIconSize.md.r,
                               color: c.action,
                             ),

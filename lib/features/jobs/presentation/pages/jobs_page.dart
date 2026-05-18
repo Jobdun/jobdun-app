@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../app/constants/app_constants.dart';
@@ -251,7 +251,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Iconsax.add,
+                                    AppIcons.post,
                                     size: AppIconSize.sm.r,
                                     color: c.onAction,
                                   ),
@@ -284,7 +284,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       children: [
                         Gap(14.w),
                         Icon(
-                          Iconsax.search_normal,
+                          AppIcons.search,
                           size: AppIconSize.sm.r,
                           color: c.text3,
                         ),
@@ -310,7 +310,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                         ),
                         if (_searchCtrl.text.isNotEmpty)
                           TappableIcon(
-                            icon: Iconsax.close_circle,
+                            icon: AppIcons.closeCircle,
                             semanticLabel: 'Clear search',
                             glyphSize: AppIconSize.sm,
                             color: c.text3,
@@ -409,7 +409,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Iconsax.setting_4,
+                                    AppIcons.settings,
                                     size: AppIconSize.sm.r,
                                     color: c.text2,
                                   ),
@@ -452,7 +452,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 child: Row(
                   children: [
                     Icon(
-                      Iconsax.warning_2,
+                      AppIcons.warning,
                       size: AppIconSize.sm.r,
                       color: c.urgentTx,
                     ),
@@ -596,11 +596,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Iconsax.search_normal,
-              size: AppIconSize.xxl.r,
-              color: c.text3,
-            ),
+            Icon(AppIcons.search, size: AppIconSize.xxl.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               hasFilter ? 'NO JOBS FOUND.' : 'NO OPEN JOBS.',
@@ -696,11 +692,7 @@ class _TradeEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Iconsax.search_normal,
-              size: AppIconSize.xxl.r,
-              color: c.text3,
-            ),
+            Icon(AppIcons.search, size: AppIconSize.xxl.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               hasFilter ? 'NO JOBS MATCH YOUR FILTERS' : 'NO OPEN JOBS',
@@ -764,7 +756,7 @@ class _PagingError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.warning_2, size: AppIconSize.xl.r, color: c.text3),
+            Icon(AppIcons.warning, size: AppIconSize.xl.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               "Couldn't load jobs.",
@@ -974,7 +966,7 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: Row(
                 children: [
                   Icon(
-                    Iconsax.location,
+                    AppIcons.location,
                     size: AppIconSize.sm.r,
                     color: c.text3,
                   ),

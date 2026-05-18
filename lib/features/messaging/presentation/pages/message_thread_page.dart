@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -125,7 +125,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                     tooltip: 'Back',
                     onPressed: () => context.pop(),
                     icon: Icon(
-                      Iconsax.arrow_left,
+                      AppIcons.back,
                       size: AppIconSize.md.r,
                       color: c.text1,
                     ),
@@ -175,7 +175,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       ],
                     ),
                   ),
-                  Icon(Iconsax.more, size: AppIconSize.md.r, color: c.text3),
+                  Icon(AppIcons.more, size: AppIconSize.md.r, color: c.text3),
                 ],
               ),
             ),
@@ -341,7 +341,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                           ),
                           alignment: Alignment.center,
                           child: Icon(
-                            Iconsax.send_1,
+                            AppIcons.send,
                             size: AppIconSize.md.r,
                             color: Colors.white, // intentional
                           ),

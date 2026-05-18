@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../auth/presentation/widgets/role_intent_cta.dart';
@@ -71,14 +71,14 @@ class _Ctas extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         RoleIntentCta(
-          icon: Iconsax.buildings,
+          icon: AppIcons.builder,
           label: "I'M HIRING",
           subtitle: 'Post a job. Get quotes.',
           onTap: onHiring,
         ),
         Gap(12.h),
         RoleIntentCta(
-          icon: Iconsax.briefcase,
+          icon: AppIcons.findJobs.outline,
           label: "I'M LOOKING FOR WORK",
           subtitle: 'Find jobs near you.',
           onTap: onWorking,

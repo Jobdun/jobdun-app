@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -78,7 +78,7 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(AppRadius.avatar.r),
               ),
               child: Icon(
-                Iconsax.user_edit,
+                AppIcons.editProfile,
                 size: AppIconSize.md.r,
                 color: Colors.white, // intentional: white-on-action
               ),
@@ -150,7 +150,7 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                     .dismiss();
               },
               icon: Icon(
-                Iconsax.close_square,
+                AppIcons.close,
                 size: AppIconSize.md.r,
                 color: c.text3,
               ),

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -70,7 +70,7 @@ class _OfflineBanner extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            Icon(Iconsax.wifi, size: AppIconSize.xs.r, color: c.urgentTx),
+            Icon(AppIcons.wifi, size: AppIconSize.xs.r, color: c.urgentTx),
             Gap(8.w),
             Text(
               'No internet connection',
@@ -118,7 +118,9 @@ class BottomNav extends StatelessWidget {
         child: MediaQuery.withClampedTextScaling(
           maxScaleFactor: 1.2,
           child: Container(
-            height: 56.h,
+            // Fixed dp (not .h) — nav bar is fixed chrome; must not scale
+            // with screen height. minHeight keeps the accessibility floor.
+            height: AppNavBar.height,
             constraints: BoxConstraints(minHeight: AppTouchTarget.min),
             child: Row(
               children: List.generate(tabs.length, (i) {
@@ -140,8 +142,12 @@ class BottomNav extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              // Single glyph for both states — active is
+                              // conveyed by colour + bold label only. Swapping
+                              // outline↔filled caused an optical icon shift
+                              // (glyph metrics differ between variants).
                               Icon(
-                                isActive ? tab.iconFilled : tab.iconOutline,
+                                tab.iconOutline,
                                 size: AppIconSize.lg.r,
                                 color: color,
                               ),

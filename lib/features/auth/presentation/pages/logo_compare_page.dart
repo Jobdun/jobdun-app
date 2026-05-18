@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -83,11 +83,7 @@ class LogoComparePage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           tooltip: 'Back',
-          icon: Icon(
-            Iconsax.arrow_left_2,
-            color: c.text1,
-            size: AppIconSize.md.r,
-          ),
+          icon: Icon(AppIcons.back, color: c.text1, size: AppIconSize.md.r),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/login'),
         ),
@@ -320,7 +316,7 @@ class _ConceptCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      Iconsax.quote_up,
+                      AppIcons.quote,
                       size: AppIconSize.xs.r,
                       color: c.action,
                     ),
@@ -371,11 +367,7 @@ class _ConceptCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Iconsax.info_circle,
-                      size: AppIconSize.xs.r,
-                      color: c.text3,
-                    ),
+                    Icon(AppIcons.info, size: AppIconSize.xs.r, color: c.text3),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -417,7 +409,7 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Iconsax.flash_15, size: AppIconSize.sm.r, color: c.action),
+              Icon(AppIcons.flash, size: AppIconSize.sm.r, color: c.action),
               Gap(8.w),
               Text(
                 'CURRENT ACTIVE LOGO',

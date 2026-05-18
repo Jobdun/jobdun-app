@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -27,11 +27,7 @@ class LegalIndexPage extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           tooltip: 'Back',
-          icon: Icon(
-            Iconsax.arrow_left,
-            color: c.text1,
-            size: AppIconSize.md.r,
-          ),
+          icon: Icon(AppIcons.back, color: c.text1, size: AppIconSize.md.r),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -169,8 +165,8 @@ class _DocTile extends StatelessWidget {
       ),
       leading: Icon(
         type == LegalDocumentType.termsOfService
-            ? Iconsax.document_text
-            : Iconsax.shield_tick,
+            ? AppIcons.document
+            : AppIcons.verified,
         color: c.text2,
         size: AppIconSize.md.r,
       ),
@@ -190,11 +186,7 @@ class _DocTile extends StatelessWidget {
           fontSize: 11.sp,
         ),
       ),
-      trailing: Icon(
-        Iconsax.arrow_right_3,
-        color: c.text3,
-        size: AppIconSize.sm.r,
-      ),
+      trailing: Icon(AppIcons.forward, color: c.text3, size: AppIconSize.sm.r),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../app/theme/app_colors.dart';
 
@@ -92,7 +92,7 @@ class _JTextFieldState extends State<JTextField> {
             child: IconButton(
               onPressed: _togglePassword,
               icon: Icon(
-                _obscured ? Iconsax.eye_slash : Iconsax.eye,
+                _obscured ? AppIcons.hidden : AppIcons.visible,
                 size: 18.r,
                 color: c.text3,
               ),

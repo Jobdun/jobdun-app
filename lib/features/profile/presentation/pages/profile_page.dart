@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -188,7 +188,7 @@ class _ProfileHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Iconsax.edit,
+                              AppIcons.edit,
                               size: AppIconSize.sm.r,
                               color: c.text1,
                             ),
@@ -270,21 +270,21 @@ class _BuilderProfile extends StatelessWidget {
               _StatBadge(
                 value: rating,
                 label: 'Rating',
-                icon: Iconsax.star,
+                icon: AppIcons.rating,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
               _StatBadge(
                 value: reviews,
                 label: 'Reviews',
-                icon: Iconsax.message_text,
+                icon: AppIcons.chat,
                 iconColor: c.available,
               ),
               Gap(AppSpacing.sm.w),
               _StatBadge(
                 value: jobsPosted,
                 label: 'Jobs posted',
-                icon: Iconsax.briefcase,
+                icon: AppIcons.findJobs.outline,
                 iconColor: c.action,
               ),
             ],
@@ -294,22 +294,22 @@ class _BuilderProfile extends StatelessWidget {
             title: 'COMPANY DETAILS',
             children: [
               _InfoRow(
-                icon: Iconsax.building_3,
+                icon: AppIcons.builder,
                 label: 'Company',
                 value: companyName,
               ),
-              _InfoRow(icon: Iconsax.receipt_1, label: 'ABN', value: abn),
+              _InfoRow(icon: AppIcons.receipt, label: 'ABN', value: abn),
               _InfoRow(
-                icon: Iconsax.briefcase,
+                icon: AppIcons.findJobs.outline,
                 label: 'Type',
                 value: 'Company',
               ),
               _InfoRow(
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 label: 'Location',
                 value: location,
               ),
-              _InfoRow(icon: Iconsax.call, label: 'Contact', value: contact),
+              _InfoRow(icon: AppIcons.phone, label: 'Contact', value: contact),
             ],
           ),
           Gap(12.h),
@@ -359,21 +359,21 @@ class _TradeProfile extends StatelessWidget {
               _StatBadge(
                 value: rating,
                 label: 'Rating',
-                icon: Iconsax.star,
+                icon: AppIcons.rating,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
               _StatBadge(
                 value: jobsDone,
                 label: 'Jobs done',
-                icon: Iconsax.tick_circle,
+                icon: AppIcons.success,
                 iconColor: c.verified,
               ),
               Gap(AppSpacing.sm.w),
               _StatBadge(
                 value: yrsExp,
                 label: 'Yrs exp',
-                icon: Iconsax.award,
+                icon: AppIcons.award,
                 iconColor: c.action,
               ),
             ],
@@ -393,7 +393,7 @@ class _TradeProfile extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  isVerified ? Iconsax.verify : Iconsax.tick_circle,
+                  isVerified ? AppIcons.verified : AppIcons.success,
                   size: AppIconSize.md.r,
                   color: isVerified ? c.verified : c.text3,
                 ),
@@ -420,18 +420,14 @@ class _TradeProfile extends StatelessWidget {
           _InfoCard(
             title: 'TRADE DETAILS',
             children: [
+              _InfoRow(icon: AppIcons.licence, label: 'Trade', value: trade),
               _InfoRow(
-                icon: Iconsax.personalcard,
-                label: 'Trade',
-                value: trade,
-              ),
-              _InfoRow(
-                icon: Iconsax.document_text,
+                icon: AppIcons.document,
                 label: 'Licence',
                 value: hasLicence ? 'On file' : null,
               ),
               _InfoRow(
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 label: 'Base suburb',
                 value: location,
               ),
@@ -470,7 +466,7 @@ class _ManageSection extends StatelessWidget {
         title: 'MANAGE',
         children: [
           _ActionRow(
-            icon: Iconsax.briefcase,
+            icon: AppIcons.findJobs.outline,
             label: 'My Trades & Licences',
             onTap: () {
               ProfileAnalytics.sectionTapped(section: 'trades_licences');
@@ -479,7 +475,7 @@ class _ManageSection extends StatelessWidget {
           ),
           Divider(height: 1, color: c.border),
           _ActionRow(
-            icon: Iconsax.gallery,
+            icon: AppIcons.image,
             label: 'Portfolio',
             onTap: () {
               ProfileAnalytics.sectionTapped(section: 'portfolio');
@@ -509,7 +505,7 @@ class _SettingsSection extends ConsumerWidget {
             title: 'APPEARANCE',
             children: [
               _ToggleRow(
-                icon: isDark ? Iconsax.moon : Iconsax.sun_1,
+                icon: isDark ? AppIcons.darkMode : AppIcons.lightMode,
                 label: 'Dark mode',
                 value: isDark,
                 onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
@@ -520,10 +516,10 @@ class _SettingsSection extends ConsumerWidget {
           _InfoCard(
             title: 'ACCOUNT',
             children: [
-              _ActionRow(icon: Iconsax.sms, label: 'Change email'),
-              _ActionRow(icon: Iconsax.lock, label: 'Change password'),
-              _ActionRow(icon: Iconsax.notification, label: 'Notifications'),
-              _ActionRow(icon: Iconsax.shield_tick, label: 'Privacy settings'),
+              _ActionRow(icon: AppIcons.email, label: 'Change email'),
+              _ActionRow(icon: AppIcons.password, label: 'Change password'),
+              _ActionRow(icon: AppIcons.notifications, label: 'Notifications'),
+              _ActionRow(icon: AppIcons.verified, label: 'Privacy settings'),
             ],
           ),
           Gap(12.h),
@@ -531,12 +527,12 @@ class _SettingsSection extends ConsumerWidget {
             title: 'LEGAL',
             children: [
               _ActionRow(
-                icon: Iconsax.document_text,
+                icon: AppIcons.document,
                 label: 'Terms of Service',
                 onTap: () => context.push('/legal/terms'),
               ),
               _ActionRow(
-                icon: Iconsax.shield,
+                icon: AppIcons.insurance,
                 label: 'Privacy Policy',
                 onTap: () => context.push('/legal/privacy'),
               ),
@@ -720,7 +716,7 @@ class _VerificationRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isVerified ? Iconsax.verify : Iconsax.close_circle,
+            isVerified ? AppIcons.verified : AppIcons.closeCircle,
             size: AppIconSize.sm.r,
             color: isVerified ? c.verified : c.text3,
           ),
@@ -774,7 +770,7 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Iconsax.arrow_right_3, size: AppIconSize.sm.r, color: c.text3),
+            Icon(AppIcons.forward, size: AppIconSize.sm.r, color: c.text3),
           ],
         ),
       ),

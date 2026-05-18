@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -94,7 +94,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     tooltip: 'Back',
                     onPressed: () => context.pop(),
                     icon: Icon(
-                      Iconsax.arrow_left,
+                      AppIcons.back,
                       size: AppIconSize.md.r,
                       color: c.text1,
                     ),
@@ -159,14 +159,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       spacing: AppSpacing.sm.w,
                       runSpacing: AppSpacing.sm.h,
                       children: [
-                        _InfoChip(icon: Iconsax.money_3, label: args.rate),
+                        _InfoChip(icon: AppIcons.budget, label: args.rate),
                         _InfoChip(
-                          icon: Iconsax.calendar_1,
+                          icon: AppIcons.calendar,
                           label: args.startDate,
                         ),
                         if (args.distanceKm > 0)
                           _InfoChip(
-                            icon: Iconsax.location,
+                            icon: AppIcons.location,
                             label:
                                 '${args.distanceKm.toStringAsFixed(1)} km away',
                           ),
@@ -181,7 +181,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       Row(
                         children: [
                           Icon(
-                            Iconsax.location,
+                            AppIcons.location,
                             size: AppIconSize.xs.r,
                             color: c.text3,
                           ),
@@ -283,7 +283,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Iconsax.star1,
+                                      AppIcons.ratingFilled,
                                       size: AppIconSize.xs.r,
                                       color: c.star,
                                     ),
@@ -300,7 +300,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             ),
                           ),
                           Icon(
-                            Iconsax.verify,
+                            AppIcons.verified,
                             size: AppIconSize.md.r,
                             color: c.verified,
                           ),
@@ -313,24 +313,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     _SectionLabel('REQUIREMENTS'),
                     Gap(10.h),
                     _ReqRow(
-                      icon: Iconsax.personalcard,
+                      icon: AppIcons.licence,
                       label: 'Current trade licence required',
                       met: true,
                     ),
                     if (args.requiresWhiteCard)
                       _ReqRow(
-                        icon: Iconsax.card,
+                        icon: AppIcons.card,
                         label: 'White card required',
                         met: true,
                       ),
                     if (args.requiresLiability)
                       _ReqRow(
-                        icon: Iconsax.shield_tick,
+                        icon: AppIcons.verified,
                         label: 'Public liability insurance (\$10M+)',
                         met: true,
                       ),
                     _ReqRow(
-                      icon: Iconsax.document_text,
+                      icon: AppIcons.document,
                       label: 'SWMS to be provided on site',
                       met: false,
                     ),
@@ -360,7 +360,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Iconsax.tick_circle,
+                            AppIcons.success,
                             size: AppIconSize.md.r,
                             color: c.verified,
                           ),

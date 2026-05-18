@@ -32,6 +32,14 @@ abstract final class AppTouchTarget {
   static const gap = 8.0; // min spacing between adjacent targets
 }
 
+/// Bottom navigation chrome. Fixed dp — NOT `.h`-scaled: a nav bar is fixed
+/// chrome and must stay identical on every device (same reasoning as
+/// [AppTouchTarget]). 72 sits between iOS's 49pt tab bar and Material 3's
+/// 80dp NavigationBar, comfortable for icon + label without feeling cramped.
+abstract final class AppNavBar {
+  static const height = 72.0;
+}
+
 abstract final class AppElevation {
   static const none = 0.0;
 }

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -61,7 +61,7 @@ class FtueMapHero extends StatelessWidget {
                 Align(
                   alignment: pin,
                   child: Icon(
-                    Iconsax.location5,
+                    AppIcons.locationFilled,
                     size: AppIconSize.md.r,
                     color: c.text2,
                   ),
@@ -70,7 +70,7 @@ class FtueMapHero extends StatelessWidget {
               // halo ring drawn underneath by the grid painter above.
               Center(
                 child: Icon(
-                  Iconsax.location5,
+                  AppIcons.locationFilled,
                   size: AppIconSize.xl.r,
                   color: c.action,
                 ),

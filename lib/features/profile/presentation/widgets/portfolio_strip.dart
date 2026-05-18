@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/constants/app_constants.dart';
@@ -163,7 +163,7 @@ class _PortfolioTile extends StatelessWidget {
               errorWidget: (_, _, _) => Container(
                 color: c.surfaceRaised,
                 child: Icon(
-                  Iconsax.gallery_slash,
+                  AppIcons.imageError,
                   color: c.text3,
                   size: AppIconSize.md.r,
                 ),
@@ -214,7 +214,11 @@ class _AddTile extends StatelessWidget {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Iconsax.add, size: AppIconSize.lg.r, color: c.action),
+                    Icon(
+                      AppIcons.post,
+                      size: AppIconSize.lg.r,
+                      color: c.action,
+                    ),
                     Gap(2.h),
                     Text(
                       'ADD',

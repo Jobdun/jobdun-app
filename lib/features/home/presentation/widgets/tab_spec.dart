@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../auth/domain/entities/user_role.dart';
 
@@ -14,10 +14,10 @@ class TabSpec {
     required this.semanticLabel,
   });
 
-  /// Inactive glyph (Iconsax outline variant).
+  /// Inactive glyph (Tabler outline variant).
   final IconData iconOutline;
 
-  /// Active glyph (Iconsax Bold/filled variant).
+  /// Active glyph (Tabler filled variant).
   final IconData iconFilled;
 
   /// Visible chip text — short, single word, iPhone-SE safe.
@@ -30,34 +30,36 @@ class TabSpec {
   /// Trade-side tabs. Order MUST match the StatefulShellRoute branches in
   /// `lib/app/router/app_router.dart`: home, jobs, applications, messages,
   /// profile — the index is what `navigationShell.goBranch(i)` switches to.
-  static const _trade = <TabSpec>[
+  // `final`, not `const`: AppIcons nav entries are records, and record
+  // field access (`.outline`/`.filled`) is not a constant expression.
+  static final _trade = <TabSpec>[
     TabSpec(
-      iconOutline: Iconsax.home_2,
-      iconFilled: Iconsax.home_25,
+      iconOutline: AppIcons.home.outline,
+      iconFilled: AppIcons.home.filled,
       label: 'Home',
       semanticLabel: 'Home',
     ),
     TabSpec(
-      iconOutline: Iconsax.briefcase,
-      iconFilled: Iconsax.briefcase5,
+      iconOutline: AppIcons.findJobs.outline,
+      iconFilled: AppIcons.findJobs.filled,
       label: 'Jobs',
       semanticLabel: 'Find work',
     ),
     TabSpec(
-      iconOutline: Iconsax.document_text,
-      iconFilled: Iconsax.document_text1,
+      iconOutline: AppIcons.applied.outline,
+      iconFilled: AppIcons.applied.filled,
       label: 'Applied',
       semanticLabel: 'My applications',
     ),
     TabSpec(
-      iconOutline: Iconsax.message,
-      iconFilled: Iconsax.message5,
+      iconOutline: AppIcons.messages.outline,
+      iconFilled: AppIcons.messages.filled,
       label: 'Messages',
       semanticLabel: 'Messages',
     ),
     TabSpec(
-      iconOutline: Iconsax.user,
-      iconFilled: Iconsax.user5,
+      iconOutline: AppIcons.profile.outline,
+      iconFilled: AppIcons.profile.filled,
       label: 'Profile',
       semanticLabel: 'Profile',
     ),

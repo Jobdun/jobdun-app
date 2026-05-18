@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/constants/app_constants.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -171,7 +171,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     : _ViewMode.list,
               ),
               child: Icon(
-                _viewMode == _ViewMode.list ? Iconsax.map : Iconsax.element_4,
+                _viewMode == _ViewMode.list ? AppIcons.map : AppIcons.gridView,
                 color: Colors.white, // intentional: white-on-action
                 size: AppIconSize.md.r,
               ),
@@ -300,7 +300,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: const _HomeStubCard(
-            icon: Iconsax.flash_1,
+            icon: AppIcons.flash,
             title: 'Personalised matches coming soon',
             body:
                 'Once matching goes live, best-fit jobs by trade, licence '
@@ -316,7 +316,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             padding: EdgeInsets.symmetric(horizontal: 20.w),
             child: isLoading
                 ? const _HomeStubCard(
-                    icon: Iconsax.clock,
+                    icon: AppIcons.clock,
                     title: 'Loading jobs near you…',
                     body: '',
                   )
@@ -357,7 +357,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: const _HomeStubCard(
-            icon: Iconsax.archive_book,
+            icon: AppIcons.archive,
             title: 'No saved jobs yet',
             body: 'Saving jobs to revisit later arrives in the next update.',
           ),
@@ -457,7 +457,7 @@ class _Header extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      Iconsax.location,
+                      AppIcons.location,
                       size: AppIconSize.xs.r,
                       color: c.action,
                     ),
@@ -496,7 +496,7 @@ class _Header extends StatelessWidget {
                     border: Border.all(color: c.border),
                   ),
                   child: Icon(
-                    Iconsax.notification,
+                    AppIcons.notifications,
                     size: AppIconSize.md.r,
                     color: c.text2,
                   ),
@@ -645,7 +645,7 @@ class _PrimaryActionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
-                  isBuilder ? Iconsax.add_square : Iconsax.search_normal,
+                  isBuilder ? AppIcons.addBox : AppIcons.search,
                   size: AppIconSize.md.r,
                   color: Colors.white, // intentional: white-on-action
                 ),
@@ -672,11 +672,7 @@ class _PrimaryActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Iconsax.arrow_right_3,
-                size: AppIconSize.md.r,
-                color: c.text3,
-              ),
+              Icon(AppIcons.forward, size: AppIconSize.md.r, color: c.text3),
             ],
           ),
         ),
@@ -869,7 +865,7 @@ class _TradeEmptyState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Iconsax.location, size: AppIconSize.xxl.r, color: c.text3),
+          Icon(AppIcons.location, size: AppIconSize.xxl.r, color: c.text3),
           Gap(12.h),
           Text(
             'Add your trade + licence to see jobs near you',

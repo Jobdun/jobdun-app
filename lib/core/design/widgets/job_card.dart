@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../app/constants/app_constants.dart';
 import '../../../app/theme/app_colors.dart';
@@ -98,7 +98,9 @@ class JobCard extends StatelessWidget {
                       if (onSave != null) ...[
                         Gap(4.w),
                         TappableIcon(
-                          icon: isSaved ? Iconsax.heart5 : Iconsax.heart,
+                          icon: isSaved
+                              ? AppIcons.favoriteFilled
+                              : AppIcons.favorite,
                           semanticLabel: isSaved ? 'Saved' : 'Save job',
                           glyphSize: AppIconSize.md,
                           color: isSaved ? c.action : c.text3,

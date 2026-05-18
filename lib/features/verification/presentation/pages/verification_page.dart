@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/constants/app_constants.dart';
@@ -114,7 +114,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
         backgroundColor: c.background,
         leading: IconButton(
           tooltip: 'Back',
-          icon: Icon(Iconsax.arrow_left, color: c.text1),
+          icon: Icon(AppIcons.back, color: c.text1),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/profile'),
         ),
@@ -155,7 +155,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
               Gap(AppSpacing.xl.h),
               AppButton(
                 label: hasLicence ? 'REPLACE PHOTO' : 'TAKE A PHOTO',
-                icon: Iconsax.camera,
+                icon: AppIcons.camera,
                 isLoading: isUploading,
                 onPressed: isUploading
                     ? null
@@ -224,7 +224,7 @@ class _StatusCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.avatar.r),
             ),
             child: Icon(
-              hasLicence ? Iconsax.shield_tick : Iconsax.document_text,
+              hasLicence ? AppIcons.verified : AppIcons.document,
               size: AppIconSize.md.r,
               color: tone,
             ),
