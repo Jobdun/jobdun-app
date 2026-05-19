@@ -1,0 +1,148 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
+import 'package:iconsax/iconsax.dart';
+
+import '../../../../app/theme/app_colors.dart';
+import '../../../../core/validators/phone_validator.dart';
+
+// Modal bottom sheet for picking the country dial code. Small fixed list —
+// `supportedCountries` from the validator. Returns the picked Country (or
+// null if dismissed).
+Future<Country?> showCountryPickerSheet(
+  BuildContext context, {
+  String? currentCode,
+}) {
+  return showModalBottomSheet<Country>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _CountryPickerSheet(currentCode: currentCode),
+  );
+}
+
+class _CountryPickerSheet extends StatelessWidget {
+  const _CountryPickerSheet({this.currentCode});
+
+  final String? currentCode;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return FractionallySizedBox(
+      heightFactor: 0.7,
+      child: Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.card.r),
+          ),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.only(top: 10.h, bottom: 6.h),
+              child: Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: c.border,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg.w,
+                4.h,
+                AppSpacing.lg.w,
+                12.h,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'PICK YOUR COUNTRY',
+                      style: tt.labelSmall!.copyWith(
+                        letterSpacing: 0.12 * 11,
+                        color: c.text1,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Iconsax.close_square,
+                      size: 20.r,
+                      color: c.text3,
+                    ),
+                    tooltip: 'Close',
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg.w,
+                  0,
+                  AppSpacing.lg.w,
+                  24.h,
+                ),
+                itemCount: supportedCountries.length,
+                separatorBuilder: (_, _) => Divider(height: 1, color: c.border),
+                itemBuilder: (_, i) {
+                  final country = supportedCountries[i];
+                  final selected = country.code == currentCode;
+                  return InkWell(
+                    onTap: () => Navigator.of(context).pop(country),
+                    borderRadius: BorderRadius.circular(AppRadius.input.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 14.h,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(country.flag, style: TextStyle(fontSize: 22.sp)),
+                          Gap(12.w),
+                          Expanded(
+                            child: Text(
+                              country.name,
+                              style: tt.bodyLarge!.copyWith(
+                                color: c.text1,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '+${country.dialCode}',
+                            style: tt.bodyMedium!.copyWith(color: c.text2),
+                          ),
+                          if (selected) ...[
+                            Gap(10.w),
+                            Icon(
+                              Iconsax.tick_circle,
+                              size: 18.r,
+                              color: c.action,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

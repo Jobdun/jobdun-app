@@ -40,7 +40,9 @@ class AuthRepositoryImpl implements AuthRepository {
         fullName: fullName,
       );
       if (user == null) {
-        return left(const AuthFailure('Check your email to confirm your account.'));
+        return left(
+          const AuthFailure('Check your email to confirm your account.'),
+        );
       }
       return right(user);
     } on AuthException catch (e) {

@@ -27,7 +27,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, BuilderProfile?>> getBuilderProfile(String userId) async {
+  Future<Either<Failure, BuilderProfile?>> getBuilderProfile(
+    String userId,
+  ) async {
     try {
       return right(await _datasource.getBuilderProfile(userId));
     } on ServerException catch (e) {
@@ -55,7 +57,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile) async {
+  Future<Either<Failure, void>> upsertBuilderProfile(
+    BuilderProfile profile,
+  ) async {
     try {
       await _datasource.upsertBuilderProfile(profile as BuilderProfileModel);
       return right(null);
@@ -78,6 +82,43 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<Either<Failure, String>> uploadAvatar(String userId, File file) async {
     try {
       return right(await _datasource.uploadAvatar(userId, file));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadTradeLicence(
+    String userId,
+    File file,
+  ) async {
+    try {
+      return right(await _datasource.uploadTradeLicence(userId, file));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> addPortfolioImage(
+    String userId,
+    File file,
+  ) async {
+    try {
+      return right(await _datasource.addPortfolioImage(userId, file));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removePortfolioImage(
+    String userId,
+    String publicUrl,
+  ) async {
+    try {
+      await _datasource.removePortfolioImage(userId, publicUrl);
+      return right(null);
     } on StorageException catch (e) {
       return left(StorageFailure(e.message));
     }

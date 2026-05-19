@@ -1,32 +1,50 @@
 import 'package:equatable/equatable.dart';
 
-enum JobStatus { draft, open, inReview, assigned, inProgress, completed, cancelled }
+// Matches schema enum job_status: draft|open|filled|closed|cancelled
+enum JobStatus { draft, open, filled, closed, cancelled }
 
 extension JobStatusX on JobStatus {
   String get label => switch (this) {
     JobStatus.draft => 'Draft',
     JobStatus.open => 'Open',
-    JobStatus.inReview => 'In Review',
-    JobStatus.assigned => 'Assigned',
-    JobStatus.inProgress => 'In Progress',
-    JobStatus.completed => 'Completed',
+    JobStatus.filled => 'Filled',
+    JobStatus.closed => 'Closed',
     JobStatus.cancelled => 'Cancelled',
   };
 
-  // Snake-case value stored in Supabase
-  String get dbValue => switch (this) {
-    JobStatus.draft => 'draft',
-    JobStatus.open => 'open',
-    JobStatus.inReview => 'in_review',
-    JobStatus.assigned => 'assigned',
-    JobStatus.inProgress => 'in_progress',
-    JobStatus.completed => 'completed',
-    JobStatus.cancelled => 'cancelled',
-  };
+  String get dbValue => name;
 
   static JobStatus fromDb(String value) => JobStatus.values.firstWhere(
     (s) => s.dbValue == value,
     orElse: () => JobStatus.open,
+  );
+}
+
+// Matches schema enum urgency
+enum JobUrgency { standard, urgent }
+
+extension JobUrgencyX on JobUrgency {
+  String get dbValue => name;
+  static JobUrgency fromDb(String v) => JobUrgency.values.firstWhere(
+    (u) => u.dbValue == v,
+    orElse: () => JobUrgency.standard,
+  );
+}
+
+// Matches schema enum budget_type
+enum BudgetType { hourly, daily, fixed, negotiable }
+
+extension BudgetTypeX on BudgetType {
+  String get dbValue => name;
+  String get label => switch (this) {
+    BudgetType.hourly => '/hr',
+    BudgetType.daily => '/day',
+    BudgetType.fixed => 'flat',
+    BudgetType.negotiable => 'neg.',
+  };
+  static BudgetType fromDb(String v) => BudgetType.values.firstWhere(
+    (b) => b.dbValue == v,
+    orElse: () => BudgetType.fixed,
   );
 }
 
@@ -36,33 +54,77 @@ class Job extends Equatable {
     required this.builderId,
     required this.title,
     required this.description,
+    required this.tradeTypeRequired,
+    required this.suburb,
+    required this.state,
+    required this.postcode,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
-    this.location,
-    this.budget,
-    this.budgetType = 'fixed',
+    this.budgetMin,
+    this.budgetMax,
+    this.budgetType,
+    this.urgency = JobUrgency.standard,
     this.startDate,
-    this.tradeCategory,
-    this.requiredSkills = const [],
-    this.requiredLicences = const [],
+    this.estimatedDurationDays,
+    this.durationText,
+    this.requiresWhiteCard = false,
+    this.requiresPublicLiability = true,
+    this.requiresVerified = true,
+    this.requiredCertifications = const [],
+    this.applicationCount = 0,
+    this.viewCount = 0,
+    this.publishedAt,
+    this.hiredTradeId,
+    this.deletedAt,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
   final String builderId;
   final String title;
   final String description;
-  final String? location;
-  final double? budget;
-  final String budgetType;
+  final String tradeTypeRequired;
+  final String suburb;
+  final String state;
+  final String postcode;
+  final double? budgetMin;
+  final double? budgetMax;
+  final BudgetType? budgetType;
+  final JobUrgency urgency;
   final DateTime? startDate;
-  final String? tradeCategory;
-  final List<String> requiredSkills;
-  final List<String> requiredLicences;
+  final int? estimatedDurationDays;
+  final String? durationText;
+  final bool requiresWhiteCard;
+  final bool requiresPublicLiability;
+  final bool requiresVerified;
+  final List<String> requiredCertifications;
+  final int applicationCount;
+  final int viewCount;
   final JobStatus status;
+  final DateTime? publishedAt;
+  final String? hiredTradeId;
+  final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final double? latitude;
+  final double? longitude;
+
+  String get displayBudget {
+    if (budgetMin == null && budgetMax == null) return 'Negotiable';
+    final suffix = budgetType?.label ?? '';
+    if (budgetMin != null && budgetMax != null) {
+      return '\$${budgetMin!.toStringAsFixed(0)}–\$${budgetMax!.toStringAsFixed(0)}$suffix';
+    }
+    final amount = budgetMin ?? budgetMax!;
+    return '\$${amount.toStringAsFixed(0)}$suffix';
+  }
+
+  String get displayLocation => '$suburb, $state';
+
+  bool get hasLocation => latitude != null && longitude != null;
 
   @override
-  List<Object?> get props => [id, builderId, title, status];
+  List<Object?> get props => [id, builderId, title, status, tradeTypeRequired];
 }

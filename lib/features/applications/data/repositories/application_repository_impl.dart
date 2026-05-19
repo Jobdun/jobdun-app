@@ -15,7 +15,10 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
   @override
   Future<Either<Failure, JobApplication>> applyToJob({
     required String jobId,
-    String? coverMessage,
+    required String builderId,
+    String? coverNote,
+    double? proposedRate,
+    String? proposedRateType,
   }) async {
     try {
       final tradeId = _client.auth.currentUser?.id;
@@ -23,20 +26,12 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
       final result = await _datasource.applyToJob(
         jobId: jobId,
         tradeId: tradeId,
-        coverMessage: coverMessage,
+        builderId: builderId,
+        coverNote: coverNote,
+        proposedRate: proposedRate,
+        proposedRateType: proposedRateType,
       );
       return right(result);
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<JobApplication>>> getApplicationsForJob(
-    String jobId,
-  ) async {
-    try {
-      return right(await _datasource.getApplicationsForJob(jobId));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -48,6 +43,17 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
   ) async {
     try {
       return right(await _datasource.getMyApplications(tradeId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<JobApplication>>> getApplicationsForMyJobs(
+    String builderId,
+  ) async {
+    try {
+      return right(await _datasource.getApplicationsForMyJobs(builderId));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }

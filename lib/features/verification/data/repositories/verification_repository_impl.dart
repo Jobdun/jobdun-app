@@ -14,10 +14,10 @@ class VerificationRepositoryImpl implements VerificationRepository {
 
   @override
   Future<Either<Failure, List<VerificationDocument>>> getMyDocuments(
-    String userId,
+    String tradeId,
   ) async {
     try {
-      return right(await _datasource.getMyDocuments(userId));
+      return right(await _datasource.getMyDocuments(tradeId));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -25,27 +25,37 @@ class VerificationRepositoryImpl implements VerificationRepository {
 
   @override
   Future<Either<Failure, VerificationDocument>> uploadDocument({
-    required String userId,
-    required DocumentType documentType,
+    required String tradeId,
+    required DocType docType,
     required File file,
-    DateTime? expiresAt,
+    String? state,
+    String? issuer,
+    String? documentNumber,
+    DateTime? issuedDate,
+    DateTime? expiryDate,
   }) async {
     try {
-      return right(await _datasource.uploadDocument(
-        userId: userId,
-        documentType: documentType,
-        file: file,
-        expiresAt: expiresAt,
-      ));
+      return right(
+        await _datasource.uploadDocument(
+          tradeId: tradeId,
+          docType: docType,
+          file: file,
+          state: state,
+          issuer: issuer,
+          documentNumber: documentNumber,
+          issuedDate: issuedDate,
+          expiryDate: expiryDate,
+        ),
+      );
     } on StorageException catch (e) {
       return left(StorageFailure(e.message));
     }
   }
 
   @override
-  Future<Either<Failure, void>> deleteDocument(String documentId) async {
+  Future<Either<Failure, void>> softDeleteDocument(String documentId) async {
     try {
-      await _datasource.deleteDocument(documentId);
+      await _datasource.softDeleteDocument(documentId);
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
@@ -53,6 +63,6 @@ class VerificationRepositoryImpl implements VerificationRepository {
   }
 
   @override
-  Stream<List<VerificationDocument>> watchMyDocuments(String userId) =>
-      _datasource.watchMyDocuments(userId);
+  Stream<List<VerificationDocument>> watchMyDocuments(String tradeId) =>
+      _datasource.watchMyDocuments(tradeId);
 }

@@ -8,31 +8,41 @@ import '../../domain/entities/verification_document.dart';
 import '../models/verification_document_model.dart';
 
 abstract interface class VerificationRemoteDataSource {
-  Future<List<VerificationDocumentModel>> getMyDocuments(String userId);
+  Future<List<VerificationDocumentModel>> getMyDocuments(String tradeId);
   Future<VerificationDocumentModel> uploadDocument({
-    required String userId,
-    required DocumentType documentType,
+    required String tradeId,
+    required DocType docType,
     required File file,
-    DateTime? expiresAt,
+    String? state,
+    String? issuer,
+    String? documentNumber,
+    DateTime? issuedDate,
+    DateTime? expiryDate,
   });
-  Future<void> deleteDocument(String documentId);
-  Stream<List<VerificationDocumentModel>> watchMyDocuments(String userId);
+  Future<void> softDeleteDocument(String documentId);
+  Stream<List<VerificationDocumentModel>> watchMyDocuments(String tradeId);
 }
 
 class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
   const VerificationRemoteDataSourceImpl(this._client);
   final SupabaseClient _client;
 
+  static const _bucket = 'private-docs';
+
   @override
-  Future<List<VerificationDocumentModel>> getMyDocuments(String userId) async {
+  Future<List<VerificationDocumentModel>> getMyDocuments(String tradeId) async {
     try {
       final data = await _client
           .from('verification_documents')
           .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+          .eq('trade_id', tradeId)
+          .isFilter('deleted_at', null)
+          .order('submitted_at', ascending: false);
       return (data as List)
-          .map((e) => VerificationDocumentModel.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                VerificationDocumentModel.fromJson(e as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       throw ServerException(e.toString());
@@ -41,25 +51,51 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
 
   @override
   Future<VerificationDocumentModel> uploadDocument({
-    required String userId,
-    required DocumentType documentType,
+    required String tradeId,
+    required DocType docType,
     required File file,
-    DateTime? expiresAt,
+    String? state,
+    String? issuer,
+    String? documentNumber,
+    DateTime? issuedDate,
+    DateTime? expiryDate,
   }) async {
     try {
-      final fileName = '${documentType.name}_${DateTime.now().millisecondsSinceEpoch}';
-      final path = 'verification-documents/$userId/$fileName';
-      await _client.storage.from('verification-documents').upload(path, file);
+      final ext = file.path.split('.').last;
+      final fileName =
+          '${docType.dbValue}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      // Path must start with trade_id to satisfy RLS: (storage.foldername(name))[1] = auth.uid()
+      final path = '$tradeId/verification/${docType.dbValue}/$fileName';
+      final fileBytes = await file.readAsBytes();
+
+      await _client.storage
+          .from(_bucket)
+          .uploadBinary(
+            path,
+            fileBytes,
+            fileOptions: FileOptions(
+              contentType: _mimeFromExt(ext),
+              upsert: false,
+            ),
+          );
 
       final record = await _client
           .from('verification_documents')
           .insert({
-            'user_id': userId,
-            'document_type': documentType.name,
-            'file_url': path,
-            'status': VerificationStatus.pending.name,
-            if (expiresAt != null)
-              'expires_at': expiresAt.toIso8601String().split('T').first,
+            'trade_id': tradeId,
+            'doc_type': docType.dbValue,
+            'file_path': path,
+            'status': VerificationStatus.pending.dbValue,
+            // ignore: use_null_aware_elements
+            if (state != null) 'state': state,
+            // ignore: use_null_aware_elements
+            if (issuer != null) 'issuer': issuer,
+            // ignore: use_null_aware_elements
+            if (documentNumber != null) 'document_number': documentNumber,
+            if (issuedDate != null)
+              'issued_date': issuedDate.toIso8601String().split('T').first,
+            if (expiryDate != null)
+              'expiry_date': expiryDate.toIso8601String().split('T').first,
           })
           .select()
           .single();
@@ -69,12 +105,13 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
     }
   }
 
+  // Soft delete — schema requires deleted_at, never hard delete verification docs.
   @override
-  Future<void> deleteDocument(String documentId) async {
+  Future<void> softDeleteDocument(String documentId) async {
     try {
       await _client
           .from('verification_documents')
-          .delete()
+          .update({'deleted_at': DateTime.now().toIso8601String()})
           .eq('id', documentId);
     } catch (e) {
       throw ServerException(e.toString());
@@ -82,12 +119,24 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
   }
 
   @override
-  Stream<List<VerificationDocumentModel>> watchMyDocuments(String userId) {
+  Stream<List<VerificationDocumentModel>> watchMyDocuments(String tradeId) {
     return _client
         .from('verification_documents')
         .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .map((rows) => rows.map(VerificationDocumentModel.fromJson).toList());
+        .eq('trade_id', tradeId)
+        .order('submitted_at', ascending: false)
+        .map(
+          (rows) => rows
+              .where((r) => r['deleted_at'] == null)
+              .map(VerificationDocumentModel.fromJson)
+              .toList(),
+        );
   }
+
+  static String _mimeFromExt(String ext) => switch (ext.toLowerCase()) {
+    'pdf' => 'application/pdf',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    _ => 'image/jpeg',
+  };
 }

@@ -1,43 +1,45 @@
-import '../../../auth/domain/entities/user_role.dart';
 import '../../domain/entities/user_profile.dart';
 
 class UserProfileModel extends UserProfile {
   const UserProfileModel({
     required super.id,
-    required super.role,
-    super.fullName,
+    super.displayName,
+    super.email,
     super.phone,
+    super.phoneVerifiedAt,
     super.avatarUrl,
+    super.bio,
+    super.onboardingCompletedAt,
     super.createdAt,
     super.updatedAt,
   });
 
-  factory UserProfileModel.fromJson(Map<String, dynamic> json) {
-    final roleStr = json['role'] as String? ?? 'trade';
-    final role = UserRole.values.firstWhere(
-      (r) => r.name == roleStr,
-      orElse: () => UserRole.trade,
-    );
-    return UserProfileModel(
-      id: json['id'] as String,
-      role: role,
-      fullName: json['full_name'] as String?,
-      phone: json['phone'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
-    );
-  }
+  factory UserProfileModel.fromJson(Map<String, dynamic> json) =>
+      UserProfileModel(
+        id: json['id'] as String,
+        displayName: json['display_name'] as String?,
+        email: json['email'] as String?,
+        phone: json['phone'] as String?,
+        phoneVerifiedAt: json['phone_verified_at'] != null
+            ? DateTime.parse(json['phone_verified_at'] as String)
+            : null,
+        avatarUrl: json['avatar_url'] as String?,
+        bio: json['bio'] as String?,
+        onboardingCompletedAt: json['onboarding_completed_at'] != null
+            ? DateTime.parse(json['onboarding_completed_at'] as String)
+            : null,
+        createdAt: json['created_at'] != null
+            ? DateTime.parse(json['created_at'] as String)
+            : null,
+        updatedAt: json['updated_at'] != null
+            ? DateTime.parse(json['updated_at'] as String)
+            : null,
+      );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'role': role.name,
-    'full_name': fullName,
+    'display_name': displayName,
     'phone': phone,
     'avatar_url': avatarUrl,
+    'bio': bio,
   };
 }

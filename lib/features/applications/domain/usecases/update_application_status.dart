@@ -11,6 +11,5 @@ class UpdateApplicationStatus {
   Future<Either<Failure, void>> call(
     String applicationId,
     ApplicationStatus status,
-  ) =>
-      _repository.updateStatus(applicationId, status);
+  ) => _repository.updateStatus(applicationId, status);
 }

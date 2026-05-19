@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <g transform="translate(0,5) scale(0.31)">
+    <rect width="270" height="228" rx="20" fill="#F8FAFC"/>
+    <polygon points="13,12 122,12 122,216 13,216 13,185 81,185 81,44 13,44" fill="#0F172A"/>
+    <polygon points="105,12 146,12 111,216 70,216" fill="#F97316"/>
+    <polygon points="146,12 257,12 257,216 146,216 146,173 209,173 209,57 146,57" fill="#0F172A"/>
+    <rect x="146" y="12" width="111" height="44" fill="#F97316"/>
+    <rect x="209" y="57" width="48" height="116" fill="#F97316"/>
+  </g>
+  <g font-family="'Barlow Condensed', 'Arial Narrow', sans-serif" font-weight="800" letter-spacing="0.02em">
+    <text x="90" y="54" font-size="44" fill="#0F172A">JOB</text>
+    <text x="172" y="54" font-size="44" fill="#F97316">DUN</text>
+  </g>
+</svg>

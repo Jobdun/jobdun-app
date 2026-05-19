@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/constants/app_constants.dart';
-import '../../../../core/config/env.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
+import '../../../../app/theme/app_theme.dart';
+import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/inputs/j_text_field.dart';
+import '../../../../core/widgets/social_auth_button.dart';
+import '../../../../core/widgets/status_banner.dart';
+import '../../../legal/presentation/widgets/legal_link_text.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/social_auth_buttons.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -17,114 +27,251 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  late final TextEditingController _emailController;
-  late final TextEditingController _passwordController;
+  final _formKey = GlobalKey<FormBuilderState>();
+  // Remember-me checkbox was removed (T1.4): Supabase Auth already persists
+  // sessions via flutter_secure_storage, and the checkbox was never wired up.
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController(text: 'demo@jobdun.app');
-    _passwordController = TextEditingController();
+    AuthAnalytics.loginScreenViewed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _ready = true);
+    });
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  void _submit() {
+    if (!(_formKey.currentState?.saveAndValidate() ?? false)) return;
+    AuthAnalytics.loginSubmitted();
+    final values = _formKey.currentState!.value;
+    ref
+        .read(authControllerProvider.notifier)
+        .signIn(
+          email: values['email'] as String,
+          password: values['password'] as String,
+        );
   }
 
-  void _continue() {
-    ref.read(authControllerProvider.notifier).signIn(
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
+  void _onForgotPassword() {
+    AuthAnalytics.forgotPasswordTapped();
+    context.go('/forgot-password');
+  }
+
+  void _onGoogle() {
+    AuthAnalytics.ssoTapped(provider: 'google');
+    ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
+  void _onApple() {
+    AuthAnalytics.ssoTapped(provider: 'apple');
+    ref.read(authControllerProvider.notifier).signInWithApple();
+  }
+
+  void _onPhone() {
+    AuthAnalytics.phoneTapped();
+    context.push('/phone-auth');
+  }
+
+  void _onCreateAccount() {
+    AuthAnalytics.createAccountLinkTapped();
+    // ?from=login flags the FTUE to show a back-arrow on slide 1 and hide
+    // the redundant "I already have an account · LOG IN" link on slide 3 —
+    // the user just came from there.
+    context.go('/ftue?from=login');
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.c;
     final authState = ref.watch(authControllerProvider);
+    final isBusy = authState.isLoading;
 
     return Scaffold(
+      backgroundColor: c.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              Text(
-                'Welcome back to ${AppConstants.appName}',
-                style: theme.textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Supabase authentication is already live. Sign in to review jobs, messages, and verification progress from Android first.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF5A5A5A),
+        child: AnimatedOpacity(
+          opacity: _ready ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 150),
+          // LayoutBuilder + ConstrainedBox(minHeight) lets the inner Column
+          // grow to fill the viewport on tall devices (so spaceBetween pins
+          // the legal footer to the bottom edge) and gracefully falls back
+          // to natural scroll on short ones (so nothing clips on 360×640).
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      // Top group flows from the top; the bottom group (create
+                      // account + legal) is pushed to the viewport bottom by
+                      // the Spacer in between.
+                      children: [
+                        // ── Hero — mark + gradient wordmark ──────────────────
+                        // Sized per design-system/jobdun/pages/auth-onboarding
+                        // ("Top 40% — Logo + bold identity statement"). 64px
+                        // mark + 56sp wordmark land the hero at ~30% of a
+                        // 640px viewport — dominant without pushing LOG IN
+                        // out of the thumb zone on tall devices.
+                        Gap(AppSpacing.lg.h),
+                        Center(
+                          child: SvgPicture.asset(
+                            'lib/core/assets/mark-jobdun.svg',
+                            width: 64.r,
+                            height: 64.r,
+                          ),
+                        ),
+                        Gap(AppSpacing.sm.h),
+                        Center(
+                          child: ShaderMask(
+                            shaderCallback: (bounds) =>
+                                AppGradients.brandFlame.createShader(bounds),
+                            child: Text(
+                              'JOBDUN',
+                              style: AppTheme.brandDisplay(
+                                Colors
+                                    .white, // intentional: ShaderMask requires white
+                              ).copyWith(fontSize: 56.sp),
+                            ),
+                          ),
+                        ),
+
+                        Gap(AppSpacing.xl.h),
+
+                        // ── Form ─────────────────────────────────────────────
+                        FormBuilder(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              JTextField(
+                                name: 'email',
+                                label: 'Email',
+                                hint: 'you@example.com',
+                                prefixIcon: Iconsax.sms,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.email],
+                                validator: FormBuilderValidators.compose([
+                                  FormBuilderValidators.required(
+                                    errorText: 'Email is required.',
+                                  ),
+                                  FormBuilderValidators.email(
+                                    errorText: 'Enter a valid email.',
+                                  ),
+                                ]),
+                              ),
+                              JTextField(
+                                name: 'password',
+                                label: 'Password',
+                                hint: 'Enter your password',
+                                prefixIcon: Iconsax.lock,
+                                obscureText: true,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [AutofillHints.password],
+                                onSubmitted: (_) => _submit(),
+                                validator: FormBuilderValidators.required(
+                                  errorText: 'Password is required.',
+                                ),
+                                // Inline Forgot? link — industry-standard
+                                // position; muted to keep c.action reserved
+                                // for the LOG IN CTA only.
+                                labelTrailing: _ForgotPasswordLink(
+                                  onTap: _onForgotPassword,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // ── Status banners ───────────────────────────────────
+                        if (authState.errorMessage != null) ...[
+                          Gap(AppSpacing.sm.h),
+                          StatusBanner(
+                            message: authState.errorMessage!,
+                            isError: true,
+                          ),
+                        ],
+                        if (authState.infoMessage != null) ...[
+                          Gap(AppSpacing.sm.h),
+                          StatusBanner(
+                            message: authState.infoMessage!,
+                            isError: false,
+                          ),
+                        ],
+
+                        Gap(AppSpacing.md.h),
+
+                        // ── Primary CTA ──────────────────────────────────────
+                        AppButton(
+                          label: isBusy ? 'LOGGING IN...' : 'LOG IN',
+                          isLoading: isBusy,
+                          onPressed: isBusy ? null : _submit,
+                        ),
+
+                        Gap(AppSpacing.lg.h),
+
+                        // ── Section divider ──────────────────────────────────
+                        _OrDivider(),
+
+                        Gap(AppSpacing.md.h),
+
+                        // ── Icon row: Google · Apple · Phone ─────────────────
+                        // Three peer-level icon-only entry points rendered as
+                        // 56x56 tiles. Brand colours preserved (multi-colour
+                        // Google G, white Apple, neutral phone).
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SocialAuthButton.google(
+                              key: const Key('login.sso.google'),
+                              onTap: isBusy ? () {} : _onGoogle,
+                              isLoading: isBusy,
+                            ),
+                            SocialAuthButton.apple(
+                              key: const Key('login.sso.apple'),
+                              onTap: isBusy ? () {} : _onApple,
+                              isLoading: isBusy,
+                            ),
+                            SocialAuthButton.phone(
+                              key: const Key('login.sso.phone'),
+                              onTap: isBusy ? () {} : _onPhone,
+                              isLoading: isBusy,
+                            ),
+                          ],
+                        ),
+
+                        // Flexible spacer pushes the bottom group (create-
+                        // account + legal) to the viewport bottom on tall
+                        // devices. Minimum gap ensures separation even on
+                        // short screens where the spacer collapses.
+                        const Spacer(),
+                        Gap(AppSpacing.xxl.h),
+
+                        // ── Create account (the friend-referral path) ────────
+                        _CreateAccountLink(
+                          key: const Key('login.create_account_link'),
+                          onTap: _onCreateAccount,
+                        ),
+
+                        Gap(AppSpacing.xl.h),
+
+                        // ── Legal footer ─────────────────────────────────────
+                        // Applies to every auth path above (email login, SSO,
+                        // phone, create account). Pinned to the viewport
+                        // bottom by the Spacer above.
+                        const LegalLinkText(minimal: true),
+
+                        Gap(AppSpacing.lg.h),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 28),
-              if (!AppEnv.isSupabaseConfigured) ...[
-                _SetupNotice(missingKeys: AppEnv.missingKeysSummary),
-                const SizedBox(height: 20),
-              ],
-              const _AuthHighlightCard(),
-              const SizedBox(height: 24),
-              AppTextField(
-                label: 'Email',
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                label: 'Password',
-                controller: _passwordController,
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-              ),
-              if (authState.errorMessage != null) ...[
-                const SizedBox(height: 16),
-                _StatusMessage(
-                  message: authState.errorMessage!,
-                  backgroundColor: const Color(0xFFFCEAEA),
-                  borderColor: const Color(0xFFE7B5B5),
-                ),
-              ],
-              if (authState.infoMessage != null) ...[
-                const SizedBox(height: 16),
-                _StatusMessage(
-                  message: authState.infoMessage!,
-                  backgroundColor: const Color(0xFFEAF4ED),
-                  borderColor: const Color(0xFFB7D4BE),
-                ),
-              ],
-              const SizedBox(height: 24),
-              AppButton(
-                label: authState.isLoading ? 'Signing in...' : 'Sign in',
-                onPressed: authState.isLoading ? null : _continue,
-              ),
-              const SizedBox(height: 24),
-              const SocialAuthButtons(),
-              const SizedBox(height: 24),
-              AppButton(
-                label: 'Create an account',
-                variant: AppButtonVariant.secondary,
-                onPressed:
-                    authState.isLoading ? null : () => context.go('/register'),
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.center,
-                child: AppButton(
-                  label: 'Forgot password',
-                  variant: AppButtonVariant.text,
-                  onPressed: () {},
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -132,75 +279,111 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 }
 
-class _AuthHighlightCard extends StatelessWidget {
-  const _AuthHighlightCard();
+// ── Forgot-password inline link ─────────────────────────────────────────────
+// Muted (text3) so the orange c.action stays reserved for the primary CTA.
+// 48px hit area enforced via Padding inside a HitTestBehavior.opaque gesture.
+//
+// Note: lives inside JTextField's MergeSemantics. Wrapping this in an
+// explicit Semantics(button: true, ...) conflicts with that merge during
+// the framework's semantics flush — let GestureDetector's tap callback
+// generate the tappable semantic node naturally.
+class _ForgotPasswordLink extends StatelessWidget {
+  const _ForgotPasswordLink({required this.onTap});
+
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Supabase auth is working',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            SizedBox(height: 10),
-            Text('1. Sign in or create an account'),
-            Text('2. Supabase handles the email/password session'),
-            Text('3. Continue into onboarding and the dashboard'),
-          ],
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
+        child: Text(
+          'Forgot?',
+          style: tt.labelMedium!.copyWith(
+            color: c.text3,
+            decoration: TextDecoration.underline,
+            decorationColor: c.text3,
+          ),
         ),
       ),
     );
   }
 }
 
-class _SetupNotice extends StatelessWidget {
-  const _SetupNotice({required this.missingKeys});
-
-  final String missingKeys;
-
+// ── "── or ──" section divider ──────────────────────────────────────────────
+class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF2E8),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8C9B3)),
-      ),
-      child: Text(
-        'Supabase auth is implemented, but this run is missing $missingKeys. Start the app with --dart-define-from-file=.env.',
-      ),
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
+          child: Text('or', style: tt.bodySmall!.copyWith(color: c.text3)),
+        ),
+        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
+      ],
     );
   }
 }
 
-class _StatusMessage extends StatelessWidget {
-  const _StatusMessage({
-    required this.message,
-    required this.backgroundColor,
-    required this.borderColor,
-  });
+// ── Create account link ─────────────────────────────────────────────────────
+// "Create account →" — the missing-link fix for users who landed on /login
+// via friend referral / share with no existing account. Trimmed from the
+// previous "New to Jobdun? Create account →" copy: the orange accent +
+// arrow already mark this as the signup action; the prefix was filler
+// (Hick's Law).
+class _CreateAccountLink extends StatelessWidget {
+  const _CreateAccountLink({super.key, required this.onTap});
 
-  final String message;
-  final Color backgroundColor;
-  final Color borderColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final linkStyle = tt.bodyMedium!.copyWith(
+      color: c.action,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Semantics(
+      button: true,
+      label: 'Create an account.',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: linkStyle,
+              children: [
+                const TextSpan(text: 'Create account'),
+                const TextSpan(text: ' '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Icon(
+                    Iconsax.arrow_right_3,
+                    size: 14.r,
+                    color: c.action,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      child: Text(message),
     );
   }
 }

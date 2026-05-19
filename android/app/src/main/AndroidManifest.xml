@@ -25,7 +25,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Supabase email-verify deep link.
+                 Scheme must match `emailRedirectTo` passed to signUp() and the
+                 Redirect URLs allowlist on the hosted Supabase project. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="com.example.jobdun" android:host="login-callback"/>
+            </intent-filter>
         </activity>
+        <!-- Google Maps API key: set MAPS_API_KEY in local.properties or pass via dart-define -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

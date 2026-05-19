@@ -2,11 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/constants/app_constants.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';
-import '../providers/auth_provider.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -31,77 +36,55 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 
   void _continue() {
-    if (!mounted) {
-      return;
-    }
-
-    final authState = ref.read(authControllerProvider);
-
-    if (!authState.isAuthenticated) {
-      context.go('/login');
-      return;
-    }
-
-    if (!authState.onboardingComplete) {
-      context.go('/onboarding');
-      return;
-    }
-
-    context.go('/home');
+    if (!mounted) return;
+    // Route to '/', not '/home' — lets the router redirect decide where the
+    // user actually lands based on auth state (login / verify-email / home).
+    context.go('/');
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1F2A2F), Color(0xFFB8561C)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                Text(
-                  AppConstants.appName,
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          child: Column(
+            children: [
+              const Spacer(),
+              JobdunLogo(variant: LogoVariant.mark, height: 64.r),
+              Gap(20.h),
+              ShaderMask(
+                shaderCallback: (bounds) =>
+                    AppGradients.brandFlame.createShader(bounds),
+                child: Text(
+                  'JOBDUN',
+                  style: tt.displaySmall!.copyWith(
+                    fontSize: 48.sp,
+                    letterSpacing: 4.0,
+                    height: 1.0,
+                    color: Colors
+                        .white, // intentional: ShaderMask requires white for gradient
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  AppConstants.appTagline,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFFFFE4D0),
-                  ),
+              ),
+              Gap(6.h),
+              Text(
+                AppConstants.appTagline,
+                style: tt.bodyMedium!.copyWith(
+                  color: c.text3,
+                  letterSpacing: 0.3,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  AppConstants.appDescription,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: const Color(0xFFF9F0E8),
-                  ),
-                ),
-                const Spacer(),
-                _EnvStatusChip(
-                  configured: AppEnv.isSupabaseConfigured,
-                  missingKeys: AppEnv.missingKeysSummary,
-                ),
-                const SizedBox(height: 20),
-                const LinearProgressIndicator(
-                  minHeight: 6,
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
-                ),
-              ],
-            ),
+              ),
+              const Spacer(),
+              if (!AppEnv.isSupabaseConfigured)
+                _EnvChip(missingKeys: AppEnv.missingKeysSummary),
+              Gap(AppSpacing.md.h),
+              _LoadingBar(c: c),
+              Gap(AppSpacing.lg.h),
+            ],
           ),
         ),
       ),
@@ -109,40 +92,69 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   }
 }
 
-class _EnvStatusChip extends StatelessWidget {
-  const _EnvStatusChip({
-    required this.configured,
-    required this.missingKeys,
-  });
+class _EnvChip extends StatelessWidget {
+  const _EnvChip({required this.missingKeys});
 
-  final bool configured;
   final String missingKeys;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.chip.r),
+        border: Border.all(color: c.border),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            configured ? Icons.check_circle_outline : Icons.info_outline,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          Icon(Iconsax.info_circle, size: 14.r, color: c.text3),
+          Gap(6.w),
+          Flexible(
             child: Text(
-              configured
-                  ? 'Supabase auth is configured and ready for sign-in.'
-                  : 'Supabase auth is already built, but this run is missing $missingKeys. Launch with --dart-define-from-file=.env.',
-              style: const TextStyle(color: Colors.white),
+              'Missing $missingKeys. Run with --dart-define-from-file=.env.',
+              style: tt.bodySmall!.copyWith(color: c.text2),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingBar extends StatelessWidget {
+  const _LoadingBar({required this.c});
+
+  final JColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 2.h,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 800),
+        builder: (context, value, _) {
+          return FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: value,
+            child: Container(
+              decoration: BoxDecoration(
+                color: c.action,
+                borderRadius: BorderRadius.circular(999.r),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

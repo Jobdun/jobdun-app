@@ -10,7 +10,15 @@ class ApplyToJob {
 
   Future<Either<Failure, JobApplication>> call({
     required String jobId,
-    String? coverMessage,
-  }) =>
-      _repository.applyToJob(jobId: jobId, coverMessage: coverMessage);
+    required String builderId,
+    String? coverNote,
+    double? proposedRate,
+    String? proposedRateType,
+  }) => _repository.applyToJob(
+    jobId: jobId,
+    builderId: builderId,
+    coverNote: coverNote,
+    proposedRate: proposedRate,
+    proposedRateType: proposedRateType,
+  );
 }

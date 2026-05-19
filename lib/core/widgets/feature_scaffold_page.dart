@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gap/gap.dart';
+
+import '../../app/theme/app_colors.dart';
 
 class FeatureScaffoldPage extends StatelessWidget {
   const FeatureScaffoldPage({
@@ -18,21 +22,21 @@ class FeatureScaffoldPage extends StatelessWidget {
       appBar: AppBar(title: Text(title)),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(AppSpacing.lg),
           children: [
             Text(title, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 10),
+            Gap(10.h),
             Text(subtitle),
-            const SizedBox(height: 20),
+            Gap(20.h),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20.r),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: bullets
                       .map(
                         (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
+                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
                           child: Text('• $item'),
                         ),
                       )

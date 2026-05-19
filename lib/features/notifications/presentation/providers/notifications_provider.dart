@@ -4,8 +4,8 @@ import '../../domain/entities/app_notification.dart';
 
 final notificationsControllerProvider =
     NotifierProvider<NotificationsController, NotificationsState>(
-  NotificationsController.new,
-);
+      NotificationsController.new,
+    );
 
 class NotificationsController extends Notifier<NotificationsState> {
   @override
@@ -30,11 +30,10 @@ class NotificationsState {
     int? unreadCount,
     bool? isLoading,
     String? error,
-  }) =>
-      NotificationsState(
-        notifications: notifications ?? this.notifications,
-        unreadCount: unreadCount ?? this.unreadCount,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-      );
+  }) => NotificationsState(
+    notifications: notifications ?? this.notifications,
+    unreadCount: unreadCount ?? this.unreadCount,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
 }
