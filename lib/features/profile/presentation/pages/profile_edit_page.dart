@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
@@ -100,7 +100,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           content: Row(
             children: [
               Icon(
-                Iconsax.tick_circle,
+                AppIcons.successCircle,
                 size: 18.r,
                 color: Colors.white, // intentional: white-on-success
               ),
@@ -159,7 +159,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(AppIcons.back, size: 22.r, color: c.text1),
                   ),
                   const Expanded(
                     child: PageHeader(
@@ -313,7 +313,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       const FieldLabel('VERIFICATION'),
                       Gap(AppSpacing.sm.h),
                       _StatusRow(
-                        icon: Iconsax.call,
+                        icon: AppIcons.phone,
                         label: 'Phone',
                         done: profile?.isPhoneVerified ?? false,
                         ctaLabel: 'VERIFY',
@@ -322,7 +322,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       if (!isBuilder) ...[
                         Gap(8.h),
                         _StatusRow(
-                          icon: Iconsax.document_text,
+                          icon: AppIcons.document,
                           label: 'Trade licence',
                           done: tp?.hasLicence ?? false,
                           ctaLabel: 'UPLOAD',
@@ -466,7 +466,7 @@ class _TradePickerTile extends ConsumerWidget {
                   ),
                 ),
               ),
-              Icon(Iconsax.arrow_down_1, size: 16.r, color: c.text3),
+              Icon(AppIcons.chevronDown, size: 16.r, color: c.text3),
             ],
           ),
         ),
@@ -515,7 +515,7 @@ class _StatusRow extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.tick_circle, size: 16.r, color: c.verified),
+                Icon(AppIcons.successCircle, size: 16.r, color: c.verified),
                 Gap(6.w),
                 Text(
                   'VERIFIED',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
@@ -80,7 +80,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
         content: Row(
           children: [
             Icon(
-              Iconsax.tick_circle,
+              AppIcons.successCircle,
               size: 18.r,
               color: Colors.white, // intentional
             ),
@@ -119,7 +119,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                   IconButton(
                     onPressed: () => context.pop(),
                     icon: Icon(
-                      Iconsax.close_circle,
+                      AppIcons.closeCircle,
                       size: 22.r,
                       color: c.text1,
                     ),
@@ -348,7 +348,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       child: Row(
                         children: [
                           Icon(
-                            Iconsax.flash_1,
+                            AppIcons.lightning,
                             size: 18.r,
                             color: _isUrgent ? c.action : c.text3,
                           ),
@@ -389,7 +389,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
             BottomActionBar(
               primary: JButton(
                 label: _isPosting ? 'POSTING...' : 'POST JOB',
-                icon: Iconsax.send_1,
+                icon: AppIcons.send,
                 isLoading: _isPosting,
                 onPressed: _isPosting ? null : () => _post(context, c),
               ),

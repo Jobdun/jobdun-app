@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:pinput/pinput.dart';
 
 import '../../../../core/design/colors.dart';
@@ -249,7 +249,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         backgroundColor: c.background,
         leading: _step == 0
             ? IconButton(
-                icon: Icon(Iconsax.arrow_left, color: c.text1),
+                icon: Icon(AppIcons.back, color: c.text1),
                 onPressed: () {
                   if (context.canPop()) {
                     context.pop();
@@ -259,7 +259,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
                 },
               )
             : IconButton(
-                icon: Icon(Iconsax.arrow_left, color: c.text1),
+                icon: Icon(AppIcons.back, color: c.text1),
                 onPressed: _backToPhone,
               ),
         elevation: 0,
@@ -386,7 +386,7 @@ class _PhoneStep extends StatelessWidget {
                         ),
                       ),
                       Gap(4.w),
-                      Icon(Iconsax.arrow_down_1, size: 14.r, color: c.text3),
+                      Icon(AppIcons.chevronDown, size: 14.r, color: c.text3),
                     ],
                   ),
                 ),
@@ -511,7 +511,7 @@ class _OtpStep extends StatelessWidget {
                 color: c.actionBg,
                 borderRadius: BorderRadius.circular(AppRadius.card.r),
               ),
-              child: Icon(Iconsax.message, size: 32.r, color: c.action),
+              child: Icon(AppIcons.chat, size: 32.r, color: c.action),
             ),
           ),
           Gap(AppSpacing.md.h),

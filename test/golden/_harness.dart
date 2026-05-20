@@ -65,10 +65,7 @@ Future<void> pumpGolden(
             body: SafeArea(
               child: Padding(
                 padding: padding,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: child,
-                ),
+                child: Align(alignment: Alignment.topCenter, child: child),
               ),
             ),
           ),

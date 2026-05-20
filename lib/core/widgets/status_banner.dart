@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../app/theme/app_colors.dart';
 
@@ -16,7 +16,7 @@ class StatusBanner extends StatelessWidget {
     final c = context.c;
     final bg = isError ? c.urgentBg : c.verifiedBg;
     final border = isError ? c.urgent : c.verified;
-    final icon = isError ? Iconsax.warning_2 : Iconsax.tick_circle;
+    final icon = isError ? AppIcons.warning : AppIcons.successCircle;
     final color = isError ? c.urgent : c.verified;
     final tx = isError ? c.urgentTx : c.verifiedTx;
 

@@ -17,6 +17,10 @@ abstract interface class MessageRemoteDataSource {
     required String userId,
     required bool isBuilder,
   });
+  Future<void> archiveConversation({
+    required String conversationId,
+    required bool isBuilder,
+  });
   Stream<List<ConversationModel>> watchConversations(String userId);
   Stream<List<MessageModel>> watchMessages(String conversationId);
 }
@@ -28,10 +32,16 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   @override
   Future<List<ConversationModel>> getConversations(String userId) async {
     try {
+      // Hide rows the current viewer has archived. Each side has its own
+      // archived_at column so the other participant keeps seeing the thread
+      // until they archive independently.
       final data = await _client
           .from('conversations')
           .select('*, jobs(title)')
-          .or('builder_id.eq.$userId,trade_id.eq.$userId')
+          .or(
+            'and(builder_id.eq.$userId,builder_archived_at.is.null),'
+            'and(trade_id.eq.$userId,trade_archived_at.is.null)',
+          )
           .neq('status', 'blocked')
           .order('last_message_at', ascending: false, nullsFirst: false);
       return (data as List)
@@ -97,6 +107,22 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   }
 
   @override
+  Future<void> archiveConversation({
+    required String conversationId,
+    required bool isBuilder,
+  }) async {
+    try {
+      final column = isBuilder ? 'builder_archived_at' : 'trade_archived_at';
+      await _client
+          .from('conversations')
+          .update({column: DateTime.now().toIso8601String()})
+          .eq('id', conversationId);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
   Stream<List<ConversationModel>> watchConversations(String userId) {
     return _client
         .from('conversations')
@@ -104,9 +130,19 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
         .order('last_message_at', ascending: false)
         .map(
           (rows) => rows
-              .where(
-                (r) => r['builder_id'] == userId || r['trade_id'] == userId,
-              )
+              .where((r) {
+                // Mirror the getConversations() filter: include rows for which
+                // the current viewer is a participant AND has not archived
+                // their side. Stream-side filtering since the realtime channel
+                // doesn't accept compound or() expressions.
+                final isBuilder = r['builder_id'] == userId;
+                final isTrade = r['trade_id'] == userId;
+                if (!isBuilder && !isTrade) return false;
+                final archivedKey = isBuilder
+                    ? 'builder_archived_at'
+                    : 'trade_archived_at';
+                return r[archivedKey] == null;
+              })
               .map(ConversationModel.fromJson)
               .toList(),
         );

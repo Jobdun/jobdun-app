@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:go_router/go_router.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
+import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/job_application.dart';
@@ -120,17 +125,30 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                 ],
               ),
             ),
-            if (appsState.isLoading)
-              LinearProgressIndicator(
-                color: c.action,
-                backgroundColor: c.surface,
-                minHeight: 2,
-              ),
             // ── List
             Expanded(
-              child: filtered.isEmpty
+              child: appsState.isLoading && filtered.isEmpty
+                  ? JSkeletonList(
+                      enabled: true,
+                      child: ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          AppSpacing.md.h,
+                          20.w,
+                          AppSpacing.lg.h,
+                        ),
+                        itemCount: 4,
+                        separatorBuilder: (_, _) => Gap(10.h),
+                        itemBuilder: (_, _) => _AppCard(
+                          app: _placeholderApp,
+                          isBuilder: isBuilder,
+                        ),
+                      ),
+                    )
+                  : filtered.isEmpty
                   ? _EmptyTab(tab: _tab, isBuilder: isBuilder)
-                  : ListView.separated(
+                  : JStaggeredList(
+                      animationKey: ValueKey(_tab),
                       padding: EdgeInsets.fromLTRB(
                         20.w,
                         AppSpacing.md.h,
@@ -185,6 +203,75 @@ class _AppCard extends StatelessWidget {
     final statusColor = _statusColor(status, c);
     final statusLabel = status.label.toUpperCase();
 
+    final card = _buildCard(context, c, tt, status, statusColor, statusLabel);
+
+    // Swipe affordances on pending rows only. Builders get reject/shortlist;
+    // tradies get withdraw. The inline buttons remain — slidable is additive
+    // for power users, not a replacement.
+    if (status != ApplicationStatus.pending) return card;
+
+    if (isBuilder) {
+      return Slidable(
+        key: ValueKey('app-${app.id}'),
+        startActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.28,
+          children: [
+            _slideAction(
+              context: context,
+              label: 'REJECT',
+              icon: AppIcons.closeCircle,
+              backgroundColor: c.urgent,
+              onPressed: () => onUpdateStatus?.call(ApplicationStatus.rejected),
+            ),
+          ],
+        ),
+        endActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.32,
+          children: [
+            _slideAction(
+              context: context,
+              label: 'SHORTLIST',
+              icon: AppIcons.successCircle,
+              backgroundColor: c.available,
+              onPressed: () =>
+                  onUpdateStatus?.call(ApplicationStatus.shortlisted),
+            ),
+          ],
+        ),
+        child: card,
+      );
+    }
+
+    return Slidable(
+      key: ValueKey('app-${app.id}'),
+      startActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.32,
+        children: [
+          _slideAction(
+            context: context,
+            label: 'WITHDRAW',
+            icon: AppIcons.closeBox,
+            backgroundColor: c.surfaceRaised,
+            foregroundColor: c.text1,
+            onPressed: () => onWithdraw?.call(),
+          ),
+        ],
+      ),
+      child: card,
+    );
+  }
+
+  Widget _buildCard(
+    BuildContext context,
+    JColors c,
+    TextTheme tt,
+    ApplicationStatus status,
+    Color statusColor,
+    String statusLabel,
+  ) {
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
@@ -217,24 +304,29 @@ class _AppCard extends StatelessWidget {
                 // ── Status chip + date
                 Row(
                   children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 3.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                      ),
-                      child: Text(
-                        statusLabel,
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.5,
-                          color: statusColor,
+                    Flexible(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 3.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.labelSmall!.copyWith(
+                            letterSpacing: 0.5,
+                            color: statusColor,
+                          ),
                         ),
                       ),
                     ),
                     const Spacer(),
+                    Gap(8.w),
                     Text(
                       _relDate(app.createdAt),
                       style: tt.bodySmall!.copyWith(color: c.text3),
@@ -245,6 +337,8 @@ class _AppCard extends StatelessWidget {
                 // ── Job title
                 Text(
                   app.jobTitle ?? '—',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: tt.headlineSmall!.copyWith(
                     fontSize: 18.sp,
                     color: c.text1,
@@ -256,23 +350,27 @@ class _AppCard extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      isBuilder ? Iconsax.personalcard : Iconsax.building_3,
+                      isBuilder ? AppIcons.licence : AppIcons.building,
                       size: 13.r,
                       color: c.text3,
                     ),
                     Gap(6.w),
-                    Text(
-                      isBuilder
-                          ? (app.tradeFullName ?? '—')
-                          : (app.builderCompanyName ?? '—'),
-                      style: tt.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: c.text2,
+                    Flexible(
+                      child: Text(
+                        isBuilder
+                            ? (app.tradeFullName ?? '—')
+                            : (app.builderCompanyName ?? '—'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: c.text2,
+                        ),
                       ),
                     ),
                     if (isBuilder && app.tradeIsVerified == true) ...[
                       Gap(6.w),
-                      Icon(Iconsax.verify, size: 13.r, color: c.verified),
+                      Icon(AppIcons.verified, size: 13.r, color: c.verified),
                     ],
                   ],
                 ),
@@ -280,17 +378,21 @@ class _AppCard extends StatelessWidget {
                 // ── Location
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 13.r, color: c.text3),
+                    Icon(AppIcons.location, size: 13.r, color: c.text3),
                     Gap(6.w),
-                    Text(
-                      [
-                        app.jobSuburb,
-                        app.jobState,
-                      ].whereType<String>().join(', '),
-                      style: tt.labelMedium!.copyWith(color: c.text3),
+                    Expanded(
+                      child: Text(
+                        [
+                          app.jobSuburb,
+                          app.jobState,
+                        ].whereType<String>().join(', '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.labelMedium!.copyWith(color: c.text3),
+                      ),
                     ),
                     if (app.proposedRate != null) ...[
-                      const Spacer(),
+                      Gap(8.w),
                       Text(
                         '\$${app.proposedRate!.toStringAsFixed(0)}${app.proposedRateType != null ? '/${app.proposedRateType}' : ''}',
                         style: tt.headlineSmall!.copyWith(
@@ -313,9 +415,8 @@ class _AppCard extends StatelessWidget {
                           label: 'REJECT',
                           variant: JButtonVariant.secondary,
                           size: JButtonSize.compact,
-                          onPressed: () => onUpdateStatus?.call(
-                            ApplicationStatus.rejected,
-                          ),
+                          onPressed: () =>
+                              onUpdateStatus?.call(ApplicationStatus.rejected),
                         ),
                       ),
                       Gap(AppSpacing.sm.w),
@@ -382,6 +483,28 @@ class _AppCard extends StatelessWidget {
     );
   }
 
+  SlidableAction _slideAction({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required Color backgroundColor,
+    Color? foregroundColor,
+    required VoidCallback onPressed,
+  }) {
+    final c = context.c;
+    return SlidableAction(
+      onPressed: (_) {
+        HapticFeedback.lightImpact();
+        onPressed();
+      },
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor ?? c.onAction,
+      icon: icon,
+      label: label,
+      autoClose: true,
+    );
+  }
+
   static Color _statusColor(ApplicationStatus s, JColors c) => switch (s) {
     ApplicationStatus.pending => c.action,
     ApplicationStatus.shortlisted => c.available,
@@ -418,25 +541,62 @@ class _EmptyTab extends StatelessWidget {
               : 'No applications yet.\nBrowse open jobs to get started.'
         : 'No $tab applications.';
 
+    // CTA only on the "All" tab — secondary tab empties shouldn't push the
+    // user to take an unrelated action.
+    final ctaLabel = tab == 'All'
+        ? (isBuilder ? 'POST A JOB' : 'BROWSE JOBS')
+        : null;
+
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl.w),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.document_text, size: 48.r, color: c.text3),
+            Icon(AppIcons.document, size: 48.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               message,
               style: tt.bodyLarge!.copyWith(color: c.text3, height: 1.5),
               textAlign: TextAlign.center,
             ),
+            if (ctaLabel != null) ...[
+              Gap(AppSpacing.lg.h),
+              SizedBox(
+                width: 200.w,
+                child: JButton(
+                  label: ctaLabel,
+                  onPressed: () => context.go(isBuilder ? '/jobs' : '/jobs'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 }
+
+// Loading-state placeholder. Real-shaped JobApplication so Skeletonizer can
+// mask the card layout into shimmer blocks during initial load.
+final _placeholderApp = JobApplication(
+  id: 'placeholder',
+  jobId: 'placeholder',
+  tradeId: 'placeholder',
+  builderId: 'placeholder',
+  status: ApplicationStatus.pending,
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
+  jobTitle: 'Loading job title placeholder',
+  jobSuburb: 'Suburb',
+  jobState: 'NSW',
+  builderCompanyName: 'Loading company placeholder',
+  tradeFullName: 'Loading trade name placeholder',
+  tradePrimaryTrade: 'Trade',
+  tradeIsVerified: false,
+  proposedRate: 0,
+  proposedRateType: 'hr',
+);
 
 // ── Sample mock data (shown when provider returns empty) ───────────────────────
 

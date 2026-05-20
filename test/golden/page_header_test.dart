@@ -24,10 +24,7 @@ void main() {
     testWidgets('tab — default tab landing', (tester) async {
       await pumpGolden(
         tester,
-        const PageHeader(
-          eyebrow: 'POSTED JOBS',
-          title: 'Your listings',
-        ),
+        const PageHeader(eyebrow: 'POSTED JOBS', title: 'Your listings'),
       );
       await expectLater(
         find.byType(PageHeader),

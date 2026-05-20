@@ -3,7 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/core/widgets/inputs/j_text_field.dart';
 
@@ -70,15 +70,15 @@ void main() {
     await tester.pumpAndSettle();
 
     // Default obscured: eye_slash icon visible.
-    expect(find.byIcon(Iconsax.eye_slash), findsOneWidget);
-    expect(find.byIcon(Iconsax.eye), findsNothing);
+    expect(find.byIcon(AppIcons.eyeClosed), findsOneWidget);
+    expect(find.byIcon(AppIcons.eyeOpen), findsNothing);
 
-    await tester.tap(find.byIcon(Iconsax.eye_slash));
+    await tester.tap(find.byIcon(AppIcons.eyeClosed));
     await tester.pumpAndSettle();
 
     // After tap: eye icon visible (value now revealed).
-    expect(find.byIcon(Iconsax.eye), findsOneWidget);
-    expect(find.byIcon(Iconsax.eye_slash), findsNothing);
+    expect(find.byIcon(AppIcons.eyeOpen), findsOneWidget);
+    expect(find.byIcon(AppIcons.eyeClosed), findsNothing);
   });
 
   testWidgets('non-password field does not show a password toggle', (
@@ -89,7 +89,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Iconsax.eye), findsNothing);
-    expect(find.byIcon(Iconsax.eye_slash), findsNothing);
+    expect(find.byIcon(AppIcons.eyeOpen), findsNothing);
+    expect(find.byIcon(AppIcons.eyeClosed), findsNothing);
   });
 }

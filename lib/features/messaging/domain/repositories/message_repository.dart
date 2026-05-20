@@ -17,6 +17,10 @@ abstract interface class MessageRepository {
     required String userId,
     required bool isBuilder,
   });
+  Future<Either<Failure, void>> archiveConversation({
+    required String conversationId,
+    required bool isBuilder,
+  });
   Stream<List<Conversation>> watchConversations(String userId);
   Stream<List<Message>> watchMessages(String conversationId);
 }

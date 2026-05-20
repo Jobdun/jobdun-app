@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
@@ -211,11 +211,7 @@ class _TopBar extends StatelessWidget {
                       horizontal: 8.w,
                       vertical: 10.h,
                     ),
-                    child: Icon(
-                      Iconsax.arrow_left_2,
-                      size: 22.r,
-                      color: c.text2,
-                    ),
+                    child: Icon(AppIcons.arrowLeft, size: 22.r, color: c.text2),
                   ),
                 ),
               ),

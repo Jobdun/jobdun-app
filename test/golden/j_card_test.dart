@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/app/theme/app_colors.dart';
 import 'package:jobdun/core/design/widgets/j_card.dart';
 
@@ -36,21 +36,21 @@ void main() {
             JStatBadge(
               value: '4.9',
               label: 'Rating',
-              icon: Iconsax.star_1,
+              icon: AppIcons.starFilled,
               iconColor: Color(0xFFF59E0B),
             ),
             SizedBox(width: 8),
             JStatBadge(
               value: '127',
               label: 'Jobs done',
-              icon: Iconsax.briefcase,
+              icon: AppIcons.briefcase,
               iconColor: Color(0xFFF97316),
             ),
             SizedBox(width: 8),
             JStatBadge(
               value: '8',
               label: 'Yrs exp',
-              icon: Iconsax.clock,
+              icon: AppIcons.clock,
               iconColor: Color(0xFF22C55E),
             ),
           ],

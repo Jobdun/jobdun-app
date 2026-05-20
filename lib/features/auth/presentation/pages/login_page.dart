@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_gradients.dart';
@@ -151,7 +151,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 name: 'email',
                                 label: 'Email',
                                 hint: 'you@example.com',
-                                prefixIcon: Iconsax.sms,
+                                prefixIcon: AppIcons.email,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.email],
@@ -168,7 +168,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 name: 'password',
                                 label: 'Password',
                                 hint: 'Enter your password',
-                                prefixIcon: Iconsax.lock,
+                                prefixIcon: AppIcons.lock,
                                 obscureText: true,
                                 textInputAction: TextInputAction.done,
                                 autofillHints: const [AutofillHints.password],
@@ -374,7 +374,7 @@ class _CreateAccountLink extends StatelessWidget {
                 WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: Icon(
-                    Iconsax.arrow_right_3,
+                    AppIcons.chevronRight,
                     size: 14.r,
                     color: c.action,
                   ),

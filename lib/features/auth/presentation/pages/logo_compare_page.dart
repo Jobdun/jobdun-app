@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 
@@ -81,7 +81,7 @@ class LogoComparePage extends StatelessWidget {
         backgroundColor: c.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left_2, color: c.text1, size: 20.r),
+          icon: Icon(AppIcons.arrowLeft, color: c.text1, size: 20.r),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/login'),
         ),
@@ -313,7 +313,7 @@ class _ConceptCard extends StatelessWidget {
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(Iconsax.quote_up, size: 14.r, color: c.action),
+                    Icon(AppIcons.quote, size: 14.r, color: c.action),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -361,7 +361,7 @@ class _ConceptCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Iconsax.info_circle, size: 12.r, color: c.text3),
+                    Icon(AppIcons.info, size: 12.r, color: c.text3),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -403,7 +403,7 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Iconsax.flash_15, size: 16.r, color: c.action),
+              Icon(AppIcons.lightningFilled, size: 16.r, color: c.action),
               Gap(8.w),
               Text(
                 'CURRENT ACTIVE LOGO',

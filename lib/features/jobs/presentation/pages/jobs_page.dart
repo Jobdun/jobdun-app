@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
+import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
@@ -94,7 +96,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             width: 130.w,
                             child: JButton(
                               label: 'POST JOB',
-                              icon: Iconsax.add,
+                              icon: AppIcons.add,
                               size: JButtonSize.compact,
                               onPressed: () => context.push('/jobs/create'),
                             ),
@@ -112,7 +114,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                     decoration: InputDecoration(
                       hintText: 'Search trades, skills, suburbs…',
                       prefixIcon: Icon(
-                        Iconsax.search_normal,
+                        AppIcons.search,
                         size: 16.r,
                         color: c.text3,
                       ),
@@ -120,7 +122,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           ? null
                           : IconButton(
                               icon: Icon(
-                                Iconsax.close_circle,
+                                AppIcons.closeCircle,
                                 size: 16.r,
                                 color: c.text3,
                               ),
@@ -163,13 +165,6 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 ],
               ),
             ),
-            // ── Loading bar
-            if (isLoading)
-              LinearProgressIndicator(
-                color: c.action,
-                backgroundColor: c.surface,
-                minHeight: 2,
-              ),
             // ── Error banner
             if (jobsState.error != null)
               Container(
@@ -178,7 +173,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                 child: Row(
                   children: [
-                    Icon(Iconsax.warning_2, size: 16.r, color: c.urgentTx),
+                    Icon(AppIcons.warning, size: 16.r, color: c.urgentTx),
                     Gap(8.w),
                     Expanded(
                       child: Text(
@@ -223,12 +218,28 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             ),
             // ── Job list
             Expanded(
-              child: count == 0 && !isLoading
+              child: isLoading && count == 0
+                  ? JSkeletonList(
+                      enabled: true,
+                      child: ListView.separated(
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          AppSpacing.sm.h,
+                          20.w,
+                          AppSpacing.lg.h,
+                        ),
+                        itemCount: 5,
+                        separatorBuilder: (ctx, idx) => Gap(9.h),
+                        itemBuilder: (context, i) =>
+                            const _JobCardPlaceholder(),
+                      ),
+                    )
+                  : count == 0
                   ? _EmptyState(
                       hasFilter:
                           activeFilter != null || _searchCtrl.text.isNotEmpty,
                     )
-                  : ListView.separated(
+                  : JStaggeredList(
                       padding: EdgeInsets.fromLTRB(
                         20.w,
                         AppSpacing.sm.h,
@@ -236,7 +247,6 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                         AppSpacing.lg.h,
                       ),
                       itemCount: count,
-                      separatorBuilder: (ctx, idx) => Gap(9.h),
                       itemBuilder: (context, i) {
                         final j = jobs[i];
                         return JobCard(
@@ -263,15 +273,53 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   }
 }
 
-class _EmptyState extends StatelessWidget {
+// Loading-state stand-in. Real-shaped JobCard fed placeholder strings so
+// Skeletonizer can mask it into shimmer blocks that match the loaded layout.
+class _JobCardPlaceholder extends StatelessWidget {
+  const _JobCardPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return JobCard(
+      title: 'Loading job title placeholder',
+      description:
+          'Description line one placeholder text\nDescription line two placeholder text',
+      rate: '\$\$\$/hr',
+      startDate: 'Today',
+      distanceKm: 0,
+      isUrgent: false,
+      onTap: () {},
+    );
+  }
+}
+
+class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.hasFilter});
 
   final bool hasFilter;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    final isBuilder =
+        ref.watch(authControllerProvider).role == UserRole.builder;
+
+    final headline = hasFilter
+        ? 'NO JOBS FOUND.'
+        : isBuilder
+        ? 'NO LISTINGS YET.'
+        : 'NO OPEN JOBS.';
+    final body = hasFilter
+        ? 'Try a different trade or clear your filters.'
+        : isBuilder
+        ? 'Post your first job to start receiving applications.'
+        : 'Check back soon — new jobs are posted daily.';
+    final ctaLabel = hasFilter
+        ? 'CLEAR FILTERS'
+        : isBuilder
+        ? 'POST A JOB'
+        : null;
 
     return Center(
       child: Padding(
@@ -279,10 +327,10 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.search_normal, size: 48.r, color: c.text3),
+            Icon(AppIcons.search, size: 48.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
-              hasFilter ? 'NO JOBS FOUND.' : 'NO OPEN JOBS.',
+              headline,
               style: tt.headlineSmall!.copyWith(
                 fontSize: 22.sp,
                 color: c.text1,
@@ -291,12 +339,29 @@ class _EmptyState extends StatelessWidget {
             ),
             Gap(AppSpacing.sm.h),
             Text(
-              hasFilter
-                  ? 'Try a different trade or clear your filters.'
-                  : 'Check back soon — new jobs are posted daily.',
+              body,
               style: tt.bodyLarge!.copyWith(color: c.text3),
               textAlign: TextAlign.center,
             ),
+            if (ctaLabel != null) ...[
+              Gap(AppSpacing.lg.h),
+              SizedBox(
+                width: 200.w,
+                child: JButton(
+                  label: ctaLabel,
+                  onPressed: () {
+                    if (hasFilter) {
+                      ref
+                          .read(jobsControllerProvider.notifier)
+                          .applyFilter(null);
+                      ref.read(jobsControllerProvider.notifier).search('');
+                    } else {
+                      context.push('/jobs/create');
+                    }
+                  },
+                ),
+              ),
+            ],
           ],
         ),
       ),

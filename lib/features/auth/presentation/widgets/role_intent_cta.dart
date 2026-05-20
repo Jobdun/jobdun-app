@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 
@@ -80,7 +80,7 @@ class RoleIntentCta extends StatelessWidget {
                   ),
                 ),
                 Gap(AppSpacing.sm.w),
-                Icon(Iconsax.arrow_right_3, size: 18.r, color: c.text3),
+                Icon(AppIcons.chevronRight, size: 18.r, color: c.text3),
               ],
             ),
           ),

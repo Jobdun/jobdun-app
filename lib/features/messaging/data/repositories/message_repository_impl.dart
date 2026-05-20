@@ -70,6 +70,22 @@ class MessageRepositoryImpl implements MessageRepository {
   }
 
   @override
+  Future<Either<Failure, void>> archiveConversation({
+    required String conversationId,
+    required bool isBuilder,
+  }) async {
+    try {
+      await _datasource.archiveConversation(
+        conversationId: conversationId,
+        isBuilder: isBuilder,
+      );
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Stream<List<Conversation>> watchConversations(String userId) =>
       _datasource.watchConversations(userId);
 

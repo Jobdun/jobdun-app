@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../app/theme/app_colors.dart';
 
@@ -143,5 +143,5 @@ class SocialAuthButton extends StatelessWidget {
   );
 
   static Widget _phoneIcon(BuildContext context) =>
-      Icon(Iconsax.call, size: _iconSize.r, color: context.c.text1);
+      Icon(AppIcons.phone, size: _iconSize.r, color: context.c.text1);
 }

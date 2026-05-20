@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../providers/auth_provider.dart';
 
 // Non-dismissible sheet shown when an authenticated user has no role yet —
@@ -17,12 +18,10 @@ class RoleSelectionSheet extends ConsumerStatefulWidget {
   const RoleSelectionSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showJSheet<void>(
       context: context,
       isDismissible: false,
       enableDrag: false,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => const RoleSelectionSheet(),
     );
   }
@@ -106,7 +105,7 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(AppSpacing.lg.h),
               _SheetRoleCard(
-                icon: Iconsax.buildings,
+                icon: AppIcons.builder,
                 label: "I'M HIRING",
                 description: 'Post jobs, review applications, manage crews.',
                 pending: _pending == UserRole.builder,
@@ -117,7 +116,7 @@ class _RoleSelectionSheetState extends ConsumerState<RoleSelectionSheet> {
               ),
               Gap(12.h),
               _SheetRoleCard(
-                icon: Iconsax.briefcase,
+                icon: AppIcons.briefcase,
                 label: "I'M LOOKING FOR WORK",
                 description: 'Browse jobs, apply, get hired.',
                 pending: _pending == UserRole.trade,
@@ -229,7 +228,7 @@ class _SheetRoleCard extends StatelessWidget {
               ),
               Gap(AppSpacing.sm.w),
               Icon(
-                Iconsax.arrow_right_3,
+                AppIcons.chevronRight,
                 size: 18.r,
                 color: pending ? c.action : c.text3,
               ),

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
@@ -96,7 +97,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(AppIcons.back, size: 22.r, color: c.text1),
                   ),
                   Expanded(
                     child: PageHeader(
@@ -126,14 +127,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       spacing: AppSpacing.sm.w,
                       runSpacing: AppSpacing.sm.h,
                       children: [
-                        _InfoChip(icon: Iconsax.money_3, label: args.rate),
+                        _InfoChip(icon: AppIcons.wallet, label: args.rate),
                         _InfoChip(
-                          icon: Iconsax.calendar_1,
+                          icon: AppIcons.calendar,
                           label: args.startDate,
                         ),
                         if (args.distanceKm > 0)
                           _InfoChip(
-                            icon: Iconsax.location,
+                            icon: AppIcons.location,
                             label:
                                 '${args.distanceKm.toStringAsFixed(1)} km away',
                           ),
@@ -147,7 +148,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                       Gap(AppSpacing.sm.h),
                       Row(
                         children: [
-                          Icon(Iconsax.location, size: 15.r, color: c.text3),
+                          Icon(AppIcons.location, size: 15.r, color: c.text3),
                           Gap(AppSpacing.sm.w),
                           Text(
                             [
@@ -246,7 +247,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                                 Row(
                                   children: [
                                     Icon(
-                                      Iconsax.star1,
+                                      AppIcons.starFilled,
                                       size: 13.r,
                                       color: c.star,
                                     ),
@@ -262,7 +263,11 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               ],
                             ),
                           ),
-                          Icon(Iconsax.verify, size: 18.r, color: c.verified),
+                          Icon(
+                            AppIcons.verified,
+                            size: 18.r,
+                            color: c.verified,
+                          ),
                         ],
                       ),
                     ),
@@ -272,24 +277,24 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     FieldLabel('REQUIREMENTS'),
                     Gap(10.h),
                     _ReqRow(
-                      icon: Iconsax.personalcard,
+                      icon: AppIcons.licence,
                       label: 'Current trade licence required',
                       met: true,
                     ),
                     if (args.requiresWhiteCard)
                       _ReqRow(
-                        icon: Iconsax.card,
+                        icon: AppIcons.card,
                         label: 'White card required',
                         met: true,
                       ),
                     if (args.requiresLiability)
                       _ReqRow(
-                        icon: Iconsax.shield_tick,
+                        icon: AppIcons.policy,
                         label: 'Public liability insurance (\$10M+)',
                         met: true,
                       ),
                     _ReqRow(
-                      icon: Iconsax.document_text,
+                      icon: AppIcons.document,
                       label: 'SWMS to be provided on site',
                       met: false,
                     ),
@@ -318,7 +323,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Iconsax.tick_circle,
+                            AppIcons.successCircle,
                             size: 18.r,
                             color: c.verified,
                           ),
@@ -348,13 +353,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   void _showApplySheet(BuildContext context, JColors c, JobDetailArgs args) {
-    showModalBottomSheet(
+    showJSheet<void>(
       context: context,
       backgroundColor: c.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
       ),
-      isScrollControlled: true,
       builder: (ctx) => _ApplySheet(
         args: args,
         onSubmit: () {
@@ -470,10 +474,7 @@ class _ApplySheetState extends State<_ApplySheet> {
             ),
           ),
           Gap(20.h),
-          JButton(
-            label: 'SUBMIT APPLICATION',
-            onPressed: widget.onSubmit,
-          ),
+          JButton(label: 'SUBMIT APPLICATION', onPressed: widget.onSubmit),
         ],
       ),
     );

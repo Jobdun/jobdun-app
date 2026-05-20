@@ -77,7 +77,18 @@ class JButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[Icon(icon, size: 18.r), Gap(8.w)],
-              Text(label, style: labelStyle),
+              // Flexible + ellipsis: when a parent gives the button a tight
+              // width (e.g. JButton inside a Row with sibling actions), the
+              // label shrinks gracefully instead of overflowing — every
+              // builder screen ran into this on narrow phones.
+              Flexible(
+                child: Text(
+                  label,
+                  style: labelStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           );
 

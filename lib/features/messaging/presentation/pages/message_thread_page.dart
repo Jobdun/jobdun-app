@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 
@@ -122,7 +122,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
+                    icon: Icon(AppIcons.back, size: 22.r, color: c.text1),
                   ),
                   // Avatar
                   Container(
@@ -169,7 +169,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       ],
                     ),
                   ),
-                  Icon(Iconsax.more, size: 20.r, color: c.text3),
+                  Icon(AppIcons.more, size: 20.r, color: c.text3),
                 ],
               ),
             ),
@@ -325,7 +325,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       ),
                       alignment: Alignment.center,
                       child: Icon(
-                        Iconsax.send_1,
+                        AppIcons.send,
                         size: 18.r,
                         color: Colors.white, // intentional
                       ),

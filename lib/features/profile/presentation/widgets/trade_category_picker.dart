@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../data/models/trade_category_model.dart';
 import '../providers/trade_categories_provider.dart';
@@ -25,10 +26,8 @@ Future<TradeCategorySelection?> showTradeCategoryPicker(
   String? initialSlug,
   String? initialOtherText,
 }) {
-  return showModalBottomSheet<TradeCategorySelection>(
+  return showJSheet<TradeCategorySelection>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _TradeCategoryPicker(
       initialSlug: initialSlug,
       initialOtherText: initialOtherText,
@@ -274,7 +273,7 @@ class _SheetHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onClose,
-            icon: Icon(Iconsax.close_square, size: 20.r, color: c.text3),
+            icon: Icon(AppIcons.closeBox, size: 20.r, color: c.text3),
             tooltip: 'Close',
           ),
         ],
@@ -317,7 +316,7 @@ class _SearchField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search trades…',
             hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
-            prefixIcon: Icon(Iconsax.search_normal, size: 18.r, color: c.text3),
+            prefixIcon: Icon(AppIcons.search, size: 18.r, color: c.text3),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -416,7 +415,7 @@ class _TradeRow extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(Iconsax.tick_circle, size: 20.r, color: c.action),
+                Icon(AppIcons.successCircle, size: 20.r, color: c.action),
             ],
           ),
         ),
@@ -459,7 +458,7 @@ class _OtherSection extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Row(
               children: [
-                Icon(Iconsax.add_circle, size: 18.r, color: c.text2),
+                Icon(AppIcons.addCircle, size: 18.r, color: c.text2),
                 Gap(10.w),
                 Expanded(
                   child: Text(
@@ -468,7 +467,7 @@ class _OtherSection extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  isOpen ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
+                  isOpen ? AppIcons.chevronUp : AppIcons.chevronDown,
                   size: 16.r,
                   color: c.text3,
                 ),

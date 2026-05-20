@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
@@ -51,7 +51,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         backgroundColor: c.background,
         leading: IconButton(
           onPressed: () => context.go('/login'),
-          icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text2),
+          icon: Icon(AppIcons.back, size: 22.r, color: c.text2),
         ),
       ),
       body: SafeArea(
@@ -115,7 +115,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     name: 'email',
                     label: 'Email',
                     hint: 'your@email.com',
-                    prefixIcon: Iconsax.sms,
+                    prefixIcon: AppIcons.email,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.email],

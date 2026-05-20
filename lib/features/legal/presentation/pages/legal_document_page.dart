@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../domain/legal_document.dart';
@@ -27,7 +27,7 @@ class LegalDocumentPage extends ConsumerWidget {
         backgroundColor: c.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Iconsax.arrow_left, color: c.text1, size: 20.r),
+          icon: Icon(AppIcons.back, color: c.text1, size: 20.r),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -54,7 +54,7 @@ class LegalDocumentPage extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Iconsax.warning_2, color: c.urgent, size: 40.r),
+                Icon(AppIcons.warning, color: c.urgent, size: 40.r),
                 Gap(AppSpacing.md.h),
                 Text(
                   'Could not load document.',

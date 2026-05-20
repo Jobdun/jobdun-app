@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/validators/phone_validator.dart';
 
 // Modal bottom sheet for picking the country dial code. Small fixed list —
@@ -13,10 +14,8 @@ Future<Country?> showCountryPickerSheet(
   BuildContext context, {
   String? currentCode,
 }) {
-  return showModalBottomSheet<Country>(
+  return showJSheet<Country>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _CountryPickerSheet(currentCode: currentCode),
   );
 }
@@ -75,11 +74,7 @@ class _CountryPickerSheet extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(
-                      Iconsax.close_square,
-                      size: 20.r,
-                      color: c.text3,
-                    ),
+                    icon: Icon(AppIcons.closeBox, size: 20.r, color: c.text3),
                     tooltip: 'Close',
                   ),
                 ],
@@ -128,7 +123,7 @@ class _CountryPickerSheet extends StatelessWidget {
                           if (selected) ...[
                             Gap(10.w),
                             Icon(
-                              Iconsax.tick_circle,
+                              AppIcons.successCircle,
                               size: 18.r,
                               color: c.action,
                             ),

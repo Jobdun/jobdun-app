@@ -100,11 +100,15 @@ class TradieCard extends StatelessWidget {
                         Gap(2.h),
                         Text(
                           '$trade · $suburb',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: tt.bodyMedium!.copyWith(color: c.text2),
                         ),
                         Gap(2.h),
                         Text(
                           '$jobCount jobs completed',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: tt.bodySmall!.copyWith(color: c.text3),
                         ),
                       ],

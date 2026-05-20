@@ -5,7 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
@@ -192,7 +194,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     : _ViewMode.list,
               ),
               child: Icon(
-                _viewMode == _ViewMode.list ? Iconsax.map : Iconsax.element_4,
+                _viewMode == _ViewMode.list ? AppIcons.map : AppIcons.gridView,
                 color: Colors.white, // intentional: white-on-action
                 size: 22.r,
               ),
@@ -201,6 +203,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: _viewMode == _ViewMode.map
           ? _MapView(
               jobs: jobsWithLocation,
+              placeLabel: location,
               onJobTap: (j) => context.push(
                 '/jobs/${j.id}',
                 extra: JobDetailArgs.fromJob(j),
@@ -247,9 +250,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   if (isBuilder)
                     SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: SliverList.separated(
+                      sliver: JStaggeredSliverList(
                         itemCount: _tradies.length,
-                        separatorBuilder: (ctx, idx) => Gap(9.h),
                         itemBuilder: (_, i) {
                           final t = _tradies[i];
                           return TradieCard(
@@ -270,11 +272,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                   else
                     SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: SliverList.separated(
+                      sliver: JStaggeredSliverList(
                         itemCount: hasRealJobs
                             ? feedJobs.length
                             : _mockJobs.length,
-                        separatorBuilder: (ctx, idx) => Gap(9.h),
                         itemBuilder: (_, i) {
                           if (hasRealJobs) {
                             final j = feedJobs[i];
@@ -396,13 +397,17 @@ class _Header extends StatelessWidget {
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 12.r, color: c.text2),
+                    Icon(AppIcons.location, size: 12.r, color: c.text2),
                     Gap(4.w),
-                    Text(
-                      location,
-                      style: tt.bodySmall!.copyWith(
-                        letterSpacing: 0.02 * 11,
-                        color: c.text2,
+                    Expanded(
+                      child: Text(
+                        location,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodySmall!.copyWith(
+                          letterSpacing: 0.02 * 11,
+                          color: c.text2,
+                        ),
                       ),
                     ),
                   ],
@@ -421,7 +426,7 @@ class _Header extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 border: Border.all(color: c.border),
               ),
-              child: Icon(Iconsax.notification, size: 18.r, color: c.text2),
+              child: Icon(AppIcons.notification, size: 18.r, color: c.text2),
             ),
           ),
         ],
@@ -565,7 +570,7 @@ class _PrimaryActionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                 ),
                 child: Icon(
-                  isBuilder ? Iconsax.add_square : Iconsax.search_normal,
+                  isBuilder ? AppIcons.addSquare : AppIcons.search,
                   size: 22.r,
                   color: Colors.white, // intentional: white-on-action
                 ),
@@ -592,7 +597,7 @@ class _PrimaryActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Iconsax.arrow_right_3, size: 20.r, color: c.text3),
+              Icon(AppIcons.chevronRight, size: 20.r, color: c.text3),
             ],
           ),
         ),
@@ -664,14 +669,24 @@ enum _TileSource { carto, osm }
 const String _kMapStylePrefsKey = 'home.map_style';
 
 class _MapView extends StatefulWidget {
-  const _MapView({required this.jobs, required this.onJobTap});
+  const _MapView({
+    required this.jobs,
+    required this.placeLabel,
+    required this.onJobTap,
+  });
 
   final List<Job> jobs;
+  // Suburb/state string used for the "NEAR <place> • 5 KM" radius chip.
+  final String placeLabel;
   final ValueChanged<Job> onJobTap;
 
   @override
   State<_MapView> createState() => _MapViewState();
 }
+
+// Search radius rendered as both a translucent circle on the map and a chip
+// in the top-left. Tweak in one place if product wants a different default.
+const double _kSearchRadiusKm = 5.0;
 
 // Outcome of the current location request — drives the in-map banner UX.
 enum _LocationStatus {
@@ -688,7 +703,7 @@ class _MapViewState extends State<_MapView> {
   static const _sydney = LatLng(-33.8688, 151.2093);
 
   final MapController _controller = MapController();
-  _MapStyle _style = _MapStyle.dark;
+  _MapStyle _style = _MapStyle.voyager;
   LatLng? _userLocation;
   _LocationStatus _locationStatus = _LocationStatus.idle;
 
@@ -710,7 +725,7 @@ class _MapViewState extends State<_MapView> {
     if (raw == null || !mounted) return;
     final found = _MapStyle.values.firstWhere(
       (s) => s.name == raw,
-      orElse: () => _MapStyle.dark,
+      orElse: () => _MapStyle.voyager,
     );
     if (found != _style) setState(() => _style = found);
   }
@@ -772,7 +787,9 @@ class _MapViewState extends State<_MapView> {
         _userLocation = latLng;
         _locationStatus = _LocationStatus.granted;
       });
-      _controller.move(latLng, 13);
+      // Zoom 12 matches the initial framing so the 5 km radius circle fits
+      // comfortably in view after the camera moves to the user.
+      _controller.move(latLng, 12);
     } catch (_) {
       if (!mounted) return;
       setState(() => _locationStatus = _LocationStatus.error);
@@ -833,9 +850,20 @@ class _MapViewState extends State<_MapView> {
     await Geolocator.openAppSettings();
   }
 
+  // Effective centre for the search radius + sample-pin spread: actual user
+  // GPS if granted, otherwise the Sydney default. Stays a LatLng (not nullable)
+  // so the CircleLayer + sample generator always have something to anchor on.
+  LatLng get _radiusCenter => _userLocation ?? _sydney;
+
+  // Real jobs win whenever they're available; otherwise we synthesize a
+  // small set of clickable pins inside the radius so the map view always
+  // demos end-to-end (pin → tap → detail page).
+  List<Job> get _effectiveJobs =>
+      widget.jobs.isNotEmpty ? widget.jobs : _sampleJobsAround(_radiusCenter);
+
   List<Marker> _buildMarkers(Color pinColor, Color pinBorder) {
     return [
-      for (final job in widget.jobs)
+      for (final job in _effectiveJobs)
         if (job.latitude != null && job.longitude != null)
           Marker(
             point: LatLng(job.latitude!, job.longitude!),
@@ -852,7 +880,7 @@ class _MapViewState extends State<_MapView> {
                   border: Border.all(color: pinBorder, width: 2),
                 ),
                 child: const Icon(
-                  Iconsax.location5,
+                  AppIcons.locationFilled,
                   size: 20,
                   color: Colors.white, // intentional: white-on-action
                 ),
@@ -903,7 +931,9 @@ class _MapViewState extends State<_MapView> {
           mapController: _controller,
           options: const MapOptions(
             initialCenter: _sydney,
-            initialZoom: 11,
+            // Zoom 12 frames the 5 km search radius cleanly without clipping
+            // the outer ring on a typical phone viewport.
+            initialZoom: 12,
             minZoom: 3,
             maxZoom: 18,
             interactionOptions: InteractionOptions(
@@ -921,6 +951,21 @@ class _MapViewState extends State<_MapView> {
               retinaMode: RetinaMode.isHighDensity(context),
               userAgentPackageName: 'com.example.jobdun',
             ),
+            // Search-radius circle drawn under the markers so pins sit on top.
+            // Uses meters for the radius so it scales with the zoom level —
+            // that's the visual cue the user actually reads as "your area".
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: _radiusCenter,
+                  radius: _kSearchRadiusKm * 1000,
+                  useRadiusInMeter: true,
+                  color: c.action.withValues(alpha: 0.10),
+                  borderColor: c.action,
+                  borderStrokeWidth: 1.5,
+                ),
+              ],
+            ),
             MarkerLayer(markers: _buildMarkers(c.action, c.surface)),
             RichAttributionWidget(
               alignment: AttributionAlignment.bottomLeft,
@@ -928,34 +973,60 @@ class _MapViewState extends State<_MapView> {
             ),
           ],
         ),
+        // Top-left radius chip — tells the user exactly what they're looking
+        // at: the suburb name and the search radius the pins are filtered by.
         Positioned(
-          top: 12.h,
-          right: 12.w,
-          child: _MapStyleButton(
-            current: _style,
-            onTap: () async {
-              final next = await _showStyleSheet(context, _style);
-              if (next != null && next != _style) {
-                await _setStyle(next);
-              }
-            },
+          top: 0,
+          left: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(12.w, 12.h, 0, 0),
+              child: _RadiusChip(
+                placeLabel: widget.placeLabel,
+                radiusKm: _kSearchRadiusKm,
+              ),
+            ),
           ),
         ),
-        // Recenter / locate-me button — sits below the style chip. Shows a
-        // spinner while requesting, the standard target icon otherwise.
+        // Top-right floating controls. SafeArea pushes them below the status
+        // bar/notch; the Column gives the style chip and recenter button a
+        // consistent 8.h gap so they never overlap each other.
         Positioned(
-          top: 56.h,
-          right: 12.w,
-          child: _RecenterButton(
-            isLoading: _locationStatus == _LocationStatus.requesting,
-            hasLocation: _userLocation != null,
-            onTap: () {
-              if (_userLocation != null) {
-                _controller.move(_userLocation!, 14);
-              } else {
-                _initLocation();
-              }
-            },
+          top: 0,
+          right: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(0, 12.h, 12.w, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MapStyleButton(
+                    current: _style,
+                    onTap: () async {
+                      final next = await _showStyleSheet(context, _style);
+                      if (next != null && next != _style) {
+                        await _setStyle(next);
+                      }
+                    },
+                  ),
+                  Gap(8.h),
+                  _RecenterButton(
+                    isLoading: _locationStatus == _LocationStatus.requesting,
+                    hasLocation: _userLocation != null,
+                    onTap: () {
+                      if (_userLocation != null) {
+                        // Match the initial framing zoom so the radius circle
+                        // stays visible after recentering.
+                        _controller.move(_userLocation!, 12);
+                      } else {
+                        _initLocation();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         if (_locationStatus == _LocationStatus.denied ||
@@ -983,6 +1054,63 @@ class _MapViewState extends State<_MapView> {
   }
 }
 
+// Top-left chip: "NEAR PARRAMATTA, NSW · 5 KM". Tells the user exactly which
+// location the radius circle is anchored on and how far out the pins reach.
+// Pure presentation — the actual circle is rendered by the CircleLayer in
+// _MapView.build.
+class _RadiusChip extends StatelessWidget {
+  const _RadiusChip({required this.placeLabel, required this.radiusKm});
+
+  final String placeLabel;
+  final double radiusKm;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    // Trim a trailing ", NSW" / ", VIC" etc. — the chip is already tight on
+    // horizontal real estate when paired with the style/recenter column.
+    final shortPlace = placeLabel.split(',').first.trim().toUpperCase();
+    final radiusText = radiusKm == radiusKm.roundToDouble()
+        ? '${radiusKm.toInt()} KM'
+        : '${radiusKm.toStringAsFixed(1)} KM';
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border.all(color: c.border, width: 1),
+        borderRadius: BorderRadius.circular(2.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.location, size: 16.r, color: c.action),
+          Gap(6.w),
+          Text(
+            'NEAR $shortPlace',
+            style: tt.labelSmall!.copyWith(
+              color: c.text1,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+          Gap(8.w),
+          Container(width: 1, height: 12.h, color: c.border),
+          Gap(8.w),
+          Text(
+            radiusText,
+            style: tt.labelSmall!.copyWith(
+              color: c.action,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // Compact corner button — flat, hard edges, brand-orange icon on surface.
 class _MapStyleButton extends StatelessWidget {
   const _MapStyleButton({required this.current, required this.onTap});
@@ -1007,7 +1135,7 @@ class _MapStyleButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Iconsax.layer, size: 16.r, color: c.action),
+              Icon(AppIcons.mapLayer, size: 16.r, color: c.action),
               Gap(6.w),
               Text(
                 current.label,
@@ -1026,9 +1154,8 @@ class _MapStyleButton extends StatelessWidget {
 }
 
 Future<_MapStyle?> _showStyleSheet(BuildContext context, _MapStyle current) {
-  return showModalBottomSheet<_MapStyle>(
+  return showJSheet<_MapStyle>(
     context: context,
-    backgroundColor: Colors.transparent,
     builder: (_) => _MapStyleSheet(current: current),
   );
 }
@@ -1122,10 +1249,11 @@ class _MapStyleRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2.r),
               ),
               child: Icon(
-                Iconsax.layer,
+                AppIcons.mapLayer,
                 size: 16.r,
                 color: selected
-                    ? Colors.white // intentional: white-on-action
+                    ? Colors
+                          .white // intentional: white-on-action
                     : c.text2,
               ),
             ),
@@ -1151,7 +1279,7 @@ class _MapStyleRow extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(Iconsax.tick_circle5, size: 18.r, color: c.action),
+              Icon(AppIcons.successCircleFilled, size: 18.r, color: c.action),
           ],
         ),
       ),
@@ -1199,7 +1327,7 @@ class _RecenterButton extends StatelessWidget {
                   ),
                 )
               : Icon(
-                  hasLocation ? Iconsax.gps5 : Iconsax.gps,
+                  hasLocation ? AppIcons.gpsFilled : AppIcons.gps,
                   size: 18.r,
                   color: c.action,
                 ),
@@ -1266,7 +1394,7 @@ class _LocationStatusBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Iconsax.location_slash, size: 18.r, color: c.action),
+          Icon(AppIcons.locationUnavailable, size: 18.r, color: c.action),
           Gap(12.w),
           Expanded(
             child: Column(
@@ -1419,3 +1547,132 @@ const _mockJobs = [
     isUrgent: false,
   ),
 ];
+
+// Demo job pins generated around a given centre — used by the map view when
+// there is no real Supabase data with location yet. Pins are offset within
+// roughly the 5 KM search radius so the user sees the radius circle "filled"
+// with jobs wherever they happen to be testing (not just in Sydney).
+//
+// Each template is a const description of the job; coords are computed at
+// runtime by adding the dLat / dLng offset to [center]. Distances assume
+// ~111 km per degree latitude / longitude near the equator — close enough
+// for tradesperson-scale radii (within a couple percent at -33° lat).
+class _SampleJobTemplate {
+  const _SampleJobTemplate({
+    required this.idSuffix,
+    required this.title,
+    required this.description,
+    required this.trade,
+    required this.urgency,
+    required this.budgetMin,
+    this.budgetMax,
+    required this.daysOut,
+    required this.dLat,
+    required this.dLng,
+  });
+
+  final String idSuffix;
+  final String title;
+  final String description;
+  final String trade;
+  final JobUrgency urgency;
+  final double budgetMin;
+  final double? budgetMax;
+  final int daysOut;
+  final double dLat;
+  final double dLng;
+}
+
+const _sampleJobTemplates = <_SampleJobTemplate>[
+  _SampleJobTemplate(
+    idSuffix: 'switchboard',
+    title: 'Install 3-phase switchboard',
+    description:
+        'Commercial fit-out. Conduit run, panel installation, and termination on a 3-phase board.',
+    trade: 'Electrician',
+    urgency: JobUrgency.urgent,
+    budgetMin: 85,
+    daysOut: 1,
+    dLat: 0.018,
+    dLng: 0.022,
+  ),
+  _SampleJobTemplate(
+    idSuffix: 'framing',
+    title: 'Frame internal walls — home reno',
+    description:
+        'Steel-stud framing ~120 LM for a full home renovation. Drawings on site.',
+    trade: 'Carpenter',
+    urgency: JobUrgency.standard,
+    budgetMin: 45,
+    daysOut: 3,
+    dLat: -0.022,
+    dLng: 0.012,
+  ),
+  _SampleJobTemplate(
+    idSuffix: 'footings',
+    title: 'Concrete footings for deck extension',
+    description:
+        '8 × 300mm dia pad footings, 600mm deep. Reinforcement supplied by contractor.',
+    trade: 'Concreter',
+    urgency: JobUrgency.standard,
+    budgetMin: 75,
+    daysOut: 5,
+    dLat: 0.008,
+    dLng: -0.025,
+  ),
+  _SampleJobTemplate(
+    idSuffix: 'plumbing',
+    title: 'Bathroom rough-in — townhouse',
+    description:
+        'Hot/cold + waste rough-in across two new bathrooms. PEX-A throughout.',
+    trade: 'Plumber',
+    urgency: JobUrgency.standard,
+    budgetMin: 95,
+    daysOut: 2,
+    dLat: -0.014,
+    dLng: -0.018,
+  ),
+  _SampleJobTemplate(
+    idSuffix: 'roofing',
+    title: 'Roof tile repair — storm damage',
+    description:
+        'Storm-damaged terracotta tiles. Approx 40 tiles to replace + flashing repair.',
+    trade: 'Roofer',
+    urgency: JobUrgency.urgent,
+    budgetMin: 65,
+    budgetMax: 85,
+    daysOut: 1,
+    dLat: 0.025,
+    dLng: -0.005,
+  ),
+];
+
+List<Job> _sampleJobsAround(LatLng center) {
+  final now = DateTime.now();
+  return [
+    for (final t in _sampleJobTemplates)
+      Job(
+        id: 'sample-${t.idSuffix}',
+        builderId: 'sample-builder',
+        title: t.title,
+        description: t.description,
+        tradeTypeRequired: t.trade,
+        // No real reverse-geocoding yet — the radius chip carries the place
+        // label for the user. Suburb here is a generic placeholder shown
+        // on the detail screen.
+        suburb: 'Nearby',
+        state: 'NSW',
+        postcode: '',
+        status: JobStatus.open,
+        urgency: t.urgency,
+        budgetMin: t.budgetMin,
+        budgetMax: t.budgetMax,
+        budgetType: BudgetType.hourly,
+        startDate: now.add(Duration(days: t.daysOut)),
+        createdAt: now,
+        updatedAt: now,
+        latitude: center.latitude + t.dLat,
+        longitude: center.longitude + t.dLng,
+      ),
+  ];
+}

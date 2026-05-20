@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
+import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/messaging_provider.dart';
@@ -80,26 +85,38 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                 ],
               ),
             ),
-            if (msgState.isLoading)
-              LinearProgressIndicator(
-                color: c.action,
-                backgroundColor: c.surface,
-                minHeight: 2,
-              ),
             Divider(height: 1, color: c.border),
             // ── Conversation list
             Expanded(
-              child: (!useReal && _mockConvos.isEmpty)
+              child: msgState.isLoading && msgState.conversations.isEmpty
+                  ? JSkeletonList(
+                      enabled: true,
+                      child: ListView.separated(
+                        itemCount: 6,
+                        separatorBuilder: (_, _) =>
+                            Divider(height: 1, color: c.border),
+                        itemBuilder: (_, _) => _ConvoRow(
+                          initials: 'AB',
+                          name: 'Loading conversation placeholder',
+                          preview: 'Last message preview placeholder text here',
+                          time: '1h',
+                          unreadCount: 0,
+                          jobTitle: 'Loading job title placeholder',
+                          onTap: () {},
+                        ),
+                      ),
+                    )
+                  : (!useReal && _mockConvos.isEmpty)
                   ? _EmptyState(isBuilder: isBuilder)
                   : useReal
-                  ? ListView.separated(
+                  ? JStaggeredList(
                       itemCount: msgState.conversations.length,
                       separatorBuilder: (_, _) =>
                           Divider(height: 1, color: c.border),
                       itemBuilder: (ctx, i) {
                         final conv = msgState.conversations[i];
                         final unread = conv.unreadCountFor(userId);
-                        return _ConvoRow(
+                        final row = _ConvoRow(
                           initials: _initials(conv.otherUserDisplayName ?? '?'),
                           name: conv.otherUserDisplayName ?? 'Unknown',
                           preview: conv.lastMessagePreview ?? '',
@@ -120,9 +137,34 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                             ),
                           ),
                         );
+                        return Slidable(
+                          key: ValueKey('convo-${conv.id}'),
+                          endActionPane: ActionPane(
+                            motion: const DrawerMotion(),
+                            extentRatio: 0.28,
+                            children: [
+                              SlidableAction(
+                                onPressed: (_) {
+                                  HapticFeedback.lightImpact();
+                                  ref
+                                      .read(
+                                        messagingControllerProvider.notifier,
+                                      )
+                                      .archiveConversation(conv.id);
+                                },
+                                backgroundColor: c.surfaceRaised,
+                                foregroundColor: c.text1,
+                                icon: AppIcons.archive,
+                                label: 'ARCHIVE',
+                                autoClose: true,
+                              ),
+                            ],
+                          ),
+                          child: row,
+                        );
                       },
                     )
-                  : ListView.separated(
+                  : JStaggeredList(
                       itemCount: _mockConvos.length,
                       separatorBuilder: (_, _) =>
                           Divider(height: 1, color: c.border),
@@ -328,7 +370,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Iconsax.message, size: 48.r, color: c.text3),
+            Icon(AppIcons.chat, size: 48.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               'NO MESSAGES YET.',
@@ -345,6 +387,15 @@ class _EmptyState extends StatelessWidget {
                   : 'Apply to jobs to start chatting with builders.',
               style: tt.bodyLarge!.copyWith(color: c.text3, height: 1.5),
               textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.lg.h),
+            SizedBox(
+              width: 200.w,
+              child: JButton(
+                label: isBuilder ? 'POST A JOB' : 'BROWSE JOBS',
+                onPressed: () =>
+                    context.go(isBuilder ? '/jobs/create' : '/jobs'),
+              ),
             ),
           ],
         ),

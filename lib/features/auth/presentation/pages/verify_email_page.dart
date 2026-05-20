@@ -6,7 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -122,7 +122,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     border: Border.all(color: c.border),
                   ),
                   child: Icon(
-                    Iconsax.sms_notification,
+                    AppIcons.emailNotification,
                     size: 36.r,
                     color: c.action,
                   ),
@@ -177,7 +177,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Iconsax.info_circle, size: 16.r, color: c.text3),
+                    Icon(AppIcons.info, size: 16.r, color: c.text3),
                     Gap(10.w),
                     Expanded(
                       child: Text(

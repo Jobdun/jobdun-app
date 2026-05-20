@@ -17,10 +17,7 @@ void main() {
     });
 
     testWidgets('primary loading', (tester) async {
-      await pumpGolden(
-        tester,
-        const JButton(label: 'LOG IN', isLoading: true),
-      );
+      await pumpGolden(tester, const JButton(label: 'LOG IN', isLoading: true));
       await expectLater(
         find.byType(JButton),
         matchesGoldenFile('goldens/j_button_primary_loading.png'),

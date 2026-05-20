@@ -114,6 +114,28 @@ class MessagingController extends Notifier<MessagingState> {
     );
   }
 
+  /// Archive a conversation for the current viewer. Builders set
+  /// `builder_archived_at`; tradies set `trade_archived_at`. The other
+  /// participant still sees the thread until they archive their side
+  /// independently. Optimistically removes the row from the in-memory list
+  /// so the swipe-confirm feels instant; the realtime watch reconciles if
+  /// the server later disagrees.
+  Future<void> archiveConversation(String conversationId) async {
+    final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
+    final remaining = state.conversations
+        .where((c) => c.id != conversationId)
+        .toList();
+    state = state.copyWith(
+      conversations: remaining,
+      totalUnread: _computeUnread(remaining),
+    );
+    final result = await _repo.archiveConversation(
+      conversationId: conversationId,
+      isBuilder: isBuilder,
+    );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
+  }
+
   int _computeUnread(List<Conversation> convs) {
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     return convs.fold<int>(

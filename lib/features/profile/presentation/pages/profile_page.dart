@@ -1,9 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/theme_provider.dart';
@@ -11,6 +12,7 @@ import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -64,19 +66,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 isUploadingAvatar: profileState.isUploadingAvatar,
               ),
             ),
-            if (profileState.isLoading)
-              SliverToBoxAdapter(
-                child: LinearProgressIndicator(
-                  color: c.action,
-                  backgroundColor: c.surface,
-                  minHeight: 2,
-                ),
-              ),
             SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
             SliverToBoxAdapter(
-              child: isBuilder
-                  ? _BuilderProfile(profile: profileState.builderProfile)
-                  : _TradeProfile(profile: profileState.tradeProfile),
+              child: JSkeletonList(
+                enabled: profileState.isLoading,
+                child: isBuilder
+                    ? _BuilderProfile(profile: profileState.builderProfile)
+                    : _TradeProfile(profile: profileState.tradeProfile),
+              ),
             ),
             SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
             const SliverToBoxAdapter(child: _SettingsSection()),
@@ -136,9 +133,17 @@ class _ProfileHeader extends StatelessWidget {
           Stack(
             children: [
               avatarUrl != null
-                  ? CircleAvatar(
-                      radius: 36.r,
-                      backgroundImage: NetworkImage(avatarUrl!),
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: avatarUrl!,
+                        width: 72.r,
+                        height: 72.r,
+                        fit: BoxFit.cover,
+                        placeholder: (_, _) =>
+                            AvatarBlock(initials: initials, size: 72),
+                        errorWidget: (_, _, _) =>
+                            AvatarBlock(initials: initials, size: 72),
+                      ),
                     )
                   : AvatarBlock(initials: initials, size: 72),
               if (isUploadingAvatar)
@@ -186,7 +191,7 @@ class _ProfileHeader extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Iconsax.edit, size: 16.r, color: c.text1),
+                            Icon(AppIcons.edit, size: 16.r, color: c.text1),
                             Gap(6.w),
                             Text(
                               'EDIT',
@@ -248,21 +253,21 @@ class _BuilderProfile extends StatelessWidget {
               JStatBadge(
                 value: rating,
                 label: 'Rating',
-                icon: Iconsax.star,
+                icon: AppIcons.star,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
               JStatBadge(
                 value: reviews,
                 label: 'Reviews',
-                icon: Iconsax.message_text,
+                icon: AppIcons.messageText,
                 iconColor: c.available,
               ),
               Gap(AppSpacing.sm.w),
               JStatBadge(
                 value: jobsPosted,
                 label: 'Jobs posted',
-                icon: Iconsax.briefcase,
+                icon: AppIcons.briefcase,
                 iconColor: c.action,
               ),
             ],
@@ -272,22 +277,22 @@ class _BuilderProfile extends StatelessWidget {
             title: 'COMPANY DETAILS',
             children: [
               _InfoRow(
-                icon: Iconsax.building_3,
+                icon: AppIcons.building,
                 label: 'Company',
                 value: companyName,
               ),
-              _InfoRow(icon: Iconsax.receipt_1, label: 'ABN', value: abn),
+              _InfoRow(icon: AppIcons.receipt, label: 'ABN', value: abn),
               _InfoRow(
-                icon: Iconsax.briefcase,
+                icon: AppIcons.briefcase,
                 label: 'Type',
                 value: 'Company',
               ),
               _InfoRow(
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 label: 'Location',
                 value: location,
               ),
-              _InfoRow(icon: Iconsax.call, label: 'Contact', value: contact),
+              _InfoRow(icon: AppIcons.phone, label: 'Contact', value: contact),
             ],
           ),
           Gap(12.h),
@@ -337,21 +342,21 @@ class _TradeProfile extends StatelessWidget {
               JStatBadge(
                 value: rating,
                 label: 'Rating',
-                icon: Iconsax.star,
+                icon: AppIcons.star,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
               JStatBadge(
                 value: jobsDone,
                 label: 'Jobs done',
-                icon: Iconsax.tick_circle,
+                icon: AppIcons.successCircle,
                 iconColor: c.verified,
               ),
               Gap(AppSpacing.sm.w),
               JStatBadge(
                 value: yrsExp,
                 label: 'Yrs exp',
-                icon: Iconsax.award,
+                icon: AppIcons.award,
                 iconColor: c.action,
               ),
             ],
@@ -371,7 +376,7 @@ class _TradeProfile extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  isVerified ? Iconsax.verify : Iconsax.tick_circle,
+                  isVerified ? AppIcons.verified : AppIcons.successCircle,
                   size: 18.r,
                   color: isVerified ? c.verified : c.text3,
                 ),
@@ -400,18 +405,14 @@ class _TradeProfile extends StatelessWidget {
           JCard(
             title: 'TRADE DETAILS',
             children: [
+              _InfoRow(icon: AppIcons.licence, label: 'Trade', value: trade),
               _InfoRow(
-                icon: Iconsax.personalcard,
-                label: 'Trade',
-                value: trade,
-              ),
-              _InfoRow(
-                icon: Iconsax.document_text,
+                icon: AppIcons.document,
                 label: 'Licence',
                 value: hasLicence ? 'On file' : null,
               ),
               _InfoRow(
-                icon: Iconsax.location,
+                icon: AppIcons.location,
                 label: 'Base suburb',
                 value: location,
               ),
@@ -453,7 +454,7 @@ class _SettingsSection extends ConsumerWidget {
             title: 'APPEARANCE',
             children: [
               _ToggleRow(
-                icon: isDark ? Iconsax.moon : Iconsax.sun_1,
+                icon: isDark ? AppIcons.moon : AppIcons.sun,
                 label: 'Dark mode',
                 value: isDark,
                 onChanged: (_) => ref.read(themeProvider.notifier).toggle(),
@@ -464,10 +465,10 @@ class _SettingsSection extends ConsumerWidget {
           JCard(
             title: 'ACCOUNT',
             children: [
-              _ActionRow(icon: Iconsax.sms, label: 'Change email'),
-              _ActionRow(icon: Iconsax.lock, label: 'Change password'),
-              _ActionRow(icon: Iconsax.notification, label: 'Notifications'),
-              _ActionRow(icon: Iconsax.shield_tick, label: 'Privacy settings'),
+              _ActionRow(icon: AppIcons.email, label: 'Change email'),
+              _ActionRow(icon: AppIcons.lock, label: 'Change password'),
+              _ActionRow(icon: AppIcons.notification, label: 'Notifications'),
+              _ActionRow(icon: AppIcons.policy, label: 'Privacy settings'),
             ],
           ),
           Gap(12.h),
@@ -475,12 +476,12 @@ class _SettingsSection extends ConsumerWidget {
             title: 'LEGAL',
             children: [
               _ActionRow(
-                icon: Iconsax.document_text,
+                icon: AppIcons.document,
                 label: 'Terms of Service',
                 onTap: () => context.push('/legal/terms'),
               ),
               _ActionRow(
-                icon: Iconsax.shield,
+                icon: AppIcons.shield,
                 label: 'Privacy Policy',
                 onTap: () => context.push('/legal/privacy'),
               ),
@@ -563,7 +564,7 @@ class _VerificationRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isVerified ? Iconsax.verify : Iconsax.close_circle,
+            isVerified ? AppIcons.verified : AppIcons.closeCircle,
             size: 16.r,
             color: isVerified ? c.verified : c.text3,
           ),
@@ -619,7 +620,7 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Iconsax.arrow_right_3, size: 16.r, color: c.text3),
+            Icon(AppIcons.chevronRight, size: 16.r, color: c.text3),
           ],
         ),
       ),

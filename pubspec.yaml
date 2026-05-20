@@ -69,7 +69,6 @@ dependencies:
   # === UI/UX — Typography & Icons ===
   google_fonts: ^6.2.1
   flutter_svg: ^2.0.14
-  iconsax: ^0.0.8
 
   # === UI/UX — Responsive Layout ===
   flutter_screenutil: ^5.9.3
@@ -77,7 +76,7 @@ dependencies:
 
   # === UI/UX — Loading & Skeleton States ===
   shimmer: ^3.0.0
-  skeletonizer: ^1.0.0
+  skeletonizer: ^2.1.3
 
   # === UI/UX — Components ===
   smooth_page_indicator: ^1.2.0
@@ -120,6 +119,7 @@ dependencies:
 
   # === Legal document rendering ===
   flutter_markdown_plus: ^1.0.5
+  phosphor_flutter: ^2.1.0
 
 dev_dependencies:
   flutter_test:

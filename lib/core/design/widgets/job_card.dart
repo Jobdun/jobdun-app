@@ -64,6 +64,8 @@ class JobCard extends StatelessWidget {
                             ],
                             Text(
                               title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: tt.headlineSmall!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.3,
@@ -168,10 +170,17 @@ class _MetaCol extends StatelessWidget {
     return Column(
       crossAxisAlignment: align,
       children: [
-        Text(label, style: tt.labelSmall!.copyWith(color: c.text3)),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: tt.labelSmall!.copyWith(color: c.text3),
+        ),
         Gap(2.h),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: tt.headlineSmall!.copyWith(
             fontSize: 15.sp,
             fontWeight: FontWeight.w700,

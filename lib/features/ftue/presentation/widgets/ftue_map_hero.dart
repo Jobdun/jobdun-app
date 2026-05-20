@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 
@@ -59,12 +59,20 @@ class FtueMapHero extends StatelessWidget {
               for (final pin in _suburbPinOffsets(pinCount))
                 Align(
                   alignment: pin,
-                  child: Icon(Iconsax.location5, size: 18.r, color: c.text2),
+                  child: Icon(
+                    AppIcons.locationFilled,
+                    size: 18.r,
+                    color: c.text2,
+                  ),
                 ),
               // "You are here" centre pin — orange, larger, with a soft
               // halo ring drawn underneath by the grid painter above.
               Center(
-                child: Icon(Iconsax.location5, size: 36.r, color: c.action),
+                child: Icon(
+                  AppIcons.locationFilled,
+                  size: 36.r,
+                  color: c.action,
+                ),
               ),
               // Hi-vis corner accent — matches FtueHeroPhoto so all three
               // slide visuals share the safety-stripe motif.

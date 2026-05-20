@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
+import 'package:percent_indicator/linear_percent_indicator.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/services/profile_analytics.dart';
@@ -77,7 +78,7 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(AppRadius.avatar.r),
               ),
               child: Icon(
-                Iconsax.user_edit,
+                AppIcons.userEdit,
                 size: 18.r,
                 color: Colors.white, // intentional: white-on-action
               ),
@@ -114,16 +115,16 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(2.r),
-                              child: LinearProgressIndicator(
-                                value: pct / 100,
-                                minHeight: 4.h,
-                                backgroundColor: c.border,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  c.action,
-                                ),
-                              ),
+                            child: LinearPercentIndicator(
+                              percent: (pct / 100).clamp(0.0, 1.0),
+                              lineHeight: 4.h,
+                              backgroundColor: c.border,
+                              progressColor: c.action,
+                              barRadius: Radius.circular(2.r),
+                              padding: EdgeInsets.zero,
+                              animation: true,
+                              animateFromLastPercent: true,
+                              animationDuration: 600,
                             ),
                           ),
                           Gap(8.w),
@@ -148,7 +149,7 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                     .read(_completenessBannerDismissedProvider.notifier)
                     .dismiss();
               },
-              icon: Icon(Iconsax.close_square, size: 18.r, color: c.text3),
+              icon: Icon(AppIcons.closeBox, size: 18.r, color: c.text3),
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(minWidth: 32.r, minHeight: 32.r),
               tooltip: 'Dismiss',

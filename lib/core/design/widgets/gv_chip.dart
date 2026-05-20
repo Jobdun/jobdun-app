@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../app/theme/app_colors.dart';
@@ -26,7 +27,10 @@ class GvChip extends StatelessWidget {
       label: '$label filter, ${active ? "selected" : "not selected"}',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         child: SizedBox(
           height: 44.h,
           child: Center(

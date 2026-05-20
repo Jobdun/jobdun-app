@@ -1,6 +1,6 @@
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/core/widgets/inputs/j_text_field.dart';
 
 import '_harness.dart';
@@ -15,7 +15,7 @@ void main() {
             name: 'email',
             label: 'Email',
             hint: 'you@example.com',
-            prefixIcon: Iconsax.sms,
+            prefixIcon: AppIcons.email,
           ),
         ),
       );
@@ -33,7 +33,7 @@ void main() {
             name: 'email',
             label: 'Email',
             initialValue: 'kuya@example.com',
-            prefixIcon: Iconsax.sms,
+            prefixIcon: AppIcons.email,
           ),
         ),
       );

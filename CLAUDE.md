@@ -154,7 +154,7 @@ animations         # Material motion transitions (SharedAxis, FadeThroughTransit
 # === UI/UX — Typography & Icons ===
 google_fonts       # Inter / Poppins — use via AppTheme.textTheme
 flutter_svg        # SVG rendering for illustrations and custom icons
-iconsax            # 1000+ Iconsax icon set (prefer over Material Icons)
+phosphor_flutter   # Phosphor icon set (Bold = default/outline, Fill = active) — wired through `lib/core/theme/app_icons.dart`
 
 # === UI/UX — Responsive Layout ===
 flutter_screenutil # SizeExtension — use .w / .h / .sp / .r for responsive units
@@ -200,12 +200,14 @@ build_runner, json_serializable, mocktail
 
 - **Spacing**: always use `Gap(n)` — never raw `SizedBox(height/width: n)`.
 - **Sizing**: always use `flutter_screenutil` extensions (`.w`, `.h`, `.sp`, `.r`) — never hardcode raw pixels.
-- **Icons**: use `Iconsax.*` by default; fall back to `Icons.*` only for Material-specific cases.
+- **Icons**: always reference `AppIcons.*` from `lib/core/theme/app_icons.dart` — the single point of contact with `phosphor_flutter`. Feature code must NOT import `phosphor_flutter` or reference `PhosphorIconsBold.*` / `PhosphorIconsFill.*` directly. Bold weight = default/outline/inactive; Fill weight = active/selected and critical alerts. Fall back to `Icons.*` only for Material-specific cases.
 - **Fonts**: configure `google_fonts` in `AppTheme` (e.g. Inter for body, Poppins for headings) — never call `GoogleFonts.*` per-widget.
-- **Animations**: wrap list items with `flutter_staggered_animations`; use `flutter_animate` for micro-interactions (fade, slide, scale).
-- **Loading**: use `skeletonizer` for data-driven screens; `shimmer` for image placeholders.
+- **Animations**: wrap any list of 4+ items with `JStaggeredList` (`lib/core/design/widgets/j_staggered_list.dart`) — 200ms fade-slide is the house pattern. For sliver-based screens use `JStaggeredSliverList`. Use `flutter_animate` for one-off micro-interactions (fade, slide, scale). Never call `AnimationLimiter` / `AnimationConfiguration` directly in feature code.
+- **Loading**: use `JSkeletonList` (`lib/core/design/widgets/j_skeleton_list.dart`) for content-shaped loading — wrap real-shaped widgets fed with placeholder data. Never use raw `CircularProgressIndicator` / `LinearProgressIndicator` for list or page-body loading. Keep spinners only for overlay/inline progress (avatar upload, recenter button). Use `shimmer` for image placeholders inside `CachedNetworkImage`.
+- **Progress bars**: use `LinearPercentIndicator` / `CircularPercentIndicator` from `percent_indicator` for any progress with a real percentage. Never wrap a raw `LinearProgressIndicator` for that purpose.
 - **Empty states**: pair a Lottie animation + headline + CTA — never show a blank screen.
-- **Bottom sheets**: use `modal_bottom_sheet` (not Flutter's built-in) for consistent iOS-style sheets.
+- **Bottom sheets**: use `showJSheet` from `lib/core/design/widgets/j_bottom_sheet.dart`. Never call `showModalBottomSheet` directly — Flutter's built-in lacks iOS drag-to-dismiss physics and breaks consistency.
+- **Swipe actions**: wire row-level destructive/state-change actions through `flutter_slidable`. Always call `HapticFeedback.lightImpact()` inside `SlidableAction.onPressed` so the confirm feels physical. Per-side state (archive, mute) must persist server-side — see `supabase/migrations/20260520000004_swipe_actions.sql` for the conversation/saved-jobs schema pattern.
 - **Forms**: use `flutter_form_builder` for all forms; validate with `form_builder_validators`.
 
 Use case return type: `Future<Either<Failure, T>>` from `fpdart`.

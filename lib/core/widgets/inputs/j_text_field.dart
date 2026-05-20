@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:iconsax/iconsax.dart';
-
 import '../../../app/theme/app_colors.dart';
+import '../../theme/app_icons.dart';
 
 /// Production text field for all forms. Wraps [FormBuilderTextField] so it
 /// participates in [FormBuilder] state, validation, and submission.
@@ -92,7 +91,7 @@ class _JTextFieldState extends State<JTextField> {
             child: IconButton(
               onPressed: _togglePassword,
               icon: Icon(
-                _obscured ? Iconsax.eye_slash : Iconsax.eye,
+                _obscured ? AppIcons.eyeClosed : AppIcons.eyeOpen,
                 size: 18.r,
                 color: c.text3,
               ),
