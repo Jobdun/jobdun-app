@@ -1,17 +1,16 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/services/image_upload_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 
@@ -39,17 +38,20 @@ class VerificationPage extends ConsumerStatefulWidget {
 
 class _VerificationPageState extends ConsumerState<VerificationPage> {
   Future<void> _pick(BuildContext context, ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
+    // Licence cards / certs come in many sizes (NSW White Card, QBCC,
+    // electrical licence) — free aspect, slightly higher JPEG quality
+    // than the portfolio pipeline so the small print stays legible after
+    // compression.
+    final file = await ImageUploadService.pickCropCompress(
       source: source,
-      imageQuality: 85,
-      maxWidth: 2000,
-      maxHeight: 2000,
+      aspect: ImageAspect.free,
+      compressQuality: 88,
+      minOutputWidth: 1440,
     );
-    if (picked == null || !context.mounted) return;
+    if (file == null || !context.mounted) return;
     final ok = await ref
         .read(profileControllerProvider.notifier)
-        .uploadTradeLicence(File(picked.path));
+        .uploadTradeLicence(file);
 
     if (!context.mounted) return;
     final c = context.c;

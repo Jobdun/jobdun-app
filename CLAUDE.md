@@ -208,6 +208,8 @@ build_runner, json_serializable, mocktail
 - **Empty states**: pair a Lottie animation + headline + CTA — never show a blank screen.
 - **Bottom sheets**: use `showJSheet` from `lib/core/design/widgets/j_bottom_sheet.dart`. Never call `showModalBottomSheet` directly — Flutter's built-in lacks iOS drag-to-dismiss physics and breaks consistency.
 - **Swipe actions**: wire row-level destructive/state-change actions through `flutter_slidable`. Always call `HapticFeedback.lightImpact()` inside `SlidableAction.onPressed` so the confirm feels physical. Per-side state (archive, mute) must persist server-side — see `supabase/migrations/20260520000004_swipe_actions.sql` for the conversation/saved-jobs schema pattern.
+- **Image uploads**: always pipe `image_picker` through `ImageUploadService.pickCropCompress` (`lib/core/services/image_upload_service.dart`). Pick the right `ImageAspect` — `square` (avatars/logos), `portfolio` (4:3), `free` (verification docs). Never call `ImagePicker().pickImage` directly from feature code.
+- **Image viewers**: use `photo_view` (`PhotoView` or `PhotoViewGallery.builder`) for any tap-to-enlarge surface (portfolio thumbs, verification docs, message attachments). Wrap the thumb in a `Hero(tag: '<feature>:<id>')` so the transition flows.
 - **Forms**: use `flutter_form_builder` for all forms; validate with `form_builder_validators`.
 
 Use case return type: `Future<Either<Failure, T>>` from `fpdart`.
