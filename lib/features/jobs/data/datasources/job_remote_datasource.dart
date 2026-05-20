@@ -6,7 +6,7 @@ import '../../domain/entities/job_filter.dart';
 import '../models/job_model.dart';
 
 abstract interface class JobRemoteDataSource {
-  Future<List<JobModel>> getJobs({JobFilter? filter});
+  Future<List<JobModel>> getJobs({JobFilter? filter, int? limit, int? offset});
   Future<JobModel> getJobById(String id);
   Future<JobModel> createJob(JobModel job);
   Future<JobModel> updateJob(JobModel job);
@@ -20,7 +20,11 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   final SupabaseClient _client;
 
   @override
-  Future<List<JobModel>> getJobs({JobFilter? filter}) async {
+  Future<List<JobModel>> getJobs({
+    JobFilter? filter,
+    int? limit,
+    int? offset,
+  }) async {
     try {
       var query = _client
           .from('jobs')
@@ -47,9 +51,14 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         }
       }
 
-      final data =
-          await (query as dynamic).order('published_at', ascending: false)
-              as List<dynamic>;
+      // Ordered ascending=false → newest first. PostgREST `.range(from, to)`
+      // is inclusive on both ends, so a 20-item page is range(offset, offset+19).
+      var ordered = (query as dynamic).order('published_at', ascending: false);
+      if (limit != null) {
+        final from = offset ?? 0;
+        ordered = ordered.range(from, from + limit - 1);
+      }
+      final data = await ordered as List<dynamic>;
       return data
           .map((e) => JobModel.fromJson(e as Map<String, dynamic>))
           .toList();

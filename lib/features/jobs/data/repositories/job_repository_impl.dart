@@ -13,9 +13,15 @@ class JobRepositoryImpl implements JobRepository {
   final JobRemoteDataSource _datasource;
 
   @override
-  Future<Either<Failure, List<Job>>> getJobs({JobFilter? filter}) async {
+  Future<Either<Failure, List<Job>>> getJobs({
+    JobFilter? filter,
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      return right(await _datasource.getJobs(filter: filter));
+      return right(
+        await _datasource.getJobs(filter: filter, limit: limit, offset: offset),
+      );
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }

@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
-import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
@@ -70,10 +70,15 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final isBuilder =
         ref.watch(authControllerProvider).role == UserRole.builder;
     final activeFilter = jobsState.filter?.tradeType;
-    final jobs = jobsState.jobs;
-    final isLoading = jobsState.isLoading;
-
-    final count = jobs.length;
+    // Observing the paging controller via ref.read so this widget rebuilds
+    // for filter/search changes (which run through it) without listening
+    // to every page append individually — the PagedListView below handles
+    // its own incremental rebuilds.
+    final pagingController = ref
+        .read(jobsControllerProvider.notifier)
+        .pagingController;
+    final count = pagingController.itemList?.length ?? 0;
+    final hasMorePages = pagingController.nextPageKey != null;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -205,11 +210,13 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                   ],
                 ),
               ),
-            // ── Results count
+            // ── Results count. "X+ jobs found" while more pages remain so
+            // the number never looks misleadingly small during scroll-load.
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
               child: Text(
-                '$count ${count == 1 ? 'job' : 'jobs'} found',
+                '$count${hasMorePages && count > 0 ? '+' : ''} '
+                '${count == 1 ? 'job' : 'jobs'} found',
                 style: tt.labelMedium!.copyWith(
                   fontWeight: FontWeight.w400,
                   color: c.text3,
@@ -218,53 +225,126 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             ),
             // ── Job list
             Expanded(
-              child: isLoading && count == 0
-                  ? JSkeletonList(
-                      enabled: true,
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          20.w,
-                          AppSpacing.sm.h,
-                          20.w,
-                          AppSpacing.lg.h,
-                        ),
-                        itemCount: 5,
-                        separatorBuilder: (ctx, idx) => Gap(9.h),
-                        itemBuilder: (context, i) =>
-                            const _JobCardPlaceholder(),
+              child: RefreshIndicator(
+                color: c.action,
+                backgroundColor: c.surface,
+                onRefresh: () async => pagingController.refresh(),
+                child: PagedListView<int, Job>.separated(
+                  pagingController: pagingController,
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    AppSpacing.sm.h,
+                    20.w,
+                    AppSpacing.lg.h,
+                  ),
+                  separatorBuilder: (_, _) => Gap(9.h),
+                  builderDelegate: PagedChildBuilderDelegate<Job>(
+                    itemBuilder: (context, j, i) => JobCard(
+                      title: j.title,
+                      description: j.description,
+                      rate: j.displayBudget,
+                      startDate: j.startDate != null
+                          ? StringUtils.fmtDate(j.startDate!)
+                          : j.displayLocation,
+                      distanceKm: 0.0,
+                      isUrgent: j.urgency == JobUrgency.urgent,
+                      onTap: () => context.push(
+                        '/jobs/${j.id}',
+                        extra: JobDetailArgs.fromJob(j),
                       ),
-                    )
-                  : count == 0
-                  ? _EmptyState(
+                    ),
+                    firstPageProgressIndicatorBuilder: (_) =>
+                        const _FirstPageSkeleton(),
+                    newPageProgressIndicatorBuilder: (_) => Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      child: Center(
+                        child: SizedBox(
+                          width: 22.r,
+                          height: 22.r,
+                          child: CircularProgressIndicator(
+                            color: c.action,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    noItemsFoundIndicatorBuilder: (_) => _EmptyState(
                       hasFilter:
                           activeFilter != null || _searchCtrl.text.isNotEmpty,
-                    )
-                  : JStaggeredList(
-                      padding: EdgeInsets.fromLTRB(
-                        20.w,
-                        AppSpacing.sm.h,
-                        20.w,
-                        AppSpacing.lg.h,
-                      ),
-                      itemCount: count,
-                      itemBuilder: (context, i) {
-                        final j = jobs[i];
-                        return JobCard(
-                          title: j.title,
-                          description: j.description,
-                          rate: j.displayBudget,
-                          startDate: j.startDate != null
-                              ? StringUtils.fmtDate(j.startDate!)
-                              : j.displayLocation,
-                          distanceKm: 0.0,
-                          isUrgent: j.urgency == JobUrgency.urgent,
-                          onTap: () => context.push(
-                            '/jobs/${j.id}',
-                            extra: JobDetailArgs.fromJob(j),
-                          ),
-                        );
-                      },
                     ),
+                    firstPageErrorIndicatorBuilder: (_) => _PageError(
+                      message: pagingController.error?.toString() ?? 'Error',
+                      onRetry: () => pagingController.refresh(),
+                    ),
+                    newPageErrorIndicatorBuilder: (_) => _PageError(
+                      message: pagingController.error?.toString() ?? 'Error',
+                      onRetry: () => pagingController.retryLastFailedRequest(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// First-page skeleton. Five placeholder JobCards inside JSkeletonList so the
+// initial PagedListView load shows real-shaped shimmer instead of a spinner.
+class _FirstPageSkeleton extends StatelessWidget {
+  const _FirstPageSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return JSkeletonList(
+      enabled: true,
+      child: ListView.separated(
+        // Embedded inside a PagedListView slot — disable its own scroll so
+        // the outer scrollable owns the gesture.
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: 5,
+        separatorBuilder: (_, _) => Gap(9.h),
+        itemBuilder: (_, _) => const _JobCardPlaceholder(),
+      ),
+    );
+  }
+}
+
+// Inline error indicator for first-page + new-page failures. Tap to retry.
+class _PageError extends StatelessWidget {
+  const _PageError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.warning, size: 32.r, color: c.urgent),
+            Gap(AppSpacing.md.h),
+            Text(
+              message,
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
+              ),
             ),
           ],
         ),
