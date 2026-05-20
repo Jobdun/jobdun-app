@@ -205,7 +205,7 @@ Use `modal_bottom_sheet` (not Flutter's built-in). Background is `#1E293B`, hand
 
 ## Icons
 
-Use `Iconsax.*` by default. Fall back to `Icons.*` only when no Iconsax equivalent exists.
+Use `AppIcons.*` from `lib/core/theme/app_icons.dart` (backed by `phosphor_flutter`). Bold weight = default/outline/inactive; Fill weight = active/selected and critical alerts. Nav pairs are records with `.outline` + `.filled` members. Feature code must NOT import `phosphor_flutter` or reference `PhosphorIconsBold.*` / `PhosphorIconsFill.*` directly — the catalogue is the single point of contact. Fall back to `Icons.*` only when no AppIcons entry exists (and add the entry next time you reach for it).
 Icon color: `#94A3B8` default, `#F97316` for active/selected, `#F1F5F9` for primary actions.
 Icon size: 20–24dp for navigation, 16–20dp for inline, 32–40dp for feature icons.
 
@@ -216,7 +216,14 @@ Icon size: 20–24dp for navigation, 16–20dp for inline, 32–40dp for feature
 - Transitions: 150–200ms ease. No longer.
 - List items: `flutter_staggered_animations` — `AnimationLimiter + AnimationConfiguration`.
 - Micro-interactions: `flutter_animate` — `.fadeIn()`, `.slideY()`, `.scale()`.
-- Loading: `skeletonizer` wrapping real widgets. Dark skeleton base (`#1E293B`), shimmer in `#334155`.
+- Loading: `JSkeletonList` (`lib/core/design/widgets/j_skeleton_list.dart`) — wraps `skeletonizer` with the brand-tokened shimmer (base `c.surface`, highlight `c.surfaceRaised`, 1200ms pulse). Never raw `CircularProgressIndicator`/`LinearProgressIndicator` for list or page-body loading; spinners stay for overlay/inline progress only.
+- List entry motion: `JStaggeredList` / `JStaggeredSliverList` — 200ms fade-slide per item. Respects `MediaQuery.disableAnimations`. Never call `AnimationLimiter`/`AnimationConfiguration` directly in feature code.
+- Progress bars: `LinearPercentIndicator`/`CircularPercentIndicator` from `percent_indicator` for real percentages. Never wrap `LinearProgressIndicator` for that purpose.
+- Bottom sheets: `showJSheet` (`lib/core/design/widgets/j_bottom_sheet.dart`). Never call `showModalBottomSheet` directly — Flutter's built-in lacks iOS drag-to-dismiss physics.
+- Swipe actions: `flutter_slidable` with `HapticFeedback.lightImpact()` inside every `SlidableAction.onPressed`.
+- Image uploads: route every `image_picker` call through `ImageUploadService.pickCropCompress` (`lib/core/services/image_upload_service.dart`) — pick the right `ImageAspect` (`square`/`portfolio`/`free`).
+- Image viewers: `photo_view` / `PhotoViewGallery.builder` for tap-to-enlarge surfaces; wrap the thumb in a `Hero(tag: '<feature>:<id>')`.
+- Long lists (>50 rows): `infinite_scroll_pagination`'s `PagedListView` with a controller-owned `PagingController`, page size 20, first-page `JSkeletonList` indicator, empty-state CTA, tap-to-retry error, and `RefreshIndicator` wrap.
 - Empty states: Lottie animation + bold headline + single filled CTA. Never blank. Never text-only.
 - No bounce animations. No spring physics. Construction workers don't need playful.
 
@@ -255,9 +262,9 @@ Before delivering any UI code, verify:
 - [ ] All text uses Oswald / Open Sans via AppTheme (no per-widget GoogleFonts calls)
 - [ ] Gap(n) used for all spacing, never SizedBox
 - [ ] All sizes use .w / .h / .sp / .r from flutter_screenutil
-- [ ] Icons from Iconsax (with Icons.* fallback only)
+- [ ] Icons from `AppIcons.*` (no direct `phosphor_flutter` imports; `Icons.*` fallback only)
 - [ ] Empty states have Lottie + headline + CTA
-- [ ] Loading uses skeletonizer on dark surface, not white
+- [ ] Loading uses `JSkeletonList` on dark surface (never raw `skeletonizer` or `CircularProgressIndicator` in list/page-body contexts)
 - [ ] No gradients, no blur effects, no heavy shadows
 - [ ] Transitions 150–200ms, no spring/bounce
 - [ ] Focus states visible (orange border on input focus)

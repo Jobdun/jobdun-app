@@ -61,7 +61,7 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 
 ### Logo Block
 - Heavy wordmark treatment — thick, all-caps, no thin strokes
-- Optional: construction icon (hard hat, beam, wrench via Iconsax) in orange before the word
+- Optional: construction icon (hard hat, beam, wrench via `AppIcons`) in `c.action` before the word
 - No thin-line logo, no illustrated mascot
 
 ### Primary CTA Button
@@ -88,7 +88,7 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 - Labels: uppercase, Inter SemiBold (600), 11sp, `#94A3B8`, letter-spacing 0.5
 - Placeholder: all lowercase, `#64748B`
 - No floating labels — fixed labels above the field
-- Password field: show/hide toggle with Iconsax.eye icon in `#94A3B8`
+- Password field: show/hide toggle with `AppIcons.eyeOpen`/`AppIcons.eyeClosed` in `c.text2` (handled inside `JTextField` when `obscureText: true`).
 
 ### Error States
 - Inline below the field — red `#EF4444`, 12sp, no icon
@@ -99,7 +99,7 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 - Two cards side by side, full available width, equal size
 - Background: `#1E293B`, border `#334155`
 - Selected: border `#F97316` (2dp), background `#1E293B`
-- Icon (Iconsax): 32dp, orange when selected, `#64748B` unselected
+- Icon (`AppIcons.*`): 32dp, `c.action` when selected, `c.text3` unselected
 - Label: "BUILDER" / "TRADES" — Inter Bold (700), 14sp, all caps
 - Sub-label: one-line role description — `#94A3B8`, 12sp
 

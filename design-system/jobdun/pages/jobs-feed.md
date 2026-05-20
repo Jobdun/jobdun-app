@@ -46,9 +46,9 @@ Status color overrides for job cards:
 
 ### Search Bar
 - Background: `#1E293B`, full-width, 48dp height
-- Icon: `Iconsax.search_normal` left-side, `#64748B`
+- Icon: `AppIcons.search` left-side, `c.text3` (`#64748B` equivalent)
 - Text: `#F1F5F9`, 14sp
-- Clear button: `Iconsax.close_circle` right-side, only visible when text exists
+- Clear button: `AppIcons.closeCircle` right-side, only visible when text exists
 - No search button — real-time filtering
 
 ### Filter Chips
@@ -69,7 +69,10 @@ Status color overrides for job cards:
 - Border: `#334155`, 1dp
 - Border radius: 8dp
 - No heavy shadow — border only
-- Swipeable via `flutter_slidable`: left = Save, right = Hide
+- Swipeable via `flutter_slidable` (tradies only — already shipped):
+  - **End pane (swipe right→left)** = SAVE / SAVED (toggle, `c.action` bg, `AppIcons.star` or `AppIcons.successCircle`)
+  - **Start pane (swipe left→right)** = HIDE (`c.surfaceRaised` bg, `AppIcons.eyeClosed`)
+  - Every `SlidableAction.onPressed` calls `HapticFeedback.lightImpact()`.
 - `APPLY NOW` button: 36dp height, orange fill, "APPLY NOW" all-caps Bold 12sp
 - Tap card = detail view
 
@@ -85,7 +88,7 @@ Status color overrides for job cards:
 - CTA: "CLEAR FILTERS" — filled slate button
 
 ### FAB (Builder only — post a job)
-- `#F97316` background, `Iconsax.add` white icon, 56dp
+- `c.action` background, `AppIcons.add` icon on `c.onAction`, 56dp
 - Bottom-right, 16dp from edges
 - No label on FAB
 
@@ -93,10 +96,11 @@ Status color overrides for job cards:
 
 ## Animations
 
-- Card list: `AnimationLimiter + AnimationConfiguration` (staggered, 50ms delay per card)
-- Filter chip selection: 150ms fill transition
-- Skeleton loading: `skeletonizer` on `#1E293B` base
-- Pull-to-refresh: standard Flutter `RefreshIndicator`, indicator color `#F97316`
+- Card list: `JStaggeredList` wrapper (200ms fade-slide, 16dp vertical offset) — never call `AnimationLimiter`/`AnimationConfiguration` directly.
+- Filter chip selection: 150ms fill transition (`GvChip` already handles it) + `HapticFeedback.selectionClick()`.
+- Skeleton loading: `JSkeletonList` wrapping placeholder `JobCard`s — already shipped via `_FirstPageSkeleton` in `jobs_page.dart`.
+- Pull-to-refresh: `RefreshIndicator` wrapping `PagedListView`, indicator color `c.action`.
+- Long-list pagination: `infinite_scroll_pagination` + `PagedListView<int, Job>.separated` driven by the controller-owned `pagingController` (page size 20, prefetch threshold default).
 
 ---
 
