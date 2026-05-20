@@ -4,8 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../providers/auth_provider.dart';
 
 Future<void> showLogoutSheet(BuildContext context, WidgetRef ref) {
@@ -71,16 +71,16 @@ class _LogoutSheet extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: AppButton(
-                  label: 'Cancel',
-                  variant: AppButtonVariant.secondary,
+                child: JButton(
+                  label: 'CANCEL',
+                  variant: JButtonVariant.secondary,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
               Gap(AppSpacing.md.w),
               Expanded(
-                child: AppButton(
-                  label: 'Sign Out',
+                child: JButton(
+                  label: 'SIGN OUT',
                   onPressed: () {
                     Navigator.of(context).pop();
                     ref.read(authControllerProvider.notifier).signOut();

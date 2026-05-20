@@ -7,8 +7,11 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
@@ -158,27 +161,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                     onPressed: () => context.pop(),
                     icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
                   ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'EDIT PROFILE',
-                          style: tt.labelSmall!.copyWith(
-                            letterSpacing: 0.12 * 11,
-                            color: c.text3,
-                          ),
-                        ),
-                        Gap(2.h),
-                        Text(
-                          'Your details',
-                          style: tt.headlineSmall!.copyWith(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
-                          ),
-                        ),
-                      ],
+                  const Expanded(
+                    child: PageHeader(
+                      eyebrow: 'EDIT PROFILE',
+                      title: 'Your details',
+                      size: PageHeaderSize.sub,
                     ),
                   ),
                 ],
@@ -352,42 +339,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
               ),
             ),
 
-            // ── Save button
-            Container(
-              decoration: BoxDecoration(
-                color: c.card,
-                border: Border(top: BorderSide(color: c.border)),
-              ),
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-              child: GestureDetector(
-                onTap: isSaving ? null : _save,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: double.infinity,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: isSaving ? c.surfaceRaised : c.action,
-                    borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                  ),
-                  alignment: Alignment.center,
-                  child: isSaving
-                      ? SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: CircularProgressIndicator(
-                            color: c.text1,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'SAVE CHANGES',
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: Colors.white, // intentional: white-on-action
-                          ),
-                        ),
-                ),
+            BottomActionBar(
+              primary: JButton(
+                label: isSaving ? 'SAVING...' : 'SAVE CHANGES',
+                isLoading: isSaving,
+                onPressed: isSaving ? null : _save,
               ),
             ),
           ],

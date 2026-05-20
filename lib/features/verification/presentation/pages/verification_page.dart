@@ -8,8 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 
@@ -116,14 +118,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/profile'),
         ),
-        title: Text(
-          'VERIFICATION',
-          style: tt.labelSmall!.copyWith(
-            color: c.text3,
-            letterSpacing: 1.32,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: const FieldLabel('VERIFICATION'),
         elevation: 0,
       ),
       body: SafeArea(
@@ -133,14 +128,10 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Gap(AppSpacing.md.h),
-              Text(
-                'TRADE LICENCE',
-                style: tt.headlineSmall!.copyWith(
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w700,
-                  color: c.text1,
-                  letterSpacing: 0.5,
-                ),
+              const PageHeader(
+                eyebrow: 'TRADE LICENCE',
+                title: 'Licence on file',
+                size: PageHeaderSize.tab,
               ),
               Gap(AppSpacing.sm.h),
               Text(
@@ -151,7 +142,7 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
               Gap(AppSpacing.xl.h),
               _StatusCard(hasLicence: hasLicence),
               Gap(AppSpacing.xl.h),
-              AppButton(
+              JButton(
                 label: hasLicence ? 'REPLACE PHOTO' : 'TAKE A PHOTO',
                 icon: Iconsax.camera,
                 isLoading: isUploading,
@@ -160,9 +151,9 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                     : () => _pick(context, ImageSource.camera),
               ),
               Gap(AppSpacing.md.h),
-              AppButton(
+              JButton(
                 label: 'CHOOSE FROM GALLERY',
-                variant: AppButtonVariant.secondary,
+                variant: JButtonVariant.secondary,
                 isLoading: false,
                 onPressed: isUploading
                     ? null

@@ -1,4 +1,5 @@
-# Minimum iOS 14.0 required by google_maps_flutter_ios
+# Minimum iOS 14.0 — kept for Supabase / Swift concurrency support.
+# flutter_map itself only needs iOS 12+.
 platform :ios, '14.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.

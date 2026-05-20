@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 
 // Role-as-entry-point CTA. Two of these stack on /login under the
 // "NEW TO JOBDUN?" divider, each deep-linking to /register?role=… so the

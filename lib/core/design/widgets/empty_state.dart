@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../app/theme/app_colors.dart';
-import '../../widgets/app_button.dart';
+import 'j_button.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -58,7 +58,7 @@ class EmptyState extends StatelessWidget {
             ],
             if (ctaLabel != null && onCta != null) ...[
               Gap(AppSpacing.lg.h),
-              AppButton(label: ctaLabel!, onPressed: onCta),
+              JButton(label: ctaLabel!, onPressed: onCta),
             ],
           ],
         ),

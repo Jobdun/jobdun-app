@@ -8,7 +8,7 @@ import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../providers/profile_provider.dart';
 
 // Horizontal grid of the trade's portfolio_urls + a "+" tile to add more.

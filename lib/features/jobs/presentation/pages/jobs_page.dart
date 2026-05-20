@@ -7,10 +7,11 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/job_card.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
@@ -85,133 +86,53 @@ class _JobsPageState extends ConsumerState<JobsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isBuilder ? 'POSTED JOBS' : 'FIND WORK',
-                              style: tt.labelSmall!.copyWith(
-                                letterSpacing: 0.12 * 11,
-                                color: c.text3,
-                              ),
+                  PageHeader(
+                    eyebrow: isBuilder ? 'POSTED JOBS' : 'FIND WORK',
+                    title: isBuilder ? 'Your listings' : 'Open near you',
+                    trailing: isBuilder
+                        ? SizedBox(
+                            width: 130.w,
+                            child: JButton(
+                              label: 'POST JOB',
+                              icon: Iconsax.add,
+                              size: JButtonSize.compact,
+                              onPressed: () => context.push('/jobs/create'),
                             ),
-                            Gap(4.h),
-                            ShaderMask(
-                              shaderCallback: (bounds) =>
-                                  AppGradients.brandFlame.createShader(bounds),
-                              child: Text(
-                                isBuilder ? 'Your listings' : 'Open near you',
-                                style: tt.headlineSmall!.copyWith(
-                                  fontSize: 28.sp,
-                                  letterSpacing: 0.02 * 28,
-                                  color: Colors
-                                      .white, // intentional: ShaderMask requires white for gradient
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isBuilder)
-                        Semantics(
-                          button: true,
-                          label: 'Post a new job',
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => context.push('/jobs/create'),
-                            child: Container(
-                              height: 44.h,
-                              padding: EdgeInsets.symmetric(horizontal: 14.w),
-                              decoration: BoxDecoration(
-                                color: c.action,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.btn.r,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Iconsax.add,
-                                    size: 16.r,
-                                    color: c.onAction,
-                                  ),
-                                  Gap(6.w),
-                                  Text(
-                                    'POST JOB',
-                                    style: tt.bodyMedium!.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                      color: c.onAction,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                          )
+                        : null,
                   ),
                   Gap(12.h),
-                  // ── Search bar
-                  Container(
-                    height: 40.h,
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.input.r),
-                      border: Border.all(color: c.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Gap(14.w),
-                        Icon(Iconsax.search_normal, size: 16.r, color: c.text3),
-                        Gap(AppSpacing.sm.w),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchCtrl,
-                            onChanged: _onSearchChanged,
-                            style: tt.bodyMedium!.copyWith(color: c.text1),
-                            decoration: InputDecoration(
-                              hintText: 'Search trades, skills, suburbs…',
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              filled: false,
-                              contentPadding: EdgeInsets.zero,
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                        if (_searchCtrl.text.isNotEmpty)
-                          Semantics(
-                            button: true,
-                            label: 'Clear search',
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () {
+                  // Search bar — uses the theme's InputDecorationTheme directly
+                  // so the focus border picks up c.action like every other input.
+                  // design-system-ok: no FieldLabel above — search bars don't need one.
+                  TextField(
+                    controller: _searchCtrl,
+                    onChanged: _onSearchChanged,
+                    style: tt.bodyMedium!.copyWith(color: c.text1),
+                    decoration: InputDecoration(
+                      hintText: 'Search trades, skills, suburbs…',
+                      prefixIcon: Icon(
+                        Iconsax.search_normal,
+                        size: 16.r,
+                        color: c.text3,
+                      ),
+                      suffixIcon: _searchCtrl.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: Icon(
+                                Iconsax.close_circle,
+                                size: 16.r,
+                                color: c.text3,
+                              ),
+                              tooltip: 'Clear search',
+                              onPressed: () {
                                 _searchCtrl.clear();
                                 ref
                                     .read(jobsControllerProvider.notifier)
                                     .search('');
                               },
-                              child: SizedBox(
-                                width: 44.w,
-                                height: 44.h,
-                                child: Icon(
-                                  Iconsax.close_circle,
-                                  size: 16.r,
-                                  color: c.text3,
-                                ),
-                              ),
                             ),
-                          ),
-                      ],
+                      isDense: true,
                     ),
                   ),
                   Gap(12.h),

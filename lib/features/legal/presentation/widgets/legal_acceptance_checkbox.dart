@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 
 /// Required acceptance checkbox for the signup flow.
 /// Pre-checked = false by default (AU law: pre-checked consent is invalid).

@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../providers/ftue_geo_provider.dart';

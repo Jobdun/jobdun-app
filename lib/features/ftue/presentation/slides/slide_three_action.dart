@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../auth/presentation/widgets/role_intent_cta.dart';
 import '../widgets/ftue_hero_photo.dart';
 import '../widgets/ftue_slide.dart';

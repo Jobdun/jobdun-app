@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_theme.dart';
 
 // Single-slide template for the FTUE carousel. Photo (or custom visual) at

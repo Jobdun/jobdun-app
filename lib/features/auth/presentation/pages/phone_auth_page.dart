@@ -9,11 +9,11 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:pinput/pinput.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/services/phone_auth_storage.dart';
 import '../../../../core/validators/phone_validator.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
@@ -444,8 +444,8 @@ class _PhoneStep extends StatelessWidget {
           ],
 
           Gap(AppSpacing.xl.h),
-          AppButton(
-            label: authState.isLoading ? 'Sending code...' : 'SEND CODE',
+          JButton(
+            label: authState.isLoading ? 'SENDING CODE...' : 'SEND CODE',
             isLoading: authState.isLoading,
             onPressed: authState.isLoading ? null : onSubmit,
           ),
@@ -559,8 +559,8 @@ class _OtpStep extends StatelessWidget {
             valueListenable: otpController,
             builder: (context, value, _) {
               final isComplete = value.text.length == 6;
-              return AppButton(
-                label: isLoading ? 'Verifying...' : 'VERIFY',
+              return JButton(
+                label: isLoading ? 'VERIFYING...' : 'VERIFY',
                 isLoading: isLoading,
                 onPressed: (isLoading || !isComplete)
                     ? null

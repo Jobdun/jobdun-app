@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 
 // Hero visual for slide 2 — stylized, abstract "your area" map. Pairs with
 // the suburb chips below so the slide carries the same visual weight as

@@ -9,11 +9,11 @@ abstract interface class AuthRepository {
     required String password,
   });
 
-  Future<Either<Failure, AppUser>> register({
-    required String email,
-    required String password,
-    required String fullName,
-  });
+  // NOTE: register() intentionally not on this interface. The live signup
+  // path is AuthController.register in lib/features/auth/presentation/
+  // providers/auth_provider.dart, which writes role into auth.users
+  // raw_user_meta_data so the handle_new_user trigger can create
+  // user_roles + the matching role-specific stub atomically.
 
   Future<Either<Failure, void>> signOut();
 

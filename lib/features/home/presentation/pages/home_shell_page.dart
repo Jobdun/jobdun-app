@@ -6,7 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 
 final _connectivityProvider = StreamProvider<bool>((ref) async* {
   final connectivity = Connectivity();
@@ -23,6 +23,11 @@ class HomeShellPage extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  // Fling threshold above which a horizontal drag counts as a tab-switch
+  // gesture. ~300 px/s is the conventional Flutter "swipe" floor — slow
+  // drags don't accidentally move tabs.
+  static const double _swipeVelocityThreshold = 300.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final onlineAsync = ref.watch(_connectivityProvider);
@@ -32,7 +37,28 @@ class HomeShellPage extends ConsumerWidget {
       body: Column(
         children: [
           if (!isOnline) const _OfflineBanner(),
-          Expanded(child: navigationShell),
+          Expanded(
+            child: GestureDetector(
+              // opaque lets the gesture fire on empty regions of a page; the
+              // gesture arena still hands horizontal drags to inner
+              // scrollables (e.g. horizontal lists, swipeable cards) first,
+              // so this only fires when no child claims the drag.
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragEnd: (details) {
+                final dx = details.velocity.pixelsPerSecond.dx;
+                final i = navigationShell.currentIndex;
+                // Convention: finger LEFT (dx < 0) = advance to next tab;
+                // finger RIGHT (dx > 0) = back to previous tab. Matches
+                // iOS/Android page transitions.
+                if (dx < -_swipeVelocityThreshold && i < _tabCount - 1) {
+                  navigationShell.goBranch(i + 1);
+                } else if (dx > _swipeVelocityThreshold && i > 0) {
+                  navigationShell.goBranch(i - 1);
+                }
+              },
+              child: navigationShell,
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: _BottomNav(
@@ -45,6 +71,18 @@ class HomeShellPage extends ConsumerWidget {
     );
   }
 }
+
+// Single source of truth — bottom nav and swipe handler both key off this.
+// $1 = inactive icon, $2 = active icon. Edit here to add/reorder tabs.
+const List<(IconData, IconData)> _tabs = [
+  (Iconsax.home_2, Iconsax.home_25),
+  (Iconsax.briefcase, Iconsax.briefcase5),
+  (Iconsax.document_text, Iconsax.document_text1),
+  (Iconsax.message, Iconsax.message5),
+  (Iconsax.user, Iconsax.user5),
+];
+
+int get _tabCount => _tabs.length;
 
 class _OfflineBanner extends StatelessWidget {
   const _OfflineBanner();
@@ -83,14 +121,6 @@ class _BottomNav extends StatelessWidget {
 
   final int currentIndex;
   final ValueChanged<int> onTap;
-
-  static const _tabs = [
-    (Iconsax.home_2, Iconsax.home_25),
-    (Iconsax.briefcase, Iconsax.briefcase5),
-    (Iconsax.document_text, Iconsax.document_text1),
-    (Iconsax.message, Iconsax.message5),
-    (Iconsax.user, Iconsax.user5),
-  ];
 
   @override
   Widget build(BuildContext context) {

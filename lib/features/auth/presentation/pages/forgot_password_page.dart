@@ -7,9 +7,9 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
@@ -144,8 +144,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
                 Gap(AppSpacing.lg.h),
 
-                AppButton(
-                  label: authState.isLoading ? 'Sending...' : 'Send reset link',
+                JButton(
+                  label: authState.isLoading ? 'SENDING...' : 'SEND RESET LINK',
                   isLoading: authState.isLoading,
                   onPressed: authState.isLoading ? null : _submit,
                 ),
@@ -171,9 +171,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
                 Gap(12.h),
 
-                AppButton(
-                  label: 'Back to log in',
-                  variant: AppButtonVariant.secondary,
+                JButton(
+                  label: 'BACK TO LOG IN',
+                  variant: JButtonVariant.secondary,
                   onPressed: () => context.go('/login'),
                 ),
 

@@ -6,13 +6,14 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../auth/domain/entities/user_role.dart';
 import '../models/user_model.dart';
 
+// NOTE: there is no `register` method on this datasource. The live signup
+// path is AuthController.register in lib/features/auth/presentation/providers/
+// auth_provider.dart, which talks to SupabaseConfig.client.auth.signUp
+// directly and supplies the chosen UserRole in raw_user_meta_data. Adding a
+// no-role register() method back here would reintroduce the silent-default-
+// to-trade bug fixed by migration 20260512000002.
 abstract interface class AuthRemoteDataSource {
   Future<UserModel> signIn({required String email, required String password});
-  Future<UserModel?> register({
-    required String email,
-    required String password,
-    required String fullName,
-  });
   Future<void> signOut();
   Future<UserModel?> getCurrentUser();
   Stream<UserModel?> watchAuthState();
@@ -35,32 +36,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final user = response.user;
       if (user == null) throw const AuthException('Sign-in failed.');
       return _fetchProfile(user.id, user.email ?? email);
-    } on AuthApiException catch (e) {
-      throw AuthException(e.message);
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
-
-  @override
-  Future<UserModel?> register({
-    required String email,
-    required String password,
-    required String fullName,
-  }) async {
-    try {
-      final response = await _client.auth.signUp(
-        email: email.trim(),
-        password: password,
-        data: {'full_name': fullName.trim()},
-      );
-      final user = response.user;
-      if (user == null) return null; // email confirmation pending
-      return UserModel(
-        id: user.id,
-        email: user.email ?? email,
-        role: UserRole.trade,
-      );
     } on AuthApiException catch (e) {
       throw AuthException(e.message);
     } catch (e) {

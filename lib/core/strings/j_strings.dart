@@ -1,5 +1,5 @@
 // Canonical user-facing string constants. Single source of truth so a copy
-// change doesn't drift across screens. AppButton uppercases its label, so
+// change doesn't drift across screens. JButton uppercases its label, so
 // these are stored in sentence case ("Log in") and render in caps ("LOG IN")
 // at the button — never store "LOG IN" directly here.
 //

@@ -28,31 +28,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, AppUser>> register({
-    required String email,
-    required String password,
-    required String fullName,
-  }) async {
-    try {
-      final user = await _datasource.register(
-        email: email,
-        password: password,
-        fullName: fullName,
-      );
-      if (user == null) {
-        return left(
-          const AuthFailure('Check your email to confirm your account.'),
-        );
-      }
-      return right(user);
-    } on AuthException catch (e) {
-      return left(AuthFailure(e.message));
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
   Future<Either<Failure, void>> signOut() async {
     try {
       await _datasource.signOut();

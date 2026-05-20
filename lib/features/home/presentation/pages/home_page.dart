@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/job_card.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
@@ -71,14 +76,34 @@ class _HomePageState extends ConsumerState<HomePage> {
     });
   }
 
-  // Fires the role sheet ONLY after isRoleLoaded is true and role is still
-  // null. Without isRoleLoaded the sheet races the JWT load and asks users
-  // who already picked at /register a second time.
-  void _maybeShowRoleSheet(AuthState auth) {
+  // Fires the role sheet ONLY when we're SURE the user has no user_roles row.
+  // Three gates:
+  //   1. _roleSheetShown — per-instance memo so we never fire twice in the
+  //      same HomePage lifetime.
+  //   2. AuthState flags — must be authenticated, role must have finished
+  //      loading, and the in-memory role must be null. Filters out the
+  //      pre-load race that would otherwise prompt users who already picked.
+  //   3. Last-chance DB check — even when (2) says role is null, query
+  //      user_roles directly before showing. Closes the gap where the JWT
+  //      claim is absent (custom_access_token hook not wired in Dashboard)
+  //      but a row exists server-side. If the row is there, hydrate the
+  //      controller's role from it and DON'T show the sheet.
+  Future<void> _maybeShowRoleSheet(AuthState auth) async {
     if (_roleSheetShown) return;
-    if (!auth.isAuthenticated || !auth.isRoleLoaded || auth.role != null)
+    if (!auth.isAuthenticated || !auth.isRoleLoaded || auth.role != null) {
       return;
+    }
+
+    // Latch immediately so concurrent triggers (initState postFrame +
+    // ref.listen) don't both race past gate (2) and double-fire.
     _roleSheetShown = true;
+
+    final hadRowInDb = await ref
+        .read(authControllerProvider.notifier)
+        .hydrateRoleFromDb();
+    if (!mounted) return;
+    if (hadRowInDb) return; // DB had a row → role is hydrated, no sheet.
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) RoleSelectionSheet.show(context);
     });
@@ -134,7 +159,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     });
 
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
     final jobsState = ref.watch(jobsControllerProvider);
@@ -215,12 +239,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                      child: Text(
+                      child: FieldLabel(
                         isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.12 * 11,
-                          color: c.text3,
-                        ),
                       ),
                     ),
                   ),
@@ -368,38 +388,21 @@ class _Header extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  roleLabel,
-                  style: tt.labelSmall!.copyWith(
-                    letterSpacing: 0.12 * 11,
-                    color: c.text3,
-                  ),
-                ),
-                Gap(4.h),
-                ShaderMask(
-                  shaderCallback: (bounds) =>
-                      AppGradients.brandFlame.createShader(bounds),
-                  child: Text(
-                    isBuilder ? 'FIND A TRADIE' : 'JOBS NEARBY',
-                    style: tt.headlineSmall!.copyWith(
-                      fontSize: 40.sp,
-                      letterSpacing: 0.02 * 40,
-                      height: 1.0,
-                      color: Colors
-                          .white, // intentional: ShaderMask requires white for gradient
-                    ),
-                  ),
+                PageHeader(
+                  eyebrow: roleLabel,
+                  title: isBuilder ? 'Find a tradie' : 'Jobs nearby',
+                  size: PageHeaderSize.hero,
                 ),
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(Iconsax.location, size: 12.r, color: c.action),
+                    Icon(Iconsax.location, size: 12.r, color: c.text2),
                     Gap(4.w),
                     Text(
                       location,
                       style: tt.bodySmall!.copyWith(
                         letterSpacing: 0.02 * 11,
-                        color: c.action,
+                        color: c.text2,
                       ),
                     ),
                   ],
@@ -600,6 +603,66 @@ class _PrimaryActionCard extends StatelessWidget {
 
 // ── Map View ──────────────────────────────────────────────────────────────────
 
+// Selectable basemap. All four sources are free + key-less and properly
+// attributed by RichAttributionWidget below. Add a new style by extending this
+// enum — the picker sheet, persistence, and tile layer pick it up automatically.
+enum _MapStyle {
+  dark(
+    label: 'DARK',
+    description: 'Brand-aligned night view',
+    urlTemplate:
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    subdomains: ['a', 'b', 'c', 'd'],
+    source: _TileSource.carto,
+  ),
+  light(
+    label: 'LIGHT',
+    description: 'Clean daytime view',
+    urlTemplate:
+        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    subdomains: ['a', 'b', 'c', 'd'],
+    source: _TileSource.carto,
+  ),
+  voyager(
+    label: 'VOYAGER',
+    description: 'Colourful — pins pop',
+    urlTemplate:
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    subdomains: ['a', 'b', 'c', 'd'],
+    source: _TileSource.carto,
+  ),
+  standard(
+    label: 'STANDARD',
+    description: 'Classic OpenStreetMap',
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: <String>[],
+    source: _TileSource.osm,
+  );
+
+  const _MapStyle({
+    required this.label,
+    required this.description,
+    required this.urlTemplate,
+    required this.subdomains,
+    required this.source,
+  });
+
+  final String label;
+  final String description;
+  final String urlTemplate;
+  final List<String> subdomains;
+  final _TileSource source;
+
+  // Pin colour suggestion — keep the brand orange on dark/voyager (high
+  // contrast); on the light style use a slightly darker fill so the pin still
+  // reads against a near-white background without changing the action token.
+  bool get prefersDarkText => this == _MapStyle.light;
+}
+
+enum _TileSource { carto, osm }
+
+const String _kMapStylePrefsKey = 'home.map_style';
+
 class _MapView extends StatefulWidget {
   const _MapView({required this.jobs, required this.onJobTap});
 
@@ -610,42 +673,640 @@ class _MapView extends StatefulWidget {
   State<_MapView> createState() => _MapViewState();
 }
 
+// Outcome of the current location request — drives the in-map banner UX.
+enum _LocationStatus {
+  idle,
+  requesting,
+  granted,
+  denied,
+  deniedForever,
+  serviceDisabled,
+  error,
+}
+
 class _MapViewState extends State<_MapView> {
   static const _sydney = LatLng(-33.8688, 151.2093);
 
-  GoogleMapController? _controller;
+  final MapController _controller = MapController();
+  _MapStyle _style = _MapStyle.dark;
+  LatLng? _userLocation;
+  _LocationStatus _locationStatus = _LocationStatus.idle;
 
-  Set<Marker> _buildMarkers() {
-    return {
+  @override
+  void initState() {
+    super.initState();
+    _loadStyle();
+    // Defer to post-frame so the rationale dialog doesn't fight the map's
+    // first render. Permission ask happens on entry to the map view — that
+    // context is the strongest signal the user wants location used.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _initLocation();
+    });
+  }
+
+  Future<void> _loadStyle() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kMapStylePrefsKey);
+    if (raw == null || !mounted) return;
+    final found = _MapStyle.values.firstWhere(
+      (s) => s.name == raw,
+      orElse: () => _MapStyle.dark,
+    );
+    if (found != _style) setState(() => _style = found);
+  }
+
+  Future<void> _setStyle(_MapStyle next) async {
+    setState(() => _style = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kMapStylePrefsKey, next.name);
+  }
+
+  // Full location request lifecycle:
+  //   1. Service enabled? (device GPS toggle)
+  //   2. Permission state — if denied, show rationale BEFORE the native prompt
+  //   3. Fetch position (10s budget, medium accuracy — city-block is enough)
+  //   4. Centre the map on success; surface banner on every failure mode
+  Future<void> _initLocation() async {
+    setState(() => _locationStatus = _LocationStatus.requesting);
+
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      if (!mounted) return;
+      setState(() => _locationStatus = _LocationStatus.serviceDisabled);
+      return;
+    }
+
+    var permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      if (!mounted) return;
+      final agreed = await _showRationaleDialog();
+      if (!mounted) return;
+      if (!agreed) {
+        setState(() => _locationStatus = _LocationStatus.denied);
+        return;
+      }
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (!mounted) return;
+
+    if (permission == LocationPermission.deniedForever) {
+      setState(() => _locationStatus = _LocationStatus.deniedForever);
+      return;
+    }
+    if (permission == LocationPermission.denied) {
+      setState(() => _locationStatus = _LocationStatus.denied);
+      return;
+    }
+
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+      if (!mounted) return;
+      final latLng = LatLng(pos.latitude, pos.longitude);
+      setState(() {
+        _userLocation = latLng;
+        _locationStatus = _LocationStatus.granted;
+      });
+      _controller.move(latLng, 13);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _locationStatus = _LocationStatus.error);
+    }
+  }
+
+  // Custom rationale — shown ONCE per request, before the OS prompt. Gives
+  // the user a Jobdun-branded explanation instead of the bare native dialog
+  // that says nothing about why we want it.
+  Future<bool> _showRationaleDialog() async {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2.r)),
+        title: Text(
+          'SHOW JOBS NEAR YOU',
+          style: tt.headlineSmall!.copyWith(color: c.text1, letterSpacing: 0.5),
+        ),
+        content: Text(
+          'Jobdun needs your location to centre the map on you and surface '
+          'jobs nearby. We only use it while you have the map open — never in '
+          'the background.',
+          style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'NOT NOW',
+              style: tt.labelLarge!.copyWith(
+                color: c.text2,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'CONTINUE',
+              style: tt.labelLarge!.copyWith(
+                color: c.action,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  Future<void> _openSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
+  List<Marker> _buildMarkers(Color pinColor, Color pinBorder) {
+    return [
       for (final job in widget.jobs)
         if (job.latitude != null && job.longitude != null)
           Marker(
-            markerId: MarkerId(job.id),
-            position: LatLng(job.latitude!, job.longitude!),
-            infoWindow: InfoWindow(
-              title: job.title,
-              snippet: job.displayBudget,
+            point: LatLng(job.latitude!, job.longitude!),
+            width: 40,
+            height: 40,
+            alignment: Alignment.topCenter,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () => widget.onJobTap(job),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: pinColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: pinBorder, width: 2),
+                ),
+                child: const Icon(
+                  Iconsax.location5,
+                  size: 20,
+                  color: Colors.white, // intentional: white-on-action
+                ),
+              ),
             ),
           ),
-    };
+      // User position — solid white dot with brand-orange ring. Clearly
+      // distinct from the orange job pins above so the user can tell
+      // "where I am" from "what's around me" at a glance.
+      if (_userLocation != null)
+        Marker(
+          point: _userLocation!,
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white, // intentional: white-on-action
+              shape: BoxShape.circle,
+              border: Border.all(color: pinColor, width: 3),
+            ),
+          ),
+        ),
+    ];
+  }
+
+  List<TextSourceAttribution> _attributionsFor(_MapStyle style) {
+    return [
+      TextSourceAttribution(
+        'OpenStreetMap contributors',
+        onTap: () =>
+            launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
+      ),
+      if (style.source == _TileSource.carto)
+        TextSourceAttribution(
+          'CARTO',
+          onTap: () => launchUrl(Uri.parse('https://carto.com/attribution')),
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return GoogleMap(
-      initialCameraPosition: const CameraPosition(target: _sydney, zoom: 11),
-      markers: _buildMarkers(),
-      onMapCreated: (c) => _controller = c,
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
+    final c = context.c;
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _controller,
+          options: const MapOptions(
+            initialCenter: _sydney,
+            initialZoom: 11,
+            minZoom: 3,
+            maxZoom: 18,
+            interactionOptions: InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
+          ),
+          children: [
+            TileLayer(
+              // Keyed so flutter_map drops the old tile cache when the
+              // template changes — otherwise mixed-style tiles flash during
+              // the swap.
+              key: ValueKey<_MapStyle>(_style),
+              urlTemplate: _style.urlTemplate,
+              subdomains: _style.subdomains,
+              retinaMode: RetinaMode.isHighDensity(context),
+              userAgentPackageName: 'com.example.jobdun',
+            ),
+            MarkerLayer(markers: _buildMarkers(c.action, c.surface)),
+            RichAttributionWidget(
+              alignment: AttributionAlignment.bottomLeft,
+              attributions: _attributionsFor(_style),
+            ),
+          ],
+        ),
+        Positioned(
+          top: 12.h,
+          right: 12.w,
+          child: _MapStyleButton(
+            current: _style,
+            onTap: () async {
+              final next = await _showStyleSheet(context, _style);
+              if (next != null && next != _style) {
+                await _setStyle(next);
+              }
+            },
+          ),
+        ),
+        // Recenter / locate-me button — sits below the style chip. Shows a
+        // spinner while requesting, the standard target icon otherwise.
+        Positioned(
+          top: 56.h,
+          right: 12.w,
+          child: _RecenterButton(
+            isLoading: _locationStatus == _LocationStatus.requesting,
+            hasLocation: _userLocation != null,
+            onTap: () {
+              if (_userLocation != null) {
+                _controller.move(_userLocation!, 14);
+              } else {
+                _initLocation();
+              }
+            },
+          ),
+        ),
+        if (_locationStatus == _LocationStatus.denied ||
+            _locationStatus == _LocationStatus.deniedForever ||
+            _locationStatus == _LocationStatus.serviceDisabled ||
+            _locationStatus == _LocationStatus.error)
+          Positioned(
+            left: 12.w,
+            right: 12.w,
+            bottom: 12.h,
+            child: _LocationStatusBanner(
+              status: _locationStatus,
+              onRetry: _initLocation,
+              onOpenSettings: _openSettings,
+            ),
+          ),
+      ],
     );
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+}
+
+// Compact corner button — flat, hard edges, brand-orange icon on surface.
+class _MapStyleButton extends StatelessWidget {
+  const _MapStyleButton({required this.current, required this.onTap});
+
+  final _MapStyle current;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: c.surface,
+            border: Border.all(color: c.border, width: 1),
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Iconsax.layer, size: 16.r, color: c.action),
+              Gap(6.w),
+              Text(
+                current.label,
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: c.text1,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<_MapStyle?> _showStyleSheet(BuildContext context, _MapStyle current) {
+  return showModalBottomSheet<_MapStyle>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _MapStyleSheet(current: current),
+  );
+}
+
+class _MapStyleSheet extends StatelessWidget {
+  const _MapStyleSheet({required this.current});
+
+  final _MapStyle current;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(2.r)),
+          border: Border(top: BorderSide(color: c.action, width: 3)),
+        ),
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'MAP STYLE',
+              style: tt.headlineSmall!.copyWith(
+                color: c.text1,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Gap(4.h),
+            Text(
+              'Pick the look that fits how you read maps.',
+              style: tt.bodySmall!.copyWith(color: c.text2),
+            ),
+            Gap(16.h),
+            for (final style in _MapStyle.values) ...[
+              _MapStyleRow(
+                style: style,
+                selected: style == current,
+                onTap: () => Navigator.of(context).pop(style),
+              ),
+              if (style != _MapStyle.values.last) Gap(8.h),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapStyleRow extends StatelessWidget {
+  const _MapStyleRow({
+    required this.style,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _MapStyle style;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: c.surfaceRaised,
+          border: Border.all(
+            color: selected ? c.action : c.border,
+            width: selected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(2.r),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32.r,
+              height: 32.r,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? c.action : c.surface,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+              child: Icon(
+                Iconsax.layer,
+                size: 16.r,
+                color: selected
+                    ? Colors.white // intentional: white-on-action
+                    : c.text2,
+              ),
+            ),
+            Gap(12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    style.label,
+                    style: tt.labelLarge!.copyWith(
+                      color: c.text1,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Gap(2.h),
+                  Text(
+                    style.description,
+                    style: tt.bodySmall!.copyWith(color: c.text2),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(Iconsax.tick_circle5, size: 18.r, color: c.action),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Locate-me button. Tap when we already have a fix → recentre the map.
+// Tap when we don't → kick off the full request flow (rationale → prompt →
+// fetch). While in-flight, swap the icon for a spinner so it can't be
+// double-tapped.
+class _RecenterButton extends StatelessWidget {
+  const _RecenterButton({
+    required this.isLoading,
+    required this.hasLocation,
+    required this.onTap,
+  });
+
+  final bool isLoading;
+  final bool hasLocation;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        child: Container(
+          width: 36.r,
+          height: 36.r,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: c.surface,
+            border: Border.all(color: c.border, width: 1),
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+          child: isLoading
+              ? SizedBox.square(
+                  dimension: 14.r,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: c.action,
+                  ),
+                )
+              : Icon(
+                  hasLocation ? Iconsax.gps5 : Iconsax.gps,
+                  size: 18.r,
+                  color: c.action,
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+// Inline banner surfaced at the bottom of the map when location can't be
+// fetched. Copy + CTA change per failure mode so the user knows exactly
+// what to do (vs a generic "permission needed" message).
+class _LocationStatusBanner extends StatelessWidget {
+  const _LocationStatusBanner({
+    required this.status,
+    required this.onRetry,
+    required this.onOpenSettings,
+  });
+
+  final _LocationStatus status;
+  final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    final (title, body, ctaLabel, ctaAction) = switch (status) {
+      _LocationStatus.serviceDisabled => (
+        'LOCATION OFF',
+        'Turn on device location to see jobs near you.',
+        'RETRY',
+        onRetry,
+      ),
+      _LocationStatus.denied => (
+        'LOCATION DENIED',
+        'Allow location access to centre the map on you.',
+        'ALLOW',
+        onRetry,
+      ),
+      _LocationStatus.deniedForever => (
+        'LOCATION BLOCKED',
+        "Permission is blocked. Enable it in your phone's settings.",
+        'SETTINGS',
+        onOpenSettings,
+      ),
+      _LocationStatus.error => (
+        "COULDN'T LOCATE",
+        'Take a moment, then try again.',
+        'RETRY',
+        onRetry,
+      ),
+      _ => ('', '', '', onRetry),
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border.all(color: c.border, width: 1),
+        borderRadius: BorderRadius.circular(2.r),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(Iconsax.location_slash, size: 18.r, color: c.action),
+          Gap(12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: tt.labelLarge!.copyWith(
+                    color: c.text1,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                Gap(2.h),
+                Text(body, style: tt.bodySmall!.copyWith(color: c.text2)),
+              ],
+            ),
+          ),
+          Gap(8.w),
+          TextButton(
+            onPressed: ctaAction,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            child: Text(
+              ctaLabel,
+              style: tt.labelLarge!.copyWith(
+                color: c.action,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

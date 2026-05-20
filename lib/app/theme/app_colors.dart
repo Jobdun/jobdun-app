@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+// AppSpacing, AppRadius, and AppMotion live in their own files so the
+// design-system lint can target token files independently of the colour
+// extension. Re-exported here so files that imported app_colors.dart for
+// the legacy combined surface continue to compile transparently.
+//
+// New code should import via `core/design/colors.dart` (the barrel).
+export 'app_spacing.dart';
+export 'app_radii.dart';
+export 'app_motion.dart';
+
 // ─── Theme Extension ──────────────────────────────────────────────────────────
 // Use `context.c.xxx` in all widgets. ThemeExtension lerps smoothly on
 // animated theme switches.
@@ -31,28 +41,96 @@ class JColors extends ThemeExtension<JColors> {
     required this.star,
   });
 
+  /// App background — dark slate (#0F172A). MASTER §38.
+  /// MUST be used as the Scaffold background on every screen.
+  /// MUST NOT be replaced by white or light gray (#F8FAFC) anywhere.
   final Color background;
+
+  /// Standard surface — cards, bottom sheets, input fills. MASTER §39.
+  /// MUST be used as the default elevated chrome on top of c.background.
+  /// MUST NOT be used as a screen background — that's c.background.
   final Color surface;
+
+  /// Alias of c.surface for CardTheme wiring. Same value, different role.
   final Color card;
+
+  /// Raised surface — selected states, elevated cards, secondary buttons. MASTER §40.
+  /// MUST be used when a surface needs to read as "above" c.surface.
   final Color surfaceRaised;
+
+  /// Input borders, dividers, hairlines. Same value as surfaceRaised by design. MASTER §45.
+  /// MUST be used at 1.0 width for borders and dividers.
   final Color border;
+
+  /// Primary text on dark backgrounds. MASTER §43.
+  /// MUST be used for headlines, body copy, primary labels.
   final Color text1;
+
+  /// Secondary text — labels, hints, metadata. MASTER §44.
+  /// MUST be used for non-primary content (timestamps, helper text, decorative initials).
+  /// Replaces decorative c.action per MASTER §51.
   final Color text2;
+
+  /// Tertiary text — eyebrow labels, muted captions, placeholders, "tappable-but-not-primary" inline links (underlined).
+  /// MUST be used for FieldLabel content and the muted-link pattern (see login_page.dart Forgot? link).
   final Color text3;
-  final Color action; // safety orange — CTA only
-  final Color actionPressed; // darker orange — pressed state for CTA
+
+  /// Safety orange CTA accent. MASTER §51 reserved color.
+  /// MUST be used for primary actions, loading indicators, URGENT badges, role chips.
+  /// MUST NOT be used decoratively (avatar initials, location pins, timestamps) — use c.text2/c.text3 instead.
+  final Color action;
+
+  /// Pressed-state orange for c.action surfaces. ~12% darker than c.action.
+  /// MUST be used only for pressed/highlight overlays on c.action elements.
+  final Color actionPressed;
+
+  /// Tinted orange background for orange-on-orange compositions (toast banners, pending badges).
+  /// MUST be paired with c.actionTx text.
+  /// MUST NOT be used as a standalone fill on top of c.background.
   final Color actionBg;
+
+  /// Tinted orange text for c.actionBg backgrounds. Internal pair helper.
   final Color actionTx;
-  final Color onAction; // foreground (text/icon) drawn ON action — WCAG AA 8:1+
+
+  /// Foreground when bg is c.action. White (#FFFFFF) per MASTER §1.
+  /// MUST be used as the text/icon color on primary CTAs.
+  /// MUST NOT be used as a standalone text color elsewhere — use c.text1 instead.
+  final Color onAction;
+
+  /// Verified/success green. MASTER §47.
+  /// MUST be used only for confirmations and verification checkmarks.
+  /// MUST NOT be used decoratively.
   final Color verified;
+
+  /// Tinted green background for verified-status pairs. Internal pair helper.
   final Color verifiedBg;
+
+  /// Tinted green text for c.verifiedBg backgrounds. Internal pair helper.
   final Color verifiedTx;
+
+  /// Error/destructive red. MASTER §46.
+  /// MUST be used only for errors and destructive confirmations.
+  /// MUST NOT be used decoratively.
   final Color urgent;
+
+  /// Tinted red background for error/urgent pairs. Internal pair helper.
   final Color urgentBg;
+
+  /// Tinted red text for c.urgentBg backgrounds. Internal pair helper.
   final Color urgentTx;
+
+  /// Availability blue — informational/status only. NEVER a tappable action color.
+  /// MUST be used for "Available now" status indicators.
+  /// MUST NOT be used as a link/CTA color — use c.action for CTAs, or the muted-link pattern (underlined c.text3) for inline links.
   final Color available;
+
+  /// Tinted blue background for availability pairs. Internal pair helper.
   final Color availableBg;
+
+  /// Tinted blue text for c.availableBg backgrounds. Internal pair helper.
   final Color availableTx;
+
+  /// Star/rating amber. Decorative within rating widgets only.
   final Color star;
 
   static JColors of(BuildContext context) =>
@@ -72,7 +150,7 @@ class JColors extends ThemeExtension<JColors> {
     actionPressed: Color(0xFFEA6C0A),
     actionBg: Color(0xFF431407),
     actionTx: Color(0xFFFED7AA),
-    onAction: Color(0xFF1A0A03),
+    onAction: Color(0xFFFFFFFF),
     verified: Color(0xFF22C55E),
     verifiedBg: Color(0xFF052E16),
     verifiedTx: Color(0xFF86EFAC),
@@ -99,7 +177,7 @@ class JColors extends ThemeExtension<JColors> {
     actionPressed: Color(0xFFEA6C0A),
     actionBg: Color(0xFFFFEDD5),
     actionTx: Color(0xFF9A3412),
-    onAction: Color(0xFF1A0A03),
+    onAction: Color(0xFFFFFFFF),
     verified: Color(0xFF16A34A),
     verifiedBg: Color(0xFFDCFCE7),
     verifiedTx: Color(0xFF166534),
@@ -197,22 +275,4 @@ class JColors extends ThemeExtension<JColors> {
 /// Shorthand: `context.c.background`, `context.c.action`, etc.
 extension JColorsX on BuildContext {
   JColors get c => JColors.of(this);
-}
-
-abstract final class AppSpacing {
-  static const xs = 4.0;
-  static const sm = 8.0;
-  static const md = 16.0; // matches MASTER (was 12)
-  static const lg = 24.0; // matches MASTER (was 16)
-  static const xl = 32.0; // matches MASTER (was 20)
-  static const xxl = 48.0; // matches MASTER (was 32)
-}
-
-abstract final class AppRadius {
-  static const badge = 4.0;
-  static const chip = 6.0;
-  static const btn = 6.0;
-  static const card = 8.0;
-  static const input = 6.0;
-  static const avatar = 8.0;
 }

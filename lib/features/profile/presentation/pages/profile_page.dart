@@ -5,11 +5,14 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_card.dart';
+import '../../../../core/design/widgets/j_chip.dart';
+import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/utils/string_utils.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
 import '../../domain/entities/builder_profile.dart';
@@ -81,9 +84,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
-                child: AppButton(
-                  label: 'Sign out',
-                  variant: AppButtonVariant.secondary,
+                child: JButton(
+                  label: 'SIGN OUT',
+                  variant: JButtonVariant.secondary,
                   onPressed: () => showLogoutSheet(context, ref),
                 ),
               ),
@@ -203,24 +206,7 @@ class _ProfileHeader extends StatelessWidget {
                 Text(email, style: tt.bodyMedium!.copyWith(color: c.text3)),
                 if (role != null) ...[
                   Gap(AppSpacing.sm.h),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 3.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: c.action,
-                      borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                    ),
-                    child: Text(
-                      role!.label.toUpperCase(),
-                      style: tt.labelSmall!.copyWith(
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.08 * 10,
-                        color: Colors.white, // intentional: white-on-action
-                      ),
-                    ),
-                  ),
+                  JChip(label: role!.label),
                 ],
               ],
             ),
@@ -259,21 +245,21 @@ class _BuilderProfile extends StatelessWidget {
         children: [
           Row(
             children: [
-              _StatBadge(
+              JStatBadge(
                 value: rating,
                 label: 'Rating',
                 icon: Iconsax.star,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
-              _StatBadge(
+              JStatBadge(
                 value: reviews,
                 label: 'Reviews',
                 icon: Iconsax.message_text,
                 iconColor: c.available,
               ),
               Gap(AppSpacing.sm.w),
-              _StatBadge(
+              JStatBadge(
                 value: jobsPosted,
                 label: 'Jobs posted',
                 icon: Iconsax.briefcase,
@@ -282,7 +268,7 @@ class _BuilderProfile extends StatelessWidget {
             ],
           ),
           Gap(AppSpacing.md.h),
-          _InfoCard(
+          JCard(
             title: 'COMPANY DETAILS',
             children: [
               _InfoRow(
@@ -305,7 +291,7 @@ class _BuilderProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          _InfoCard(
+          JCard(
             title: 'VERIFICATION',
             children: [
               _VerificationRow(label: 'ABN verified', isVerified: p != null),
@@ -348,21 +334,21 @@ class _TradeProfile extends StatelessWidget {
         children: [
           Row(
             children: [
-              _StatBadge(
+              JStatBadge(
                 value: rating,
                 label: 'Rating',
                 icon: Iconsax.star,
                 iconColor: c.star,
               ),
               Gap(AppSpacing.sm.w),
-              _StatBadge(
+              JStatBadge(
                 value: jobsDone,
                 label: 'Jobs done',
                 icon: Iconsax.tick_circle,
                 iconColor: c.verified,
               ),
               Gap(AppSpacing.sm.w),
-              _StatBadge(
+              JStatBadge(
                 value: yrsExp,
                 label: 'Yrs exp',
                 icon: Iconsax.award,
@@ -402,14 +388,16 @@ class _TradeProfile extends StatelessWidget {
                   'Change',
                   style: tt.bodyMedium!.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: c.available,
+                    color: c.text3,
+                    decoration: TextDecoration.underline,
+                    decorationColor: c.text3,
                   ),
                 ),
               ],
             ),
           ),
           Gap(12.h),
-          _InfoCard(
+          JCard(
             title: 'TRADE DETAILS',
             children: [
               _InfoRow(
@@ -430,7 +418,7 @@ class _TradeProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          _InfoCard(
+          JCard(
             title: 'VERIFICATION',
             children: [
               _VerificationRow(label: 'Email verified', isVerified: true),
@@ -461,7 +449,7 @@ class _SettingsSection extends ConsumerWidget {
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Column(
         children: [
-          _InfoCard(
+          JCard(
             title: 'APPEARANCE',
             children: [
               _ToggleRow(
@@ -473,7 +461,7 @@ class _SettingsSection extends ConsumerWidget {
             ],
           ),
           Gap(12.h),
-          _InfoCard(
+          JCard(
             title: 'ACCOUNT',
             children: [
               _ActionRow(icon: Iconsax.sms, label: 'Change email'),
@@ -483,7 +471,7 @@ class _SettingsSection extends ConsumerWidget {
             ],
           ),
           Gap(12.h),
-          _InfoCard(
+          JCard(
             title: 'LEGAL',
             children: [
               _ActionRow(
@@ -498,107 +486,6 @@ class _SettingsSection extends ConsumerWidget {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Shared components ──────────────────────────────────────────────────────────
-
-class _StatBadge extends StatelessWidget {
-  const _StatBadge({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  final String value;
-  final String label;
-  final IconData icon;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: c.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 18.r, color: iconColor),
-            Gap(6.h),
-            Text(
-              value,
-              style: tt.headlineSmall!.copyWith(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w900,
-                color: c.text1,
-              ),
-            ),
-            Gap(1.h),
-            Text(
-              label.toUpperCase(),
-              style: tt.labelSmall!.copyWith(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-                color: c.text2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: c.card,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.md.w,
-              14.h,
-              AppSpacing.md.w,
-              10.h,
-            ),
-            child: Text(
-              title,
-              style: tt.labelSmall!.copyWith(
-                letterSpacing: 0.12 * 11,
-                color: c.text3,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: c.border),
-          ...children,
         ],
       ),
     );
@@ -688,7 +575,9 @@ class _VerificationRow extends StatelessWidget {
             isVerified ? 'Verified' : 'Upload',
             style: tt.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
-              color: isVerified ? c.verified : c.available,
+              color: isVerified ? c.verified : c.text3,
+              decoration: isVerified ? null : TextDecoration.underline,
+              decorationColor: c.text3,
             ),
           ),
         ],
@@ -774,14 +663,7 @@ class _ToggleRow extends StatelessWidget {
               ),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: c.action,
-            activeTrackColor: c.actionBg,
-            inactiveThumbColor: c.text3,
-            inactiveTrackColor: c.surface,
-          ),
+          JSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );

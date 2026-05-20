@@ -4,10 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
@@ -69,7 +70,6 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final appsState = ref.watch(applicationsControllerProvider);
     final isBuilder = authState.role == UserRole.builder;
@@ -96,26 +96,9 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    isBuilder ? 'INCOMING' : 'MY APPLICATIONS',
-                    style: tt.labelSmall!.copyWith(
-                      letterSpacing: 0.12 * 11,
-                      color: c.text3,
-                    ),
-                  ),
-                  Gap(4.h),
-                  ShaderMask(
-                    shaderCallback: (bounds) =>
-                        AppGradients.brandFlame.createShader(bounds),
-                    child: Text(
-                      isBuilder ? 'Applicants' : 'Track status',
-                      style: tt.headlineSmall!.copyWith(
-                        fontSize: 28.sp,
-                        letterSpacing: 0.02 * 28,
-                        color: Colors
-                            .white, // intentional: ShaderMask requires white for gradient
-                      ),
-                    ),
+                  PageHeader(
+                    eyebrow: isBuilder ? 'INCOMING' : 'MY APPLICATIONS',
+                    title: isBuilder ? 'Applicants' : 'Track status',
                   ),
                   Gap(12.h),
                   // ── Tab chips
@@ -326,54 +309,22 @@ class _AppCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () =>
-                              onUpdateStatus?.call(ApplicationStatus.rejected),
-                          child: Container(
-                            height: 34.h,
-                            decoration: BoxDecoration(
-                              color: c.surface,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.btn.r,
-                              ),
-                              border: Border.all(color: c.border),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'REJECT',
-                              style: tt.labelMedium!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                                color: c.text2,
-                              ),
-                            ),
+                        child: JButton(
+                          label: 'REJECT',
+                          variant: JButtonVariant.secondary,
+                          size: JButtonSize.compact,
+                          onPressed: () => onUpdateStatus?.call(
+                            ApplicationStatus.rejected,
                           ),
                         ),
                       ),
                       Gap(AppSpacing.sm.w),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => onUpdateStatus?.call(
+                        child: JButton(
+                          label: 'SHORTLIST',
+                          size: JButtonSize.compact,
+                          onPressed: () => onUpdateStatus?.call(
                             ApplicationStatus.shortlisted,
-                          ),
-                          child: Container(
-                            height: 34.h,
-                            decoration: BoxDecoration(
-                              color: c.action,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.btn.r,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              'SHORTLIST',
-                              style: tt.labelMedium!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                                color: Colors
-                                    .white, // intentional: white-on-action
-                              ),
-                            ),
                           ),
                         ),
                       ),

@@ -8,11 +8,11 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/services/auth_analytics.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/social_auth_button.dart';
 import '../../../../core/widgets/status_banner.dart';
@@ -631,10 +631,10 @@ class _FormStep extends StatelessWidget {
 
           Gap(AppSpacing.md.h),
 
-          AppButton(
+          JButton(
             label: authState.isLoading
-                ? 'Creating account...'
-                : 'Create Account',
+                ? 'CREATING ACCOUNT...'
+                : 'CREATE ACCOUNT',
             isLoading: authState.isLoading,
             onPressed: onSubmit,
           ),

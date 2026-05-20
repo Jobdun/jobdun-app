@@ -4,7 +4,12 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/bottom_action_bar.dart';
+import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_chip.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/job.dart';
 
@@ -94,47 +99,15 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     icon: Icon(Iconsax.arrow_left, size: 22.r, color: c.text1),
                   ),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'JOB DETAILS',
-                          style: tt.labelSmall!.copyWith(
-                            letterSpacing: 0.12 * 11,
-                            color: c.text3,
-                          ),
-                        ),
-                        Gap(2.h),
-                        Text(
-                          args.title,
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                    child: PageHeader(
+                      eyebrow: 'JOB DETAILS',
+                      title: args.title,
+                      size: PageHeaderSize.sub,
                     ),
                   ),
                   if (args.isUrgent) ...[
                     Gap(AppSpacing.sm.w),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: c.action,
-                        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                      ),
-                      child: Text(
-                        'URGENT',
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.5,
-                          color: Colors.white, // intentional: white-on-action
-                        ),
-                      ),
-                    ),
+                    const JChip(label: 'URGENT'),
                   ],
                 ],
               ),
@@ -170,7 +143,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
 
                     // ── Location
                     if (args.suburb != null || args.state != null) ...[
-                      _SectionLabel('LOCATION'),
+                      FieldLabel('LOCATION'),
                       Gap(AppSpacing.sm.h),
                       Row(
                         children: [
@@ -192,7 +165,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     ],
 
                     // ── Trade type
-                    _SectionLabel('TRADE REQUIRED'),
+                    FieldLabel('TRADE REQUIRED'),
                     Gap(AppSpacing.sm.h),
                     Container(
                       padding: EdgeInsets.symmetric(
@@ -217,7 +190,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     Gap(20.h),
 
                     // ── Description
-                    _SectionLabel('JOB DESCRIPTION'),
+                    FieldLabel('JOB DESCRIPTION'),
                     Gap(AppSpacing.sm.h),
                     Text(
                       args.description,
@@ -229,7 +202,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     Gap(20.h),
 
                     // ── Posted by
-                    _SectionLabel('POSTED BY'),
+                    FieldLabel('POSTED BY'),
                     Gap(AppSpacing.sm.h),
                     Container(
                       padding: EdgeInsets.all(14.r),
@@ -253,7 +226,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               args.builderInitials ?? 'BC',
                               style: tt.titleLarge!.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: c.action,
+                                color: c.text2,
                               ),
                             ),
                           ),
@@ -296,7 +269,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                     Gap(20.h),
 
                     // ── Requirements
-                    _SectionLabel('REQUIREMENTS'),
+                    FieldLabel('REQUIREMENTS'),
                     Gap(10.h),
                     _ReqRow(
                       icon: Iconsax.personalcard,
@@ -325,15 +298,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
               ),
             ),
 
-            // ── Apply bar
-            Container(
-              decoration: BoxDecoration(
-                color: c.card,
-                border: Border(top: BorderSide(color: c.border)),
-              ),
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-              child: _applied
-                  ? Container(
+            _applied
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: c.card,
+                      border: Border(top: BorderSide(color: c.border)),
+                    ),
+                    padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+                    child: Container(
                       width: double.infinity,
                       height: 48.h,
                       decoration: BoxDecoration(
@@ -361,28 +333,14 @@ class _JobDetailPageState extends State<JobDetailPage> {
                           ),
                         ],
                       ),
-                    )
-                  : GestureDetector(
-                      onTap: () => _showApplySheet(context, c, args),
-                      child: Container(
-                        width: double.infinity,
-                        height: 48.h,
-                        decoration: BoxDecoration(
-                          color: c.action,
-                          borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'APPLY NOW',
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: Colors.white, // intentional: white-on-action
-                          ),
-                        ),
-                      ),
                     ),
-            ),
+                  )
+                : BottomActionBar(
+                    primary: JButton(
+                      label: 'APPLY NOW',
+                      onPressed: () => _showApplySheet(context, c, args),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -451,30 +409,13 @@ class _ApplySheetState extends State<_ApplySheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'APPLY FOR THIS JOB',
-            style: tt.labelSmall!.copyWith(
-              letterSpacing: 0.12 * 11,
-              color: c.text3,
-            ),
-          ),
-          Gap(4.h),
-          Text(
-            widget.args.title,
-            style: tt.headlineSmall!.copyWith(
-              fontSize: 22.sp,
-              height: 1.1,
-              color: c.text1,
-            ),
+          PageHeader(
+            eyebrow: 'APPLY FOR THIS JOB',
+            title: widget.args.title,
+            size: PageHeaderSize.sub,
           ),
           Gap(20.h),
-          Text(
-            'YOUR RATE',
-            style: tt.labelSmall!.copyWith(
-              letterSpacing: 0.12 * 11,
-              color: c.text3,
-            ),
-          ),
+          const FieldLabel('YOUR RATE'),
           Gap(AppSpacing.sm.h),
           Container(
             decoration: BoxDecoration(
@@ -517,54 +458,21 @@ class _ApplySheetState extends State<_ApplySheet> {
             ),
           ),
           Gap(AppSpacing.md.h),
-          Text(
-            'COVER NOTE (optional)',
-            style: tt.labelSmall!.copyWith(
-              letterSpacing: 0.12 * 11,
-              color: c.text3,
-            ),
-          ),
+          const FieldLabel('COVER NOTE (OPTIONAL)'),
           Gap(AppSpacing.sm.h),
-          Container(
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.input.r),
-              border: Border.all(color: c.border),
-            ),
-            child: TextField(
-              controller: _noteCtrl,
-              maxLines: 3,
-              style: tt.bodyMedium!.copyWith(color: c.text1),
-              decoration: InputDecoration(
-                hintText: "Tell the builder why you're the right fit…",
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                filled: false,
-                contentPadding: EdgeInsets.all(14.r),
-              ),
+          // design-system-ok: TextEditingController not FormBuilder; theme draws chrome.
+          TextField(
+            controller: _noteCtrl,
+            maxLines: 3,
+            style: tt.bodyMedium!.copyWith(color: c.text1),
+            decoration: const InputDecoration(
+              hintText: "Tell the builder why you're the right fit…",
             ),
           ),
           Gap(20.h),
-          GestureDetector(
-            onTap: widget.onSubmit,
-            child: Container(
-              width: double.infinity,
-              height: 48.h,
-              decoration: BoxDecoration(
-                color: c.action,
-                borderRadius: BorderRadius.circular(AppRadius.btn.r),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'SUBMIT APPLICATION',
-                style: tt.titleMedium!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                  color: Colors.white, // intentional: white-on-action
-                ),
-              ),
-            ),
+          JButton(
+            label: 'SUBMIT APPLICATION',
+            onPressed: widget.onSubmit,
           ),
         ],
       ),
@@ -597,22 +505,6 @@ class _InfoChip extends StatelessWidget {
           Gap(6.w),
           Text(label, style: tt.labelMedium!.copyWith(color: c.text2)),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-        letterSpacing: 0.12 * 11,
-        color: context.c.text3,
       ),
     );
   }

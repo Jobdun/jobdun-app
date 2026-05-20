@@ -4,9 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_service.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../providers/ftue_gate_provider.dart';
 
 // Debug-only surface (route /dev/reset-ftue, registered only in kDebugMode)
@@ -39,7 +39,7 @@ class DevFtueResetPage extends ConsumerWidget {
                 style: tt.bodyMedium!.copyWith(color: c.text1),
               ),
               Gap(AppSpacing.xl.h),
-              AppButton(
+              JButton(
                 label: 'RESET FTUE',
                 onPressed: () async {
                   await FtueService.resetFtue();
@@ -48,9 +48,9 @@ class DevFtueResetPage extends ConsumerWidget {
                 },
               ),
               Gap(AppSpacing.md.h),
-              AppButton(
+              JButton(
                 label: 'GO TO /FTUE',
-                variant: AppButtonVariant.secondary,
+                variant: JButtonVariant.secondary,
                 onPressed: () => context.go('/ftue'),
               ),
             ],

@@ -168,8 +168,11 @@ class AuthController extends Notifier<AuthState> {
           .eq('id', userId)
           .maybeSingle();
 
-      // Role comes from JWT after sign-in — refresh it from the token.
-      final role = _roleFromSession();
+      // JWT claim first (cheap, no round-trip), DB fallback so SSO sign-ins
+      // where the custom_access_token hook isn't wired don't falsely surface
+      // role=null and trigger RoleSelectionSheet for an already-roled user.
+      // Mirrors the pattern in _loadProfileForCurrentUser:141.
+      final role = _roleFromSession() ?? await _roleFromDb(userId);
       state = state.copyWith(role: role, isRoleLoaded: true);
 
       return data?['onboarding_completed_at'] != null;
@@ -874,12 +877,48 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(pendingPhoneNumber: e164);
   }
 
+  // Last-chance role hydration before HomePage shows the role-selection sheet.
+  // Returns true if a user_roles row exists (and updates state.role
+  // accordingly); false if there's genuinely no role yet.
+  //
+  // Why this exists: the JWT-claim path can lag behind reality when the
+  // custom_access_token hook isn't wired in the Supabase Dashboard, or when
+  // the session was refreshed but the new token hasn't propagated yet. Hitting
+  // user_roles directly gives us ground truth. Cheap query — PK lookup on
+  // user_roles.user_id.
+  Future<bool> hydrateRoleFromDb() async {
+    if (!SupabaseConfig.isInitialized) return false;
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    final role = await _roleFromDb(userId);
+    if (role == null) return false;
+    if (state.role != role) {
+      state = state.copyWith(role: role, isRoleLoaded: true);
+    }
+    return true;
+  }
+
   // ── Role assignment for SSO / fallback ─────────────────────────────────────
   //
   // Called from RoleSelectionSheet when an authenticated user lands on home
   // without a role (typically SSO sign-ups, who don't pass role in metadata).
-  // Writes user_roles, creates the role-specific stub profile, refreshes the
-  // JWT so the new claim is live, and updates local state.
+  //
+  // Role is IMMUTABLE per the RBAC lockdown (supabase/migrations/
+  // 20260520000001_lock_user_role.sql): once a user_roles row exists, only the
+  // service_role can mutate it. The previous implementation here used
+  // `upsert(onConflict: 'user_id')`, which translated to UPDATE whenever a
+  // stale row existed (e.g. from the legacy handle_new_user trigger that
+  // defaulted SSO users to 'trade') and was rejected by RLS with 42501.
+  //
+  // New shape:
+  //   1. Read user_roles for this user.
+  //   2. If a row exists, honor it (do NOT overwrite). Update local state with
+  //      the persisted role and proceed to stub-profile creation for that
+  //      role — not for the role the user picked in the sheet.
+  //   3. If no row exists, INSERT (permitted by user_roles_insert_own RLS:
+  //      auth.uid() = user_id AND role IN ('builder','trade')).
+  //   4. Create the role-specific stub if missing (idempotent on PK 'id').
+  //   5. refreshSession() so the new JWT claim is live.
   Future<bool> setRoleAndStubProfile(UserRole role) async {
     if (!SupabaseConfig.isInitialized) return false;
     final userId = SupabaseConfig.client.auth.currentUser?.id;
@@ -894,25 +933,56 @@ class AuthController extends Notifier<AuthState> {
         'id': userId,
       }, onConflict: 'id');
 
-      await SupabaseConfig.client.from('user_roles').upsert({
-        'user_id': userId,
-        'role': role.name,
-      }, onConflict: 'user_id');
+      // Step 1: look up any existing role row.
+      final existing = await SupabaseConfig.client
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      if (role == UserRole.builder) {
+      UserRole effectiveRole = role;
+      if (existing != null) {
+        final priorName = existing['role'] as String?;
+        final priorRole = UserRole.values.firstWhere(
+          (r) => r.name == priorName,
+          orElse: () => role,
+        );
+        if (priorRole != role) {
+          assert(() {
+            debugPrint(
+              '[AuthController] setRoleAndStubProfile: pre-existing '
+              'user_roles row found (role=$priorName); honoring it instead '
+              'of the sheet pick (${role.name}). Role is immutable.',
+            );
+            return true;
+          }());
+        }
+        effectiveRole = priorRole;
+      } else {
+        // Step 3: no row → INSERT. Never upsert: UPDATE is blocked by the
+        // forbid_role_mutation trigger from 20260520000001.
+        await SupabaseConfig.client.from('user_roles').insert({
+          'user_id': userId,
+          'role': effectiveRole.name,
+        });
+      }
+
+      // Step 4: create the matching stub if missing. Upsert by PK is
+      // idempotent and not affected by the role-mutation trigger.
+      if (effectiveRole == UserRole.builder) {
         await SupabaseConfig.client.from('builder_profiles').upsert({
           'id': userId,
         }, onConflict: 'id');
-      } else if (role == UserRole.trade) {
+      } else if (effectiveRole == UserRole.trade) {
         await SupabaseConfig.client.from('trade_profiles').upsert({
           'id': userId,
         }, onConflict: 'id');
       }
 
-      // Force a JWT refresh so the new user_role claim is in the session.
+      // Step 5: force a JWT refresh so the user_role claim is in the session.
       await SupabaseConfig.client.auth.refreshSession();
 
-      state = state.copyWith(role: role, isLoading: false);
+      state = state.copyWith(role: effectiveRole, isLoading: false);
       return true;
     } catch (e, st) {
       assert(() {

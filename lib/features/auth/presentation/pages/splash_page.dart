@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../app/constants/app_constants.dart';
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';

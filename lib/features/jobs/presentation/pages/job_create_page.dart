@@ -4,9 +4,12 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_switch.dart';
+import '../../../../core/design/widgets/page_header.dart';
 
 class JobCreatePage extends StatefulWidget {
   const JobCreatePage({super.key});
@@ -121,31 +124,11 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       color: c.text1,
                     ),
                   ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'NEW LISTING',
-                          style: tt.labelSmall!.copyWith(
-                            letterSpacing: 0.12 * 11,
-                            color: c.text3,
-                          ),
-                        ),
-                        Gap(2.h),
-                        ShaderMask(
-                          shaderCallback: (b) =>
-                              AppGradients.brandFlame.createShader(b),
-                          child: Text(
-                            'Post a Job',
-                            style: tt.headlineSmall!.copyWith(
-                              fontSize: 22.sp,
-                              color: Colors
-                                  .white, // intentional: ShaderMask requires white for gradient
-                            ),
-                          ),
-                        ),
-                      ],
+                  const Expanded(
+                    child: PageHeader(
+                      eyebrow: 'NEW LISTING',
+                      title: 'Post a Job',
+                      size: PageHeaderSize.sub,
                     ),
                   ),
                 ],
@@ -333,27 +316,18 @@ class _JobCreatePageState extends State<JobCreatePage> {
                     Gap(20.h),
 
                     // ── Description
-                    FieldLabel('DESCRIPTION'),
+                    const FieldLabel('DESCRIPTION'),
                     Gap(AppSpacing.sm.h),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: c.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.input.r),
-                        border: Border.all(color: c.border),
-                      ),
-                      child: TextField(
-                        controller: _descCtrl,
-                        maxLines: 5,
-                        style: tt.bodyMedium!.copyWith(color: c.text1),
-                        decoration: InputDecoration(
-                          hintText:
-                              'Describe the scope of work, site conditions, tools required…',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          contentPadding: EdgeInsets.all(14.r),
-                        ),
+                    // design-system-ok: page uses TextEditingController directly,
+                    // not FormBuilder, so JTextField doesn't apply. Theme decoration
+                    // handles chrome — no inline border overrides.
+                    TextField(
+                      controller: _descCtrl,
+                      maxLines: 5,
+                      style: tt.bodyMedium!.copyWith(color: c.text1),
+                      decoration: const InputDecoration(
+                        hintText:
+                            'Describe the scope of work, site conditions, tools required…',
                       ),
                     ),
                     Gap(20.h),
@@ -400,12 +374,9 @@ class _JobCreatePageState extends State<JobCreatePage> {
                               ],
                             ),
                           ),
-                          Switch(
+                          JSwitch(
                             value: _isUrgent,
                             onChanged: (v) => setState(() => _isUrgent = v),
-                            activeThumbColor:
-                                Colors.white, // intentional: white-on-action
-                            activeTrackColor: c.action,
                           ),
                         ],
                       ),
@@ -415,54 +386,12 @@ class _JobCreatePageState extends State<JobCreatePage> {
               ),
             ),
 
-            // ── Post button
-            Container(
-              decoration: BoxDecoration(
-                color: c.card,
-                border: Border(top: BorderSide(color: c.border)),
-              ),
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-              child: GestureDetector(
-                onTap: _isPosting ? null : () => _post(context, c),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: double.infinity,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: _isPosting ? c.surfaceRaised : c.action,
-                    borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                  ),
-                  alignment: Alignment.center,
-                  child: _isPosting
-                      ? SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: CircularProgressIndicator(
-                            color: c.text1,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Iconsax.send_1,
-                              size: 18.r,
-                              color: Colors.white, // intentional
-                            ),
-                            Gap(AppSpacing.sm.w),
-                            Text(
-                              'POST JOB',
-                              style: tt.titleMedium!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                                color: Colors
-                                    .white, // intentional: white-on-action
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
+            BottomActionBar(
+              primary: JButton(
+                label: _isPosting ? 'POSTING...' : 'POST JOB',
+                icon: Iconsax.send_1,
+                isLoading: _isPosting,
+                onPressed: _isPosting ? null : () => _post(context, c),
               ),
             ),
           ],
@@ -474,6 +403,10 @@ class _JobCreatePageState extends State<JobCreatePage> {
 
 // ── Sub-widgets ────────────────────────────────────────────────────────────────
 
+// Thin wrapper around `TextField` for callers that need a TextEditingController
+// (this page doesn't use FormBuilder, so JTextField doesn't apply). Picks up
+// chrome from the theme's InputDecorationTheme — no inline border overrides.
+// design-system-ok: see comment above.
 class _InputField extends StatelessWidget {
   const _InputField({required this.controller, required this.hint});
   final TextEditingController controller;
@@ -483,28 +416,10 @@ class _InputField extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
-      ),
-      child: TextField(
-        controller: controller,
-        style: tt.bodyLarge!.copyWith(color: c.text1),
-        decoration: InputDecoration(
-          hintText: hint,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          filled: false,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 14.w,
-            vertical: 13.h,
-          ),
-          isDense: true,
-        ),
-      ),
+    return TextField(
+      controller: controller,
+      style: tt.bodyLarge!.copyWith(color: c.text1),
+      decoration: InputDecoration(hintText: hint, isDense: true),
     );
   }
 }

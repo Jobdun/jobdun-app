@@ -5,9 +5,9 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_gradients.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/messaging_provider.dart';
 import 'message_thread_page.dart';
@@ -56,33 +56,8 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
               padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'INBOX',
-                          style: tt.labelSmall!.copyWith(
-                            letterSpacing: 0.12 * 11,
-                            color: c.text3,
-                          ),
-                        ),
-                        Gap(4.h),
-                        ShaderMask(
-                          shaderCallback: (bounds) =>
-                              AppGradients.brandFlame.createShader(bounds),
-                          child: Text(
-                            'Messages',
-                            style: tt.headlineSmall!.copyWith(
-                              fontSize: 28.sp,
-                              letterSpacing: 0.02 * 28,
-                              color: Colors
-                                  .white, // intentional: ShaderMask requires white for gradient
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  const Expanded(
+                    child: PageHeader(eyebrow: 'INBOX', title: 'Messages'),
                   ),
                   if (totalUnread > 0)
                     Container(
@@ -243,7 +218,7 @@ class _ConvoRow extends StatelessWidget {
                 style: tt.headlineSmall!.copyWith(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
-                  color: c.action,
+                  color: c.text2,
                 ),
               ),
             ),
@@ -282,7 +257,7 @@ class _ConvoRow extends StatelessWidget {
                       jobTitle!,
                       style: tt.bodySmall!.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: c.action,
+                        color: c.text2,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

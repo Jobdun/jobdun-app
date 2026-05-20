@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 
 /// Hero photo container for FTUE slides 1 and 3. Sits at the top of each
