@@ -7,7 +7,7 @@
 
 ## Refactor status (post-pass)
 
-Pre-refactor rating: **6.5 / 10**. Post-refactor: **8 / 10**. AuthController god-class split and `.select()` / `AsyncValue` adoption are intentionally deferred — they need their own PRs.
+Pre-refactor rating: **6.5 / 10**. After phase 1 (governance + provider cleanup): **8 / 10**. After phase 2 (auth split + `.select()`): **8.5 / 10**. `AsyncValue<T>` per action is intentionally deferred — only worth it when concrete shared-loading-state UX bugs appear.
 
 | Audit finding | Status | Notes |
 |---|---|---|
@@ -19,10 +19,10 @@ Pre-refactor rating: **6.5 / 10**. Post-refactor: **8 / 10**. AuthController god
 | `VerificationController` stub | ✅ Done | Wired to repo + 3 use cases, realtime watch |
 | Use case layer was dead | ✅ Done | All active controllers route through existing use cases via `*UseCaseProvider`; `GetJobs` extended with `limit`/`offset` |
 | File-size budget enforcement | ✅ Done | `analysis_options.yaml` + `scripts/validate.sh` hard ceiling at 500 LOC |
-| AuthController god-class (1086 LOC) | 🟥 Deferred | Split into AuthSession/Email/OAuth/Phone notifiers — own PR |
+| AuthController god-class (1086 LOC) | ✅ Done | Split via service extraction — controller now 486 LOC orchestrator + 4 services (Email/OAuth/Phone/RoleResolver) + `auth_state.dart`. Public API unchanged so no page edits. |
 | `addPostFrameCallback` page-side loads | 🟧 Partial | New stub controllers load in `build()`; old pages still use `addPostFrameCallback` — migrate as touched |
-| `.select()` at hot read sites | 🟥 Deferred | Still only 3 across the app — per-widget pass |
-| `AsyncValue<T>` per action | 🟥 Deferred | Still single `error: String?` + `isLoading` — architectural change |
+| `.select()` at hot read sites | ✅ Partial | Added at the 3 clear single-field reads (`home_shell` role, `jobs_page` isBuilder × 2). Other sites read multiple fields — `.select()` wouldn't help. |
+| `AsyncValue<T>` per action | 🟥 Deferred (intentionally — see followups discussion) | Still single `error: String?` + `isLoading`. Per the user-architect call: only worth it when concrete shared-loading-state UX bugs appear. |
 
 ---
 

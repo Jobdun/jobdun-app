@@ -91,7 +91,7 @@ echo -e "${BOLD}[1.5/3] File-size budget${RESET}"
 OVERSIZE_ALLOWLIST=(
   "lib/features/home/presentation/pages/home_page.dart"
   "lib/features/profile/presentation/pages/profile_edit_page.dart"
-  "lib/features/auth/presentation/providers/auth_provider.dart"
+  # auth_provider.dart split out via data/services/ — back under 500 LOC.
   "lib/features/auth/presentation/pages/register_page.dart"
   "lib/features/profile/presentation/pages/profile_page.dart"
   "lib/features/jobs/presentation/pages/jobs_page.dart"

@@ -35,7 +35,10 @@ class HomeShellPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final onlineAsync = ref.watch(_connectivityProvider);
     final isOnline = onlineAsync.asData?.value ?? true;
-    final role = ref.watch(authControllerProvider).role;
+    // .select() so the shell (and the bottom nav) doesn't rebuild on every
+    // unrelated auth-state change (loading, error, email) — only when the
+    // role itself flips, which only happens at sign-in / sign-out.
+    final role = ref.watch(authControllerProvider.select((s) => s.role));
     final tabs = TabSpec.forRole(role);
 
     return Scaffold(

@@ -88,8 +88,11 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final jobsState = ref.watch(jobsControllerProvider);
-    final isBuilder =
-        ref.watch(authControllerProvider).role == UserRole.builder;
+    // .select() — the JOBS page only branches on role; rebuilding here for
+    // every auth-loading / email / pendingVerification flicker is wasted.
+    final isBuilder = ref.watch(
+      authControllerProvider.select((s) => s.role == UserRole.builder),
+    );
     final activeFilter = jobsState.filter?.tradeType;
     // Observing the paging controller via ref.read so this widget rebuilds
     // for filter/search changes (which run through it) without listening
@@ -594,8 +597,9 @@ class _EmptyState extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final isBuilder =
-        ref.watch(authControllerProvider).role == UserRole.builder;
+    final isBuilder = ref.watch(
+      authControllerProvider.select((s) => s.role == UserRole.builder),
+    );
 
     final headline = hasFilter
         ? 'NO JOBS FOUND.'
