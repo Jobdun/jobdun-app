@@ -10,8 +10,6 @@ class UserProfile extends Equatable {
     this.phone,
     this.phoneVerifiedAt,
     this.avatarUrl,
-    this.bio,
-    this.onboardingCompletedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -24,12 +22,9 @@ class UserProfile extends Equatable {
   // phone_verified slot in profile_completeness — NULL = unverified.
   final DateTime? phoneVerifiedAt;
   final String? avatarUrl;
-  final String? bio;
-  final DateTime? onboardingCompletedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  bool get isOnboardingComplete => onboardingCompletedAt != null;
   bool get isPhoneVerified => phoneVerifiedAt != null;
 
   @override

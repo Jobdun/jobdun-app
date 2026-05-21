@@ -8,7 +8,6 @@ class BuilderProfile extends Equatable {
     this.abn,
     this.contactName,
     this.contactPhone,
-    this.logoUrl,
     this.about,
     this.website,
     this.yearsInBusiness,
@@ -27,7 +26,6 @@ class BuilderProfile extends Equatable {
   final String? abn;
   final String? contactName;
   final String? contactPhone;
-  final String? logoUrl;
   final String? about;
   final String? website;
   final int? yearsInBusiness;

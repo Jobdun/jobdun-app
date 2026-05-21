@@ -8,8 +8,6 @@ class UserProfileModel extends UserProfile {
     super.phone,
     super.phoneVerifiedAt,
     super.avatarUrl,
-    super.bio,
-    super.onboardingCompletedAt,
     super.createdAt,
     super.updatedAt,
   });
@@ -24,10 +22,6 @@ class UserProfileModel extends UserProfile {
             ? DateTime.parse(json['phone_verified_at'] as String)
             : null,
         avatarUrl: json['avatar_url'] as String?,
-        bio: json['bio'] as String?,
-        onboardingCompletedAt: json['onboarding_completed_at'] != null
-            ? DateTime.parse(json['onboarding_completed_at'] as String)
-            : null,
         createdAt: json['created_at'] != null
             ? DateTime.parse(json['created_at'] as String)
             : null,
@@ -40,6 +34,5 @@ class UserProfileModel extends UserProfile {
     'display_name': displayName,
     'phone': phone,
     'avatar_url': avatarUrl,
-    'bio': bio,
   };
 }

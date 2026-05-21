@@ -13,12 +13,7 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 
 const _tEmail = 'worker@jobdun.com';
 const _tPassword = 'password123';
-const _tUser = AppUser(
-  id: 'user-1',
-  email: _tEmail,
-  role: UserRole.trade,
-  isOnboardingComplete: true,
-);
+const _tUser = AppUser(id: 'user-1', email: _tEmail, role: UserRole.trade);
 
 void main() {
   late MockAuthRepository mockRepo;

@@ -8,7 +8,6 @@ class UserModel extends AppUser {
     required super.role,
     super.fullName,
     super.avatarUrl,
-    super.isOnboardingComplete,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -19,15 +18,12 @@ class UserModel extends AppUser {
       (r) => r.name == roleStr,
       orElse: () => UserRole.trade,
     );
-    // Onboarding tracked by onboarding_completed_at (non-null = complete).
-    final onboardingCompletedAt = json['onboarding_completed_at'];
     return UserModel(
       id: json['id'] as String,
       email: json['email'] as String? ?? '',
       role: role,
       fullName: json['display_name'] as String? ?? json['full_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      isOnboardingComplete: onboardingCompletedAt != null,
     );
   }
 

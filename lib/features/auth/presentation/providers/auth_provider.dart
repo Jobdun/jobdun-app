@@ -70,7 +70,6 @@ class AuthController extends Notifier<AuthState> {
 
     return AuthState(
       isAuthenticated: true,
-      onboardingComplete: true,
       email: user?.email ?? session?.user.email,
     );
   }
@@ -129,21 +128,10 @@ class AuthController extends Notifier<AuthState> {
       return;
     }
     try {
-      final data = await SupabaseConfig.client
-          .from('profiles')
-          .select('onboarding_completed_at')
-          .eq('id', userId)
-          .maybeSingle();
-
-      final onboardingDone = data?['onboarding_completed_at'] != null;
       // JWT claim first (cheap, no round-trip); DB fallback so an absent
       // claim doesn't make a role-bearing user look role-less.
       final role = _roleFromSession() ?? await _roleFromDb(userId);
-      state = state.copyWith(
-        role: role,
-        onboardingComplete: onboardingDone,
-        isRoleLoaded: true,
-      );
+      state = state.copyWith(role: role, isRoleLoaded: true);
     } catch (e, st) {
       // Best-effort — don't disrupt the session if profile fetch fails.
       // Mark loaded even on failure so the sheet doesn't hang waiting forever.
@@ -155,34 +143,24 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  // Returns true if the authenticated user has completed onboarding in the DB.
-  Future<bool> _fetchOnboardingStatus(String? userId) async {
+  // Best-effort role hydration after a sign-in path. Mirrors the JWT-first /
+  // DB-fallback pattern in _loadProfileForCurrentUser so SSO users whose
+  // custom_access_token hook isn't active don't get role=null on the home
+  // screen.
+  Future<void> _hydrateRoleAfterSignIn(String? userId) async {
     if (userId == null || !SupabaseConfig.isInitialized) {
       state = state.copyWith(isRoleLoaded: true);
-      return false;
+      return;
     }
     try {
-      final data = await SupabaseConfig.client
-          .from('profiles')
-          .select('onboarding_completed_at')
-          .eq('id', userId)
-          .maybeSingle();
-
-      // JWT claim first (cheap, no round-trip), DB fallback so SSO sign-ins
-      // where the custom_access_token hook isn't wired don't falsely surface
-      // role=null and trigger RoleSelectionSheet for an already-roled user.
-      // Mirrors the pattern in _loadProfileForCurrentUser:141.
       final role = _roleFromSession() ?? await _roleFromDb(userId);
       state = state.copyWith(role: role, isRoleLoaded: true);
-
-      return data?['onboarding_completed_at'] != null;
     } catch (e, st) {
       assert(() {
-        debugPrint('[AuthController] _fetchOnboardingStatus: $e\n$st');
+        debugPrint('[AuthController] _hydrateRoleAfterSignIn: $e\n$st');
         return true;
       }());
       state = state.copyWith(isRoleLoaded: true);
-      return false;
     }
   }
 
@@ -212,11 +190,10 @@ class AuthController extends Notifier<AuthState> {
         password: password,
       );
 
-      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
+      await _hydrateRoleAfterSignIn(response.user?.id);
 
       state = state.copyWith(
         isAuthenticated: response.user != null || response.session != null,
-        onboardingComplete: onboardingDone,
         email: response.user?.email ?? email.trim(),
         isLoading: false,
       );
@@ -296,10 +273,9 @@ class AuthController extends Notifier<AuthState> {
         return false;
       }
 
-      // Email confirmation disabled → signed in immediately, send to onboarding.
+      // Email confirmation disabled → signed in immediately.
       state = state.copyWith(
         isAuthenticated: true,
-        onboardingComplete: false,
         email: response.user?.email ?? email.trim(),
         isLoading: false,
         errorMessage: null,
@@ -458,13 +434,11 @@ class AuthController extends Notifier<AuthState> {
         idToken: idToken,
       );
 
-      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
+      await _hydrateRoleAfterSignIn(response.user?.id);
 
-      // Role stays whatever the JWT says (set in _fetchOnboardingStatus).
       // Null role + authenticated → RoleSelectionSheet handles it on home.
       state = state.copyWith(
         isAuthenticated: response.user != null,
-        onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
       );
@@ -532,13 +506,11 @@ class AuthController extends Notifier<AuthState> {
         nonce: rawNonce,
       );
 
-      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
+      await _hydrateRoleAfterSignIn(response.user?.id);
 
-      // Role stays whatever the JWT says (set in _fetchOnboardingStatus).
       // Null role + authenticated → RoleSelectionSheet handles it on home.
       state = state.copyWith(
         isAuthenticated: response.user != null,
-        onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
       );
@@ -570,79 +542,6 @@ class AuthController extends Notifier<AuthState> {
   String _sha256ofString(String input) {
     final bytes = utf8.encode(input);
     return sha256.convert(bytes).toString();
-  }
-
-  Future<void> completeOnboarding(
-    UserRole role, {
-    String? location,
-    String? companyName,
-    String? businessType,
-    String? tradeCategory,
-    String? yearsExperience,
-  }) async {
-    state = state.copyWith(isLoading: true);
-
-    try {
-      if (SupabaseConfig.isInitialized) {
-        final userId = SupabaseConfig.client.auth.currentUser?.id;
-        if (userId != null) {
-          // Mark onboarding complete via onboarding_completed_at (schema column).
-          await SupabaseConfig.client
-              .from('profiles')
-              .update({
-                'onboarding_completed_at': DateTime.now().toIso8601String(),
-              })
-              .eq('id', userId);
-
-          // Assign role in user_roles (drives JWT claim via custom_access_token_hook).
-          await SupabaseConfig.client.from('user_roles').upsert({
-            'user_id': userId,
-            'role': role.name,
-          }, onConflict: 'user_id');
-
-          if (role == UserRole.builder) {
-            // builder_profiles.id is PK = profiles.id (not profile_id)
-            final builderData = <String, dynamic>{'id': userId};
-            if (companyName != null) builderData['company_name'] = companyName;
-            if (builderData.length > 1) {
-              await SupabaseConfig.client
-                  .from('builder_profiles')
-                  .upsert(builderData, onConflict: 'id');
-            }
-          } else if (role == UserRole.trade) {
-            // trade_profiles.id is PK = profiles.id (not profile_id)
-            final tradeData = <String, dynamic>{'id': userId};
-            if (tradeCategory != null) {
-              tradeData['primary_trade'] = tradeCategory;
-            }
-            if (yearsExperience != null) {
-              tradeData['years_experience'] =
-                  int.tryParse(yearsExperience) ?? 0;
-            }
-            if (tradeData.length > 1) {
-              await SupabaseConfig.client
-                  .from('trade_profiles')
-                  .upsert(tradeData, onConflict: 'id');
-            }
-          }
-        }
-      }
-    } catch (e, st) {
-      // Best-effort — don't block the user from progressing, but surface the error.
-      assert(() {
-        debugPrint('[AuthController] completeOnboarding: $e\n$st');
-        return true;
-      }());
-      state = state.copyWith(
-        infoMessage: 'Profile saved locally. Some details may sync later.',
-      );
-    }
-
-    state = state.copyWith(
-      role: role,
-      onboardingComplete: true,
-      isLoading: false,
-    );
   }
 
   Future<void> sendPasswordReset(String email) async {
@@ -736,10 +635,9 @@ class AuthController extends Notifier<AuthState> {
         token: token.trim(),
         type: supabase.OtpType.sms,
       );
-      final onboardingDone = await _fetchOnboardingStatus(response.user?.id);
+      await _hydrateRoleAfterSignIn(response.user?.id);
       state = state.copyWith(
         isAuthenticated: response.user != null,
-        onboardingComplete: onboardingDone,
         email: response.user?.email,
         isLoading: false,
         clearPhone: true,
@@ -1019,7 +917,6 @@ class RegisterDraft {
 class AuthState {
   const AuthState({
     this.isAuthenticated = false,
-    this.onboardingComplete = false,
     this.isLoading = false,
     // Goes true once we've actually tried to read role from the JWT/DB.
     // Distinguishes "role is null because user hasn't picked" from "role is
@@ -1035,7 +932,6 @@ class AuthState {
   });
 
   final bool isAuthenticated;
-  final bool onboardingComplete;
   final bool isLoading;
   final bool isRoleLoaded;
   final UserRole? role;
@@ -1048,7 +944,6 @@ class AuthState {
 
   AuthState copyWith({
     bool? isAuthenticated,
-    bool? onboardingComplete,
     bool? isLoading,
     bool? isRoleLoaded,
     UserRole? role,
@@ -1065,7 +960,6 @@ class AuthState {
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       isLoading: isLoading ?? this.isLoading,
       isRoleLoaded: isRoleLoaded ?? this.isRoleLoaded,
       role: clearRole ? null : role ?? this.role,

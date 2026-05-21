@@ -21,12 +21,7 @@ void main() {
 
   const tEmail = 'worker@jobdun.com';
   const tPassword = 'password123';
-  const tUser = AppUser(
-    id: 'user-abc',
-    email: tEmail,
-    role: UserRole.trade,
-    isOnboardingComplete: true,
-  );
+  const tUser = AppUser(id: 'user-abc', email: tEmail, role: UserRole.trade);
 
   group('SignIn use case', () {
     test('returns AppUser when credentials are correct', () async {
@@ -94,7 +89,6 @@ void main() {
         email: tEmail,
         role: UserRole.builder,
         fullName: 'Ken Garcia',
-        isOnboardingComplete: true,
       );
       when(
         () => mockRepo.signIn(email: tEmail, password: tPassword),
@@ -105,7 +99,6 @@ void main() {
       result.fold((_) => fail('Expected user'), (user) {
         expect(user.role, UserRole.builder);
         expect(user.fullName, 'Ken Garcia');
-        expect(user.isOnboardingComplete, isTrue);
       });
     });
   });

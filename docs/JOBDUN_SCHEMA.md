@@ -550,14 +550,14 @@ create table public.profiles (
   email citext not null,
   phone text check (phone is null or public.is_valid_au_mobile(phone)),
   avatar_url text,
-  bio text,
+  -- bio dropped in 20260521000001 (Sprint P2): dormant column, never written.
 
   -- verification states
   email_verified_at timestamptz,
   phone_verified_at timestamptz,
 
-  -- onboarding tracking
-  onboarding_completed_at timestamptz,
+  -- role selection tracking. onboarding_completed_at dropped in 20260521000001;
+  -- profile_completeness view covers the "is the user ready?" signal instead.
   role_selected_at timestamptz,
 
   -- activity
@@ -576,7 +576,7 @@ comment on table public.profiles is 'Base profile shared by all user types. Spec
 -- INDEXES --------------------------------------------------------------------
 create unique index profiles_email_unique_idx on public.profiles (email) where deleted_at is null;
 create index profiles_last_active_idx on public.profiles (last_active_at desc) where deleted_at is null;
-create index profiles_onboarding_idx on public.profiles (onboarding_completed_at) where deleted_at is null;
+-- profiles_onboarding_idx dropped with onboarding_completed_at in 20260521000001.
 
 -- TRIGGERS --------------------------------------------------------------------
 create trigger profiles_set_updated_at
@@ -644,7 +644,7 @@ create policy "admins update profiles"
 -- We expose them through views or omit in client queries; for hardcore
 -- privacy, use Supabase column-level security in dashboard or:
 revoke select on public.profiles from authenticated;
-grant select (id, display_name, avatar_url, bio, last_active_at, created_at)
+grant select (id, display_name, avatar_url, last_active_at, created_at)
   on public.profiles to authenticated;
 
 -- The owner and admins still read everything via the table-level policies
@@ -654,7 +654,7 @@ grant select (id, display_name, avatar_url, bio, last_active_at, created_at)
 
 create or replace view public.profiles_public
 with (security_invoker = true) as
-select id, display_name, avatar_url, bio, last_active_at, created_at
+select id, display_name, avatar_url, last_active_at, created_at
 from public.profiles
 where deleted_at is null;
 
@@ -687,7 +687,8 @@ create table public.builder_profiles (
   abn text check (abn is null or public.is_valid_abn(abn)),
   contact_name text not null,
   contact_phone text not null check (public.is_valid_au_mobile(contact_phone)),
-  logo_url text,
+  -- logo_url dropped in 20260521000001 (Sprint P2): collapse to profiles.avatar_url.
+  -- description column also dropped — legacy duplicate of `about`.
   about text,
   website text,
   years_in_business int check (years_in_business >= 0 and years_in_business <= 200),

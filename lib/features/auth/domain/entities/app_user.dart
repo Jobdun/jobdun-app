@@ -9,7 +9,6 @@ class AppUser extends Equatable {
     required this.role,
     this.fullName,
     this.avatarUrl,
-    this.isOnboardingComplete = false,
   });
 
   final String id;
@@ -17,15 +16,7 @@ class AppUser extends Equatable {
   final String? fullName;
   final String? avatarUrl;
   final UserRole role;
-  final bool isOnboardingComplete;
 
   @override
-  List<Object?> get props => [
-    id,
-    email,
-    role,
-    fullName,
-    avatarUrl,
-    isOnboardingComplete,
-  ];
+  List<Object?> get props => [id, email, role, fullName, avatarUrl];
 }
