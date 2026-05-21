@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
+import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
@@ -39,6 +40,16 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   String? _tradeSlug;
   String? _tradeOther;
   bool _showTradeError = false;
+
+  // Fresh sign-ups land here with an empty profile row; fall back to the
+  // name they typed at sign-up (stored on auth.users.user_metadata.full_name
+  // by register_page) so they don't retype it.
+  String? get _metadataFullName {
+    final raw =
+        SupabaseConfig.client.auth.currentUser?.userMetadata?['full_name'];
+    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+    return null;
+  }
 
   @override
   void initState() {
@@ -263,7 +274,10 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         _FormField(
                           name: 'contact_name',
                           hint: 'Your full name',
-                          initialValue: bp?.contactName ?? profile?.displayName,
+                          initialValue:
+                              bp?.contactName ??
+                              profile?.displayName ??
+                              _metadataFullName,
                         ),
                         Gap(AppSpacing.md.h),
                         const FieldLabel('COMPANY NAME'),
@@ -309,14 +323,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         ),
                         Gap(AppSpacing.md.h),
                       ] else ...[
-                        const FieldLabel('FULL NAME'),
+                        const FieldLabel('LEGAL NAME'),
                         Gap(AppSpacing.sm.h),
                         _FormField(
                           name: 'full_name',
-                          hint: 'Your full name',
-                          initialValue: tp?.fullName,
+                          hint: 'For invoices and verification',
+                          initialValue: tp?.fullName ?? _metadataFullName,
                           validator: FormBuilderValidators.required(
-                            errorText: 'Full name is required.',
+                            errorText: 'Legal name is required.',
                           ),
                         ),
                         Gap(AppSpacing.md.h),
@@ -366,8 +380,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       Gap(AppSpacing.sm.h),
                       _FormField(
                         name: 'display_name',
-                        hint: 'How you appear in the app',
-                        initialValue: profile?.displayName,
+                        hint: 'Shown publicly to other users',
+                        initialValue: profile?.displayName ?? _metadataFullName,
                         validator: FormBuilderValidators.required(
                           errorText: 'Display name is required.',
                         ),

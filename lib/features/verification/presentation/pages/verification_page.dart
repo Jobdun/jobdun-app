@@ -100,13 +100,12 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
       profileControllerProvider.select((s) => s.isUploadingLicence),
     );
 
-    // Builder hit this route somehow — bounce them back. RLS would block
-    // their upload anyway but the screen makes no sense for their role.
+    // Builder hit this route somehow (deep link, navigation drawer mis-tap).
+    // RLS would block their upload anyway, but the screen makes no sense for
+    // their role — render a calm explainer instead of the post-frame bounce
+    // we used to do, which flashed the upload chrome for a frame.
     if (auth.role == UserRole.builder) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && context.canPop()) context.pop();
-      });
-      return Scaffold(backgroundColor: c.background);
+      return const _BuilderNotVerifiedScreen();
     }
 
     final hasLicence = tp?.hasLicence ?? false;
@@ -172,6 +171,78 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
                     color: c.text3,
                     fontSize: 12.sp,
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Friendly explainer for builders who land on /verification by accident.
+// Synchronous render — no addPostFrameCallback — so there's no frame flash
+// of the upload chrome before the bounce. The Back button is honest about
+// what's happening: this screen isn't for them, here's the way out.
+class _BuilderNotVerifiedScreen extends StatelessWidget {
+  const _BuilderNotVerifiedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        backgroundColor: c.background,
+        leading: IconButton(
+          icon: Icon(AppIcons.back, color: c.text1),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/profile'),
+        ),
+        title: const FieldLabel('VERIFICATION'),
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Gap(AppSpacing.xl.h),
+              Container(
+                width: 64.r,
+                height: 64.r,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.card.r),
+                  border: Border.all(color: c.border),
+                ),
+                child: Icon(AppIcons.builder, size: 28.r, color: c.text2),
+              ),
+              Gap(AppSpacing.lg.h),
+              const PageHeader(
+                eyebrow: 'BUILDER ACCOUNT',
+                title: "Builders don't need verification",
+                size: PageHeaderSize.tab,
+              ),
+              Gap(AppSpacing.sm.h),
+              Text(
+                "This screen is for tradies uploading their licence. As a "
+                "builder, your account is ready to post jobs as soon as your "
+                "company details are filled out.",
+                style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.45),
+              ),
+              const Spacer(),
+              Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
+                child: JButton(
+                  label: 'BACK TO PROFILE',
+                  isLoading: false,
+                  onPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/profile'),
                 ),
               ),
             ],
