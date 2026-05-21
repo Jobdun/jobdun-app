@@ -80,6 +80,59 @@ grep_check "No AppColors.* in lib/features/" \
 
 echo ""
 
+# ── File-size budget ──────────────────────────────────────────────────────────
+# Enforces CLAUDE.md → "Engineering Standards (STRICT)".
+# Target: 400 LOC. Hard ceiling: 500 LOC.
+# Files in OVERSIZE_ALLOWLIST are grandfathered debt — they must be split
+# before more lines are added. Do NOT grow this list without an entry in
+# docs/STATE_MANAGEMENT_AUDIT.md justifying the exception.
+echo -e "${BOLD}[1.5/3] File-size budget${RESET}"
+
+OVERSIZE_ALLOWLIST=(
+  "lib/features/home/presentation/pages/home_page.dart"
+  "lib/features/profile/presentation/pages/profile_edit_page.dart"
+  "lib/features/auth/presentation/providers/auth_provider.dart"
+  "lib/features/auth/presentation/pages/register_page.dart"
+  "lib/features/profile/presentation/pages/profile_page.dart"
+  "lib/features/jobs/presentation/pages/jobs_page.dart"
+  "lib/features/applications/presentation/pages/applications_page.dart"
+  "lib/features/auth/presentation/pages/phone_auth_page.dart"
+  "lib/features/profile/presentation/widgets/trade_category_picker.dart"
+  "lib/features/jobs/presentation/pages/job_detail_page.dart"
+)
+
+printf "  %-54s" "No new .dart file > 500 LOC (excl. allowlist)"
+violations=""
+warnings=""
+while IFS= read -r -d '' file; do
+  rel="${file#./}"
+  case "$rel" in
+    *.g.dart|*.freezed.dart|lib/generated/*) continue ;;
+  esac
+  lines=$(wc -l < "$file" | tr -d ' ')
+  in_allow=0
+  for allow in "${OVERSIZE_ALLOWLIST[@]}"; do
+    if [[ "$rel" == "$allow" ]]; then in_allow=1; break; fi
+  done
+  if [[ "$lines" -gt 500 && "$in_allow" -eq 0 ]]; then
+    violations+="$rel ($lines LOC)\n"
+  elif [[ "$lines" -gt 400 && "$in_allow" -eq 0 ]]; then
+    warnings+="$rel ($lines LOC — over 400 target)\n"
+  fi
+done < <(find lib -type f -name "*.dart" -print0)
+if [[ -z "$violations" ]]; then
+  _pass "No new oversize files"
+else
+  _fail "Files exceed 500 LOC hard ceiling"
+  echo -e "$violations" | sed 's/^/    /'
+fi
+if [[ -n "$warnings" ]]; then
+  echo -e "  ${YELLOW}WARN${RESET}  Files over 400 LOC target (split before adding more):"
+  echo -e "$warnings" | sed 's/^/    /'
+fi
+
+echo ""
+
 # ── Schema-diff guard ──────────────────────────────────────────────────────────
 if command -v supabase >/dev/null 2>&1; then
   if docker info >/dev/null 2>&1; then

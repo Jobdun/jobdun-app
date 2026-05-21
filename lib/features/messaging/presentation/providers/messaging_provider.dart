@@ -3,21 +3,47 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/message_remote_datasource.dart';
 import '../../data/repositories/message_repository_impl.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/repositories/message_repository.dart';
+import '../../domain/usecases/get_conversations.dart';
+import '../../domain/usecases/get_messages.dart';
+import '../../domain/usecases/send_message.dart';
+import '../../domain/usecases/watch_messages.dart';
 
-final _messageDatasourceProvider = Provider<MessageRemoteDataSource>(
+// ── Data layer providers (public so tests can override) ───────────────────────
+final messageDatasourceProvider = Provider<MessageRemoteDataSource>(
   (ref) => MessageRemoteDataSourceImpl(SupabaseConfig.client),
 );
 
-final _messageRepositoryProvider = Provider<MessageRepository>(
-  (ref) => MessageRepositoryImpl(ref.read(_messageDatasourceProvider)),
+final messageRepositoryProvider = Provider<MessageRepository>(
+  (ref) => MessageRepositoryImpl(ref.read(messageDatasourceProvider)),
 );
 
+// ── Use cases ─────────────────────────────────────────────────────────────────
+// archive / markConversationRead don't have use cases yet — they hit the repo
+// directly until one is added. See CLAUDE.md → Engineering Standards.
+final getConversationsUseCaseProvider = Provider(
+  (ref) => GetConversations(ref.read(messageRepositoryProvider)),
+);
+
+final getMessagesUseCaseProvider = Provider(
+  (ref) => GetMessages(ref.read(messageRepositoryProvider)),
+);
+
+final sendMessageUseCaseProvider = Provider(
+  (ref) => SendMessage(ref.read(messageRepositoryProvider)),
+);
+
+final watchMessagesUseCaseProvider = Provider(
+  (ref) => WatchMessages(ref.read(messageRepositoryProvider)),
+);
+
+// ── Controller ────────────────────────────────────────────────────────────────
 final messagingControllerProvider =
     NotifierProvider<MessagingController, MessagingState>(
       MessagingController.new,
@@ -30,17 +56,17 @@ class MessagingController extends Notifier<MessagingState> {
 
   @override
   MessagingState build() {
-    _repo = ref.read(_messageRepositoryProvider);
+    _repo = ref.read(messageRepositoryProvider);
     ref.onDispose(_cancelAllSubscriptions);
     return const MessagingState();
   }
 
   Future<void> loadConversations() async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
-    final result = await _repo.getConversations(userId);
+    final result = await ref.read(getConversationsUseCaseProvider).call(userId);
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (convs) {
@@ -65,7 +91,9 @@ class MessagingController extends Notifier<MessagingState> {
   }
 
   Future<void> loadMessages(String conversationId) async {
-    final result = await _repo.getMessages(conversationId);
+    final result = await ref
+        .read(getMessagesUseCaseProvider)
+        .call(conversationId);
     result.fold((f) => state = state.copyWith(error: f.message), (msgs) {
       final updated = Map<String, List<Message>>.from(state.messagesByConvId)
         ..[conversationId] = msgs;
@@ -76,9 +104,8 @@ class MessagingController extends Notifier<MessagingState> {
 
   void _subscribeToMessages(String conversationId) {
     if (_messageSubs.containsKey(conversationId)) return;
-    _messageSubs[conversationId] = _repo.watchMessages(conversationId).listen((
-      msgs,
-    ) {
+    final stream = ref.read(watchMessagesUseCaseProvider).call(conversationId);
+    _messageSubs[conversationId] = stream.listen((msgs) {
       final updated = Map<String, List<Message>>.from(state.messagesByConvId)
         ..[conversationId] = msgs;
       state = state.copyWith(messagesByConvId: updated);
@@ -93,18 +120,16 @@ class MessagingController extends Notifier<MessagingState> {
     required String conversationId,
     required String body,
   }) async {
-    final senderId = SupabaseConfig.client.auth.currentUser?.id;
+    final senderId = readCurrentUserId(ref);
     if (senderId == null) return;
-    final result = await _repo.sendMessage(
-      conversationId: conversationId,
-      senderId: senderId,
-      body: body,
-    );
+    final result = await ref
+        .read(sendMessageUseCaseProvider)
+        .call(conversationId: conversationId, senderId: senderId, body: body);
     result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 
   Future<void> markConversationRead(String conversationId) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     await _repo.markConversationRead(

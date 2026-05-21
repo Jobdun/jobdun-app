@@ -8,9 +8,9 @@ Jobdun is a mobile-first job matching and workforce platform for the constructio
 
 - **Framework**: Flutter (Dart `^3.11.5`) — Android and iOS primary targets
 - **Backend**: Supabase (Auth, PostgreSQL, Storage, Realtime, RLS, Edge Functions)
-- **State management**: Riverpod (preferred) or Bloc
+- **State management**: Riverpod 3 (`flutter_riverpod`) **only** — no Bloc, no `provider` package, no GetIt
 - **Navigation**: GoRouter
-- **Architecture**: Feature-first Clean Architecture
+- **Architecture**: Feature-first Clean Architecture (see *Engineering Standards (STRICT)* below — non-negotiable)
 
 ## Design System
 
@@ -109,6 +109,49 @@ Each feature folder contains:
 - `presentation/` — Pages, widgets, Riverpod providers/Blocs
 
 **Key rule**: The domain layer must not depend on Flutter, Supabase, or any external package. Only the data layer talks to Supabase.
+
+### Engineering Standards (STRICT)
+
+> Enforced by `analysis_options.yaml` (dart_code_linter) **and** `scripts/validate.sh` (file-size budget). Re-read at every Claude session start — these rules override the more permissive language elsewhere in this file.
+
+**File-size budget**
+- **Target ≤ 400 LOC** per `.dart` file (excluding `*.g.dart` / `*.freezed.dart` / `test/**`).
+- **Hard ceiling: 500 LOC.** New files exceeding 500 LOC fail `scripts/validate.sh` and CI.
+- Files currently above the ceiling are listed in `scripts/validate.sh → OVERSIZE_ALLOWLIST` (grandfathered debt). When you touch one of those files, split it before adding more lines — don't grow the allowlist.
+- Splitting recipe: page → widgets (`<page>_widgets/`); controller → sub-controllers per bounded sub-domain; state class → its own file in `presentation/state/`.
+
+**No god classes / god controllers**
+- Max **10 public methods** per class. If a controller covers multiple bounded sub-domains (e.g. session + Google SSO + Apple SSO + phone OTP + register draft), split it into one notifier per sub-domain.
+- Max **4 named parameters** per public method. Wrap larger inputs in a typed payload (`record` or class).
+- **Cyclomatic complexity ≤ 10** per method.
+- **Maximum nesting level: 3**.
+
+**Riverpod provider rules**
+- One state library only: `flutter_riverpod ^3.x`. No Bloc / no `provider` package / no GetIt.
+- All controllers extend `Notifier<T>` or `AsyncNotifier<T>` — never legacy `StateNotifier`, never `ChangeNotifier`. The only allowed `ChangeNotifier` is the one GoRouter requires as `refreshListenable` (see `app/router/app_router.dart`).
+- **Repo / data-source providers MUST be top-level public** (no leading `_`) so tests can override them via `ProviderScope(overrides: [...])`. Existing private `_xxxRepositoryProvider` declarations are debt — make them public when touched.
+- **No direct Supabase from controllers.** A `Notifier` MUST NOT call `SupabaseConfig.client.from(...)` / `Supabase.instance.client...` for reads or writes. Route through the repo. `SupabaseConfig.client.auth.currentUser?.id` is allowed only via a shared `currentUserIdProvider` (add one if missing).
+- **Initial-load triggers belong inside `Notifier.build()`** (`Future.microtask(_load)` is the canonical pattern — see `ftue_gate_provider.dart`). New pages MUST NOT add `addPostFrameCallback` solely to call `ref.read(...).loadXxx()` on mount.
+- Per-action error/loading: prefer `AsyncValue<T>` returned per action over a single `String? error` + global `bool isLoading` on the state.
+- **`.select()` at hot read sites.** Any `Notifier` whose state has > 6 fields requires `ref.watch(provider.select(...))` at every read site outside the owning feature folder.
+
+**Layer rules (Clean Architecture)**
+- `presentation/` MUST NOT import `data/` of the same feature directly — it imports `domain/` (entities, repo contracts, use cases). The provider file is the only seam that wires `data/` impls into a `Provider<Repository>`.
+- `domain/` MUST NOT import `package:flutter/*`, `package:supabase_flutter/*`, or `core/config/*`.
+- If `domain/usecases/<name>.dart` exists, the controller MUST call it — no skipping straight to the repo. **Half-built layers are deleted, not left as documentation.**
+
+**Widget rules**
+- One widget per file (`prefer-single-widget-per-file`). Private helper widgets (`class _FooBar extends StatelessWidget`) are allowed *only* if they have a single caller in the same file.
+- No methods that return `Widget` (`avoid-returning-widgets`). Extract a private widget class instead.
+- No empty blocks (`no-empty-block`).
+
+**Verification**
+```bash
+bash scripts/validate.sh         # includes file-size budget + design checks + analyze + test
+flutter analyze --no-fatal-infos # surfaces dart_code_linter INFOs (file-size, methods, complexity)
+```
+
+If a rule blocks legitimate work, propose the exception in the PR description before merging — do not silently disable the linter or grow the allowlist.
 
 ### Supabase config
 

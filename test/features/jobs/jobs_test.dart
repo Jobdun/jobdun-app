@@ -59,7 +59,7 @@ void main() {
     test('returns list of jobs', () async {
       final jobs = [_job(id: 'job-1'), _job(id: 'job-2')];
       when(
-        () => mockJobRepo.getJobs(filter: null),
+        () => mockJobRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => Right(jobs));
 
       final result = await getJobs();
@@ -72,7 +72,7 @@ void main() {
 
     test('returns empty list when no jobs', () async {
       when(
-        () => mockJobRepo.getJobs(filter: null),
+        () => mockJobRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => const Right([]));
 
       final result = await getJobs();
@@ -85,7 +85,7 @@ void main() {
 
     test('returns ServerFailure on database error', () async {
       when(
-        () => mockJobRepo.getJobs(filter: null),
+        () => mockJobRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => const Left(ServerFailure('DB error')));
 
       final result = await getJobs();

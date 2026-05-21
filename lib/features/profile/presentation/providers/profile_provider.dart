@@ -4,22 +4,47 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/domain/entities/user_role.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
+import '../../data/models/builder_profile_model.dart';
+import '../../data/models/trade_profile_model.dart';
+import '../../data/models/user_profile_model.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../../domain/usecases/get_profile.dart';
+import '../../domain/usecases/update_profile.dart';
+import '../../domain/usecases/upload_avatar.dart';
 
-final _profileDatasourceProvider = Provider<ProfileRemoteDataSource>(
+// ── Data layer providers (public so tests can override) ───────────────────────
+final profileDatasourceProvider = Provider<ProfileRemoteDataSource>(
   (ref) => ProfileRemoteDataSourceImpl(SupabaseConfig.client),
 );
 
-final _profileRepositoryProvider = Provider<ProfileRepository>(
-  (ref) => ProfileRepositoryImpl(ref.read(_profileDatasourceProvider)),
+final profileRepositoryProvider = Provider<ProfileRepository>(
+  (ref) => ProfileRepositoryImpl(ref.read(profileDatasourceProvider)),
 );
 
+// ── Use cases ─────────────────────────────────────────────────────────────────
+// Only wraps the use cases that exist in domain/usecases/. Methods without a
+// matching use case (upsert builder/trade, avatar remove, portfolio, licence)
+// call the repository directly — see CLAUDE.md → Engineering Standards.
+final getProfileUseCaseProvider = Provider(
+  (ref) => GetProfile(ref.read(profileRepositoryProvider)),
+);
+
+final updateProfileUseCaseProvider = Provider(
+  (ref) => UpdateProfile(ref.read(profileRepositoryProvider)),
+);
+
+final uploadAvatarUseCaseProvider = Provider(
+  (ref) => UploadAvatar(ref.read(profileRepositoryProvider)),
+);
+
+// ── Controller ────────────────────────────────────────────────────────────────
 final profileControllerProvider =
     NotifierProvider<ProfileController, ProfileState>(ProfileController.new);
 
@@ -28,17 +53,19 @@ class ProfileController extends Notifier<ProfileState> {
 
   @override
   ProfileState build() {
-    _repo = ref.read(_profileRepositoryProvider);
+    _repo = ref.read(profileRepositoryProvider);
     return const ProfileState();
   }
 
   Future<void> loadProfile() async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
 
-    final profileResult = await _repo.getProfile(userId);
+    final profileResult = await ref
+        .read(getProfileUseCaseProvider)
+        .call(userId);
     profileResult.fold((f) {
       state = state.copyWith(isLoading: false, error: f.message);
       return;
@@ -61,10 +88,9 @@ class ProfileController extends Notifier<ProfileState> {
     state = state.copyWith(isLoading: false);
   }
 
-  // Partial upsert from /profile/edit form values. Only writes columns this
-  // form actually exposes — keeps the touchpoint small so we don't accidentally
-  // clobber fields managed elsewhere (counters, ratings, verification state).
-  // Returns true on success so the page can route back / show a snackbar.
+  // Partial upsert from /profile/edit form values. Routes through the repo
+  // upsert methods (not direct Supabase) so the data-layer contract stays the
+  // single source of truth — see audit fix in docs/STATE_MANAGEMENT_AUDIT.md.
   Future<bool> saveProfile({
     required UserRole role,
     required String displayName,
@@ -88,7 +114,7 @@ class ProfileController extends Notifier<ProfileState> {
     double? hourlyRateMax,
     bool? hourlyRateVisible,
   }) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
 
     state = state.copyWith(isLoading: true, error: null);
@@ -97,43 +123,61 @@ class ProfileController extends Notifier<ProfileState> {
         (s == null || s.trim().isEmpty) ? null : s.trim();
 
     try {
-      // profiles row — always.
-      await SupabaseConfig.client
-          .from('profiles')
-          .update({'display_name': displayName.trim()})
-          .eq('id', userId);
+      // Update display_name on the shared profile row first. Construct a
+      // UserProfileModel directly (no entity-level copyWith yet) so the
+      // data-source cast in updateProfile() lands on the right type.
+      final existingProfile = state.profile;
+      if (existingProfile != null) {
+        final updated = UserProfileModel(
+          id: existingProfile.id,
+          displayName: displayName.trim(),
+          email: existingProfile.email,
+          phone: existingProfile.phone,
+          phoneVerifiedAt: existingProfile.phoneVerifiedAt,
+          avatarUrl: existingProfile.avatarUrl,
+          createdAt: existingProfile.createdAt,
+          updatedAt: existingProfile.updatedAt,
+        );
+        final r = await ref.read(updateProfileUseCaseProvider).call(updated);
+        r.fold((f) => throw Exception(f.message), (_) {});
+      }
 
       if (role == UserRole.builder) {
-        await SupabaseConfig.client.from('builder_profiles').upsert({
-          'id': userId,
-          if (companyName != null) 'company_name': companyName.trim(),
-          'abn': nullIfBlank(abn),
-          'contact_name': nullIfBlank(contactName),
-          'service_suburb': nullIfBlank(suburb),
-          'service_state': nullIfBlank(auState),
-          'service_postcode': nullIfBlank(postcode),
-          'contact_phone': nullIfBlank(contactPhone),
-          'about': nullIfBlank(about),
-          'website': nullIfBlank(website),
-          'years_in_business': yearsInBusiness,
-        }, onConflict: 'id');
+        final existing = state.builderProfile;
+        final upserted = BuilderProfileModel(
+          id: userId,
+          companyName: companyName?.trim() ?? existing?.companyName ?? '',
+          abn: nullIfBlank(abn),
+          contactName: nullIfBlank(contactName),
+          contactPhone: nullIfBlank(contactPhone),
+          about: nullIfBlank(about),
+          website: nullIfBlank(website),
+          yearsInBusiness: yearsInBusiness,
+          serviceSuburb: nullIfBlank(suburb),
+          serviceState: nullIfBlank(auState),
+          servicePostcode: nullIfBlank(postcode),
+        );
+        final r = await _repo.upsertBuilderProfile(upserted);
+        r.fold((f) => throw Exception(f.message), (_) {});
       } else if (role == UserRole.trade) {
-        await SupabaseConfig.client.from('trade_profiles').upsert({
-          'id': userId,
-          if (fullName != null) 'full_name': fullName.trim(),
-          'primary_trade': ?primaryTrade,
-          'trade_other': primaryTrade == 'other'
-              ? nullIfBlank(tradeOther)
-              : null,
-          'base_suburb': nullIfBlank(suburb),
-          'base_state': nullIfBlank(auState),
-          'base_postcode': nullIfBlank(postcode),
-          'about': nullIfBlank(about),
-          'years_experience': yearsExperience,
-          'hourly_rate_min': hourlyRateMin,
-          'hourly_rate_max': hourlyRateMax,
-          'hourly_rate_visible': ?hourlyRateVisible,
-        }, onConflict: 'id');
+        final existing = state.tradeProfile;
+        final upserted = TradeProfileModel(
+          id: userId,
+          fullName: fullName?.trim() ?? existing?.fullName ?? '',
+          primaryTrade: primaryTrade ?? existing?.primaryTrade ?? '',
+          tradeOther: primaryTrade == 'other' ? nullIfBlank(tradeOther) : null,
+          baseSuburb: nullIfBlank(suburb),
+          baseState: nullIfBlank(auState),
+          basePostcode: nullIfBlank(postcode),
+          about: nullIfBlank(about),
+          yearsExperience: yearsExperience,
+          hourlyRateMin: hourlyRateMin,
+          hourlyRateMax: hourlyRateMax,
+          hourlyRateVisible:
+              hourlyRateVisible ?? existing?.hourlyRateVisible ?? true,
+        );
+        final r = await _repo.upsertTradeProfile(upserted);
+        r.fold((f) => throw Exception(f.message), (_) {});
       }
 
       // Reload so home + profile screens get fresh values.
@@ -151,19 +195,19 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<bool> uploadAvatar(File file) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
 
     state = state.copyWith(isUploadingAvatar: true, error: null);
-    final result = await _repo.uploadAvatar(userId, file);
+    final result = await ref
+        .read(uploadAvatarUseCaseProvider)
+        .call(userId, file);
     return result.fold(
       (f) {
         state = state.copyWith(isUploadingAvatar: false, error: f.message);
         return false;
       },
       (_) async {
-        // Re-read DB-truth so /home, /profile, and /profile/edit all pick up
-        // the new avatar without a manual entity merge.
         await loadProfile();
         state = state.copyWith(isUploadingAvatar: false);
         return true;
@@ -172,7 +216,7 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<bool> removeAvatar() async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
 
     state = state.copyWith(isUploadingAvatar: true, error: null);
@@ -190,11 +234,8 @@ class ProfileController extends Notifier<ProfileState> {
     );
   }
 
-  // Returns true on success so the UI can pop / snack. Reloads the trade
-  // profile after upload so /profile/edit picks up licence_url without a
-  // round-trip ping-pong.
   Future<bool> uploadTradeLicence(File file) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
     state = state.copyWith(isUploadingLicence: true, error: null);
     final result = await _repo.uploadTradeLicence(userId, file);
@@ -212,7 +253,7 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<bool> addPortfolioImage(File file) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
     state = state.copyWith(isUploadingPortfolio: true, error: null);
     final result = await _repo.addPortfolioImage(userId, file);
@@ -230,7 +271,7 @@ class ProfileController extends Notifier<ProfileState> {
   }
 
   Future<bool> removePortfolioImage(String publicUrl) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return false;
     state = state.copyWith(isUploadingPortfolio: true, error: null);
     final result = await _repo.removePortfolioImage(userId, publicUrl);
@@ -288,9 +329,6 @@ class ProfileState {
   //   builder → company_name · abn · service_suburb · phone_verified  (×25)
   //   trade   → primary_trade · licence_url · base_suburb ·
   //             phone_verified · portfolio (≥1 image)                (×20)
-  //
-  // Anything not in this list (about, years_experience, contact_phone, etc.)
-  // is "nice to have" and intentionally not counted.
   int get profileCompletenessPct {
     if (profile == null) return 0;
     final phoneVerified = profile!.isPhoneVerified;
@@ -316,7 +354,6 @@ class ProfileState {
       return done * 20;
     }
 
-    // Authenticated but no role-specific profile yet (role sheet pending).
     return 0;
   }
 

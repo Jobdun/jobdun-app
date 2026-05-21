@@ -16,6 +16,7 @@ class TradeProfile extends Equatable {
     this.baseState,
     this.basePostcode,
     this.about,
+    this.tradeOther,
     this.licenceUrl,
     this.portfolioUrls = const [],
     this.isVerified = false,
@@ -40,6 +41,9 @@ class TradeProfile extends Equatable {
   final String? baseState;
   final String? basePostcode;
   final String? about;
+  // Free-text trade name when primaryTrade == 'other'. Mirrors
+  // trade_profiles.trade_other; null whenever primaryTrade is a known value.
+  final String? tradeOther;
   // Trade-licence storage path (private-docs bucket). Drives the
   // licence_uploaded slot in profile_completeness — null/empty = no licence.
   final String? licenceUrl;

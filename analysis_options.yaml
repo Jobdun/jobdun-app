@@ -26,3 +26,43 @@ linter:
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+# ── dart_code_linter ──────────────────────────────────────────────────────────
+# Enforces the rules documented in CLAUDE.md → "Engineering Standards (STRICT)":
+# file-size budget, no god classes, no deep nesting, widget-structure hygiene.
+#
+# Metrics surface as INFO by default, so `flutter analyze --no-fatal-infos`
+# (what CI runs) will not break — but they DO show up in IDEs and in plain
+# `flutter analyze`. The hard 500-LOC ceiling is also enforced as a real FAIL
+# by scripts/validate.sh, so the rule bites regardless of whether this plugin
+# is installed.
+#
+# To activate locally:
+#   flutter pub add --dev dart_code_linter
+#   flutter pub get
+# Then uncomment the block below. (Left commented by default so a fresh
+# `flutter pub get` does not error before the dev-dep is installed.)
+#
+# analyzer:
+#   plugins:
+#     - dart_code_linter
+#   exclude:
+#     - "**/*.g.dart"
+#     - "**/*.freezed.dart"
+#     - "lib/generated/**"
+#
+# dart_code_linter:
+#   metrics:
+#     source-lines-of-code: 500          # per file — hard ceiling (target 400)
+#     number-of-methods: 10              # per class — split god controllers
+#     maximum-nesting-level: 3
+#     cyclomatic-complexity: 10
+#     number-of-parameters: 4
+#   metrics-exclude:
+#     - test/**
+#     - lib/**/*.g.dart
+#     - lib/**/*.freezed.dart
+#   rules:
+#     - prefer-single-widget-per-file
+#     - avoid-returning-widgets
+#     - no-empty-block

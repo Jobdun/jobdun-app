@@ -40,7 +40,7 @@ void main() {
     test('returns list of jobs with no filter', () async {
       final jobs = [_makeJob(id: 'job-1'), _makeJob(id: 'job-2')];
       when(
-        () => mockRepo.getJobs(filter: null),
+        () => mockRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => Right(jobs));
 
       final result = await getJobs();
@@ -50,14 +50,16 @@ void main() {
         (_) => fail('Expected jobs'),
         (list) => expect(list.length, 2),
       );
-      verify(() => mockRepo.getJobs(filter: null)).called(1);
+      verify(
+        () => mockRepo.getJobs(filter: null, limit: null, offset: null),
+      ).called(1);
     });
 
     test('returns filtered jobs when tradeType is provided', () async {
       final filter = const JobFilter(tradeType: 'Plumber');
       final jobs = [_makeJob(id: 'job-3', trade: 'Plumber')];
       when(
-        () => mockRepo.getJobs(filter: filter),
+        () => mockRepo.getJobs(filter: filter, limit: null, offset: null),
       ).thenAnswer((_) async => Right(jobs));
 
       final result = await getJobs(filter: filter);
@@ -70,7 +72,7 @@ void main() {
 
     test('returns empty list when no matching jobs', () async {
       when(
-        () => mockRepo.getJobs(filter: null),
+        () => mockRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => const Right([]));
 
       final result = await getJobs();
@@ -84,7 +86,7 @@ void main() {
     test('returns ServerFailure on database error', () async {
       const failure = ServerFailure('Query failed');
       when(
-        () => mockRepo.getJobs(filter: null),
+        () => mockRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => const Left(failure));
 
       final result = await getJobs();
@@ -98,7 +100,7 @@ void main() {
     test('returns NetworkFailure when offline', () async {
       const failure = NetworkFailure();
       when(
-        () => mockRepo.getJobs(filter: null),
+        () => mockRepo.getJobs(filter: null, limit: null, offset: null),
       ).thenAnswer((_) async => const Left(failure));
 
       final result = await getJobs();

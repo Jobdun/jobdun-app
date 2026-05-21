@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/job_interactions_datasource.dart';
 import '../../data/datasources/job_remote_datasource.dart';
 import '../../data/repositories/job_interactions_repository_impl.dart';
@@ -12,25 +13,55 @@ import '../../domain/entities/job.dart';
 import '../../domain/entities/job_filter.dart';
 import '../../domain/repositories/job_interactions_repository.dart';
 import '../../domain/repositories/job_repository.dart';
+import '../../domain/usecases/create_job.dart';
+import '../../domain/usecases/delete_job.dart';
+import '../../domain/usecases/get_job_by_id.dart';
+import '../../domain/usecases/get_jobs.dart';
+import '../../domain/usecases/update_job.dart';
 
-final _jobDatasourceProvider = Provider<JobRemoteDataSource>(
+// ── Data layer providers (public so tests can override) ───────────────────────
+final jobDatasourceProvider = Provider<JobRemoteDataSource>(
   (ref) => JobRemoteDataSourceImpl(SupabaseConfig.client),
 );
 
-final _jobRepositoryProvider = Provider<JobRepository>(
-  (ref) => JobRepositoryImpl(ref.read(_jobDatasourceProvider)),
+final jobRepositoryProvider = Provider<JobRepository>(
+  (ref) => JobRepositoryImpl(ref.read(jobDatasourceProvider)),
 );
 
-final _jobInteractionsDatasourceProvider = Provider<JobInteractionsDataSource>(
+final jobInteractionsDatasourceProvider = Provider<JobInteractionsDataSource>(
   (ref) => JobInteractionsDataSourceImpl(SupabaseConfig.client),
 );
 
-final _jobInteractionsRepositoryProvider = Provider<JobInteractionsRepository>(
+final jobInteractionsRepositoryProvider = Provider<JobInteractionsRepository>(
   (ref) => JobInteractionsRepositoryImpl(
-    ref.read(_jobInteractionsDatasourceProvider),
+    ref.read(jobInteractionsDatasourceProvider),
   ),
 );
 
+// ── Use cases ─────────────────────────────────────────────────────────────────
+// No use case exists for job-interactions (save/hide) — those go through the
+// repo directly until a use case is added. See CLAUDE.md → Engineering Standards.
+final getJobsUseCaseProvider = Provider(
+  (ref) => GetJobs(ref.read(jobRepositoryProvider)),
+);
+
+final getJobByIdUseCaseProvider = Provider(
+  (ref) => GetJobById(ref.read(jobRepositoryProvider)),
+);
+
+final createJobUseCaseProvider = Provider(
+  (ref) => CreateJob(ref.read(jobRepositoryProvider)),
+);
+
+final updateJobUseCaseProvider = Provider(
+  (ref) => UpdateJob(ref.read(jobRepositoryProvider)),
+);
+
+final deleteJobUseCaseProvider = Provider(
+  (ref) => DeleteJob(ref.read(jobRepositoryProvider)),
+);
+
+// ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
   JobsController.new,
 );
@@ -48,24 +79,14 @@ final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
 /// - [state.savedJobs] — the user's **saved** list, fetched in one shot
 ///   when the SAVED filter is selected. Doesn't paginate (a typical
 ///   bookmark list is bounded).
-///
-/// Filter / search / save / hide mutations update state then call
-/// `pagingController.refresh()` so all three views snap to the new query.
 class JobsController extends Notifier<JobsState> {
   late JobRepository _repo;
   late JobInteractionsRepository _interactions;
   StreamSubscription<List<Job>>? _builderJobsSub;
   PagingController<int, Job>? _pagingController;
 
-  /// Page size for `PagedListView` requests. Twenty rows hit roughly two
-  /// viewport heights of `JobCard`s on a phone, which keeps the scroll
-  /// feeling responsive without bursting through the user's first
-  /// pagination boundary on initial load.
   static const _pageSize = 20;
 
-  /// Lazy `PagingController`. Held lazily so the home screen — which never
-  /// renders a `PagedListView` — doesn't pay the listener registration
-  /// cost. `jobs_page` triggers init by reading this getter once on build.
   PagingController<int, Job> get pagingController {
     final existing = _pagingController;
     if (existing != null) return existing;
@@ -77,8 +98,8 @@ class JobsController extends Notifier<JobsState> {
 
   @override
   JobsState build() {
-    _repo = ref.read(_jobRepositoryProvider);
-    _interactions = ref.read(_jobInteractionsRepositoryProvider);
+    _repo = ref.read(jobRepositoryProvider);
+    _interactions = ref.read(jobInteractionsRepositoryProvider);
     ref.onDispose(() {
       _builderJobsSub?.cancel();
       _pagingController?.dispose();
@@ -86,10 +107,8 @@ class JobsController extends Notifier<JobsState> {
     return const JobsState();
   }
 
-  /// Pull saved + hidden IDs from the server. Cheap (IDs only, no joins)
-  /// and idempotent; call once at /jobs mount.
   Future<void> loadInteractionIds() async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final savedResult = await _interactions.getSavedJobIds(userId);
     final hiddenResult = await _interactions.getHiddenJobIds(userId);
@@ -100,23 +119,18 @@ class JobsController extends Notifier<JobsState> {
   }
 
   Future<void> _fetchPage(int pageKey) async {
-    final result = await _repo.getJobs(
-      filter: state.filter,
-      limit: _pageSize,
-      offset: pageKey * _pageSize,
-    );
+    final result = await ref
+        .read(getJobsUseCaseProvider)
+        .call(
+          filter: state.filter,
+          limit: _pageSize,
+          offset: pageKey * _pageSize,
+        );
     result.fold((f) => _pagingController?.error = f.message, (jobs) {
-      // Filter out the rows the user has hidden. Done client-side so the
-      // SQL stays simple at the cost of occasional short pages — fine
-      // until a user accumulates dozens of hidden jobs, at which point we
-      // move the filter to .not('id', 'in', ...) at the data source.
       final visible = state.hiddenJobIds.isEmpty
           ? jobs
           : jobs.where((j) => !state.hiddenJobIds.contains(j.id)).toList();
 
-      // Mirror the first page into `state.jobs` so the home mini-feed and
-      // map markers stay current without subscribing to the paging
-      // controller themselves.
       if (pageKey == 0) {
         state = state.copyWith(isLoading: false, jobs: visible);
       }
@@ -129,10 +143,6 @@ class JobsController extends Notifier<JobsState> {
     });
   }
 
-  /// First-page fetch entry point. Routes through `pagingController` when
-  /// it's been observed (i.e., the jobs page is mounted) so both views
-  /// stay in sync. Falls back to a one-shot fetch when not — keeps the
-  /// home mini-feed working on cold start before the user visits `/jobs`.
   Future<void> loadFeed() async {
     final paging = _pagingController;
     if (paging != null) {
@@ -140,7 +150,9 @@ class JobsController extends Notifier<JobsState> {
       return;
     }
     state = state.copyWith(isLoading: true, error: null);
-    final result = await _repo.getJobs(filter: state.filter, limit: _pageSize);
+    final result = await ref
+        .read(getJobsUseCaseProvider)
+        .call(filter: state.filter, limit: _pageSize);
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (jobs) {
@@ -185,10 +197,8 @@ class JobsController extends Notifier<JobsState> {
     loadFeed();
   }
 
-  /// Load the user's saved jobs in one shot. Stored on state so the SAVED
-  /// filter view in `jobs_page` can render them without re-fetching.
   Future<void> loadSavedJobs() async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
     state = state.copyWith(isLoadingSaved: true);
     final result = await _interactions.getSavedJobs(userId);
@@ -201,7 +211,7 @@ class JobsController extends Notifier<JobsState> {
   /// Toggle save. Optimistic — the swipe action confirms instantly even if
   /// the network round-trip is in flight.
   Future<void> toggleSaveJob(String jobId) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final isSaved = state.savedJobIds.contains(jobId);
     final next = Set<String>.from(state.savedJobIds);
@@ -229,12 +239,10 @@ class JobsController extends Notifier<JobsState> {
   /// Hide a job from the active user's feed. Optimistically drops it from
   /// the in-memory paged list so the swipe feels instant.
   Future<void> hideJob(String jobId) async {
-    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final next = Set<String>.from(state.hiddenJobIds)..add(jobId);
     state = state.copyWith(hiddenJobIds: next);
-    // Drop the row from the in-memory paged list so the user sees the
-    // immediate effect — same pattern as the archive-conversation swipe.
     final paging = _pagingController;
     if (paging != null) {
       final current = paging.itemList ?? const <Job>[];

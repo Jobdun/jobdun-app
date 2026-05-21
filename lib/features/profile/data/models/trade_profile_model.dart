@@ -15,6 +15,7 @@ class TradeProfileModel extends TradeProfile {
     super.baseState,
     super.basePostcode,
     super.about,
+    super.tradeOther,
     super.licenceUrl,
     super.portfolioUrls,
     super.isVerified,
@@ -41,6 +42,7 @@ class TradeProfileModel extends TradeProfile {
         baseState: json['base_state'] as String?,
         basePostcode: json['base_postcode'] as String?,
         about: json['about'] as String?,
+        tradeOther: json['trade_other'] as String?,
         licenceUrl: json['licence_url'] as String?,
         portfolioUrls:
             (json['portfolio_urls'] as List?)?.cast<String>() ?? const [],
@@ -69,5 +71,6 @@ class TradeProfileModel extends TradeProfile {
     'base_state': baseState,
     'base_postcode': basePostcode,
     'about': about,
+    'trade_other': tradeOther,
   };
 }
