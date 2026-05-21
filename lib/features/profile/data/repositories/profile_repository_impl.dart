@@ -88,6 +88,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Either<Failure, void>> removeAvatar(String userId) async {
+    try {
+      await _datasource.removeAvatar(userId);
+      return right(null);
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> uploadTradeLicence(
     String userId,
     File file,

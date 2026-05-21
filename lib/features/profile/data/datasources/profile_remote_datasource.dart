@@ -16,6 +16,7 @@ abstract interface class ProfileRemoteDataSource {
   Future<void> upsertBuilderProfile(BuilderProfileModel profile);
   Future<void> upsertTradeProfile(TradeProfileModel profile);
   Future<String> uploadAvatar(String userId, File file);
+  Future<void> removeAvatar(String userId);
   Future<String> uploadTradeLicence(String userId, File file);
   Future<String> addPortfolioImage(String userId, File file);
   Future<void> removePortfolioImage(String userId, String publicUrl);
@@ -121,7 +122,32 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
               upsert: true,
             ),
           );
-      return _client.storage.from(_bucket).getPublicUrl(path);
+      // Cache-bust the same path-on-upsert by stamping the public URL. Without
+      // a query suffix CachedNetworkImage holds the old bytes after a re-upload.
+      final publicUrl = _client.storage.from(_bucket).getPublicUrl(path);
+      final stampedUrl =
+          '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+      // Persist on profiles so /profile + /home avatar surfaces survive reload.
+      await _client
+          .from('profiles')
+          .update({'avatar_url': stampedUrl})
+          .eq('id', userId);
+      return stampedUrl;
+    } catch (e) {
+      throw StorageException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> removeAvatar(String userId) async {
+    try {
+      // Null the column first so the UI updates even if storage cleanup fails
+      // (orphan files are cheap; broken avatars on profile aren't).
+      await _client
+          .from('profiles')
+          .update({'avatar_url': null})
+          .eq('id', userId);
+      await _client.storage.from(_bucket).remove(['$userId/avatar.jpg']);
     } catch (e) {
       throw StorageException(e.toString());
     }

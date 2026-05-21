@@ -16,6 +16,9 @@ abstract interface class ProfileRepository {
   Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile);
   Future<Either<Failure, String>> uploadAvatar(String userId, File file);
 
+  // Clears profiles.avatar_url and deletes the avatar object from public-media.
+  Future<Either<Failure, void>> removeAvatar(String userId);
+
   // Uploads a trade-licence file (image/PDF) to the private-docs bucket,
   // writes a verification_documents row with status 'pending', and stamps
   // trade_profiles.licence_url. Returns the storage path.

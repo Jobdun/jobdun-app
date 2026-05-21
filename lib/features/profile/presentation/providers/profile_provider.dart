@@ -70,15 +70,23 @@ class ProfileController extends Notifier<ProfileState> {
     required String displayName,
     required String suburb,
     required String? auState,
+    required String? postcode,
     required String? about,
     // Builder-only
     String? companyName,
     String? abn,
+    String? contactName,
     String? contactPhone,
+    int? yearsInBusiness,
+    String? website,
     // Trade-only
     String? fullName,
     String? primaryTrade,
     String? tradeOther,
+    int? yearsExperience,
+    double? hourlyRateMin,
+    double? hourlyRateMax,
+    bool? hourlyRateVisible,
   }) async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return false;
@@ -100,10 +108,14 @@ class ProfileController extends Notifier<ProfileState> {
           'id': userId,
           if (companyName != null) 'company_name': companyName.trim(),
           'abn': nullIfBlank(abn),
+          'contact_name': nullIfBlank(contactName),
           'service_suburb': nullIfBlank(suburb),
           'service_state': nullIfBlank(auState),
+          'service_postcode': nullIfBlank(postcode),
           'contact_phone': nullIfBlank(contactPhone),
           'about': nullIfBlank(about),
+          'website': nullIfBlank(website),
+          'years_in_business': yearsInBusiness,
         }, onConflict: 'id');
       } else if (role == UserRole.trade) {
         await SupabaseConfig.client.from('trade_profiles').upsert({
@@ -115,7 +127,12 @@ class ProfileController extends Notifier<ProfileState> {
               : null,
           'base_suburb': nullIfBlank(suburb),
           'base_state': nullIfBlank(auState),
+          'base_postcode': nullIfBlank(postcode),
           'about': nullIfBlank(about),
+          'years_experience': yearsExperience,
+          'hourly_rate_min': hourlyRateMin,
+          'hourly_rate_max': hourlyRateMax,
+          'hourly_rate_visible': ?hourlyRateVisible,
         }, onConflict: 'id');
       }
 
@@ -133,33 +150,42 @@ class ProfileController extends Notifier<ProfileState> {
     }
   }
 
-  Future<void> uploadAvatar(File file) async {
+  Future<bool> uploadAvatar(File file) async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) return false;
 
     state = state.copyWith(isUploadingAvatar: true, error: null);
     final result = await _repo.uploadAvatar(userId, file);
-    result.fold(
-      (f) => state = state.copyWith(isUploadingAvatar: false, error: f.message),
-      (url) {
-        final current = state.profile;
-        if (current != null) {
-          final updated = UserProfile(
-            id: current.id,
-            displayName: current.displayName,
-            email: current.email,
-            phone: current.phone,
-            phoneVerifiedAt: current.phoneVerifiedAt,
-            avatarUrl: url,
-            bio: current.bio,
-            onboardingCompletedAt: current.onboardingCompletedAt,
-            createdAt: current.createdAt,
-            updatedAt: current.updatedAt,
-          );
-          state = state.copyWith(profile: updated, isUploadingAvatar: false);
-        } else {
-          state = state.copyWith(isUploadingAvatar: false);
-        }
+    return result.fold(
+      (f) {
+        state = state.copyWith(isUploadingAvatar: false, error: f.message);
+        return false;
+      },
+      (_) async {
+        // Re-read DB-truth so /home, /profile, and /profile/edit all pick up
+        // the new avatar without a manual entity merge.
+        await loadProfile();
+        state = state.copyWith(isUploadingAvatar: false);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> removeAvatar() async {
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    state = state.copyWith(isUploadingAvatar: true, error: null);
+    final result = await _repo.removeAvatar(userId);
+    return result.fold(
+      (f) {
+        state = state.copyWith(isUploadingAvatar: false, error: f.message);
+        return false;
+      },
+      (_) async {
+        await loadProfile();
+        state = state.copyWith(isUploadingAvatar: false);
+        return true;
       },
     );
   }

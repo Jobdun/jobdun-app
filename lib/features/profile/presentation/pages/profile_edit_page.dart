@@ -76,6 +76,13 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
+    int? parseIntOrNull(Object? v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      if (s.isEmpty) return null;
+      return int.tryParse(s);
+    }
+
     final ok = await ref
         .read(profileControllerProvider.notifier)
         .saveProfile(
@@ -83,13 +90,17 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           displayName: values['display_name'] as String,
           suburb: values['suburb'] as String,
           auState: values['state'] as String?,
+          postcode: values['postcode'] as String?,
           about: values['about'] as String?,
           companyName: values['company_name'] as String?,
           abn: values['abn'] as String?,
+          contactName: values['contact_name'] as String?,
           contactPhone: values['contact_phone'] as String?,
+          yearsInBusiness: parseIntOrNull(values['years_in_business']),
           fullName: values['full_name'] as String?,
           primaryTrade: _tradeSlug,
           tradeOther: _tradeOther,
+          yearsExperience: parseIntOrNull(values['years_experience']),
         );
 
     if (!mounted) return;
