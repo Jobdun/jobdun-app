@@ -16,6 +16,7 @@ import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/services/image_upload_service.dart';
 import '../../../../core/utils/string_utils.dart';
@@ -41,6 +42,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   String? _tradeOther;
   bool _showTradeError = false;
 
+  // Hourly-rate visibility toggle is local state (default true). FormBuilder
+  // doesn't ship a switch field that matches JSwitch's chrome, and the value
+  // is a simple bool so we hand-roll it.
+  bool? _hourlyRateVisible;
+
   // Fresh sign-ups land here with an empty profile row; fall back to the
   // name they typed at sign-up (stored on auth.users.user_metadata.full_name
   // by register_page) so they don't retype it.
@@ -58,6 +64,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     if (tp != null && tp.primaryTrade.isNotEmpty) {
       _tradeSlug = tp.primaryTrade;
     }
+    _hourlyRateVisible = tp?.hourlyRateVisible ?? true;
   }
 
   Future<void> _pickTrade() async {
@@ -142,6 +149,13 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       return int.tryParse(s);
     }
 
+    double? parseDoubleOrNull(Object? v) {
+      if (v == null) return null;
+      final s = v.toString().trim();
+      if (s.isEmpty) return null;
+      return double.tryParse(s);
+    }
+
     final ok = await ref
         .read(profileControllerProvider.notifier)
         .saveProfile(
@@ -160,6 +174,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           primaryTrade: _tradeSlug,
           tradeOther: _tradeOther,
           yearsExperience: parseIntOrNull(values['years_experience']),
+          hourlyRateMin: parseDoubleOrNull(values['hourly_rate_min']),
+          hourlyRateMax: parseDoubleOrNull(values['hourly_rate_max']),
+          hourlyRateVisible: _hourlyRateVisible,
         );
 
     if (!mounted) return;
@@ -373,6 +390,67 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                               errorText: 'Must be 60 or fewer.',
                             ),
                           ]),
+                        ),
+                        Gap(AppSpacing.md.h),
+                        const FieldLabel('HOURLY RATE (AUD)'),
+                        Gap(AppSpacing.sm.h),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _FormField(
+                                name: 'hourly_rate_min',
+                                hint: 'Min',
+                                initialValue: tp?.hourlyRateMin
+                                    ?.toStringAsFixed(0),
+                                keyboardType: TextInputType.number,
+                                validator: FormBuilderValidators.compose([
+                                  FormBuilderValidators.numeric(
+                                    errorText: 'Numbers only.',
+                                  ),
+                                  FormBuilderValidators.min(
+                                    0,
+                                    errorText: 'Must be 0 or more.',
+                                  ),
+                                ]),
+                              ),
+                            ),
+                            Gap(10.w),
+                            Expanded(
+                              child: _FormField(
+                                name: 'hourly_rate_max',
+                                hint: 'Max',
+                                initialValue: tp?.hourlyRateMax
+                                    ?.toStringAsFixed(0),
+                                keyboardType: TextInputType.number,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return null;
+                                  }
+                                  final max = double.tryParse(v);
+                                  if (max == null) return 'Numbers only.';
+                                  if (max < 0) return 'Must be 0 or more.';
+                                  final minStr =
+                                      _formKey
+                                              .currentState
+                                              ?.fields['hourly_rate_min']
+                                              ?.value
+                                          as String?;
+                                  final min = double.tryParse(minStr ?? '');
+                                  if (min != null && max < min) {
+                                    return 'Must be ≥ min.';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        Gap(AppSpacing.md.h),
+                        _RateVisibilityRow(
+                          value: _hourlyRateVisible ?? true,
+                          onChanged: (v) =>
+                              setState(() => _hourlyRateVisible = v),
                         ),
                         Gap(AppSpacing.md.h),
                       ],
@@ -624,6 +702,57 @@ class _TradePickerTile extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Two-up: label + helper text on the left, JSwitch on the right. The
+// helper line changes wording when the toggle flips so the affordance and
+// its consequence sit next to each other.
+class _RateVisibilityRow extends StatelessWidget {
+  const _RateVisibilityRow({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.input.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Show my rate to builders',
+                  style: tt.bodyMedium!.copyWith(
+                    color: c.text1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Gap(2.h),
+                Text(
+                  value
+                      ? 'Your hourly range appears on your applications.'
+                      : 'Builders see "Rate on request" instead.',
+                  style: tt.bodySmall!.copyWith(color: c.text3),
+                ),
+              ],
+            ),
+          ),
+          Gap(10.w),
+          JSwitch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

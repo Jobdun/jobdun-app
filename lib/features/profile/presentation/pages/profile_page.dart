@@ -416,6 +416,11 @@ class _TradeProfile extends StatelessWidget {
                 label: 'Base suburb',
                 value: location,
               ),
+              _InfoRow(
+                icon: AppIcons.budget,
+                label: 'Hourly rate',
+                value: _formatHourlyRate(p),
+              ),
             ],
           ),
           Gap(12.h),
@@ -544,6 +549,22 @@ class _InfoRow extends StatelessWidget {
 /// Returns null for null/blank strings so [_InfoRow] shows its empty state
 /// instead of an empty or fabricated value.
 String? _blank(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
+
+/// Formats the tradie hourly-rate range for the TRADE DETAILS card.
+/// - Visibility off → "Rate on request" (still shows the row).
+/// - Both null/zero → null (row hides via _InfoRow's empty state).
+/// - Min only → "$X+/hr"; max only → "Up to $X/hr"; both → "$X–Y/hr".
+String? _formatHourlyRate(TradeProfile? p) {
+  if (p == null) return null;
+  if (!p.hourlyRateVisible) return 'Rate on request';
+  final min = p.hourlyRateMin;
+  final max = p.hourlyRateMax;
+  if (min == null && max == null) return null;
+  String fmt(double v) => '\$${v.toStringAsFixed(0)}';
+  if (min != null && max != null) return '${fmt(min)}–${fmt(max)}/hr';
+  if (min != null) return '${fmt(min)}+/hr';
+  return 'Up to ${fmt(max!)}/hr';
+}
 
 class _VerificationRow extends StatelessWidget {
   const _VerificationRow({required this.label, required this.isVerified});
