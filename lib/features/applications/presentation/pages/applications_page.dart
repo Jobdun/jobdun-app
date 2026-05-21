@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
@@ -42,9 +42,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final userId = SupabaseConfig.isInitialized
-          ? SupabaseConfig.client.auth.currentUser?.id
-          : null;
+      final userId = ref.read(currentUserIdSyncProvider);
       if (userId == null) return;
       final role = ref.read(authControllerProvider).role;
       if (role == UserRole.builder) {

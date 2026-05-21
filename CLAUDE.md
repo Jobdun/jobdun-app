@@ -136,9 +136,13 @@ Each feature folder contains:
 - **`.select()` at hot read sites.** Any `Notifier` whose state has > 6 fields requires `ref.watch(provider.select(...))` at every read site outside the owning feature folder.
 
 **Layer rules (Clean Architecture)**
-- `presentation/` MUST NOT import `data/` of the same feature directly — it imports `domain/` (entities, repo contracts, use cases). The provider file is the only seam that wires `data/` impls into a `Provider<Repository>`.
+- `presentation/` MUST NOT import `data/` of the same feature directly — it imports `domain/` (entities, repo contracts, use cases). The provider file is the **only** seam that wires `data/` impls into a `Provider<Repository>` / `Provider<Service>`.
 - `domain/` MUST NOT import `package:flutter/*`, `package:supabase_flutter/*`, or `core/config/*`.
 - If `domain/usecases/<name>.dart` exists, the controller MUST call it — no skipping straight to the repo. **Half-built layers are deleted, not left as documentation.**
+- For `currentUser?.id` reads from pages or controllers, use `ref.read(currentUserIdSyncProvider)` (or `readCurrentUserId(ref)`) — never `SupabaseConfig.client.auth.currentUser?.id` directly. The provider is overridable in tests.
+
+**Auth feature exception — `data/services/` instead of `domain/usecases/`**
+Auth uses `data/services/` (EmailAuthService, OAuthService, PhoneAuthService, RoleResolver) instead of the use-case-over-repo pattern. Reason: `SupabaseClient.auth` is not a queryable repository — it's a stateful auth client with cancellation, SSO challenges, and SMS round-trips. The repo/use-case indirection adds ceremony without value for these flows. Every other feature uses the use-case pattern; **auth is the documented exception**. Do not introduce `domain/usecases/` or `domain/repositories/auth_repository.dart` for auth — they were deleted as dead scaffold.
 
 **Widget rules**
 - One widget per file (`prefer-single-widget-per-file`). Private helper widgets (`class _FooBar extends StatelessWidget`) are allowed *only* if they have a single caller in the same file.

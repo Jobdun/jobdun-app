@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
@@ -56,9 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final userId = SupabaseConfig.isInitialized
-          ? SupabaseConfig.client.auth.currentUser?.id
-          : null;
+      final userId = ref.read(currentUserIdSyncProvider);
       if (userId == null) return;
       ref.read(profileControllerProvider.notifier).loadProfile();
       ref.read(jobsControllerProvider.notifier).loadFeed();

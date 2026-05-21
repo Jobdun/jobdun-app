@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
@@ -42,9 +42,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
     final msgState = ref.watch(messagingControllerProvider);
     final authState = ref.watch(authControllerProvider);
     final isBuilder = authState.role == UserRole.builder;
-    final userId = SupabaseConfig.isInitialized
-        ? SupabaseConfig.client.auth.currentUser?.id ?? ''
-        : '';
+    final userId = ref.watch(currentUserIdSyncProvider) ?? '';
 
     final useReal = msgState.conversations.isNotEmpty;
     final totalUnread = useReal ? msgState.totalUnread : 3;
