@@ -151,9 +151,12 @@ Auth uses `data/services/` (EmailAuthService, OAuthService, PhoneAuthService, Ro
 
 **Verification**
 ```bash
-bash scripts/validate.sh         # includes file-size budget + design checks + analyze + test
-flutter analyze --no-fatal-infos # surfaces dart_code_linter INFOs (file-size, methods, complexity)
+bash scripts/validate.sh                # design + file-size + ARCH + format + analyze + tests
+bash scripts/check-architecture.sh      # standalone Clean Architecture audit (7 checks)
+flutter analyze --no-fatal-infos        # surfaces dart_code_linter INFOs
 ```
+
+`scripts/check-architecture.sh` is the canonical layer-rules checker — runs domain-purity, layer-boundary, Supabase-isolation, use-case-coverage, repo-pairing, empty-dir, and `currentUserIdSyncProvider` checks. It's invoked by `validate.sh` (pre-push hook) and can be run standalone. Documented exceptions live in `ARCH_SUPABASE_ALLOWLIST` inside the script with a comment justifying each entry.
 
 If a rule blocks legitimate work, propose the exception in the PR description before merging — do not silently disable the linter or grow the allowlist.
 

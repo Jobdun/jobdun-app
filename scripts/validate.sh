@@ -133,6 +133,21 @@ fi
 
 echo ""
 
+# ── Clean Architecture compliance ─────────────────────────────────────────────
+# Runs the dedicated check-architecture.sh script (domain purity, layer
+# boundary, Supabase isolation, use-case coverage, repo pairing, no orphan
+# dirs, currentUserId provider usage). See docs/CLEAN_ARCHITECTURE_AUDIT.md.
+echo -e "${BOLD}[1.6/3] Clean Architecture${RESET}"
+printf "  %-54s" "check-architecture.sh"
+if arch_out=$(bash scripts/check-architecture.sh --quiet 2>&1); then
+  _pass "check-architecture.sh"
+else
+  _fail "check-architecture.sh"
+  echo "$arch_out" | sed 's/^/    /'
+fi
+
+echo ""
+
 # ── Schema-diff guard ──────────────────────────────────────────────────────────
 if command -v supabase >/dev/null 2>&1; then
   if docker info >/dev/null 2>&1; then
