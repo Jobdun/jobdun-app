@@ -234,6 +234,9 @@ abstract final class AppIcons {
   /// Gallery / image library — paired with [camera] in image-source pickers.
   static const IconData image = PhosphorIconsBold.image;
 
+  /// External website / link. Paired with url_launcher rows on company profiles.
+  static const IconData website = PhosphorIconsBold.globe;
+
   /// Destructive remove (trash). Pair with [c.urgent] in destructive actions.
   static const IconData trash = PhosphorIconsBold.trash;
 

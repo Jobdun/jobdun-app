@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/theme_provider.dart';
@@ -242,6 +243,7 @@ class _BuilderProfile extends StatelessWidget {
     final abn = _blank(p?.abn);
     final location = _blank(p?.displayLocation);
     final contact = _blank(p?.contactPhone);
+    final website = _blank(p?.website);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -293,6 +295,12 @@ class _BuilderProfile extends StatelessWidget {
                 value: location,
               ),
               _InfoRow(icon: AppIcons.phone, label: 'Contact', value: contact),
+              _InfoRow(
+                icon: AppIcons.website,
+                label: 'Website',
+                value: website,
+                onTap: website == null ? null : () => _launchWebsite(website),
+              ),
             ],
           ),
           Gap(12.h),
@@ -503,6 +511,7 @@ class _InfoRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   final IconData icon;
@@ -511,14 +520,19 @@ class _InfoRow extends StatelessWidget {
   /// Null or blank renders a muted "Not set" — never a fabricated value.
   final String? value;
 
+  /// When set, the row becomes tappable (e.g. website → launchUrl). Only
+  /// fires when [value] is non-blank — "Not set" rows aren't actionable.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
     final hasValue = value != null && value!.trim().isNotEmpty;
+    final tappable = hasValue && onTap != null;
 
-    return Padding(
+    final row = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.md.w,
         vertical: 12.h,
@@ -534,7 +548,9 @@ class _InfoRow extends StatelessWidget {
               hasValue ? value! : 'Not set',
               style: tt.bodyMedium!.copyWith(
                 fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
-                color: hasValue ? c.text1 : c.text3,
+                color: tappable ? c.action : (hasValue ? c.text1 : c.text3),
+                decoration: tappable ? TextDecoration.underline : null,
+                decorationColor: tappable ? c.action : null,
               ),
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
@@ -543,12 +559,25 @@ class _InfoRow extends StatelessWidget {
         ],
       ),
     );
+    if (!tappable) return row;
+    return InkWell(onTap: onTap, child: row);
   }
 }
 
 /// Returns null for null/blank strings so [_InfoRow] shows its empty state
 /// instead of an empty or fabricated value.
 String? _blank(String? s) => (s == null || s.trim().isEmpty) ? null : s.trim();
+
+/// Launches the builder's website in an in-app browser. Auto-prepends https://
+/// if the user saved a bare domain (we don't enforce a scheme at write time).
+Future<void> _launchWebsite(String raw) async {
+  final url = raw.startsWith('http') ? raw : 'https://$raw';
+  final uri = Uri.tryParse(url);
+  if (uri == null) return;
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+  }
+}
 
 /// Formats the tradie hourly-rate range for the TRADE DETAILS card.
 /// - Visibility off → "Rate on request" (still shows the row).

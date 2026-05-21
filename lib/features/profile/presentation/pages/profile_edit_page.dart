@@ -170,6 +170,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           contactName: values['contact_name'] as String?,
           contactPhone: values['contact_phone'] as String?,
           yearsInBusiness: parseIntOrNull(values['years_in_business']),
+          website: values['website'] as String?,
           fullName: values['full_name'] as String?,
           primaryTrade: _tradeSlug,
           tradeOther: _tradeOther,
@@ -337,6 +338,22 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                               errorText: 'Must be 60 or fewer.',
                             ),
                           ]),
+                        ),
+                        Gap(AppSpacing.md.h),
+                        const FieldLabel('WEBSITE'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'website',
+                          hint: 'https://yourcompany.com.au',
+                          initialValue: bp?.website,
+                          keyboardType: TextInputType.url,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null;
+                            return FormBuilderValidators.url(
+                              protocols: ['https', 'http'],
+                              errorText: 'Enter a valid URL.',
+                            )(v);
+                          },
                         ),
                         Gap(AppSpacing.md.h),
                       ] else ...[
