@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,13 +6,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/services/image_upload_service.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
@@ -55,6 +61,48 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       _tradeOther = selection.slug == 'other' ? selection.otherText : null;
       _showTradeError = false;
     });
+  }
+
+  Future<void> _pickAvatar() async {
+    final hasAvatar =
+        ref.read(profileControllerProvider).profile?.avatarUrl != null;
+    final action = await showJSheet<_AvatarAction>(
+      context: context,
+      backgroundColor: context.c.card,
+      builder: (_) => _AvatarPickerSheet(hasAvatar: hasAvatar),
+    );
+    if (action == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(profileControllerProvider.notifier);
+
+    if (action == _AvatarAction.remove) {
+      final ok = await controller.removeAvatar();
+      if (!mounted) return;
+      if (!ok) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text("Couldn't remove avatar.")),
+        );
+      }
+      return;
+    }
+
+    final source = action == _AvatarAction.camera
+        ? ImageSource.camera
+        : ImageSource.gallery;
+    final file = await ImageUploadService.pickCropCompress(
+      source: source,
+      aspect: ImageAspect.square,
+    );
+    if (file == null || !mounted) return;
+
+    final ok = await controller.uploadAvatar(file);
+    if (!mounted) return;
+    if (!ok) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Couldn't upload avatar.")),
+      );
+    }
   }
 
   Future<void> _save() async {
@@ -198,7 +246,26 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _AvatarHeader(
+                        avatarUrl: profile?.avatarUrl,
+                        initials: StringUtils.initials(
+                          profile?.displayName ?? '?',
+                        ),
+                        isUploading: profileState.isUploadingAvatar,
+                        onTap: profileState.isUploadingAvatar
+                            ? null
+                            : _pickAvatar,
+                      ),
+                      Gap(AppSpacing.lg.h),
                       if (isBuilder) ...[
+                        const FieldLabel('YOUR NAME'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'contact_name',
+                          hint: 'Your full name',
+                          initialValue: bp?.contactName ?? profile?.displayName,
+                        ),
+                        Gap(AppSpacing.md.h),
                         const FieldLabel('COMPANY NAME'),
                         Gap(AppSpacing.sm.h),
                         _FormField(
@@ -217,6 +284,28 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                           hint: '12 345 678 901',
                           initialValue: bp?.abn,
                           keyboardType: TextInputType.number,
+                        ),
+                        Gap(AppSpacing.md.h),
+                        const FieldLabel('YEARS IN BUSINESS'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'years_in_business',
+                          hint: 'e.g. 5',
+                          initialValue: bp?.yearsInBusiness?.toString(),
+                          keyboardType: TextInputType.number,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.integer(
+                              errorText: 'Whole numbers only.',
+                            ),
+                            FormBuilderValidators.min(
+                              0,
+                              errorText: 'Must be 0 or more.',
+                            ),
+                            FormBuilderValidators.max(
+                              60,
+                              errorText: 'Must be 60 or fewer.',
+                            ),
+                          ]),
                         ),
                         Gap(AppSpacing.md.h),
                       ] else ...[
@@ -250,6 +339,28 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                           ),
                         ],
                         Gap(AppSpacing.md.h),
+                        const FieldLabel('YEARS OF EXPERIENCE'),
+                        Gap(AppSpacing.sm.h),
+                        _FormField(
+                          name: 'years_experience',
+                          hint: 'e.g. 8',
+                          initialValue: tp?.yearsExperience?.toString(),
+                          keyboardType: TextInputType.number,
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.integer(
+                              errorText: 'Whole numbers only.',
+                            ),
+                            FormBuilderValidators.min(
+                              0,
+                              errorText: 'Must be 0 or more.',
+                            ),
+                            FormBuilderValidators.max(
+                              60,
+                              errorText: 'Must be 60 or fewer.',
+                            ),
+                          ]),
+                        ),
+                        Gap(AppSpacing.md.h),
                       ],
                       const FieldLabel('DISPLAY NAME'),
                       Gap(AppSpacing.sm.h),
@@ -268,7 +379,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            flex: 3,
+                            flex: 4,
                             child: _FormField(
                               name: 'suburb',
                               hint: 'Suburb',
@@ -289,6 +400,24 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                               initialValue: isBuilder
                                   ? bp?.serviceState
                                   : tp?.baseState,
+                            ),
+                          ),
+                          Gap(10.w),
+                          Expanded(
+                            flex: 3,
+                            child: _FormField(
+                              name: 'postcode',
+                              hint: 'Postcode',
+                              initialValue: isBuilder
+                                  ? bp?.servicePostcode
+                                  : tp?.basePostcode,
+                              keyboardType: TextInputType.number,
+                              validator: FormBuilderValidators.compose([
+                                FormBuilderValidators.match(
+                                  RegExp(r'^\d{3,4}$'),
+                                  errorText: 'AU postcode (3 or 4 digits).',
+                                ),
+                              ]),
                             ),
                           ),
                         ],
@@ -480,6 +609,219 @@ class _TradePickerTile extends ConsumerWidget {
               Icon(AppIcons.chevronDown, size: 16.r, color: c.text3),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// Tappable avatar at the top of /profile/edit. Pulls double duty as the
+// affordance for editing the avatar AND as the visual confirmation of the
+// current avatar — tap opens the picker sheet, the upload spinner overlays
+// in place. Hero tag matches the profile page's header avatar so the
+// transition flows when that page wires its own Hero in a follow-up.
+class _AvatarHeader extends StatelessWidget {
+  const _AvatarHeader({
+    required this.avatarUrl,
+    required this.initials,
+    required this.isUploading,
+    required this.onTap,
+  });
+
+  final String? avatarUrl;
+  final String initials;
+  final bool isUploading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Hero(
+              tag: 'profile-avatar',
+              child: Stack(
+                children: [
+                  avatarUrl != null
+                      ? ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: avatarUrl!,
+                            width: 96.r,
+                            height: 96.r,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) =>
+                                AvatarBlock(initials: initials, size: 96),
+                            errorWidget: (_, _, _) =>
+                                AvatarBlock(initials: initials, size: 96),
+                          ),
+                        )
+                      : AvatarBlock(initials: initials, size: 96),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 30.r,
+                      height: 30.r,
+                      decoration: BoxDecoration(
+                        color: c.action,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.card, width: 2),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        AppIcons.camera,
+                        size: 14.r,
+                        color: Colors
+                            .white, // intentional: white-on-orange action chip
+                      ),
+                    ),
+                  ),
+                  if (isUploading)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(
+                          color: Colors
+                              .white, // intentional: white-on-dark-overlay
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Gap(AppSpacing.sm.h),
+          Text(
+            'Tap to change photo',
+            style: tt.labelSmall!.copyWith(
+              color: c.text3,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _AvatarAction { camera, gallery, remove }
+
+class _AvatarPickerSheet extends StatelessWidget {
+  const _AvatarPickerSheet({required this.hasAvatar});
+
+  final bool hasAvatar;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final radius = BorderRadius.vertical(
+      top: Radius.circular(AppRadius.card.r),
+    );
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(color: c.card, borderRadius: radius),
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36.w,
+              height: 4.h,
+              margin: EdgeInsets.only(bottom: 12.h),
+              decoration: BoxDecoration(
+                color: c.border,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            _SheetAction(
+              icon: AppIcons.camera,
+              label: 'Take photo',
+              onTap: () => Navigator.of(context).pop(_AvatarAction.camera),
+            ),
+            _SheetAction(
+              icon: AppIcons.image,
+              label: 'Pick from gallery',
+              onTap: () => Navigator.of(context).pop(_AvatarAction.gallery),
+            ),
+            if (hasAvatar)
+              _SheetAction(
+                icon: AppIcons.trash,
+                label: 'Remove photo',
+                destructive: true,
+                onTap: () => Navigator.of(context).pop(_AvatarAction.remove),
+              ),
+            Gap(8.h),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                child: Text(
+                  'CANCEL',
+                  textAlign: TextAlign.center,
+                  style: tt.labelMedium!.copyWith(
+                    color: c.text3,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetAction extends StatelessWidget {
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final color = destructive ? c.urgent : c.text1;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.input.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 14.h),
+        child: Row(
+          children: [
+            Icon(icon, size: 22.r, color: color),
+            Gap(14.w),
+            Text(
+              label,
+              style: tt.bodyLarge!.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -231,6 +231,12 @@ abstract final class AppIcons {
   /// Camera capture.
   static const IconData camera = PhosphorIconsBold.camera;
 
+  /// Gallery / image library — paired with [camera] in image-source pickers.
+  static const IconData image = PhosphorIconsBold.image;
+
+  /// Destructive remove (trash). Pair with [c.urgent] in destructive actions.
+  static const IconData trash = PhosphorIconsBold.trash;
+
   /// Credit / payment card.
   static const IconData card = PhosphorIconsBold.creditCard;
 
