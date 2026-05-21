@@ -82,7 +82,11 @@ echo ""
 
 # ── Schema-diff guard ──────────────────────────────────────────────────────────
 if command -v supabase >/dev/null 2>&1; then
-  bash scripts/schema-diff.sh
+  if docker info >/dev/null 2>&1; then
+    bash scripts/schema-diff.sh
+  else
+    echo "schema-diff: SKIPPED (Docker daemon not running)"
+  fi
 else
   echo "schema-diff: SKIPPED (supabase CLI not installed)"
 fi
