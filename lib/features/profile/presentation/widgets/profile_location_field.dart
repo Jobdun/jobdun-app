@@ -70,8 +70,10 @@ JPlaceResult? buildProfilePlaceInitial({
 /// the legacy 3-field input while engineers wire MapTiler keys.
 ///
 /// To opt in:  flutter run --dart-define=PLACES_ENABLED=true
-const bool kPlacesEnabled =
-    bool.fromEnvironment('PLACES_ENABLED', defaultValue: false);
+const bool kPlacesEnabled = bool.fromEnvironment(
+  'PLACES_ENABLED',
+  defaultValue: false,
+);
 
 /// One widget rendered into both the trade and builder profile-edit forms in
 /// place of the legacy SUBURB / STATE / POSTCODE row.
@@ -108,7 +110,8 @@ class ProfileLocationField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return kPlacesEnabled ? _PlaceBranch(label: label, initialValue: placeInitial)
+    return kPlacesEnabled
+        ? _PlaceBranch(label: label, initialValue: placeInitial)
         : _LegacyBranch(label: label, initial: legacyInitial);
   }
 }
@@ -225,7 +228,10 @@ class _LegacyField extends StatelessWidget {
           : null,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: validator,
-      style: tt.bodyLarge!.copyWith(color: c.text1, fontWeight: FontWeight.w500),
+      style: tt.bodyLarge!.copyWith(
+        color: c.text1,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: hint,
         helperText: ' ',

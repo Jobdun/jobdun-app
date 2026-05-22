@@ -111,10 +111,7 @@ class _CurrentLocationTile extends StatelessWidget {
 }
 
 class _SuggestionsList extends StatelessWidget {
-  const _SuggestionsList({
-    required this.suggestions,
-    required this.onSelect,
-  });
+  const _SuggestionsList({required this.suggestions, required this.onSelect});
 
   final List<JPlaceResult> suggestions;
   final ValueChanged<JPlaceResult> onSelect;
@@ -129,8 +126,7 @@ class _SuggestionsList extends StatelessWidget {
             result: suggestions[i],
             onTap: () => onSelect(suggestions[i]),
           ),
-          if (i < suggestions.length - 1)
-            Divider(height: 1, color: c.border),
+          if (i < suggestions.length - 1) Divider(height: 1, color: c.border),
         ],
       ],
     );

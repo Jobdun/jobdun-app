@@ -139,7 +139,10 @@ class _LegacyField extends StatelessWidget {
           : null,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: validator,
-      style: tt.bodyLarge!.copyWith(color: c.text1, fontWeight: FontWeight.w500),
+      style: tt.bodyLarge!.copyWith(
+        color: c.text1,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         hintText: hint,
         helperText: ' ',

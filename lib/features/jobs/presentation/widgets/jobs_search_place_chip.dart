@@ -85,8 +85,7 @@ class _JobsSearchPlaceChipState extends ConsumerState<JobsSearchPlaceChip> {
   Future<void> _resolve(String query) async {
     if (query == _lastQuery && _topMatch != null) return;
     try {
-      final results =
-          await ref.read(placesServiceProvider).autocomplete(query);
+      final results = await ref.read(placesServiceProvider).autocomplete(query);
       if (!mounted) return;
       setState(() {
         _topMatch = results.isEmpty ? null : results.first;

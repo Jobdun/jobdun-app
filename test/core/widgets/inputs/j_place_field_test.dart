@@ -15,11 +15,13 @@ class _FakePlacesService implements PlacesService {
   _FakePlacesService({
     this.autocompleteResults = const [],
     this.autocompleteError,
-    this.reverseResult,
   });
 
   List<JPlaceResult> autocompleteResults;
   PlacesException? autocompleteError;
+  // ignore: prefer_final_fields — kept mutable so future tests can set
+  // a reverse-geocode result before tapping the "Use my current location"
+  // chip.
   JPlaceResult? reverseResult;
 
   int autocompleteCalls = 0;
@@ -55,10 +57,7 @@ JPlaceResult _result({
   );
 }
 
-Widget _wrap(
-  Widget child, {
-  _FakePlacesService? service,
-}) {
+Widget _wrap(Widget child, {_FakePlacesService? service}) {
   return ProviderScope(
     overrides: [
       placesServiceProvider.overrideWithValue(service ?? _FakePlacesService()),
@@ -68,10 +67,7 @@ Widget _wrap(
       builder: (_, _) => MaterialApp(
         theme: AppTheme.dark(),
         home: Scaffold(
-          body: FormBuilder(
-            key: GlobalKey<FormBuilderState>(),
-            child: child,
-          ),
+          body: FormBuilder(key: GlobalKey<FormBuilderState>(), child: child),
         ),
       ),
     ),
@@ -89,8 +85,9 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
   });
 
-  testWidgets('does not call autocomplete below 3-char threshold',
-      (tester) async {
+  testWidgets('does not call autocomplete below 3-char threshold', (
+    tester,
+  ) async {
     final svc = _FakePlacesService();
     await tester.pumpWidget(
       _wrap(
@@ -107,8 +104,9 @@ void main() {
     expect(svc.autocompleteCalls, 0);
   });
 
-  testWidgets('debounces and calls autocomplete with the typed query',
-      (tester) async {
+  testWidgets('debounces and calls autocomplete with the typed query', (
+    tester,
+  ) async {
     final svc = _FakePlacesService(autocompleteResults: [_result()]);
     await tester.pumpWidget(
       _wrap(
@@ -132,8 +130,9 @@ void main() {
     expect(find.text('NSW 2150, Australia'), findsOneWidget);
   });
 
-  testWidgets('tapping a suggestion fills the input and clears the dropdown',
-      (tester) async {
+  testWidgets('tapping a suggestion fills the input and clears the dropdown', (
+    tester,
+  ) async {
     final svc = _FakePlacesService(autocompleteResults: [_result()]);
     await tester.pumpWidget(
       _wrap(
@@ -153,10 +152,7 @@ void main() {
 
     // The TextField now shows the full formatted address.
     final textField = tester.widget<TextField>(find.byType(TextField));
-    expect(
-      textField.controller!.text,
-      'Parramatta, NSW 2150, Australia',
-    );
+    expect(textField.controller!.text, 'Parramatta, NSW 2150, Australia');
     // Dropdown is gone — the secondary line is no longer in the tree.
     expect(find.text('NSW 2150, Australia'), findsNothing);
   });

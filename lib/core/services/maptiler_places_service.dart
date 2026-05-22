@@ -49,10 +49,7 @@ class MapTilerPlacesService implements PlacesService {
   final LinkedHashMap<String, List<JPlaceResult>> _cache = LinkedHashMap();
 
   @override
-  Future<List<JPlaceResult>> autocomplete(
-    String query, {
-    LatLng? near,
-  }) async {
+  Future<List<JPlaceResult>> autocomplete(String query, {LatLng? near}) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
       return const <JPlaceResult>[];
@@ -68,14 +65,15 @@ class MapTilerPlacesService implements PlacesService {
       return cached;
     }
 
-    final uri = Uri.https(_host, '/geocoding/${Uri.encodeComponent(trimmed)}.json', {
-      'country': 'au',
-      'autocomplete': 'true',
-      'limit': '$maxResults',
-      'language': 'en',
-      if (near != null) 'proximity': '${near.longitude},${near.latitude}',
-      'key': apiKey,
-    });
+    final uri =
+        Uri.https(_host, '/geocoding/${Uri.encodeComponent(trimmed)}.json', {
+          'country': 'au',
+          'autocomplete': 'true',
+          'limit': '$maxResults',
+          'language': 'en',
+          if (near != null) 'proximity': '${near.longitude},${near.latitude}',
+          'key': apiKey,
+        });
 
     final body = await _get(uri);
     final results = _parseFeatures(body);
@@ -89,8 +87,7 @@ class MapTilerPlacesService implements PlacesService {
       throw const PlacesNotConfigured();
     }
 
-    final path =
-        '/geocoding/${position.longitude},${position.latitude}.json';
+    final path = '/geocoding/${position.longitude},${position.latitude}.json';
     final uri = Uri.https(_host, path, {
       'country': 'au',
       'types': 'address,locality,municipality',
@@ -182,7 +179,8 @@ class MapTilerPlacesService implements PlacesService {
         ? ctx.whereType<Map<String, dynamic>>().toList()
         : const <Map<String, dynamic>>[];
 
-    final postcode = _findContext(context, prefix: 'postal_code') ??
+    final postcode =
+        _findContext(context, prefix: 'postal_code') ??
         _findContext(context, prefix: 'postcode') ??
         '';
     final region = _findContext(context, prefix: 'region') ?? '';
@@ -254,7 +252,11 @@ class MapTilerPlacesService implements PlacesService {
     if (input.isEmpty) return input;
     return input
         .split(' ')
-        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+        .map(
+          (w) => w.isEmpty
+              ? w
+              : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+        )
         .join(' ');
   }
 

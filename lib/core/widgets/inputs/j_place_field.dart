@@ -271,13 +271,13 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
               Gap(6.h),
               Text(
                 field.errorText!,
-                style: tt.bodySmall!.copyWith(color: c.error),
+                style: tt.bodySmall!.copyWith(color: c.urgent),
               ),
             ] else if (_error != null && _error is! PlacesNoResults) ...[
               Gap(6.h),
               Text(
                 _error!.message,
-                style: tt.bodySmall!.copyWith(color: c.error),
+                style: tt.bodySmall!.copyWith(color: c.urgent),
               ),
             ],
           ],
@@ -314,7 +314,7 @@ class _JPlaceInputBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final borderColor = hasError ? c.error : (focused ? c.action : c.border);
+    final borderColor = hasError ? c.urgent : (focused ? c.action : c.border);
     return TextField(
       controller: controller,
       focusNode: focusNode,
@@ -353,11 +353,11 @@ class _JPlaceInputBox extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(2.r),
-          borderSide: BorderSide(color: c.error, width: 1),
+          borderSide: BorderSide(color: c.urgent, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(2.r),
-          borderSide: BorderSide(color: c.error, width: 2),
+          borderSide: BorderSide(color: c.urgent, width: 2),
         ),
       ),
     );

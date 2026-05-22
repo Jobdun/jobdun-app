@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -44,41 +43,42 @@ String _featureCollection({
 MapTilerPlacesService _service(
   MockClient client, {
   String apiKey = 'test-key',
-}) =>
-    MapTilerPlacesService(
-      apiKey: apiKey,
-      httpClient: client,
-      timeout: const Duration(seconds: 2),
-    );
+}) => MapTilerPlacesService(
+  apiKey: apiKey,
+  httpClient: client,
+  timeout: const Duration(seconds: 2),
+);
 
 void main() {
   group('MapTilerPlacesService.autocomplete', () {
-    test('parses a Parramatta result with normalised state + postcode',
-        () async {
-      late Uri capturedUri;
-      final client = MockClient((request) async {
-        capturedUri = request.url;
-        return http.Response(_featureCollection(), 200);
-      });
+    test(
+      'parses a Parramatta result with normalised state + postcode',
+      () async {
+        late Uri capturedUri;
+        final client = MockClient((request) async {
+          capturedUri = request.url;
+          return http.Response(_featureCollection(), 200);
+        });
 
-      final results = await _service(client).autocomplete('parra');
+        final results = await _service(client).autocomplete('parra');
 
-      expect(capturedUri.host, 'api.maptiler.com');
-      expect(capturedUri.path, '/geocoding/parra.json');
-      expect(capturedUri.queryParameters['country'], 'au');
-      expect(capturedUri.queryParameters['autocomplete'], 'true');
-      expect(capturedUri.queryParameters['key'], 'test-key');
+        expect(capturedUri.host, 'api.maptiler.com');
+        expect(capturedUri.path, '/geocoding/parra.json');
+        expect(capturedUri.queryParameters['country'], 'au');
+        expect(capturedUri.queryParameters['autocomplete'], 'true');
+        expect(capturedUri.queryParameters['key'], 'test-key');
 
-      expect(results, hasLength(1));
-      final r = results.first;
-      expect(r.suburb, 'Parramatta');
-      expect(r.state, 'NSW'); // normalised from "New South Wales"
-      expect(r.postcode, '2150');
-      expect(r.latitude, closeTo(-33.8136, 1e-6));
-      expect(r.longitude, closeTo(151.0034, 1e-6));
-      expect(r.formattedAddress, contains('Parramatta'));
-      expect(r.secondaryText, 'NSW 2150, Australia');
-    });
+        expect(results, hasLength(1));
+        final r = results.first;
+        expect(r.suburb, 'Parramatta');
+        expect(r.state, 'NSW'); // normalised from "New South Wales"
+        expect(r.postcode, '2150');
+        expect(r.latitude, closeTo(-33.8136, 1e-6));
+        expect(r.longitude, closeTo(151.0034, 1e-6));
+        expect(r.formattedAddress, contains('Parramatta'));
+        expect(r.secondaryText, 'NSW 2150, Australia');
+      },
+    );
 
     test('passes proximity when `near` is provided', () async {
       late Uri capturedUri;
@@ -99,19 +99,21 @@ void main() {
       );
     });
 
-    test('returns empty list for empty/whitespace query without HTTP call',
-        () async {
-      var hits = 0;
-      final client = MockClient((_) async {
-        hits++;
-        return http.Response('{}', 200);
-      });
+    test(
+      'returns empty list for empty/whitespace query without HTTP call',
+      () async {
+        var hits = 0;
+        final client = MockClient((_) async {
+          hits++;
+          return http.Response('{}', 200);
+        });
 
-      final results = await _service(client).autocomplete('   ');
+        final results = await _service(client).autocomplete('   ');
 
-      expect(results, isEmpty);
-      expect(hits, 0);
-    });
+        expect(results, isEmpty);
+        expect(hits, 0);
+      },
+    );
 
     test('throws PlacesNotConfigured when API key is empty', () async {
       final client = MockClient((_) async => http.Response('{}', 200));
@@ -123,8 +125,9 @@ void main() {
     });
 
     test('throws PlacesNetworkError on 500', () async {
-      final client =
-          MockClient((_) async => http.Response('boom', 500, reasonPhrase: 'Server Error'));
+      final client = MockClient(
+        (_) async => http.Response('boom', 500, reasonPhrase: 'Server Error'),
+      );
 
       await expectLater(
         _service(client).autocomplete('parra'),
@@ -134,14 +137,18 @@ void main() {
 
     test('throws PlacesRequestRejected on 401', () async {
       final client = MockClient(
-        (_) async => http.Response('unauthorised', 401, reasonPhrase: 'Unauthorized'),
+        (_) async =>
+            http.Response('unauthorised', 401, reasonPhrase: 'Unauthorized'),
       );
 
       await expectLater(
         _service(client).autocomplete('parra'),
         throwsA(
-          isA<PlacesRequestRejected>()
-              .having((e) => e.statusCode, 'statusCode', 401),
+          isA<PlacesRequestRejected>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            401,
+          ),
         ),
       );
     });
@@ -190,8 +197,9 @@ void main() {
         return http.Response(_featureCollection(), 200);
       });
 
-      final result = await _service(client)
-          .reverseGeocode(const LatLng(-33.8136, 151.0034));
+      final result = await _service(
+        client,
+      ).reverseGeocode(const LatLng(-33.8136, 151.0034));
 
       expect(result, isNotNull);
       expect(capturedUri.path, '/geocoding/151.0034,-33.8136.json');
@@ -203,8 +211,9 @@ void main() {
         (_) async => http.Response(jsonEncode({'features': []}), 200),
       );
 
-      final result = await _service(client)
-          .reverseGeocode(const LatLng(-33.87, 151.21));
+      final result = await _service(
+        client,
+      ).reverseGeocode(const LatLng(-33.87, 151.21));
 
       expect(result, isNull);
     });

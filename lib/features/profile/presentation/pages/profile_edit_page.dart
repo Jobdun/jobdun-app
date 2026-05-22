@@ -148,9 +148,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     // JPlaceField. Split it back into the suburb/state/postcode the controller
     // already expects, and tag-on the new lat/lng + place_id + formatted_address.
     final pickedPlace = values['place'] as JPlaceResult?;
-    final String resolvedSuburb = pickedPlace?.suburb ??
-        (values['suburb'] as String?) ??
-        '';
+    final String resolvedSuburb =
+        pickedPlace?.suburb ?? (values['suburb'] as String?) ?? '';
     final String? resolvedState =
         pickedPlace?.state ?? values['state'] as String?;
     final String? resolvedPostcode =
@@ -501,9 +500,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       ),
                       Gap(AppSpacing.md.h),
                       ProfileLocationField(
-                        label: isBuilder
-                            ? 'SERVICE LOCATION'
-                            : 'BASE LOCATION',
+                        label: isBuilder ? 'SERVICE LOCATION' : 'BASE LOCATION',
                         legacyInitial: (
                           suburb: isBuilder
                               ? bp?.serviceSuburb
