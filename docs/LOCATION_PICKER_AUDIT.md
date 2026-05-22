@@ -420,15 +420,19 @@ Effort estimates assume one engineer familiar with the codebase. They include de
 
 ---
 
-## 10. Open questions (resolve before Phase 1 starts)
+## 10. Decisions (resolved 2026-05-22)
 
-1. **AU coverage spot-check**: who runs the 50-suburb sample test during Phase 1, and what's the acceptable miss-rate before we'd reconsider Google Places?
-2. **Jobs search chip**: ship in Phase 5 of this initiative, or defer to a separate follow-up after profile + job create are validated?
-3. **Privacy policy**: who owns adding MapTiler as a sub-processor — legal review or engineering self-serve via the existing privacy doc?
-4. **Data backfill**: should we run a one-off script to fill `lat/lng` for existing rows via batch reverse-geocoding (using a chunk of the free-tier quota), or wait for organic re-saves?
-5. **Paid-tier breakpoint**: at what monthly request count do we want a Slack ping vs an automated cap? Default proposal: alert at 80k (80% of free tier), no automatic cap.
+All open questions from the original audit are now resolved. Each row links back to the phase that consumes the decision.
 
-> **Resolved by audit:** vendor (MapTiler Geocoding), billing model (free tier first, ~$0.50/1k after), provisioning (no GCP project required). Reverse geocoding shares the same `geocoding` quota — no separate API.
+| # | Decision | Resolution | Consumed by |
+|---|----------|------------|-------------|
+| 1 | AU-suburb miss-rate threshold | **5/50 misses (10%) triggers a swap to Google Places.** During Phase 1, spot-check 50 representative AU suburbs (mix of capital city, regional, outer-suburb, FIFO mining town, brand-new estate). If ≥5 are missing or wrong, replace `MapTilerPlacesService` with a `GooglePlacesService` impl (no call-site changes) before Phase 3. | Phase 1 |
+| 2 | Jobs-search Places chip scope | **Ship in Phase 5 of this initiative** (not deferred). Keeps the whole place-input story in one PR; ~0.5 day extra. | Phase 5 |
+| 3 | Privacy-policy update ownership | **Engineering self-serve.** Update the existing privacy doc in the same PR as the feature: add MapTiler as a data sub-processor and append "address suggestions" wording to `NSLocationWhenInUseUsageDescription`. No external legal review for v1. | Phase 4 / 5 |
+| 4 | Existing-row data backfill | **Organic re-save only.** Old rows keep their text-only fields. `lat/lng/place_id` stay null until the user next edits their profile or reposts a job. Zero migration risk, $0 extra quota spend, gradual data-quality improvement. | None (no migration step) |
+| 5 | Paid-tier alert breakpoint | **Soft alert at 80,000 req/month** (80% of free tier) via the MapTiler dashboard's notification setting. No automated hard cap — if the alert fires, we manually decide whether to throttle, raise the cap, or accept the overage (~$0.50/1k). | Phase 0 |
+
+> **Already resolved by the audit itself:** vendor (MapTiler Geocoding), billing model (free tier first, ~$0.50/1k after), provisioning (no GCP project required). Reverse geocoding shares the same `geocoding` quota — no separate API.
 
 ---
 
@@ -522,7 +526,7 @@ showJSheet(context: context, builder: ...)
 
 ---
 
-**Next step:** resolve §10 open questions, then start Phase 0 (MapTiler signup + key wiring) in a new branch `feat/places-autocomplete-maptiler`.
+**Next step:** §10 decisions are resolved — kick off Phase 0 (MapTiler signup + key wiring) in a new branch `feat/places-autocomplete-maptiler`. The Phase 1 AU-coverage spot-check (50 suburbs, ≤5 misses) gates whether the impl stays on MapTiler or swaps to Google Places before Phase 3.
 
 ---
 
