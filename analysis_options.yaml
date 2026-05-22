@@ -27,42 +27,31 @@ linter:
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
 
-# ── dart_code_linter ──────────────────────────────────────────────────────────
-# Enforces the rules documented in CLAUDE.md → "Engineering Standards (STRICT)":
-# file-size budget, no god classes, no deep nesting, widget-structure hygiene.
+# ── Strict-metrics enforcement (see CLAUDE.md → Engineering Standards) ────────
 #
-# Metrics surface as INFO by default, so `flutter analyze --no-fatal-infos`
-# (what CI runs) will not break — but they DO show up in IDEs and in plain
-# `flutter analyze`. The hard 500-LOC ceiling is also enforced as a real FAIL
-# by scripts/validate.sh, so the rule bites regardless of whether this plugin
-# is installed.
+# The CLAUDE.md spec calls for hard ceilings on file size, method count,
+# nesting, cyclomatic complexity, and named-parameter count. These are
+# enforced in two places:
 #
-# To activate locally:
-#   flutter pub add --dev dart_code_linter
-#   flutter pub get
-# Then uncomment the block below. (Left commented by default so a fresh
-# `flutter pub get` does not error before the dev-dep is installed.)
+#   1. File-size budget (≤400 LOC target, 500 LOC hard ceiling) is enforced
+#      by `scripts/validate.sh` (pre-push hook + CI) using a grep over
+#      `lib/**/*.dart` against an explicit OVERSIZE_ALLOWLIST. That check
+#      fails the pre-push and the CI run if violated.
 #
-# analyzer:
-#   plugins:
-#     - dart_code_linter
-#   exclude:
-#     - "**/*.g.dart"
-#     - "**/*.freezed.dart"
-#     - "lib/generated/**"
+#   2. Method count / nesting / cyclomatic complexity / named-parameter count
+#      are NOT enforced by an automated linter. The `dart_code_linter` package
+#      that previously implemented these checks was archived by its maintainer
+#      in 2024 (see https://github.com/dart-code-checker/dart-code-linter).
+#      Modern alternatives (very_good_analysis, solid_lints) cover style
+#      hygiene but do not ship configurable metrics for these specific
+#      thresholds. Until a replacement metrics linter lands, these rules are
+#      enforced at code-review time per the CLAUDE.md spec.
 #
-# dart_code_linter:
-#   metrics:
-#     source-lines-of-code: 500          # per file — hard ceiling (target 400)
-#     number-of-methods: 10              # per class — split god controllers
-#     maximum-nesting-level: 3
-#     cyclomatic-complexity: 10
-#     number-of-parameters: 4
-#   metrics-exclude:
-#     - test/**
-#     - lib/**/*.g.dart
-#     - lib/**/*.freezed.dart
-#   rules:
-#     - prefer-single-widget-per-file
-#     - avoid-returning-widgets
-#     - no-empty-block
+# Style hygiene beyond `flutter_lints` is intentionally left for a focused
+# cleanup sprint — adding `very_good_analysis` today would surface 100+
+# pre-existing infos that aren't load-bearing for the W1-W3 audit fix.
+#
+# Widget-structure rules (prefer-single-widget-per-file, avoid-returning-
+# widgets, no-empty-block) are enforced at code-review time. Reviewers
+# should flag any new `Widget Function(...)` returns and any methods that
+# render Widget trees — extract a private widget class instead.
