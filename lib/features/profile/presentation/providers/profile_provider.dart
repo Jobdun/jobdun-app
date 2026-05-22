@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/errors/sentry_reporter.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/domain/entities/user_role.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
@@ -204,6 +206,13 @@ class ProfileController extends Notifier<ProfileState> {
         debugPrint('[ProfileController] saveProfile: $e\n$st');
         return true;
       }());
+      unawaited(
+        SentryReporter.reportError(
+          e,
+          stackTrace: st,
+          tags: {'feature': 'profile', 'action': 'saveProfile'},
+        ),
+      );
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }

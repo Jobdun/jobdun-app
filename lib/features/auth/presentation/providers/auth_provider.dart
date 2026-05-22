@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/error_messages.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/sentry_reporter.dart';
 import '../../data/services/email_auth_service.dart';
 import '../../data/services/oauth_service.dart';
 import '../../data/services/phone_auth_service.dart';
@@ -116,11 +117,21 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
-  void _failLoading(Object e) {
+  void _failLoading(Object e, {StackTrace? stackTrace, String? action}) {
     state = state.copyWith(
       isLoading: false,
       errorMessage: _mapAuthError(e),
       infoMessage: null,
+    );
+    // Every auth catch block funnels through here, so reporting once means
+    // every login / register / OAuth / OTP failure reaches Sentry without
+    // touching individual call sites. AuthException is mapped to plain
+    // English upstream — Sentry sees the original message + the action tag
+    // (e.g. action: signIn) so it's filterable in the dashboard.
+    final tags = <String, String>{'feature': 'auth'};
+    if (action != null) tags['action'] = action;
+    unawaited(
+      SentryReporter.reportError(e, stackTrace: stackTrace, tags: tags),
     );
   }
 
