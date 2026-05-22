@@ -1,14 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 
-import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
-import '../../../../core/services/places_service.dart';
 import '../../../../core/widgets/inputs/j_place_field.dart';
+import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../profile/presentation/widgets/profile_location_field.dart'
     show kPlacesEnabled;
 
@@ -70,10 +68,11 @@ class _LegacyBranch extends StatelessWidget {
           children: [
             Expanded(
               flex: 4,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'suburb',
                 hint: 'e.g. Parramatta',
-                capitalization: TextCapitalization.words,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
                 validator: FormBuilderValidators.required(
                   errorText: 'Required.',
                 ),
@@ -82,10 +81,11 @@ class _LegacyBranch extends StatelessWidget {
             Gap(10.w),
             Expanded(
               flex: 2,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'state',
                 hint: 'NSW',
-                capitalization: TextCapitalization.characters,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.next,
                 validator: FormBuilderValidators.required(
                   errorText: 'Required.',
                 ),
@@ -94,10 +94,12 @@ class _LegacyBranch extends StatelessWidget {
             Gap(10.w),
             Expanded(
               flex: 3,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'postcode',
                 hint: '2150',
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: FormBuilderValidators.match(
                   RegExp(r'^\d{4}$'),
                   errorText: '4 digits.',
@@ -111,45 +113,3 @@ class _LegacyBranch extends StatelessWidget {
   }
 }
 
-class _LegacyField extends StatelessWidget {
-  const _LegacyField({
-    required this.name,
-    required this.hint,
-    this.capitalization = TextCapitalization.none,
-    this.keyboardType,
-    this.validator,
-  });
-
-  final String name;
-  final String hint;
-  final TextCapitalization capitalization;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return FormBuilderTextField(
-      name: name,
-      keyboardType: keyboardType,
-      textCapitalization: capitalization,
-      textInputAction: TextInputAction.next,
-      inputFormatters: keyboardType == TextInputType.number
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : null,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      validator: validator,
-      style: tt.bodyLarge!.copyWith(
-        color: c.text1,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        helperText: ' ',
-        helperMaxLines: 2,
-        errorMaxLines: 2,
-      ),
-    );
-  }
-}

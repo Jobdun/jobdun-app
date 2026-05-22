@@ -1,15 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../core/config/env.dart';
-import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/services/places_service.dart';
 import '../../../../core/widgets/inputs/j_place_field.dart';
+import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 
@@ -175,10 +174,10 @@ class _LegacyBranch extends StatelessWidget {
           children: [
             Expanded(
               flex: 4,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'suburb',
                 hint: 'Suburb',
-                initial: initial.suburb,
+                initialValue: initial.suburb,
                 validator: FormBuilderValidators.required(
                   errorText: 'Suburb is required.',
                 ),
@@ -187,26 +186,25 @@ class _LegacyBranch extends StatelessWidget {
             Gap(10.w),
             Expanded(
               flex: 2,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'state',
                 hint: 'State',
-                initial: initial.state,
+                initialValue: initial.state,
               ),
             ),
             Gap(10.w),
             Expanded(
               flex: 3,
-              child: _LegacyField(
+              child: JTextField(
                 name: 'postcode',
                 hint: 'Postcode',
-                initial: initial.postcode,
+                initialValue: initial.postcode,
                 keyboardType: TextInputType.number,
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.match(
-                    RegExp(r'^\d{3,4}$'),
-                    errorText: 'AU postcode (3 or 4 digits).',
-                  ),
-                ]),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: FormBuilderValidators.match(
+                  RegExp(r'^\d{3,4}$'),
+                  errorText: 'AU postcode (3 or 4 digits).',
+                ),
               ),
             ),
           ],
@@ -216,44 +214,3 @@ class _LegacyBranch extends StatelessWidget {
   }
 }
 
-class _LegacyField extends StatelessWidget {
-  const _LegacyField({
-    required this.name,
-    required this.hint,
-    required this.initial,
-    this.validator,
-    this.keyboardType,
-  });
-
-  final String name;
-  final String hint;
-  final String? initial;
-  final String? Function(String?)? validator;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return FormBuilderTextField(
-      name: name,
-      initialValue: initial,
-      keyboardType: keyboardType,
-      inputFormatters: keyboardType == TextInputType.number
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : null,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      validator: validator,
-      style: tt.bodyLarge!.copyWith(
-        color: c.text1,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        helperText: ' ',
-        helperMaxLines: 2,
-        errorMaxLines: 2,
-      ),
-    );
-  }
-}

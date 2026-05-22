@@ -23,6 +23,7 @@ import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/services/image_upload_service.dart';
 import '../../../../core/services/places_service.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
@@ -315,7 +316,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       if (isBuilder) ...[
                         const FieldLabel('YOUR NAME'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'contact_name',
                           hint: 'Your full name',
                           initialValue:
@@ -326,7 +327,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         Gap(AppSpacing.md.h),
                         const FieldLabel('COMPANY NAME'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'company_name',
                           hint: 'e.g. Pinnacle Construct',
                           initialValue: bp?.companyName,
@@ -337,7 +338,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         Gap(AppSpacing.md.h),
                         const FieldLabel('ABN'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'abn',
                           hint: '12 345 678 901',
                           initialValue: bp?.abn,
@@ -346,7 +347,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         Gap(AppSpacing.md.h),
                         const FieldLabel('YEARS IN BUSINESS'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'years_in_business',
                           hint: 'e.g. 5',
                           initialValue: bp?.yearsInBusiness?.toString(),
@@ -368,7 +369,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         Gap(AppSpacing.md.h),
                         const FieldLabel('WEBSITE'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'website',
                           hint: 'https://yourcompany.com.au',
                           initialValue: bp?.website,
@@ -385,7 +386,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       ] else ...[
                         const FieldLabel('LEGAL NAME'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'full_name',
                           hint: 'For invoices and verification',
                           initialValue: tp?.fullName ?? _metadataFullName,
@@ -415,7 +416,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         Gap(AppSpacing.md.h),
                         const FieldLabel('YEARS OF EXPERIENCE'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'years_experience',
                           hint: 'e.g. 8',
                           initialValue: tp?.yearsExperience?.toString(),
@@ -441,7 +442,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: _FormField(
+                              child: JTextField(
                                 name: 'hourly_rate_min',
                                 hint: 'Min',
                                 initialValue: tp?.hourlyRateMin
@@ -460,7 +461,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                             ),
                             Gap(10.w),
                             Expanded(
-                              child: _FormField(
+                              child: JTextField(
                                 name: 'hourly_rate_max',
                                 hint: 'Max',
                                 initialValue: tp?.hourlyRateMax
@@ -499,7 +500,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       ],
                       const FieldLabel('DISPLAY NAME'),
                       Gap(AppSpacing.sm.h),
-                      _FormField(
+                      JTextField(
                         name: 'display_name',
                         hint: 'Shown publicly to other users',
                         initialValue: profile?.displayName ?? _metadataFullName,
@@ -529,7 +530,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       if (isBuilder) ...[
                         const FieldLabel('CONTACT PHONE'),
                         Gap(AppSpacing.sm.h),
-                        _FormField(
+                        JTextField(
                           name: 'contact_phone',
                           hint: '+61 4 1234 5678',
                           initialValue: bp?.contactPhone,
@@ -539,7 +540,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       ],
                       const FieldLabel('ABOUT'),
                       Gap(AppSpacing.sm.h),
-                      _FormField(
+                      JTextField(
                         name: 'about',
                         hint: isBuilder
                             ? 'Tell tradies about your company…'
@@ -596,56 +597,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   }
 }
 
-// FormBuilder-aware text field with the bordered-surface chrome that matches
-// the rest of /profile/edit. Helper-space is reserved so validation errors
-// don't push the form's layout around.
-class _FormField extends StatelessWidget {
-  const _FormField({
-    required this.name,
-    required this.hint,
-    this.initialValue,
-    this.validator,
-    this.keyboardType,
-    this.maxLines = 1,
-  });
-
-  final String name;
-  final String hint;
-  final String? initialValue;
-  final String? Function(String?)? validator;
-  final TextInputType? keyboardType;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    // The themed OutlineInputBorder owns the box, so Material renders the
-    // validation error BELOW/outside the field instead of inside the border.
-    // Mirrors JTextField (the auth-flow pattern) and MASTER “Input Fields”.
-    return FormBuilderTextField(
-      name: name,
-      initialValue: initialValue,
-      validator: validator,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      style: tt.bodyLarge!.copyWith(
-        color: c.text1,
-        fontWeight: FontWeight.w500,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        // Reserve helper/error space so layout doesn't jump on validation.
-        helperText: ' ',
-        helperMaxLines: 2,
-        errorMaxLines: 2,
-      ),
-    );
-  }
-}
-
-// Tappable input-shaped tile that mirrors _FormField's chrome and opens the
+// Tappable input-shaped tile that mirrors JTextField's chrome and opens the
 // TradeCategoryPicker. Resolves display label from the cached categories list;
 // falls back to the slug if the row isn't in the live list (renamed category).
 class _TradePickerTile extends ConsumerWidget {

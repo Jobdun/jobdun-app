@@ -16,7 +16,7 @@ class JTextField extends StatefulWidget {
   const JTextField({
     super.key,
     required this.name,
-    required this.label,
+    this.label,
     this.hint,
     this.prefixIcon,
     this.prefixText,
@@ -34,12 +34,17 @@ class JTextField extends StatefulWidget {
     this.controller,
     this.inputFormatters,
     this.maxLength,
+    this.maxLines = 1,
     this.autofillHints,
     this.labelTrailing,
   });
 
   final String name;
-  final String label;
+  // Optional uppercase Oswald label above the input. When null, the input
+  // renders without a label — useful for row layouts where one shared
+  // FieldLabel sits above several inputs (e.g. SUBURB / STATE / POSTCODE on
+  // /profile/edit) and per-field labels would duplicate it.
+  final String? label;
   final String? hint;
   final IconData? prefixIcon;
   final String? prefixText;
@@ -57,6 +62,9 @@ class JTextField extends StatefulWidget {
   final TextEditingController? controller;
   final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
+  // 1 = single-line input (default). Pass higher for multi-line text areas
+  // such as the COVER NOTE on /jobs/<id>/apply or ABOUT on /profile/edit.
+  final int maxLines;
   final Iterable<String>? autofillHints;
 
   /// Optional widget rendered on the right side of the label row. Used on
@@ -103,27 +111,29 @@ class _JTextFieldState extends State<JTextField> {
     // labelTrailing (e.g. "Forgot?") keeps its own button semantics — merging
     // it with the input's text-field semantics trips the framework's
     // semantics-flush assertion at runtime.
-    final labelWidget = Text(
-      widget.label,
-      style: tt.labelMedium!.copyWith(
-        color: widget.enabled ? c.text2 : c.text3,
-      ),
-    );
+    final hasLabel = widget.label != null;
+    final labelWidget = hasLabel
+        ? Text(
+            widget.label!,
+            style: tt.labelMedium!.copyWith(
+              color: widget.enabled ? c.text2 : c.text3,
+            ),
+          )
+        : const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.labelTrailing != null)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: labelWidget),
-              widget.labelTrailing!,
-            ],
-          )
-        else
-          labelWidget,
-        Gap(AppSpacing.sm.h),
+        if (hasLabel) ...[
+          if (widget.labelTrailing != null)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [Expanded(child: labelWidget), widget.labelTrailing!],
+            )
+          else
+            labelWidget,
+          Gap(AppSpacing.sm.h),
+        ],
         MergeSemantics(
           child: FormBuilderTextField(
             name: widget.name,
@@ -138,6 +148,7 @@ class _JTextFieldState extends State<JTextField> {
             onChanged: widget.onChanged,
             inputFormatters: widget.inputFormatters,
             maxLength: widget.maxLength,
+            maxLines: widget.maxLines,
             autofillHints: widget.autofillHints,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             enableInteractiveSelection: true,
