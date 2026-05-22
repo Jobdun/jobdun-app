@@ -20,6 +20,7 @@ import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../providers/jobs_provider.dart';
+import '../widgets/jobs_search_place_chip.dart';
 import 'job_detail_page.dart';
 
 class JobsPage extends ConsumerStatefulWidget {
@@ -31,6 +32,9 @@ class JobsPage extends ConsumerStatefulWidget {
 
 class _JobsPageState extends ConsumerState<JobsPage> {
   final _searchCtrl = TextEditingController();
+  // Mirrored search query so JobsSearchPlaceChip rebuilds — _searchCtrl.text
+  // doesn't drive a rebuild on its own.
+  String _currentQuery = '';
   Timer? _debounce;
 
   // Local UI-only flag — true when the SAVED chip is active, which swaps
@@ -69,6 +73,9 @@ class _JobsPageState extends ConsumerState<JobsPage> {
   }
 
   void _onSearchChanged(String query) {
+    if (query != _currentQuery) {
+      setState(() => _currentQuery = query);
+    }
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
       if (mounted) ref.read(jobsControllerProvider.notifier).search(query);
@@ -165,6 +172,13 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             ),
                       isDense: true,
                     ),
+                  ),
+                  JobsSearchPlaceChip(
+                    query: _currentQuery,
+                    onTap: (place) {
+                      _searchCtrl.text = place.suburb;
+                      _onSearchChanged(place.suburb);
+                    },
                   ),
                   Gap(12.h),
                   // ── Filter chips
