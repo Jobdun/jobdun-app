@@ -14,6 +14,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
+import '../widgets/job_location_field.dart';
 
 class JobCreatePage extends StatefulWidget {
   const JobCreatePage({super.key});
@@ -157,41 +158,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       _TradePicker(trades: _trades),
                       Gap(20.h),
 
-                      const FieldLabel('LOCATION'),
-                      Gap(AppSpacing.sm.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: JTextField(
-                              name: 'suburb',
-                              label: 'SUBURB',
-                              hint: 'e.g. Parramatta',
-                              textInputAction: TextInputAction.next,
-                              textCapitalization: TextCapitalization.words,
-                              validator: FormBuilderValidators.required(
-                                errorText: 'Required.',
-                              ),
-                            ),
-                          ),
-                          Gap(10.w),
-                          Expanded(
-                            flex: 2,
-                            child: JTextField(
-                              name: 'state',
-                              label: 'STATE',
-                              hint: 'NSW',
-                              textInputAction: TextInputAction.next,
-                              textCapitalization: TextCapitalization.characters,
-                              maxLength: 3,
-                              validator: FormBuilderValidators.required(
-                                errorText: 'Required.',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const JobLocationField(),
                       Gap(4.h),
 
                       _RateTypePicker(

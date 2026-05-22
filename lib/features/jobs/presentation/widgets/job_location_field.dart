@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:gap/gap.dart';
+
+import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/services/places_service.dart';
+import '../../../../core/widgets/inputs/j_place_field.dart';
+import '../../../profile/presentation/widgets/profile_location_field.dart'
+    show kPlacesEnabled;
+
+/// LOCATION row on /jobs/create.
+///
+/// When [kPlacesEnabled] (compile-time gated), renders a single [JPlaceField]
+/// bound to `name: 'place'`. The parent _post handler splits the resulting
+/// [JPlaceResult] into suburb / state / postcode / lat / lng / formatted_address
+/// / place_id.
+///
+/// When disabled (today's default), renders a 3-field SUBURB / STATE /
+/// POSTCODE row. This is **wider** than the previous 2-field row — adding the
+/// postcode field is the silent-bug fix called out in
+/// `docs/LOCATION_PICKER_AUDIT.md` §2.1: the old form had no postcode input
+/// so every legacy job row landed in the DB with an empty postcode.
+class JobLocationField extends StatelessWidget {
+  const JobLocationField({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return kPlacesEnabled ? const _PlaceBranch() : const _LegacyBranch();
+  }
+}
+
+class _PlaceBranch extends StatelessWidget {
+  const _PlaceBranch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const FieldLabel('LOCATION'),
+        Gap(8.h),
+        JPlaceField(
+          name: 'place',
+          label: 'LOCATION',
+          validator: (value) =>
+              value == null ? 'Pick a suburb to continue.' : null,
+        ),
+      ],
+    );
+  }
+}
+
+class _LegacyBranch extends StatelessWidget {
+  const _LegacyBranch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const FieldLabel('LOCATION'),
+        Gap(8.h),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: _LegacyField(
+                name: 'suburb',
+                hint: 'e.g. Parramatta',
+                capitalization: TextCapitalization.words,
+                validator: FormBuilderValidators.required(
+                  errorText: 'Required.',
+                ),
+              ),
+            ),
+            Gap(10.w),
+            Expanded(
+              flex: 2,
+              child: _LegacyField(
+                name: 'state',
+                hint: 'NSW',
+                capitalization: TextCapitalization.characters,
+                validator: FormBuilderValidators.required(
+                  errorText: 'Required.',
+                ),
+              ),
+            ),
+            Gap(10.w),
+            Expanded(
+              flex: 3,
+              child: _LegacyField(
+                name: 'postcode',
+                hint: '2150',
+                keyboardType: TextInputType.number,
+                validator: FormBuilderValidators.match(
+                  RegExp(r'^\d{4}$'),
+                  errorText: '4 digits.',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LegacyField extends StatelessWidget {
+  const _LegacyField({
+    required this.name,
+    required this.hint,
+    this.capitalization = TextCapitalization.none,
+    this.keyboardType,
+    this.validator,
+  });
+
+  final String name;
+  final String hint;
+  final TextCapitalization capitalization;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return FormBuilderTextField(
+      name: name,
+      keyboardType: keyboardType,
+      textCapitalization: capitalization,
+      textInputAction: TextInputAction.next,
+      inputFormatters: keyboardType == TextInputType.number
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : null,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: validator,
+      style: tt.bodyLarge!.copyWith(color: c.text1, fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        hintText: hint,
+        helperText: ' ',
+        helperMaxLines: 2,
+        errorMaxLines: 2,
+      ),
+    );
+  }
+}
