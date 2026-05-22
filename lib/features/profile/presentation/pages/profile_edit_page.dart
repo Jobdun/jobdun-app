@@ -19,11 +19,13 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/services/image_upload_service.dart';
+import '../../../../core/services/places_service.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
 import '../widgets/portfolio_strip.dart';
+import '../widgets/profile_location_field.dart';
 import '../widgets/trade_category_picker.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
@@ -142,6 +144,18 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
+    // PLACES_ENABLED branch — values['place'] is a JPlaceResult set by
+    // JPlaceField. Split it back into the suburb/state/postcode the controller
+    // already expects, and tag-on the new lat/lng + place_id + formatted_address.
+    final pickedPlace = values['place'] as JPlaceResult?;
+    final String resolvedSuburb = pickedPlace?.suburb ??
+        (values['suburb'] as String?) ??
+        '';
+    final String? resolvedState =
+        pickedPlace?.state ?? values['state'] as String?;
+    final String? resolvedPostcode =
+        pickedPlace?.postcode ?? values['postcode'] as String?;
+
     int? parseIntOrNull(Object? v) {
       if (v == null) return null;
       final s = v.toString().trim();
@@ -161,9 +175,13 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         .saveProfile(
           role: role,
           displayName: values['display_name'] as String,
-          suburb: values['suburb'] as String,
-          auState: values['state'] as String?,
-          postcode: values['postcode'] as String?,
+          suburb: resolvedSuburb,
+          auState: resolvedState,
+          postcode: resolvedPostcode,
+          formattedAddress: pickedPlace?.formattedAddress,
+          placeId: pickedPlace?.placeId,
+          latitude: pickedPlace?.latitude,
+          longitude: pickedPlace?.longitude,
           about: values['about'] as String?,
           companyName: values['company_name'] as String?,
           abn: values['abn'] as String?,
@@ -482,54 +500,24 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                         ),
                       ),
                       Gap(AppSpacing.md.h),
-                      FieldLabel(isBuilder ? 'SERVICE SUBURB' : 'BASE SUBURB'),
-                      Gap(AppSpacing.sm.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 4,
-                            child: _FormField(
-                              name: 'suburb',
-                              hint: 'Suburb',
-                              initialValue: isBuilder
-                                  ? bp?.serviceSuburb
-                                  : tp?.baseSuburb,
-                              validator: FormBuilderValidators.required(
-                                errorText: 'Suburb is required.',
-                              ),
-                            ),
-                          ),
-                          Gap(10.w),
-                          Expanded(
-                            flex: 2,
-                            child: _FormField(
-                              name: 'state',
-                              hint: 'State',
-                              initialValue: isBuilder
-                                  ? bp?.serviceState
-                                  : tp?.baseState,
-                            ),
-                          ),
-                          Gap(10.w),
-                          Expanded(
-                            flex: 3,
-                            child: _FormField(
-                              name: 'postcode',
-                              hint: 'Postcode',
-                              initialValue: isBuilder
-                                  ? bp?.servicePostcode
-                                  : tp?.basePostcode,
-                              keyboardType: TextInputType.number,
-                              validator: FormBuilderValidators.compose([
-                                FormBuilderValidators.match(
-                                  RegExp(r'^\d{3,4}$'),
-                                  errorText: 'AU postcode (3 or 4 digits).',
-                                ),
-                              ]),
-                            ),
-                          ),
-                        ],
+                      ProfileLocationField(
+                        label: isBuilder
+                            ? 'SERVICE LOCATION'
+                            : 'BASE LOCATION',
+                        legacyInitial: (
+                          suburb: isBuilder
+                              ? bp?.serviceSuburb
+                              : tp?.baseSuburb,
+                          state: isBuilder ? bp?.serviceState : tp?.baseState,
+                          postcode: isBuilder
+                              ? bp?.servicePostcode
+                              : tp?.basePostcode,
+                        ),
+                        placeInitial: buildProfilePlaceInitial(
+                          isBuilder: isBuilder,
+                          builderProfile: bp,
+                          tradeProfile: tp,
+                        ),
                       ),
                       Gap(AppSpacing.md.h),
                       if (isBuilder) ...[

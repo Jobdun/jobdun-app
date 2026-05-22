@@ -98,6 +98,13 @@ class ProfileController extends Notifier<ProfileState> {
     required String? auState,
     required String? postcode,
     required String? about,
+    // Place-picker extras — set when the user picks via JPlaceField (Phase 3+).
+    // Null on legacy 3-field submissions; toJson() emits them only when set
+    // so writes don't fail pre-migration.
+    String? formattedAddress,
+    String? placeId,
+    double? latitude,
+    double? longitude,
     // Builder-only
     String? companyName,
     String? abn,
@@ -156,6 +163,10 @@ class ProfileController extends Notifier<ProfileState> {
           serviceSuburb: nullIfBlank(suburb),
           serviceState: nullIfBlank(auState),
           servicePostcode: nullIfBlank(postcode),
+          serviceFormattedAddress: nullIfBlank(formattedAddress),
+          servicePlaceId: nullIfBlank(placeId),
+          serviceLatitude: latitude,
+          serviceLongitude: longitude,
         );
         final r = await _repo.upsertBuilderProfile(upserted);
         r.fold((f) => throw Exception(f.message), (_) {});
@@ -169,6 +180,10 @@ class ProfileController extends Notifier<ProfileState> {
           baseSuburb: nullIfBlank(suburb),
           baseState: nullIfBlank(auState),
           basePostcode: nullIfBlank(postcode),
+          baseFormattedAddress: nullIfBlank(formattedAddress),
+          basePlaceId: nullIfBlank(placeId),
+          baseLatitude: latitude,
+          baseLongitude: longitude,
           about: nullIfBlank(about),
           yearsExperience: yearsExperience,
           hourlyRateMin: hourlyRateMin,
