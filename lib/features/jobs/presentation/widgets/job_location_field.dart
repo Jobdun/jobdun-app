@@ -14,16 +14,17 @@ import '../../../profile/presentation/widgets/profile_location_field.dart'
 
 /// LOCATION row on /jobs/create.
 ///
-/// When [kPlacesEnabled] (compile-time gated), renders a single [JPlaceField]
-/// bound to `name: 'place'`. The parent _post handler splits the resulting
-/// [JPlaceResult] into suburb / state / postcode / lat / lng / formatted_address
-/// / place_id.
+/// When [kPlacesEnabled] is true (MAPTILER_API_KEY configured in env, or
+/// `--dart-define=PLACES_ENABLED=true` forcing it on), renders a single
+/// [JPlaceField] bound to `name: 'place'`. The parent _post handler splits
+/// the resulting [JPlaceResult] into suburb / state / postcode / lat / lng /
+/// formatted_address / place_id.
 ///
-/// When disabled (today's default), renders a 3-field SUBURB / STATE /
-/// POSTCODE row. This is **wider** than the previous 2-field row — adding the
-/// postcode field is the silent-bug fix called out in
-/// `docs/LOCATION_PICKER_AUDIT.md` §2.1: the old form had no postcode input
-/// so every legacy job row landed in the DB with an empty postcode.
+/// When disabled (no MapTiler key + no force-on override), renders a 3-field
+/// SUBURB / STATE / POSTCODE row. This is **wider** than the previous
+/// 2-field row — adding the postcode field is the silent-bug fix called out
+/// in `docs/LOCATION_PICKER_AUDIT.md` §2.1: the old form had no postcode
+/// input so every legacy job row landed in the DB with an empty postcode.
 class JobLocationField extends StatelessWidget {
   const JobLocationField({super.key});
 

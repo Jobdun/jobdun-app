@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../core/config/env.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/services/places_service.dart';
@@ -64,16 +65,31 @@ JPlaceResult? buildProfilePlaceInitial({
   );
 }
 
-/// PLACES_ENABLED is a compile-time gate that flips this widget between two
-/// modes — both kept in source until the post-launch soak (Phase 6 of the
-/// location-picker initiative). Default `false` keeps every dev build on
-/// the legacy 3-field input while engineers wire MapTiler keys.
+/// Activates the MapTiler-backed [JPlaceField] when a MapTiler key is wired
+/// (`.env` or `--dart-define`); falls back to the legacy 3-field input
+/// otherwise. Both branches stay in source until the post-launch soak (Phase
+/// 6 of the location-picker initiative) — at which point the legacy branch
+/// is deleted.
 ///
-/// To opt in:  flutter run --dart-define=PLACES_ENABLED=true
-const bool kPlacesEnabled = bool.fromEnvironment(
-  'PLACES_ENABLED',
-  defaultValue: false,
-);
+/// Activation path:
+///   1. Add `MAPTILER_API_KEY=...` to .env (or pass via --dart-define).
+///   2. `flutter run` — JPlaceField takes over automatically.
+///
+/// Override knobs:
+///   `--dart-define=PLACES_ENABLED=true`   forces the picker on (e.g. tests
+///                                         where the key is stubbed via a
+///                                         provider override).
+///   `--dart-define=PLACES_ENABLED=false`  forces the legacy 3-field input
+///                                         on (useful if the picker
+///                                         misbehaves in production and we
+///                                         need to hot-fix without a code
+///                                         change).
+bool get kPlacesEnabled {
+  const override = String.fromEnvironment('PLACES_ENABLED');
+  if (override == 'true') return true;
+  if (override == 'false') return false;
+  return AppEnv.hasMaptilerApiKey;
+}
 
 /// One widget rendered into both the trade and builder profile-edit forms in
 /// place of the legacy SUBURB / STATE / POSTCODE row.
