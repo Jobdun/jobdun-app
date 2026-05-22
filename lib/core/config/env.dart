@@ -59,4 +59,24 @@ class AppEnv {
           .trim();
 
   static bool get hasMaptilerApiKey => maptilerApiKey.isNotEmpty;
+
+  // Sentry crash reporting. Empty DSN = Sentry no-ops cleanly — dev builds
+  // and CI runs without the key still launch normally.
+  static String get sentryDsn =>
+      (dotenv.env['SENTRY_DSN'] ??
+              const String.fromEnvironment('SENTRY_DSN'))
+          .trim();
+
+  static String get sentryEnvironment {
+    final raw =
+        (dotenv.env['SENTRY_ENVIRONMENT'] ??
+                const String.fromEnvironment(
+                  'SENTRY_ENVIRONMENT',
+                  defaultValue: 'development',
+                ))
+            .trim();
+    return raw.isEmpty ? 'development' : raw;
+  }
+
+  static bool get hasSentryDsn => sentryDsn.isNotEmpty;
 }

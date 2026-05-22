@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -110,10 +112,17 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final source = action == _AvatarAction.camera
         ? ImageSource.camera
         : ImageSource.gallery;
-    final file = await ImageUploadService.pickCropCompress(
-      source: source,
-      aspect: ImageAspect.square,
-    );
+    File? file;
+    try {
+      file = await ImageUploadService.pickCropCompress(
+        source: source,
+        aspect: ImageAspect.square,
+      );
+    } on UploadGuardException catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    }
     if (file == null || !mounted) return;
 
     final ok = await controller.uploadAvatar(file);

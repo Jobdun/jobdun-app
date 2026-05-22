@@ -589,12 +589,7 @@ class _FormStep extends StatelessWidget {
                       8,
                       errorText: 'At least 8 characters.',
                     ),
-                    (val) {
-                      if (val != null && !RegExp(r'\d').hasMatch(val)) {
-                        return 'Include at least 1 number.';
-                      }
-                      return null;
-                    },
+                    _strongPasswordValidator,
                   ]),
                 ),
                 _PasswordStrengthBar(strength: strength, c: c, tt: tt),
@@ -739,6 +734,24 @@ class _RoleChip extends StatelessWidget {
 }
 
 // ── Password strength ─────────────────────────────────────────────────────────
+
+/// Composable validator block enforced on sign-up: ≥1 uppercase, ≥1 digit,
+/// ≥1 symbol. Surfaces one rule at a time so the user gets actionable copy
+/// instead of a "must contain X, Y, and Z" wall of text. The ≥8-char check
+/// is the [FormBuilderValidators.minLength] entry one step up the chain.
+String? _strongPasswordValidator(String? value) {
+  if (value == null || value.isEmpty) return null; // .required handles this
+  if (!RegExp(r'\d').hasMatch(value)) {
+    return 'Include at least 1 number.';
+  }
+  if (!RegExp(r'[A-Z]').hasMatch(value)) {
+    return 'Include at least 1 uppercase letter.';
+  }
+  if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-=+]').hasMatch(value)) {
+    return 'Include at least 1 symbol (! @ # \$ % etc.).';
+  }
+  return null;
+}
 
 enum _PwStrength { weak, medium, strong }
 

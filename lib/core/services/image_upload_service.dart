@@ -7,6 +7,21 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../app/theme/app_colors.dart';
 
+/// Thrown by [ImageUploadService.pickCropCompress] when the picked file fails
+/// a client-side guard-rail (max size, MIME allowlist). Distinct from a `null`
+/// return, which still means "user cancelled mid-flow".
+///
+/// Catch at call sites and surface `message` in a snackbar — the copy is
+/// already user-friendly. Cancellations should not be caught; they're not
+/// errors and the service returns `null` for them.
+class UploadGuardException implements Exception {
+  const UploadGuardException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'UploadGuardException: $message';
+}
+
 /// Standard preset aspect ratios for Jobdun uploads. Use these instead of
 /// constructing [CropAspectRatio] inline so every avatar / portfolio / logo
 /// upload across the app crops to the same dimensions.
@@ -54,6 +69,26 @@ class ImageUploadService {
   ///   shows JPEG artefacts on profile/portfolio surfaces.
   /// - [compressQuality] — JPEG quality (0–100). 80 keeps detail without
   ///   ballooning file size; bump for documents/IDs that need legibility.
+  /// Hard cap on the size of the file `image_picker` returns. Anything above
+  /// this throws [UploadGuardException] before crop/compress runs. 10 MB
+  /// matches the largest typical iPhone HEIC and leaves headroom for raw
+  /// captures; the post-compression pipeline lands at ~300–800 KB.
+  static const int maxBytes = 10 * 1024 * 1024;
+
+  /// MIME-type allowlist applied to the picker output. We accept the four
+  /// formats the OS pickers actually return for camera + gallery; anything
+  /// else (heic-sequence, gif, bmp, tiff) gets rejected before it eats
+  /// bandwidth. Verification docs reuse this list — PDF support is a
+  /// separate code path that doesn't go through ImagePicker.
+  static const Set<String> allowedExtensions = {
+    'jpg',
+    'jpeg',
+    'png',
+    'webp',
+    'heic',
+    'heif',
+  };
+
   static Future<File?> pickCropCompress({
     required ImageSource source,
     required ImageAspect aspect,
@@ -69,6 +104,25 @@ class ImageUploadService {
       maxHeight: maxPickerSize,
     );
     if (picked == null) return null;
+
+    // 1a. Guard-rails — extension allowlist + max size. Surfaces a typed
+    // exception so the snackbar copy at the call site is friendly. We check
+    // size against the raw picker output (pre-compress) so a 50 MB camera
+    // RAW doesn't waste cycles in the cropper before failing.
+    final ext = picked.name.split('.').last.toLowerCase();
+    if (!allowedExtensions.contains(ext)) {
+      throw UploadGuardException(
+        "Photos must be JPG, PNG, WebP, or HEIC. We can't accept .$ext.",
+      );
+    }
+    final size = await picked.length();
+    if (size > maxBytes) {
+      final mb = (size / (1024 * 1024)).toStringAsFixed(1);
+      throw UploadGuardException(
+        'Photo is $mb MB — please pick one under '
+        '${(maxBytes / (1024 * 1024)).toStringAsFixed(0)} MB.',
+      );
+    }
 
     // 2. Crop. The image_cropper package shells out to native crop UIs on
     // each platform; the colours here paint that native UI in the Jobdun

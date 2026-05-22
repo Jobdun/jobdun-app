@@ -127,6 +127,13 @@ dependencies:
   flutter_markdown_plus: ^1.0.5
   phosphor_flutter: ^2.1.0
 
+  # === Crash reporting / observability ===
+  # Catches unhandled exceptions from the Flutter engine and the runZonedGuarded
+  # zone wrapping runApp(); also installs a custom ErrorWidget.builder that
+  # replaces the red-yellow build-error screen with a Jobdun-themed fallback.
+  # Inert when SENTRY_DSN is empty so dev builds without the key still run.
+  sentry_flutter: ^8.10.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

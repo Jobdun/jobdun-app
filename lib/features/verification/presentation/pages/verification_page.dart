@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -42,12 +44,21 @@ class _VerificationPageState extends ConsumerState<VerificationPage> {
     // electrical licence) — free aspect, slightly higher JPEG quality
     // than the portfolio pipeline so the small print stays legible after
     // compression.
-    final file = await ImageUploadService.pickCropCompress(
-      source: source,
-      aspect: ImageAspect.free,
-      compressQuality: 88,
-      minOutputWidth: 1440,
-    );
+    File? file;
+    try {
+      file = await ImageUploadService.pickCropCompress(
+        source: source,
+        aspect: ImageAspect.free,
+        compressQuality: 88,
+        minOutputWidth: 1440,
+      );
+    } on UploadGuardException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    }
     if (file == null || !context.mounted) return;
     final ok = await ref
         .read(profileControllerProvider.notifier)

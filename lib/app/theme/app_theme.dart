@@ -165,12 +165,27 @@ class AppTheme {
       ),
     );
 
+    // Touch-target floor — 48dp on every tappable surface so WCAG 2.5.5
+    // ("Target Size — Minimum: 44 CSS pixels") is satisfied globally.
+    // MaterialTapTargetSize.padded is the Material 3 default; pinning it
+    // here explicitly so it doesn't drift if a downstream theme override
+    // forgets it. Every button theme below also sets minimumSize: 48×48
+    // because Flutter's default `minimumSize` for OutlinedButton / TextButton
+    // / FilledButton is 64×36 — below the floor — and Material's padded
+    // tap-target only adds room around the hit-test, not the visible widget.
+    const minTap = Size(48, 48);
+    final tapWrapStyle = ButtonStyle(
+      minimumSize: const WidgetStatePropertyAll(minTap),
+      tapTargetSize: MaterialTapTargetSize.padded,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
       extensions: [c],
       scaffoldBackgroundColor: c.background,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: c.background,
@@ -184,6 +199,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(minTap),
+          tapTargetSize: MaterialTapTargetSize.padded,
           overlayColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.pressed)) {
               return c.action.withValues(alpha: 0.15);
@@ -193,6 +210,15 @@ class AppTheme {
             }
             return null;
           }),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(style: tapWrapStyle),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: tapWrapStyle),
+      textButtonTheme: TextButtonThemeData(style: tapWrapStyle),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(minTap),
+          tapTargetSize: MaterialTapTargetSize.padded,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

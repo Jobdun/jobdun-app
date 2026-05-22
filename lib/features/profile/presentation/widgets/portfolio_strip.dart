@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,10 +25,19 @@ class PortfolioStrip extends ConsumerWidget {
   static const _maxImages = 12;
 
   Future<void> _pickAndUpload(BuildContext context, WidgetRef ref) async {
-    final file = await ImageUploadService.pickCropCompress(
-      source: ImageSource.gallery,
-      aspect: ImageAspect.portfolio,
-    );
+    File? file;
+    try {
+      file = await ImageUploadService.pickCropCompress(
+        source: ImageSource.gallery,
+        aspect: ImageAspect.portfolio,
+      );
+    } on UploadGuardException catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    }
     if (file == null) return;
 
     final ok = await ref
