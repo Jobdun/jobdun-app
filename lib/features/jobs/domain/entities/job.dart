@@ -79,6 +79,8 @@ class Job extends Equatable {
     this.deletedAt,
     this.latitude,
     this.longitude,
+    this.formattedAddress,
+    this.placeId,
   });
 
   final String id;
@@ -110,6 +112,11 @@ class Job extends Equatable {
   final DateTime updatedAt;
   final double? latitude;
   final double? longitude;
+  // Set by JPlaceField on job-create when the user picks a MapTiler suggestion.
+  // Backward-compatible: legacy rows have these as null and continue to render
+  // via `suburb`/`state`/`postcode` alone.
+  final String? formattedAddress;
+  final String? placeId;
 
   String get displayBudget {
     if (budgetMin == null && budgetMax == null) return 'Negotiable';

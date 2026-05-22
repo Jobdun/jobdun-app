@@ -117,6 +117,12 @@ dependencies:
   # NSLocationWhenInUseUsageDescription in Info.plist.
   geolocator: ^13.0.4
 
+  # === Geocoding (MapTiler) ===
+  # Plain HTTP client for the MapTiler Geocoding REST API used by JPlaceField.
+  # Already transitive via supabase_flutter — declared here so the version we
+  # use is intentional and pinned. No new native dependency.
+  http: ^1.2.2
+
   # === Legal document rendering ===
   flutter_markdown_plus: ^1.0.5
   phosphor_flutter: ^2.1.0

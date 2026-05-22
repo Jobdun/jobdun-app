@@ -13,6 +13,10 @@ class BuilderProfileModel extends BuilderProfile {
     super.serviceSuburb,
     super.serviceState,
     super.servicePostcode,
+    super.serviceFormattedAddress,
+    super.servicePlaceId,
+    super.serviceLatitude,
+    super.serviceLongitude,
     super.totalJobsPosted,
     super.activeJobsCount,
     super.hireCount,
@@ -33,6 +37,10 @@ class BuilderProfileModel extends BuilderProfile {
         serviceSuburb: json['service_suburb'] as String?,
         serviceState: json['service_state'] as String?,
         servicePostcode: json['service_postcode'] as String?,
+        serviceFormattedAddress: json['service_formatted_address'] as String?,
+        servicePlaceId: json['service_place_id'] as String?,
+        serviceLatitude: (json['service_latitude'] as num?)?.toDouble(),
+        serviceLongitude: (json['service_longitude'] as num?)?.toDouble(),
         totalJobsPosted: json['total_jobs_posted'] as int? ?? 0,
         activeJobsCount: json['active_jobs_count'] as int? ?? 0,
         hireCount: json['hire_count'] as int? ?? 0,
@@ -52,5 +60,13 @@ class BuilderProfileModel extends BuilderProfile {
     'service_suburb': serviceSuburb,
     'service_state': serviceState,
     'service_postcode': servicePostcode,
+    // Post-MapTiler additions — emit only when set so writes don't fail
+    // pre-migration on environments that haven't applied
+    // 20260522000001_places_columns.sql yet.
+    if (serviceFormattedAddress != null)
+      'service_formatted_address': serviceFormattedAddress,
+    if (servicePlaceId != null) 'service_place_id': servicePlaceId,
+    if (serviceLatitude != null) 'service_latitude': serviceLatitude,
+    if (serviceLongitude != null) 'service_longitude': serviceLongitude,
   };
 }

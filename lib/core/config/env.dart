@@ -44,4 +44,19 @@ class AppEnv {
           .trim();
 
   static bool get isGoogleConfigured => googleWebClientId.isNotEmpty;
+
+  // MapTiler Geocoding — used by JPlaceField for AU-restricted suburb / address
+  // autocomplete on profile-edit, job-create, and the jobs-search chip. Free
+  // for 100k req/month; ~$0.50/1k after. Get the key from the MapTiler Cloud
+  // dashboard (https://www.maptiler.com/cloud/) and restrict it to Geocoding
+  // API + the Android package + iOS bundle ID.
+  //
+  // Absent / empty key is non-fatal: PlacesService surfaces a typed error and
+  // JPlaceField falls back to its "Edit manually" legacy 3-field path.
+  static String get maptilerApiKey =>
+      (dotenv.env['MAPTILER_API_KEY'] ??
+              const String.fromEnvironment('MAPTILER_API_KEY'))
+          .trim();
+
+  static bool get hasMaptilerApiKey => maptilerApiKey.isNotEmpty;
 }

@@ -31,6 +31,8 @@ class JobModel extends Job {
     super.deletedAt,
     super.latitude,
     super.longitude,
+    super.formattedAddress,
+    super.placeId,
   });
 
   factory JobModel.fromJson(Map<String, dynamic> json) => JobModel(
@@ -75,6 +77,8 @@ class JobModel extends Job {
         : null,
     latitude: (json['latitude'] as num?)?.toDouble(),
     longitude: (json['longitude'] as num?)?.toDouble(),
+    formattedAddress: json['formatted_address'] as String?,
+    placeId: json['place_id'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -97,5 +101,12 @@ class JobModel extends Job {
     'requires_public_liability': requiresPublicLiability,
     'requires_verified': requiresVerified,
     'required_certifications': requiredCertifications,
+    // Lat/lng/place_id/formatted_address are post-MapTiler additions. Emit
+    // only when set so writes don't fail pre-migration on environments that
+    // haven't applied 20260522000001_places_columns.sql yet.
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
+    if (formattedAddress != null) 'formatted_address': formattedAddress,
+    if (placeId != null) 'place_id': placeId,
   };
 }

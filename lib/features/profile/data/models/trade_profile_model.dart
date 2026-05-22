@@ -14,6 +14,10 @@ class TradeProfileModel extends TradeProfile {
     super.baseSuburb,
     super.baseState,
     super.basePostcode,
+    super.baseFormattedAddress,
+    super.basePlaceId,
+    super.baseLatitude,
+    super.baseLongitude,
     super.about,
     super.tradeOther,
     super.licenceUrl,
@@ -41,6 +45,10 @@ class TradeProfileModel extends TradeProfile {
         baseSuburb: json['base_suburb'] as String?,
         baseState: json['base_state'] as String?,
         basePostcode: json['base_postcode'] as String?,
+        baseFormattedAddress: json['base_formatted_address'] as String?,
+        basePlaceId: json['base_place_id'] as String?,
+        baseLatitude: (json['base_latitude'] as num?)?.toDouble(),
+        baseLongitude: (json['base_longitude'] as num?)?.toDouble(),
         about: json['about'] as String?,
         tradeOther: json['trade_other'] as String?,
         licenceUrl: json['licence_url'] as String?,
@@ -72,5 +80,13 @@ class TradeProfileModel extends TradeProfile {
     'base_postcode': basePostcode,
     'about': about,
     'trade_other': tradeOther,
+    // Post-MapTiler additions — emit only when set so writes don't fail
+    // pre-migration on environments that haven't applied
+    // 20260522000001_places_columns.sql yet.
+    if (baseFormattedAddress != null)
+      'base_formatted_address': baseFormattedAddress,
+    if (basePlaceId != null) 'base_place_id': basePlaceId,
+    if (baseLatitude != null) 'base_latitude': baseLatitude,
+    if (baseLongitude != null) 'base_longitude': baseLongitude,
   };
 }

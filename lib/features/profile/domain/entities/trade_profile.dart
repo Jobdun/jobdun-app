@@ -15,6 +15,10 @@ class TradeProfile extends Equatable {
     this.baseSuburb,
     this.baseState,
     this.basePostcode,
+    this.baseFormattedAddress,
+    this.basePlaceId,
+    this.baseLatitude,
+    this.baseLongitude,
     this.about,
     this.tradeOther,
     this.licenceUrl,
@@ -40,6 +44,13 @@ class TradeProfile extends Equatable {
   final String? baseSuburb;
   final String? baseState;
   final String? basePostcode;
+  // Set by JPlaceField on profile-edit. Null on legacy rows where the user
+  // still hand-typed suburb/state/postcode pre-MapTiler. The home map prefers
+  // (baseLatitude, baseLongitude) when both are non-null.
+  final String? baseFormattedAddress;
+  final String? basePlaceId;
+  final double? baseLatitude;
+  final double? baseLongitude;
   final String? about;
   // Free-text trade name when primaryTrade == 'other'. Mirrors
   // trade_profiles.trade_other; null whenever primaryTrade is a known value.

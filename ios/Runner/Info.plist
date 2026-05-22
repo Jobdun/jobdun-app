@@ -49,12 +49,13 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<!-- Location is whileInUse only — shown to the user on first map view.
-	     Copy is intentionally specific so iOS users see a clear reason in
-	     the permission dialog. No NSLocationAlwaysAndWhenInUseUsageDescription
-	     because Jobdun does NOT use background location. -->
+	<!-- Location is whileInUse only — shown to the user on first map view or
+	     when tapping "Use my current location" in the address picker. Copy is
+	     intentionally specific so iOS users see a clear reason in the permission
+	     dialog. No NSLocationAlwaysAndWhenInUseUsageDescription because Jobdun
+	     does NOT use background location. -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Jobdun uses your location to show jobs and tradies near you on the map.</string>
+	<string>Jobdun uses your location to show jobs and tradies near you on the map and to suggest nearby addresses when you set your service area.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
