@@ -30,6 +30,7 @@ class TradeProfile extends Equatable {
     this.jobsCompleted = 0,
     this.averageRating,
     this.ratingCount = 0,
+    this.deletedAt,
   });
 
   final String id;
@@ -67,6 +68,10 @@ class TradeProfile extends Equatable {
   final int jobsCompleted;
   final double? averageRating;
   final int ratingCount;
+  // Soft-delete timestamp. Repository default reads filter on
+  // `deletedAt == null`; deleted rows stay around so references in
+  // job_applications and reviews still resolve.
+  final DateTime? deletedAt;
 
   bool get hasLicence => licenceUrl != null && licenceUrl!.isNotEmpty;
   int get portfolioCount => portfolioUrls.length;

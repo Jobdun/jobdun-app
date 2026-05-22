@@ -22,6 +22,7 @@ class BuilderProfileModel extends BuilderProfile {
     super.hireCount,
     super.averageRating,
     super.ratingCount,
+    super.deletedAt,
   });
 
   factory BuilderProfileModel.fromJson(Map<String, dynamic> json) =>
@@ -46,6 +47,9 @@ class BuilderProfileModel extends BuilderProfile {
         hireCount: json['hire_count'] as int? ?? 0,
         averageRating: (json['average_rating'] as num?)?.toDouble(),
         ratingCount: json['rating_count'] as int? ?? 0,
+        deletedAt: json['deleted_at'] != null
+            ? DateTime.parse(json['deleted_at'] as String)
+            : null,
       );
 
   Map<String, dynamic> toJson() => {

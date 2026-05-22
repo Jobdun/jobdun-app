@@ -41,16 +41,21 @@ Future<void> main() async {
   // unhandled exception (sync, async, build-phase) flows to Sentry.
   // Inert when SENTRY_DSN is empty — `appRunner` is invoked either way, so
   // the app launches normally whether or not the DSN is wired.
-  await SentryFlutter.init(_configureSentry, appRunner: () {
-    runApp(
-      ProviderScope(
-        overrides: [
-          themeProvider.overrideWith(() => ThemeNotifier(initial: initialTheme)),
-        ],
-        child: const JobdunApp(),
-      ),
-    );
-  });
+  await SentryFlutter.init(
+    _configureSentry,
+    appRunner: () {
+      runApp(
+        ProviderScope(
+          overrides: [
+            themeProvider.overrideWith(
+              () => ThemeNotifier(initial: initialTheme),
+            ),
+          ],
+          child: const JobdunApp(),
+        ),
+      );
+    },
+  );
 }
 
 void _configureSentry(SentryFlutterOptions options) {
@@ -77,11 +82,7 @@ Widget _buildErrorWidget(FlutterErrorDetails details) {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              color: JColors.dark.urgent,
-              size: 48,
-            ),
+            Icon(Icons.error_outline, color: JColors.dark.urgent, size: 48),
             const SizedBox(height: 16),
             Text(
               "Something went wrong on this screen.",

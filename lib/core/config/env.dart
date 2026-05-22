@@ -63,8 +63,7 @@ class AppEnv {
   // Sentry crash reporting. Empty DSN = Sentry no-ops cleanly — dev builds
   // and CI runs without the key still launch normally.
   static String get sentryDsn =>
-      (dotenv.env['SENTRY_DSN'] ??
-              const String.fromEnvironment('SENTRY_DSN'))
+      (dotenv.env['SENTRY_DSN'] ?? const String.fromEnvironment('SENTRY_DSN'))
           .trim();
 
   static String get sentryEnvironment {

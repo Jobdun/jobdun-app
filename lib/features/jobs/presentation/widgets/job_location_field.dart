@@ -112,4 +112,3 @@ class _LegacyBranch extends StatelessWidget {
     );
   }
 }
-

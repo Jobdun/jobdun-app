@@ -23,6 +23,7 @@ class BuilderProfile extends Equatable {
     this.hireCount = 0,
     this.averageRating,
     this.ratingCount = 0,
+    this.deletedAt,
   });
 
   final String id;
@@ -48,6 +49,10 @@ class BuilderProfile extends Equatable {
   final int hireCount;
   final double? averageRating;
   final int ratingCount;
+  // Soft-delete timestamp. Repository default reads filter on
+  // `deletedAt == null`; deleted rows stay around so references in
+  // jobs / reviews still resolve.
+  final DateTime? deletedAt;
 
   String get displayLocation => (serviceSuburb != null && serviceState != null)
       ? '$serviceSuburb, $serviceState'

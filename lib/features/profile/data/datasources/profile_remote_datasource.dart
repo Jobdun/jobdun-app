@@ -48,10 +48,13 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<BuilderProfileModel?> getBuilderProfile(String userId) async {
     try {
+      // .isFilter('deleted_at', null) excludes soft-deleted rows. Mirrors the
+      // pattern jobs / messages / verification_documents already use.
       final data = await _client
           .from('builder_profiles')
           .select()
           .eq('id', userId)
+          .isFilter('deleted_at', null)
           .maybeSingle();
       if (data == null) return null;
       return BuilderProfileModel.fromJson(data);
@@ -67,6 +70,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           .from('trade_profiles')
           .select()
           .eq('id', userId)
+          .isFilter('deleted_at', null)
           .maybeSingle();
       if (data == null) return null;
       return TradeProfileModel.fromJson(data);

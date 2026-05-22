@@ -128,7 +128,10 @@ class _JTextFieldState extends State<JTextField> {
           if (widget.labelTrailing != null)
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: [Expanded(child: labelWidget), widget.labelTrailing!],
+              children: [
+                Expanded(child: labelWidget),
+                widget.labelTrailing!,
+              ],
             )
           else
             labelWidget,
