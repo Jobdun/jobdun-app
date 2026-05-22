@@ -13,7 +13,9 @@ Every place/location input in the Jobdun mobile app today is a plain `TextFormFi
 
 The cost of this is concrete: typo'd suburbs (`Parramata`), mismatched state/postcode pairs (`Parramatta / VIC / 2000`), profile records that cannot be plotted on the home map (no lat/lng on `trade_profiles` or `builder_profiles`), weak distance matching in the jobs feed, and a missing-postcode bug on `job_create_page.dart` where the field is silently dropped from the form. Each of these compounds in the matching algorithm — a tradie in "Parramatta NSW 2150" never sees a job posted in "Paramatta NSW 2150".
 
-The proposal is to introduce a single `JPlaceField` widget backed by a `PlacesService` core service, biased on the device's current location (the `geolocator` package is already wired for the map), restricted to Australia, and integrated with `flutter_form_builder`. The existing `suburb`/`state`/`postcode` columns stay populated (auto-filled from the Google Places result) for backward compatibility — three new columns (`formatted_address`, `place_id`, plus `latitude`/`longitude` on profile tables) are added alongside. The widget conforms to the existing Aggressive Flat design system; no new design vocabulary is introduced.
+The proposal is to introduce a single `JPlaceField` widget backed by a `PlacesService` core service, biased on the device's current location (the `geolocator` package is already wired for the map), restricted to Australia, and integrated with `flutter_form_builder`. The first implementation targets **MapTiler Geocoding** — OSM-backed, 100,000 requests/month on the free tier, ~$0.50/1k after that. No Google Cloud project, no per-session billing, no map-tile lock-in (MapTiler is a separate concern from `flutter_map`'s tile provider). The service interface is provider-agnostic by design so a future swap to LocationIQ, self-hosted Photon, or Google Places is a single-file change.
+
+The existing `suburb`/`state`/`postcode` columns stay populated (auto-filled from the MapTiler result) for backward compatibility — three new columns (`formatted_address`, `place_id`, plus `latitude`/`longitude` on profile tables) are added alongside. The widget conforms to the existing Aggressive Flat design system; no new design vocabulary is introduced.
 
 ---
 
@@ -103,18 +105,18 @@ CREATE INDEX idx_builder_profiles_service_latlng ON builder_profiles (service_la
 
 ## 4. Gap analysis
 
-| Concern | Today | Required for Places |
-|---------|-------|---------------------|
-| GCP project | None for Places | New project (or reuse existing if any), Places API enabled, billing alert configured |
-| API key | `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` exist for Sign-In only | New `GOOGLE_PLACES_API_KEY`, restricted by package + cert |
-| Env wiring | `lib/core/config/env.dart` reads `--dart-define`s | Add `placesApiKey` getter |
-| CI secret | `SUPABASE_*` set in GitHub Actions; Google Sign-In secrets intentionally empty | Add `GOOGLE_PLACES_API_KEY` secret (empty-ok in CI, Places not exercised in tests) |
-| Flutter package | `geolocator` only | Add `google_places_flutter` (autocomplete-only, no Maps SDK) |
-| Service layer | `lib/core/services/` has 6 services, none location-aware | Add `places_service.dart` + `places_service_provider.dart` |
+| Concern | Today | Required for MapTiler Geocoding |
+|---------|-------|---------------------------------|
+| Vendor account | None | One MapTiler Cloud account (free tier, no credit card required to start) |
+| API key | `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_IOS_CLIENT_ID` exist for Sign-In only — unrelated | One `MAPTILER_API_KEY`, restricted to the Geocoding API + an allowlist of bundle IDs / referrers in the MapTiler dashboard |
+| Env wiring | `lib/core/config/env.dart` reads `--dart-define`s | Add `maptilerApiKey` getter |
+| CI secret | `SUPABASE_*` set in GitHub Actions; Google Sign-In secrets intentionally empty | Add `MAPTILER_API_KEY` secret (empty-ok in CI — geocoding not exercised in tests) |
+| Flutter package | `geolocator` + `flutter_map` only | **None.** MapTiler Geocoding is a plain REST API — use the existing `http` client. No third-party SDK dependency, no map-tile coupling |
+| Service layer | `lib/core/services/` has 6 services, none location-aware | Add `places_service.dart` (abstract) + `maptiler_places_service.dart` (impl) + `places_service_provider.dart` |
 | Widget layer | 19 widgets in `lib/core/design/widgets/`, none for location input | Add `j_place_field.dart` (+ extracted `j_place_field_suggestion_row.dart` if needed) |
 | Schema | text-only location on profiles | 6 new columns, 2 new indexes (see §3.2) |
 | Permissions | Android + iOS location permissions declared and used by `_MapView` | Reuse existing — no manifest/Info.plist changes needed except wording update on iOS |
-| Privacy copy | Info.plist string mentions "map" only | Append "address suggestions" to `NSLocationWhenInUseUsageDescription`; update privacy policy |
+| Privacy copy | Info.plist string mentions "map" only | Append "address suggestions" to `NSLocationWhenInUseUsageDescription`; update privacy policy to mention MapTiler as a data sub-processor |
 
 ---
 
@@ -122,53 +124,53 @@ CREATE INDEX idx_builder_profiles_service_latlng ON builder_profiles (service_la
 
 ### 5.1 `PlacesService` — `lib/core/services/places_service.dart`
 
-Thin async wrapper over two Google Places REST endpoints:
+Thin async wrapper over the MapTiler Geocoding REST endpoint. Unlike Google Places, MapTiler returns the full geometry (lat/lng) in the autocomplete response — there is no separate "details" round-trip, and no session-token concept. One request per debounced keystroke is the whole API surface.
 
 ```
-GET https://maps.googleapis.com/maps/api/place/autocomplete/json
-  ?input=<query>
-  &components=country:au
-  &location=<lat>,<lng>           ← optional, when geolocator returns a Position
-  &radius=50000                    ← 50 km bias when location is available
-  &sessiontoken=<uuid>             ← billing optimisation
-  &key=<GOOGLE_PLACES_API_KEY>
+GET https://api.maptiler.com/geocoding/<url-encoded query>.json
+  ?country=au                       ← AU-restrict
+  &proximity=<lng>,<lat>            ← optional, when geolocator returns a Position
+  &autocomplete=true                ← partial-token matching
+  &limit=5                          ← we render at most 5 suggestions
+  &language=en
+  &key=<MAPTILER_API_KEY>
 
-GET https://maps.googleapis.com/maps/api/place/details/json
-  ?place_id=<id>
-  &fields=address_components,formatted_address,geometry
-  &sessiontoken=<same uuid>
-  &key=<GOOGLE_PLACES_API_KEY>
+# Reverse geocoding (for the "USE MY CURRENT LOCATION" chip)
+GET https://api.maptiler.com/geocoding/<lng>,<lat>.json
+  ?country=au
+  &types=address,locality,municipality
+  &limit=1
+  &key=<MAPTILER_API_KEY>
 ```
 
-**API surface (Dart):**
+The response shape is GeoJSON `FeatureCollection` — every `feature.geometry.coordinates` is `[lng, lat]`, and `feature.context[]` carries the suburb/postcode/state hierarchy. Parsing into `JPlaceResult` happens once, in the impl class.
+
+**API surface (Dart) — provider-agnostic:**
 
 ```dart
 abstract class PlacesService {
   /// Returns up to 5 AU-only suggestions for [query]. Biases on [near] when given.
-  Future<List<JPlaceSuggestion>> autocomplete(
+  /// Each suggestion already carries lat/lng + parsed address — no follow-up
+  /// details() call is needed.
+  Future<List<JPlaceResult>> autocomplete(
     String query, {
     LatLng? near,
-    required PlacesSessionToken session,
   });
 
-  /// Resolves [suggestion] to a full JPlaceResult with lat/lng + parsed address.
-  Future<JPlaceResult> details(
-    JPlaceSuggestion suggestion, {
-    required PlacesSessionToken session,
-  });
-
-  /// Reverse-geocode current device location → nearest suburb suggestion.
+  /// Reverse-geocode current device location → nearest suburb result.
   /// Used by the "USE MY CURRENT LOCATION" chip.
   Future<JPlaceResult?> reverseGeocodeCurrent();
 }
 ```
 
+> Note the API surface deliberately omits a `details()` method and a `sessionToken` parameter. Both are Google-specific cost-optimisations. Keeping the interface clean means a future swap to LocationIQ / Photon / Google Places implementation only adds those mechanics inside its own impl class — no call-site changes.
+
 **Provider wiring (Riverpod 3):**
 
 ```dart
 final placesServiceProvider = Provider<PlacesService>((ref) {
-  return PlacesServiceImpl(
-    apiKey: Env.placesApiKey,
+  return MapTilerPlacesService(
+    apiKey: Env.maptilerApiKey,
     httpClient: ref.watch(httpClientProvider),
     locationProvider: ref.watch(deviceLocationProvider),
   );
@@ -208,20 +210,20 @@ On selection, the field exposes a single `JPlaceResult` value to FormBuilder. Pa
 
 ### 5.3 Data model
 
+`JPlaceResult` carries everything we need from a single MapTiler response — no separate suggestion vs result types since MapTiler returns geometry inline. The `mainText` / `secondaryText` fields exist for UI rendering convenience (matches the dropdown row layout).
+
 ```dart
 class JPlaceResult {
-  final String placeId;
-  final String formattedAddress;
+  final String placeId;        // MapTiler feature.id (stable per location)
+  final String formattedAddress; // feature.place_name
   final String suburb;
   final String state;       // 2-3 letter AU abbreviation (NSW/VIC/QLD/WA/SA/TAS/ACT/NT)
   final String postcode;    // 4-digit AU
   final double latitude;
   final double longitude;
-}
 
-class JPlaceSuggestion {
-  final String placeId;
-  final String mainText;     // "Parramatta"
+  // Rendering helpers (parsed from the same response)
+  final String mainText;      // "Parramatta"
   final String secondaryText; // "NSW 2150, Australia"
 }
 ```
@@ -379,9 +381,9 @@ Matched substring "parra" rendered in `colorScheme.primary` (orange) — colour-
 | 7 | **Submission idempotency** | Store `place_id`; if the user re-saves the same place, the lat/lng comes from cached details (no re-fetch) |
 | 8 | **No silent overwrites** | On profile-edit re-open, pre-fill the field with the saved `formatted_address`. Clearing the field clears all derived columns (suburb, state, postcode, lat, lng, place_id, formatted_address) atomically — never leave the row in a half-populated state |
 | 9 | **Network-degraded fallback** | If `PlacesService.autocomplete` throws (offline, key revoked, quota exceeded), surface inline error and reveal an "Edit manually" toggle that re-shows the legacy 3-field form for that submission. Postcode regex `^\d{4}$` still applies |
-| 10 | **Search-bar variant** (`jobs_page.dart`) | Debounced freetext stays the primary input. When Places returns a confident match for the query, render a tappable chip BELOW the input: `[📍 SUBURB: Parramatta NSW]` (Oswald uppercase, leading `AppIcons.location`, accent orange border, slate background). Tapping the chip scopes the search to that suburb's lat/lng radius |
-| 11 | **Session token discipline** | One token per user-typing-session (creation → details fetch → reset). Costs $0.017 per session, regardless of how many keystrokes |
-| 12 | **Debounce + minimum length** | No autocomplete fires before 3 characters typed; debounce 250 ms between keystrokes |
+| 10 | **Search-bar variant** (`jobs_page.dart`) | Debounced freetext stays the primary input. When MapTiler returns a confident match for the query, render a tappable chip BELOW the input: `[📍 SUBURB: Parramatta NSW]` (Oswald uppercase, leading `AppIcons.location`, accent orange border, slate background). Tapping the chip scopes the search to that suburb's lat/lng radius |
+| 11 | **In-memory request dedupe** | A short LRU cache (~20 entries, query-string keyed) inside `MapTilerPlacesService` collapses repeat autocomplete calls for the same query during a single app session. Saves quota without crossing the FlutterSecureStorage / disk boundary |
+| 12 | **Debounce + minimum length** | No autocomplete fires before 3 characters typed; debounce 250 ms between keystrokes. With the free-tier quota (100k/month), this gives ~3,200 sessions/day before any spend |
 
 ---
 
@@ -391,15 +393,15 @@ Effort estimates assume one engineer familiar with the codebase. They include de
 
 | Phase | Scope | Estimate |
 |-------|-------|----------|
-| **0 — Provisioning** | Create/reuse GCP project; enable Places API; create restricted key (Android pkg + SHA-1, iOS bundle ID); add `GOOGLE_PLACES_API_KEY` to `env.dart` + GitHub Actions secret; set up GCP billing alert at $50/month | 0.5 day |
-| **1 — Foundation** | Add `google_places_flutter` to `pubspec.yaml`; implement `PlacesService` + provider + `JPlaceResult` model + `JPlaceSuggestion` model; implement `JPlaceField` widget with all 5 states; mocktail-based unit tests for service; widget test for field | 2 days |
+| **0 — Provisioning** | Sign up for MapTiler Cloud (free tier); generate `MAPTILER_API_KEY`; restrict the key in the MapTiler dashboard to Geocoding API + Android package + iOS bundle ID; add to `env.dart` + GitHub Actions secret; (optional) set a soft alert at 80k req/month inside the MapTiler dashboard so we know when we're approaching paid territory | 0.25 day |
+| **1 — Foundation** | Implement `PlacesService` (abstract) + `MapTilerPlacesService` (impl using `http` package — no new SDK dependency) + provider + `JPlaceResult` model; implement `JPlaceField` widget with all 5 states; mocktail-based unit tests for service (mock HTTP responses, parser, error paths); widget test for field | 2 days |
 | **2 — Schema migration** | One migration adds 6 columns + 2 indexes; regenerate DTOs (`build_runner`); update `profileRepository.save` + `jobsRepository.create` to round-trip the new columns | 0.5 day |
 | **3 — Wire profile edit** | Replace 3-field row in `profile_edit_page.dart:485-533` with one `JPlaceField`. Hidden fields auto-fill from result. Behind `--dart-define=PLACES_ENABLED=true` for cautious rollout | 0.5 day |
 | **4 — Wire job create** | Replace 2-field row in `job_create_page.dart:160-194` with one `JPlaceField`. **This also captures the missing postcode bug** | 0.5 day |
 | **5 — Wire jobs search** | Add Places-match chip below `jobs_page.dart:144` search input. Wire chip tap → radius-scope the existing `jobsRepository.search` | 0.5 day |
 | **6 — Cleanup** | Remove `PLACES_ENABLED` flag after a 1-week soak; delete legacy fallback paths; update `docs/MAP_USAGE_AUDIT.md` cross-reference | 0.25 day |
 
-**Total: ~5 days.**
+**Total: ~4.5 days** (Phase 0 is half a day shorter than the Google Places path — no GCP project setup, no SHA-1 fingerprint dance).
 
 ---
 
@@ -407,11 +409,12 @@ Effort estimates assume one engineer familiar with the codebase. They include de
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Billing surprises (Places Autocomplete is $0.00283/session + $0.017/details) | Medium | High | Session tokens (one billing session per user-typing-session); set GCP budget alert at $50/month; document a $200/month ceiling for v1 |
-| Network failure leaving users stranded mid-form | Medium | Medium | Graceful degradation to legacy 3-field input behind a toggle (guardrail #9) |
-| Privacy regression (sending device location to Google) | Low | Medium | Update Info.plist usage description to mention "address suggestions"; update privacy policy; respect denied permission (no `location=...` param) |
+| AU suburb data quality on MapTiler (OSM-backed; rural towns and brand-new estates can be missing or stale) | Medium | Medium | Spot-check ~50 representative AU suburbs during Phase 1 (mix of capital city, regional, outer-suburbs, FIFO mining towns). If quality is materially worse than expected, the `PlacesService` interface lets us swap to Google Places by replacing one impl file — no call-site changes |
+| Free-tier quota exhaustion (100k req/month) | Low at launch, Medium at scale | Medium | 250ms debounce + 3-char minimum + in-memory dedupe keeps a typical user under ~10 requests per place picked. ~3,200 active pick sessions/day fit in the free tier. Set a soft alert at 80k req/month in MapTiler dashboard. Paid overage is ~$0.50/1k — manageable |
+| MapTiler service outage / latency spike | Low | Medium | Graceful degradation to legacy 3-field input behind a toggle (guardrail #9). 5-second HTTP timeout. No retries on a single keystroke — the next keystroke is the retry |
+| Network failure leaving users stranded mid-form | Medium | Medium | Same toggle as above — "Edit manually" reveals the legacy 3-field input. Postcode regex `^\d{4}$` still applies |
+| Privacy regression (sending device location to MapTiler) | Low | Low | Update Info.plist usage description to mention "address suggestions"; add MapTiler as a sub-processor in the privacy policy; respect denied permission (omit `proximity=` param) |
 | Existing data quality (typo'd suburbs already in DB) | High | Low | One-off cleanup script optional; keeps working — old rows just won't have lat/lng/place_id until the user re-saves |
-| `google_places_flutter` package abandonment | Low | Medium | Service-layer indirection lets us swap to `flutter_google_places_sdk` (official) without touching call sites |
 | GPS permission denied → "use current location" chip looks broken | Medium | Low | Show the chip in `AppIcons.locationUnavailable` + secondary text colour with "Tap to enable location" copy; deep-link to settings on tap |
 | iOS Info.plist string change requires App Store review | Low | Low | Bundle the copy change in the same release as the feature; it's a minor description tweak, not a new permission |
 
@@ -419,45 +422,56 @@ Effort estimates assume one engineer familiar with the codebase. They include de
 
 ## 10. Open questions (resolve before Phase 1 starts)
 
-1. **Billing ceiling**: confirm $200/month is acceptable for v1 or set a different cap.
-2. **GCP project**: do we reuse an existing GCP project (which one?) or create a dedicated `jobdun-places` project?
-3. **Jobs search chip**: ship in Phase 5 of this initiative, or defer to a separate follow-up after profile + job create are validated?
-4. **Privacy policy**: who owns the wording update? (Legal vs engineering self-serve.)
-5. **Data backfill**: should we run a one-off script to fill `lat/lng` for existing rows via reverse-geocoding their suburb+postcode, or wait for organic re-saves?
-6. **Reverse geocoding limits**: the "use current location" chip calls Places Nearby Search — confirm this is in the same billing bucket and not a separate Geocoding API call.
+1. **AU coverage spot-check**: who runs the 50-suburb sample test during Phase 1, and what's the acceptable miss-rate before we'd reconsider Google Places?
+2. **Jobs search chip**: ship in Phase 5 of this initiative, or defer to a separate follow-up after profile + job create are validated?
+3. **Privacy policy**: who owns adding MapTiler as a sub-processor — legal review or engineering self-serve via the existing privacy doc?
+4. **Data backfill**: should we run a one-off script to fill `lat/lng` for existing rows via batch reverse-geocoding (using a chunk of the free-tier quota), or wait for organic re-saves?
+5. **Paid-tier breakpoint**: at what monthly request count do we want a Slack ping vs an automated cap? Default proposal: alert at 80k (80% of free tier), no automatic cap.
+
+> **Resolved by audit:** vendor (MapTiler Geocoding), billing model (free tier first, ~$0.50/1k after), provisioning (no GCP project required). Reverse geocoding shares the same `geocoding` quota — no separate API.
 
 ---
 
-## 11. Appendix A — GCP runbook (copy-paste)
+## 11. Appendix A — MapTiler runbook (no CLI required — all browser-based)
 
-```bash
-# 1. Pick or create a GCP project
-gcloud projects create jobdun-places --name="Jobdun Places" --set-as-default
+```text
+1. Sign up at https://www.maptiler.com/cloud/  (no credit card required for free tier)
 
-# 2. Enable the Places API (new + legacy, in case the package uses the legacy endpoint)
-gcloud services enable places.googleapis.com
-gcloud services enable places-backend.googleapis.com   # legacy autocomplete endpoint
+2. Dashboard → "Keys" → "Create a new key"
+   • Name: "Jobdun Mobile (Geocoding)"
+   • Allowed origins: leave blank (mobile apps don't send Origin headers)
+   • Allowed Android applications:
+       Package: com.example.jobdun   (replace with the real one from android/app/build.gradle)
+       Add separate entries for debug + release SHA-1 fingerprints
+       Get them via:
+         cd android && ./gradlew signingReport
+   • Allowed iOS applications:
+       Bundle ID: com.example.jobdun   (replace with the real one from ios/Runner.xcodeproj)
+   • Allowed APIs: tick ONLY "Geocoding" (leave "Maps", "Static", "Cloud" unticked)
 
-# 3. Set up billing alert
-#    → https://console.cloud.google.com/billing/<id>/budgets
-#    Budget: $50/month, alert at 50% / 90% / 100%
+3. Copy the generated key string (e.g. "abcDEF123...")
 
-# 4. Create the API key
-gcloud alpha services api-keys create --display-name="Jobdun Places (Mobile)" \
-  --api-target=service=places.googleapis.com \
-  --api-target=service=places-backend.googleapis.com \
-  --allowed-application=sha1_fingerprint=<ANDROID_DEBUG_SHA1>,package_name=com.example.jobdun \
-  --allowed-application=sha1_fingerprint=<ANDROID_RELEASE_SHA1>,package_name=com.example.jobdun \
-  --allowed-ios-app-bundle-ids=com.example.jobdun
+4. Add to environment:
+   • Local dev:    flutter run --dart-define=MAPTILER_API_KEY=<key>
+   • CI / prod:    GitHub → Settings → Secrets and variables → Actions
+                   → New repository secret
+                   Name:  MAPTILER_API_KEY
+                   Value: <key>   (empty-ok in CI — geocoding isn't exercised in tests)
 
-# 5. Retrieve the key string and add it to env
-gcloud alpha services api-keys list --format=json
-# Copy keyString; add to:
-#   - flutter run --dart-define=GOOGLE_PLACES_API_KEY=<key>
-#   - GitHub → Settings → Secrets → Actions → New repository secret
-#       Name: GOOGLE_PLACES_API_KEY
-#       Value: <key>   (or leave empty in CI — Places isn't exercised in tests)
+5. (Optional) Dashboard → "Statistics" → set notification at 80,000 / month
+   so we get a heads-up at 80% of the free tier.
+
+6. Update lib/core/config/env.dart:
+   static String get maptilerApiKey =>
+       const String.fromEnvironment('MAPTILER_API_KEY', defaultValue: '');
+
+7. Smoke-test the key from the terminal:
+   curl 'https://api.maptiler.com/geocoding/parramatta.json?country=au&autocomplete=true&limit=3&key=<KEY>' \
+     | jq '.features[].place_name'
+   # Expected: at least one feature including "Parramatta, NSW, Australia"
 ```
+
+**Per-environment key strategy:** one key is fine for dev + prod given the bundle-ID restriction handles separation. If you want stricter isolation, create two keys (`Jobdun Mobile (Geocoding) — Dev` and `... — Prod`) and pass each via its own `--dart-define`.
 
 ---
 
@@ -508,4 +522,20 @@ showJSheet(context: context, builder: ...)
 
 ---
 
-**Next step:** resolve §10 open questions, then start Phase 0 in a new branch `feat/places-autocomplete`.
+**Next step:** resolve §10 open questions, then start Phase 0 (MapTiler signup + key wiring) in a new branch `feat/places-autocomplete-maptiler`.
+
+---
+
+## 13. Why MapTiler (and not Google Places / pure OSS)
+
+This decision was made in conversation, not derived from a quantitative bake-off. Captured here so future-you doesn't have to rerun the comparison.
+
+| Option | Cost | AU quality | Risk | Why we picked / passed |
+|---|---|---|---|---|
+| **MapTiler Geocoding** ✅ | Free 100k/mo, $0.50/1k after | Good (OSM + their own data) | Low | Best balance: free at our scale, real SLA, no vendor lock to map tiles, swap-friendly REST |
+| Google Places | $0.017/session from request 1 | Best | Low | Quality is nicer but cost is real from day one — over-engineering for a launch-stage product |
+| LocationIQ | 5k/day free, then ~$0.50/1k | OK; patchy in remote AU | Low | Daily quota cap is awkward (a burst of sign-ups breaks it); MapTiler's monthly quota is friendlier |
+| Self-hosted Photon / Nominatim | Compute cost only | OSM-quality | Medium | Adds an ops surface area (Docker host, OSM extract refresh) we don't have headcount for at this stage |
+| Public Nominatim | Free | Decent | High | ToS forbids autocomplete-style use; would break under real load |
+
+If the AU spot-check in Phase 1 surfaces material quality gaps (Open Question §10.1), the `PlacesService` abstraction means swapping to Google Places is a one-file change in `lib/core/services/`.
