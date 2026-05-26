@@ -26,12 +26,33 @@ abstract final class Validators {
     return null;
   }
 
-  /// Australian ABN — 11 digits.
+  /// Australian ABN — 11 digits + mod-89 checksum.
+  /// Mirrors supabase/functions/_shared/abn.ts so client + server agree.
   static String? abn(String? value) {
     if (value == null || value.trim().isEmpty) return null; // optional
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length != 11) return 'ABN must be 11 digits.';
+    final digits = value.replaceAll(RegExp(r'\s+'), '');
+    if (!RegExp(r'^\d{11}$').hasMatch(digits)) return 'ABN must be 11 digits.';
+    if (!_isValidAbnChecksum(digits)) {
+      return 'That ABN doesn\'t look right — check the digits.';
+    }
     return null;
+  }
+
+  // ABR checksum: subtract 1 from the first digit, multiply each digit by its
+  // weight, sum, then check sum % 89 == 0. Reference:
+  // https://abr.business.gov.au/Help/AbnFormat
+  static const List<int> _abnWeights = [
+    10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19,
+  ];
+
+  static bool _isValidAbnChecksum(String elevenDigits) {
+    final digits = elevenDigits.split('').map(int.parse).toList();
+    digits[0] -= 1;
+    var sum = 0;
+    for (var i = 0; i < 11; i++) {
+      sum += digits[i] * _abnWeights[i];
+    }
+    return sum % 89 == 0;
   }
 
   static String? positiveNumber(String? value) {
