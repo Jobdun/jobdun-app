@@ -29,6 +29,7 @@ import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
 import '../../features/verification/presentation/pages/verification_page.dart';
+import '../../features/verification/presentation/pages/verification_wizard_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier();
@@ -254,6 +255,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/verification',
         builder: (_, _) => const VerificationPage(),
+        routes: [
+          GoRoute(
+            path: 'wizard',
+            builder: (_, _) => const VerificationWizardPage(),
+          ),
+        ],
       ),
       GoRoute(path: '/reviews', builder: (_, _) => const ReviewsPage()),
       GoRoute(

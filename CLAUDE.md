@@ -81,6 +81,20 @@ dart format --set-exit-if-changed .  # CI format check
 flutter doctor
 ```
 
+### Admin web app (separate entrypoint)
+
+The admin console is a second Flutter entrypoint in the same repo, isolated under `lib/admin/`. It shares the Supabase project and design tokens with the mobile app but has its own router, login flow, and admin-role gate.
+
+```bash
+# Run admin web locally (Chrome)
+flutter run -d chrome -t lib/admin/main_admin.dart
+
+# Build admin web bundle (output: build/web/)
+flutter build web -t lib/admin/main_admin.dart
+```
+
+Admin sign-in uses standard email/password through Supabase. The login service reads `user_role` from the JWT access token (injected by the `custom_access_token_hook`); any account where `user_role != 'admin'` is signed out before the session is returned. Admin role is non-self-assignable in DB (see `supabase/migrations/20260516000002_forbid_self_admin.sql`) — accounts must be promoted via `service_role` SQL.
+
 ## Architecture
 
 ### Feature-first Clean Architecture

@@ -237,6 +237,9 @@ abstract final class AppIcons {
   /// External website / link. Paired with url_launcher rows on company profiles.
   static const IconData website = PhosphorIconsBold.globe;
 
+  /// Sign out of the current session. Used by the admin web sidebar.
+  static const IconData signOut = PhosphorIconsBold.signOut;
+
   /// Destructive remove (trash). Pair with [c.urgent] in destructive actions.
   static const IconData trash = PhosphorIconsBold.trash;
 

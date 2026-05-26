@@ -1,31 +1,12 @@
 # State Management Audit — Jobdun (Flutter)
 
-> Date: **2026-05-22** (refactor pass applied same day)
+> Date: **2026-05-22**
 > Branch: `feat/profile-improvements`
 > Scope: every `presentation/providers/*` file, `app/theme/theme_provider.dart`, `app/router/app_router.dart`, plus how widgets consume the providers.
 > Library: **Riverpod 3.3.1** (`flutter_riverpod`), no Bloc, no Provider, no GetIt.
 
-## Refactor status (post-pass)
-
-Pre-refactor rating: **6.5 / 10**. After phase 1 (governance + provider cleanup): **8 / 10**. After phase 2 (auth split + `.select()`): **8.5 / 10**. `AsyncValue<T>` per action is intentionally deferred — only worth it when concrete shared-loading-state UX bugs appear.
-
-| Audit finding | Status | Notes |
-|---|---|---|
-| `currentUserIdProvider` missing | ✅ Done | `lib/core/providers/current_user_provider.dart` — Stream + sync read |
-| Private repo/datasource providers | ✅ Done | All renamed to public (`jobRepositoryProvider`, `profileRepositoryProvider`, etc.) |
-| `ProfileController.saveProfile` Supabase bypass | ✅ Done | Now routes through `_repo.upsertBuilderProfile` / `upsertTradeProfile`; `tradeOther` added to entity + model |
-| `NotificationsController` stub | ✅ Done | Wired to repo + 3 use cases, realtime watch, optimistic markRead/markAllRead |
-| `ReviewsController` stub | ✅ Done | Wired to repo + 3 use cases (loadFor, submit) |
-| `VerificationController` stub | ✅ Done | Wired to repo + 3 use cases, realtime watch |
-| Use case layer was dead | ✅ Done | All active controllers route through existing use cases via `*UseCaseProvider`; `GetJobs` extended with `limit`/`offset` |
-| File-size budget enforcement | ✅ Done | `analysis_options.yaml` + `scripts/validate.sh` hard ceiling at 500 LOC |
-| AuthController god-class (1086 LOC) | ✅ Done | Split via service extraction — controller now 486 LOC orchestrator + 4 services (Email/OAuth/Phone/RoleResolver) + `auth_state.dart`. Public API unchanged so no page edits. |
-| `addPostFrameCallback` page-side loads | 🟧 Partial | New stub controllers load in `build()`; old pages still use `addPostFrameCallback` — migrate as touched |
-| `.select()` at hot read sites | ✅ Partial | Added at the 3 clear single-field reads (`home_shell` role, `jobs_page` isBuilder × 2). Other sites read multiple fields — `.select()` wouldn't help. |
-| `AsyncValue<T>` per action | 🟥 Deferred (intentionally — see followups discussion) | Still single `error: String?` + `isLoading`. Per the user-architect call: only worth it when concrete shared-loading-state UX bugs appear. |
-
 ---
-
+wait s
 ## TL;DR
 
 **Overall rating: 6.5 / 10.**

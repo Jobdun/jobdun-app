@@ -19,6 +19,7 @@ import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
+import '../../../verification/presentation/widgets/verification_nudge_banner.dart';
 import '../providers/jobs_provider.dart';
 import '../widgets/jobs_search_place_chip.dart';
 import 'job_detail_page.dart';
@@ -265,6 +266,9 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                   ],
                 ),
               ),
+            // ── Verification nudge banner (v2). Self-hides when already
+            // fully verified or dismissed for this session.
+            const VerificationNudgeBanner(role: NudgeRole.trade),
             // ── Results count. "X+ jobs found" while more pages remain so
             // the number never looks misleadingly small during scroll-load.
             Padding(
@@ -416,6 +420,11 @@ class _JobsPageState extends ConsumerState<JobsPage> {
 
 // First-page skeleton. Five placeholder JobCards inside JSkeletonList so the
 // initial PagedListView load shows real-shaped shimmer instead of a spinner.
+// Why: infinite_scroll_pagination puts this inside SliverFillRemaining
+// (hasScrollBody: false), which needs an intrinsic-height child. A ListView
+// is scrollable and has no intrinsic height — even with shrinkWrap — so it
+// trips a "RenderBox was not laid out" / null-check chain during layout.
+// A Column has well-defined intrinsics and renders identically here.
 class _FirstPageSkeleton extends StatelessWidget {
   const _FirstPageSkeleton();
 
@@ -423,14 +432,14 @@ class _FirstPageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return JSkeletonList(
       enabled: true,
-      child: ListView.separated(
-        // Embedded inside a PagedListView slot — disable its own scroll so
-        // the outer scrollable owns the gesture.
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: 5,
-        separatorBuilder: (_, _) => Gap(9.h),
-        itemBuilder: (_, _) => const _JobCardPlaceholder(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 5; i++) ...[
+            if (i > 0) Gap(9.h),
+            const _JobCardPlaceholder(),
+          ],
+        ],
       ),
     );
   }

@@ -57,6 +57,13 @@ class ApplicationsController extends Notifier<ApplicationsState> {
   @override
   ApplicationsState build() => const ApplicationsState();
 
+  /// Flip the verified-only filter on the builder applicant list.
+  /// The first-time consent dialog is owned by the page (caller must
+  /// already have shown it before calling with false).
+  void setVerifiedOnlyFilter(bool value) {
+    state = state.copyWith(verifiedOnlyFilter: value);
+  }
+
   // Trade: load their own applications
   Future<void> loadMyApplications(String tradeId) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -146,6 +153,7 @@ class ApplicationsState {
     this.incomingApplications = const [],
     this.isLoading = false,
     this.error,
+    this.verifiedOnlyFilter = true,
   });
 
   final List<JobApplication> myApplications; // trade view
@@ -153,19 +161,39 @@ class ApplicationsState {
   final bool isLoading;
   final String? error;
 
+  // v2: builder-side filter — default ON. The applicant list shows only
+  // tradies whose verification is currently active. Toggle exposes the
+  // first-time consent dialog.
+  final bool verifiedOnlyFilter;
+
   int get pendingIncomingCount => incomingApplications
       .where((a) => a.status == ApplicationStatus.pending)
       .length;
+
+  /// v2 view used by the builder applicant list. Always returns rows in
+  /// verified-first order; optionally hides unverified rows entirely.
+  List<JobApplication> get filteredIncoming {
+    final all = [...incomingApplications];
+    all.sort((a, b) {
+      final av = a.tradeIsVerified == true ? 0 : 1;
+      final bv = b.tradeIsVerified == true ? 0 : 1;
+      return av.compareTo(bv);
+    });
+    if (!verifiedOnlyFilter) return all;
+    return all.where((a) => a.tradeIsVerified == true).toList();
+  }
 
   ApplicationsState copyWith({
     List<JobApplication>? myApplications,
     List<JobApplication>? incomingApplications,
     bool? isLoading,
     String? error,
+    bool? verifiedOnlyFilter,
   }) => ApplicationsState(
     myApplications: myApplications ?? this.myApplications,
     incomingApplications: incomingApplications ?? this.incomingApplications,
     isLoading: isLoading ?? this.isLoading,
     error: error,
+    verifiedOnlyFilter: verifiedOnlyFilter ?? this.verifiedOnlyFilter,
   );
 }

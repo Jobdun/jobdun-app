@@ -33,6 +33,9 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     String? proposedRateType,
   }) async {
     try {
+      // v2: stamp applied_when_verified_at when the trade has a verified
+      // licence at submit time. Null means "was unverified at apply."
+      final hasVerifiedLicence = await _hasVerifiedLicence(tradeId);
       final data = await _client
           .from('applications')
           .insert({
@@ -46,6 +49,8 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
             // ignore: use_null_aware_elements
             if (proposedRateType != null)
               'proposed_rate_type': proposedRateType,
+            if (hasVerifiedLicence)
+              'applied_when_verified_at': DateTime.now().toIso8601String(),
           })
           .select()
           .single();
@@ -53,6 +58,51 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     } catch (e) {
       throw ServerException(e.toString());
     }
+  }
+
+  /// Returns true when the tradie has a `kind='licence'` row in
+  /// `status='verified'`. Cheap single-row check.
+  Future<bool> _hasVerifiedLicence(String tradeId) async {
+    try {
+      final row = await _client
+          .from('verifications')
+          .select('id')
+          .eq('user_id', tradeId)
+          .eq('kind', 'licence')
+          .eq('status', 'verified')
+          .limit(1)
+          .maybeSingle();
+      return row != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Computes the hire-time verification snapshot — written into
+  /// `applications.verification_snapshot_at_hire` when an application is
+  /// accepted. Caller is the builder; subject is the tradie ([tradeId]).
+  Future<Map<String, dynamic>> _computeSnapshot(String tradeId) async {
+    final rows = await _client
+        .from('verifications')
+        .select('kind, status, licence_state')
+        .eq('user_id', tradeId);
+    String abn = 'none';
+    String licence = 'none';
+    String? licenceState;
+    for (final r in (rows as List).cast<Map<String, dynamic>>()) {
+      if (r['kind'] == 'abn') abn = (r['status'] as String?) ?? 'none';
+      if (r['kind'] == 'licence') {
+        licence = (r['status'] as String?) ?? 'none';
+        licenceState = r['licence_state'] as String?;
+      }
+    }
+    final snapshot = <String, dynamic>{
+      'abn': abn,
+      'licence': licence,
+      'as_of': DateTime.now().toIso8601String(),
+    };
+    if (licenceState != null) snapshot['licence_state'] = licenceState;
+    return snapshot;
   }
 
   @override
@@ -99,12 +149,29 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     ApplicationStatus status,
   ) async {
     try {
+      final payload = <String, dynamic>{
+        'status': status.dbValue,
+        'status_changed_at': DateTime.now().toIso8601String(),
+      };
+      // v2: at the moment a tradie is hired, snapshot their verification
+      // state. Immutable thereafter — surfaced on the eventual review.
+      if (status == ApplicationStatus.hired) {
+        final row = await _client
+            .from('applications')
+            .select('trade_id, verification_snapshot_at_hire')
+            .eq('id', applicationId)
+            .maybeSingle();
+        final tradeId = row?['trade_id'] as String?;
+        final existing = row?['verification_snapshot_at_hire'];
+        if (tradeId != null && existing == null) {
+          payload['verification_snapshot_at_hire'] = await _computeSnapshot(
+            tradeId,
+          );
+        }
+      }
       await _client
           .from('applications')
-          .update({
-            'status': status.dbValue,
-            'status_changed_at': DateTime.now().toIso8601String(),
-          })
+          .update(payload)
           .eq('id', applicationId);
     } catch (e) {
       throw ServerException(e.toString());

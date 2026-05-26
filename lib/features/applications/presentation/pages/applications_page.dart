@@ -15,6 +15,7 @@ import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../verification/presentation/widgets/unverified_consent_dialog.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
 
@@ -79,7 +80,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
     final tabs = isBuilder ? _builderTabs : _tradeTabs;
 
     final rawList = isBuilder
-        ? appsState.incomingApplications
+        ? appsState.filteredIncoming
         : appsState.myApplications;
     final useReal = rawList.isNotEmpty;
     final filtered = useReal
@@ -103,6 +104,38 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                     eyebrow: isBuilder ? 'INCOMING' : 'MY APPLICATIONS',
                     title: isBuilder ? 'Applicants' : 'Track status',
                   ),
+                  if (isBuilder) ...[
+                    Gap(8.h),
+                    _VerifiedOnlyToggle(
+                      value: appsState.verifiedOnlyFilter,
+                      onChanged: (next) async {
+                        if (next) {
+                          ref
+                              .read(applicationsControllerProvider.notifier)
+                              .setVerifiedOnlyFilter(true);
+                          return;
+                        }
+                        final already =
+                            await UnverifiedConsentDialog.hasAcknowledged(ref);
+                        if (already) {
+                          ref
+                              .read(applicationsControllerProvider.notifier)
+                              .setVerifiedOnlyFilter(false);
+                          return;
+                        }
+                        if (!context.mounted) return;
+                        final ok = await UnverifiedConsentDialog.show(
+                          context,
+                          ref,
+                        );
+                        if (ok) {
+                          ref
+                              .read(applicationsControllerProvider.notifier)
+                              .setVerifiedOnlyFilter(false);
+                        }
+                      },
+                    ),
+                  ],
                   Gap(12.h),
                   // ── Tab chips
                   SizedBox(
@@ -654,3 +687,30 @@ List<JobApplication> _mockApps(bool isBuilder) => [
     proposedRateType: 'hr',
   ),
 ];
+
+class _VerifiedOnlyToggle extends StatelessWidget {
+  const _VerifiedOnlyToggle({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Verified workers only',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: c.text2,
+            ),
+          ),
+        ),
+        Switch(value: value, onChanged: onChanged, activeThumbColor: c.action),
+      ],
+    );
+  }
+}

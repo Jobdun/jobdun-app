@@ -9,17 +9,24 @@ class ReviewModel extends Review {
     required super.rating,
     required super.createdAt,
     super.comment,
+    super.verificationSnapshot,
   });
 
-  factory ReviewModel.fromJson(Map<String, dynamic> json) => ReviewModel(
-    id: json['id'] as String,
-    jobId: json['job_id'] as String,
-    reviewerId: json['reviewer_id'] as String,
-    revieweeId: json['reviewee_id'] as String,
-    rating: json['rating'] as int,
-    comment: json['comment'] as String?,
-    createdAt: DateTime.parse(json['created_at'] as String),
-  );
+  factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    final snap = json['reviewee_verification_snapshot'];
+    return ReviewModel(
+      id: json['id'] as String,
+      jobId: json['job_id'] as String,
+      reviewerId: json['reviewer_id'] as String,
+      revieweeId: json['reviewee_id'] as String,
+      rating: json['rating'] as int,
+      comment: json['comment'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      verificationSnapshot: snap is Map<String, dynamic>
+          ? VerificationSnapshot.fromJson(snap)
+          : null,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'job_id': jobId,

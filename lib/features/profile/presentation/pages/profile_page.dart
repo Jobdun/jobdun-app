@@ -18,6 +18,7 @@ import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../../../verification/presentation/widgets/verification_receipts.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
@@ -304,14 +305,12 @@ class _BuilderProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          JCard(
-            title: 'VERIFICATION',
-            children: [
-              _VerificationRow(label: 'ABN verified', isVerified: p != null),
-              _VerificationRow(label: 'Email verified', isVerified: true),
-              _VerificationRow(label: 'Insurance docs', isVerified: false),
-            ],
-          ),
+          if (p?.id != null)
+            VerificationReceipts(
+              userId: p!.id,
+              isOwner: true,
+              showLicenceRow: false,
+            ),
         ],
       ),
     );
@@ -432,18 +431,12 @@ class _TradeProfile extends StatelessWidget {
             ],
           ),
           Gap(12.h),
-          JCard(
-            title: 'VERIFICATION',
-            children: [
-              _VerificationRow(label: 'Email verified', isVerified: true),
-              _VerificationRow(
-                label: 'Licence verified',
-                isVerified: isVerified,
-              ),
-              _VerificationRow(label: 'Police check', isVerified: false),
-              _VerificationRow(label: 'SWMS uploaded', isVerified: false),
-            ],
-          ),
+          if (p?.id != null)
+            VerificationReceipts(
+              userId: p!.id,
+              isOwner: true,
+              showLicenceRow: true,
+            ),
         ],
       ),
     );
@@ -593,48 +586,6 @@ String? _formatHourlyRate(TradeProfile? p) {
   if (min != null && max != null) return '${fmt(min)}–${fmt(max)}/hr';
   if (min != null) return '${fmt(min)}+/hr';
   return 'Up to ${fmt(max!)}/hr';
-}
-
-class _VerificationRow extends StatelessWidget {
-  const _VerificationRow({required this.label, required this.isVerified});
-
-  final String label;
-  final bool isVerified;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md.w,
-        vertical: 12.h,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isVerified ? AppIcons.verified : AppIcons.closeCircle,
-            size: 16.r,
-            color: isVerified ? c.verified : c.text3,
-          ),
-          Gap(12.w),
-          Expanded(
-            child: Text(label, style: tt.bodyMedium!.copyWith(color: c.text1)),
-          ),
-          Text(
-            isVerified ? 'Verified' : 'Upload',
-            style: tt.bodyMedium!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isVerified ? c.verified : c.text3,
-              decoration: isVerified ? null : TextDecoration.underline,
-              decorationColor: c.text3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ActionRow extends StatelessWidget {

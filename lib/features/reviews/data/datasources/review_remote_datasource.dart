@@ -19,7 +19,25 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
   @override
   Future<void> submitReview(ReviewModel review) async {
     try {
-      await _client.from('reviews').insert(review.toJson());
+      // v2: copy the hire-time verification snapshot from the application row
+      // onto the review at write time. Only happens when the reviewee is the
+      // tradie on that job; trade-reviewing-builder writes a null snapshot
+      // (no builder snapshot is stamped on applications today).
+      Map<String, dynamic>? snapshot;
+      final app = await _client
+          .from('applications')
+          .select('verification_snapshot_at_hire')
+          .eq('job_id', review.jobId)
+          .eq('trade_id', review.revieweeId)
+          .maybeSingle();
+      final raw = app?['verification_snapshot_at_hire'];
+      if (raw is Map<String, dynamic>) snapshot = raw;
+
+      final payload = review.toJson();
+      if (snapshot != null) {
+        payload['reviewee_verification_snapshot'] = snapshot;
+      }
+      await _client.from('reviews').insert(payload);
     } catch (e) {
       throw ServerException(e.toString());
     }

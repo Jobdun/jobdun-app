@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../features/verification/presentation/widgets/job_card_poster_badge.dart';
 import 'status_badge.dart';
 
 class JobCard extends StatelessWidget {
@@ -16,6 +17,7 @@ class JobCard extends StatelessWidget {
     required this.isUrgent,
     this.onTap,
     this.onApply,
+    this.posterVerificationStatus = PosterVerificationStatus.unknown,
   });
 
   final String title;
@@ -26,6 +28,9 @@ class JobCard extends StatelessWidget {
   final bool isUrgent;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
+  // v2 verification — small chip next to RATE/START/DISTANCE showing whether
+  // the poster (builder) has an ABN-verified status. `unknown` renders nothing.
+  final PosterVerificationStatus posterVerificationStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +143,11 @@ class JobCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (posterVerificationStatus !=
+                      PosterVerificationStatus.unknown) ...[
+                    Gap(8.h),
+                    JobCardPosterBadge(status: posterVerificationStatus),
+                  ],
                 ],
               ),
             ),
