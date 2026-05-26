@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
-# Fails if the live migration set no longer matches supabase/schema.sql.
+# Fails if the live remote schema no longer matches supabase/schema.sql.
 # Catches schema<->Dart drift regressions (root cause of Sprint 1).
+#
+# Uses `--linked` against the project configured in supabase/config.toml,
+# so it works without Docker / local Supabase. Requires SUPABASE_ACCESS_TOKEN
+# (and SUPABASE_DB_PASSWORD if running non-interactively).
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
-supabase db reset >/dev/null
-supabase db dump --local --schema public -f "$TMP" >/dev/null
+supabase db dump --linked --schema public -f "$TMP" >/dev/null
 if ! diff -u supabase/schema.sql "$TMP"; then
-  echo "ERROR: schema drift — migrations no longer match supabase/schema.sql." >&2
-  echo "If intentional: supabase db dump --local --schema public -f supabase/schema.sql" >&2
+  echo "ERROR: schema drift — remote schema no longer matches supabase/schema.sql." >&2
+  echo "Fix with: bash scripts/sync-schema.sh" >&2
   exit 1
 fi
-echo "schema-diff: OK (migrations match committed schema.sql)"
+echo "schema-diff: OK (remote schema matches committed schema.sql)"
