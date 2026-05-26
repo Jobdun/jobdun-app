@@ -1,7 +1,8 @@
 # Jobdun — Verification Audit & API-First Plan
 
-> **Last verified:** 2026-05-25 on branch `chore/audit-followups-w1-w3`.
-> Supersedes the W3 "Verification + expiry reminders" section of `docs/W1_W3_REALITY_CHECK.md` for product direction.
+> **Last verified:** 2026-05-27 on branch `chore/audit-followups-w1-w3`.
+> Companion to `docs/VERIFICATION_USER_FLOWS.md` (v2.1 user model). Supersedes the W3 "Verification + expiry reminders" section of `docs/W1_W3_REALITY_CHECK.md` for product direction.
+> **2026-05-27 update:** role-scoped wizards live (builder = ABN only, trade = trade licence only); JSONP-wrapper bug in `verify-abn` fixed; client-side mod-89 ABN checksum mirrors the server. Manual document upload is wired from every regulator failure surface. Admin verification queue + RLS policies shipped — admins can review, approve, reject, and view the file via a 60s signed URL.
 > Symbols: ✅ in code, ❌ not present, ⚠️ partial / different from spec, ❓ requires live DB / runtime to confirm.
 
 ---
@@ -36,24 +37,25 @@ This is the moat. It is also, conveniently, free to run — ABR is a no-cost Com
 ### What is missing for the *manual-review path* to actually work
 | Gap | Impact | Evidence |
 |---|---|---|
-| Admin RLS policy on `verification_documents` | Admin web app cannot read, approve, or reject any document. The trade upload reaches the bucket and then nothing happens. | Only owner policies exist (`20260511000006_rls.sql:309-329`); no `WHERE EXISTS (… user_roles.role='admin' …)` and no service-role Edge Function. |
-| Admin review queue UI | Dashboard tile at `lib/admin/features/admin_shell/presentation/pages/admin_dashboard_page.dart:68` advertises "review pending verification documents" but the queue / approve / reject screens do not exist. | `find lib/admin -name "*verif*"` returns nothing. |
-| Approve / reject Edge Function (or RPC) | Even with an admin RLS policy, status transitions need to be audited (who reviewed, when, why) before they reach `reviewed_by` / `reviewed_at` / `review_notes`. | `supabase/functions/` directory does not exist (`ls supabase/` → no `functions`). |
+| ~~Admin RLS policy on `verification_documents`~~ | ✅ Shipped 2026-05-27. Admin SELECT + UPDATE policies + private-docs admin SELECT. | `supabase/migrations/20260527000001_verification_documents_admin_review.sql` |
+| ~~Admin review queue UI~~ | ✅ Shipped 2026-05-27. List + review dialog with 60s signed URL preview, approve/reject + notes. | `lib/admin/features/admin_verifications/` |
+| Approve / reject Edge Function (or RPC) | ⚠️ Today the admin client writes `reviewed_by`/`reviewed_at`/`review_notes`/`status` directly via the RLS UPDATE policy. Works for first 1k users; longer-term an Edge Function with service-role would harden the audit trail and could also write a `verifications` row on approval. | `lib/admin/features/admin_verifications/presentation/providers/admin_verifications_provider.dart` |
+| Admin approval → mirror row in `verifications` | When admin approves a document, only `verification_documents.status` flips to approved. The `verifications` state-machine row stays unchanged, so non-owner viewers (other builders) don't see the "Verified by document review" receipt — owner-only RLS on `verification_documents` blocks them. | `lib/features/verification/presentation/widgets/verification_receipts.dart` — pending/approved doc states are gated on `isOwner`. |
 | Expiry-reminder cron | `expiry_date` is captured but nothing flips status to `expired` or notifies the trade / open conversations. | No cron Edge Function, no scheduler config. |
 | Upload retry / backoff | A flaky upload silently fails; trade re-picks the file. | No retry path in `ImageUploadService`. |
 | Sentry breadcrumb on upload failure | Sentry is wired globally (commit `731bc48`) but the upload service does not attach an upload-specific breadcrumb. | `grep Sentry lib/core/services/image_upload_service.dart` → 0 hits. |
-| Upload progress UI | Trade has no feedback during long uploads. | ❓ |
+| Upload progress UI | ✅ Linear progress + "UPLOADING…" label in `manual_upload_sheet.dart`. | `lib/features/verification/presentation/widgets/manual_upload_sheet.dart` |
 
-### What is missing for the *API-first path* (does not exist at all yet)
-| Gap | Impact |
+### What is missing for the *API-first path*
+| Gap | Status |
 |---|---|
-| `verifications` table (state machine) | No place to record "ABR returned active for this user's ABN at this timestamp." |
-| `verification_events` table (raw JSONB audit trail) | No regulator response is retained, so disputes after the fact have no evidence. |
-| ABR Edge Function (`verify-abn`) | The free, cheap, identity-confirming half of verification is not built. |
-| State regulator adapters (NSW / VBA / QBCC / SA CBS / WA BPB / TAS CBOS / ACT / NT) | The differentiated half — actual licence verification — is not built. |
-| Adapter interface / `LicenceAdapter` contract | Without this, each state's logic risks landing inline inside one Edge Function and becoming unmaintainable on the first regulator HTML change. |
-| Re-check on application submit (≤ 24 h cache) | A builder can hire a trade whose licence was suspended yesterday. |
-| Privacy Policy v1 language naming ABR + each state regulator | Lawful basis for retrieving and storing regulator data must be in the policy *before* the first call goes out. |
+| `verifications` table (state machine) | ✅ `20260525000001_verifications.sql` |
+| `verification_events` table (raw JSONB audit trail) | ✅ `20260525000001_verifications.sql` |
+| ABR Edge Function (`verify-abn`) | ✅ `supabase/functions/verify-abn/index.ts` — JSONP wrapper handled (2026-05-27). |
+| `LicenceAdapter` contract + NSW adapter | ✅ `supabase/functions/_shared/regulators/`. NSW adapter is a deterministic stub today; real Fair Trading scraper is Phase 2. |
+| State regulator adapters (VIC / QLD / SA / WA / TAS / ACT / NT) | ❌ Phase 2/3. QLD currently returns `state_not_supported` (501). |
+| Re-check on application submit (≤ 24 h cache) | ❌ Phase 2. |
+| Privacy Policy v1 language naming ABR + each state regulator | ⚠️ Verify before first prod traffic. |
 
 ---
 

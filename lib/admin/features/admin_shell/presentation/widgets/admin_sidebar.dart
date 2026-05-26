@@ -67,6 +67,14 @@ class AdminSidebar extends ConsumerWidget {
             isActive: activeRoute == AdminRoutes.dashboard,
             onTap: () => context.go(AdminRoutes.dashboard),
           ),
+          _NavItem(
+            icon: AppIcons.verified,
+            iconActive: AppIcons.verified,
+            label: 'VERIFICATIONS',
+            route: AdminRoutes.verifications,
+            isActive: activeRoute == AdminRoutes.verifications,
+            onTap: () => context.go(AdminRoutes.verifications),
+          ),
           const Spacer(),
           if (session != null) ...[
             Divider(color: c.border, height: 1),

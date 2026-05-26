@@ -6,6 +6,7 @@ import '../../features/admin_auth/domain/entities/admin_session.dart';
 import '../../features/admin_auth/presentation/pages/admin_login_page.dart';
 import '../../features/admin_auth/presentation/providers/admin_session_provider.dart';
 import '../../features/admin_shell/presentation/pages/admin_dashboard_page.dart';
+import '../../features/admin_verifications/presentation/pages/admin_verifications_page.dart';
 import 'admin_routes.dart';
 
 final adminRouterProvider = Provider<GoRouter>((ref) {
@@ -47,6 +48,10 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AdminRoutes.dashboard,
         builder: (context, state) => const AdminDashboardPage(),
+      ),
+      GoRoute(
+        path: AdminRoutes.verifications,
+        builder: (context, state) => const AdminVerificationsPage(),
       ),
     ],
   );

@@ -10,6 +10,8 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../domain/entities/verification.dart';
+import '../../domain/entities/verification_document.dart' as docs;
+import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
 
 /// "What's been checked" receipts panel. Lives on the profile page.
@@ -76,53 +78,116 @@ class VerificationReceipts extends ConsumerWidget {
           ),
         ],
       ),
-      data: (rows) => _buildCard(context, rows),
+      data: (rows) => _buildCard(context, ref, rows),
     );
   }
 
-  Widget _buildCard(BuildContext context, List<Verification> rows) {
+  Widget _buildCard(
+    BuildContext context,
+    WidgetRef ref,
+    List<Verification> rows,
+  ) {
     final abn = _findVerified(rows, VerificationKind.abn);
     final licence = showLicenceRow
         ? _findVerified(rows, VerificationKind.licence)
         : null;
 
+    // Manual-upload state is owner-only (verification_documents has owner-only
+    // RLS). Other viewers never see "Under review" — only regulator-confirmed
+    // receipts. Skip the second watch when viewing someone else's profile.
+    final uploaded = isOwner
+        ? ref.watch(verificationControllerProvider).documents
+        : const <docs.VerificationDocument>[];
+
     return JCard(
       title: 'WHAT\'S BEEN CHECKED',
       children: [
         if (showAbnRow)
-          if (abn != null)
-            _ReceiptRow(
-              icon: AppIcons.verified,
-              label: 'Business (ABN)',
-              sub: _abnSubtitle(abn),
-              isVerified: true,
-            )
-          else
-            _ReceiptRow(
-              icon: AppIcons.closeCircle,
-              label: 'Business (ABN)',
-              sub: 'Not yet verified',
-              isVerified: false,
-              cta: isOwner ? _wizardCta(context) : null,
-            ),
+          _buildRow(
+            context: context,
+            label: 'Business (ABN)',
+            verified: abn,
+            verifiedSub: abn == null ? '' : _abnSubtitle(abn),
+            docType: docs.DocType.abnCertificate,
+            uploaded: uploaded,
+          ),
         if (showLicenceRow)
-          if (licence != null)
-            _ReceiptRow(
-              icon: AppIcons.verified,
-              label: 'Trade licence',
-              sub: _licenceSubtitle(licence),
-              isVerified: true,
-            )
-          else
-            _ReceiptRow(
-              icon: AppIcons.closeCircle,
-              label: 'Trade licence',
-              sub: 'Not yet verified',
-              isVerified: false,
-              cta: isOwner ? _wizardCta(context) : null,
-            ),
+          _buildRow(
+            context: context,
+            label: 'Trade licence',
+            verified: licence,
+            verifiedSub: licence == null ? '' : _licenceSubtitle(licence),
+            docType: docs.DocType.tradeLicence,
+            uploaded: uploaded,
+          ),
       ],
     );
+  }
+
+  Widget _buildRow({
+    required BuildContext context,
+    required String label,
+    required Verification? verified,
+    required String verifiedSub,
+    required docs.DocType docType,
+    required List<docs.VerificationDocument> uploaded,
+  }) {
+    if (verified != null) {
+      return _ReceiptRow(
+        icon: AppIcons.verified,
+        label: label,
+        sub: verifiedSub,
+        isVerified: true,
+      );
+    }
+    final approved = _findDoc(
+      uploaded,
+      docType,
+      docs.VerificationStatus.approved,
+    );
+    if (approved != null) {
+      return _ReceiptRow(
+        icon: AppIcons.verified,
+        label: label,
+        sub:
+            'Verified by document review · '
+            '${_relative(approved.submittedAt)}',
+        isVerified: true,
+      );
+    }
+    final pending = _findDoc(
+      uploaded,
+      docType,
+      docs.VerificationStatus.pending,
+    );
+    if (pending != null) {
+      return _ReceiptRow(
+        icon: AppIcons.clock,
+        label: label,
+        sub:
+            'Under review · uploaded ${_relative(pending.submittedAt)}. '
+            'A reviewer will confirm within 24 h.',
+        isVerified: false,
+      );
+    }
+    return _ReceiptRow(
+      icon: AppIcons.closeCircle,
+      label: label,
+      sub: 'Not yet verified',
+      isVerified: false,
+      cta: isOwner ? _wizardCta(context) : null,
+    );
+  }
+
+  static docs.VerificationDocument? _findDoc(
+    List<docs.VerificationDocument> list,
+    docs.DocType type,
+    docs.VerificationStatus status,
+  ) {
+    for (final d in list) {
+      if (d.docType == type && d.status == status) return d;
+    }
+    return null;
   }
 
   static Verification? _findVerified(

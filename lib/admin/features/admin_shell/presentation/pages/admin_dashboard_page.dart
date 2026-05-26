@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
@@ -66,6 +67,7 @@ class _PlaceholderGrid extends StatelessWidget {
             title: 'VERIFICATION QUEUE',
             copy:
                 'Review pending verification documents from trades. Approve or reject.',
+            route: AdminRoutes.verifications,
           ),
           _ComingSoonCard(
             icon: AppIcons.briefcase,
@@ -102,16 +104,22 @@ class _ComingSoonCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.copy,
+    this.route,
   });
 
   final IconData icon;
   final String title;
   final String copy;
 
+  /// When set, the card becomes a real entry-point and the "COMING SOON"
+  /// chip is replaced with "OPEN →". Used as features come online.
+  final String? route;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Container(
+    final isLive = route != null;
+    final body = Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: c.surface,
@@ -138,16 +146,18 @@ class _ComingSoonCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: c.surfaceRaised,
+                  color: isLive
+                      ? c.action.withValues(alpha: 0.18)
+                      : c.surfaceRaised,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'COMING SOON',
+                  isLive ? 'OPEN →' : 'COMING SOON',
                   style: GoogleFonts.openSans(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
-                    color: c.text3,
+                    color: isLive ? c.action : c.text3,
                   ),
                 ),
               ),
@@ -164,6 +174,16 @@ class _ComingSoonCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+    if (!isLive) return body;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => GoRouter.of(context).go(route!),
+        child: body,
       ),
     );
   }

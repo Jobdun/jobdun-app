@@ -3,4 +3,5 @@ class AdminRoutes {
 
   static const String login = '/login';
   static const String dashboard = '/';
+  static const String verifications = '/verifications';
 }
