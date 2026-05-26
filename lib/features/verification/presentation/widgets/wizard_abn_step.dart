@@ -10,7 +10,9 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../domain/entities/verification.dart';
+import '../../domain/entities/verification_document.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_upload_sheet.dart';
 
 typedef OnAbnSuccess =
     void Function({required String abn, required VerifyResult result});
@@ -161,12 +163,22 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
         detail: pending.detail,
         manualFallbackAllowed: pending.manualFallbackAllowed,
         onTryAgain: () => setState(() => _pending = null),
+        onUpload: pending.manualFallbackAllowed
+            ? () => showManualUploadSheet(
+                context: context,
+                docType: DocType.abnCertificate,
+              )
+            : null,
       );
     }
     if (pending is VerifyManualReview) {
       return _ConfirmManualReview(
         reason: pending.reason,
         onContinue: () => widget.onSuccess(abn: _abn, result: pending),
+        onUpload: () => showManualUploadSheet(
+          context: context,
+          docType: DocType.abnCertificate,
+        ),
       );
     }
     if (pending is VerifyVerified) {
@@ -243,11 +255,13 @@ class _ConfirmFailed extends StatelessWidget {
     required this.detail,
     required this.manualFallbackAllowed,
     required this.onTryAgain,
+    this.onUpload,
   });
 
   final String detail;
   final bool manualFallbackAllowed;
   final VoidCallback onTryAgain;
+  final VoidCallback? onUpload;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +283,18 @@ class _ConfirmFailed extends StatelessWidget {
           style: TextStyle(fontSize: 14.sp, color: c.text2),
         ),
         const Spacer(),
+        if (onUpload != null) ...[
+          SizedBox(
+            width: double.infinity,
+            child: JButton(
+              label: 'UPLOAD DOCUMENT INSTEAD',
+              variant: JButtonVariant.secondary,
+              size: JButtonSize.standard,
+              onPressed: onUpload,
+            ),
+          ),
+          Gap(12.h),
+        ],
         SizedBox(
           width: double.infinity,
           child: JButton(
@@ -284,10 +310,15 @@ class _ConfirmFailed extends StatelessWidget {
 }
 
 class _ConfirmManualReview extends StatelessWidget {
-  const _ConfirmManualReview({required this.reason, required this.onContinue});
+  const _ConfirmManualReview({
+    required this.reason,
+    required this.onContinue,
+    required this.onUpload,
+  });
 
   final String reason;
   final VoidCallback onContinue;
+  final VoidCallback onUpload;
 
   @override
   Widget build(BuildContext context) {
@@ -306,15 +337,26 @@ class _ConfirmManualReview extends StatelessWidget {
         Gap(12.h),
         Text(
           'We couldn\'t reach the Australian Business Register right now. '
-          'We\'re checking your details by hand — usually under 24 hours.',
+          'Upload a copy of your ABN certificate and a reviewer will '
+          'confirm it within 24 hours.',
           style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
         ),
         const Spacer(),
         SizedBox(
           width: double.infinity,
           child: JButton(
-            label: 'GOT IT',
+            label: 'UPLOAD DOCUMENT',
             variant: JButtonVariant.primary,
+            size: JButtonSize.standard,
+            onPressed: onUpload,
+          ),
+        ),
+        Gap(12.h),
+        SizedBox(
+          width: double.infinity,
+          child: JButton(
+            label: 'CONTINUE WITHOUT UPLOAD',
+            variant: JButtonVariant.secondary,
             size: JButtonSize.standard,
             onPressed: onContinue,
           ),

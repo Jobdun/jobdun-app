@@ -8,7 +8,9 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../domain/entities/verification.dart';
+import '../../domain/entities/verification_document.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_upload_sheet.dart';
 
 typedef OnLicenceDone =
     void Function({
@@ -44,6 +46,8 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
   String? _errorMessage;
   String _state = 'NSW';
   String _tradeClass = 'Electrician';
+  VerifyResult? _pending;
+  String? _pendingNumber;
 
   static const _states = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT'];
 
@@ -82,20 +86,116 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
         _errorMessage = f.message;
       }),
       (r) {
-        setState(() => _calling = false);
-        widget.onDone(
-          licenceNumber: number,
-          state: _state,
-          tradeClass: _tradeClass,
-          result: r,
-        );
+        setState(() {
+          _calling = false;
+          // Stay on the step for non-verified outcomes so the user can
+          // see the reason + reach the manual-upload fallback. Verified
+          // outcomes hand straight off to the result screen.
+          if (r is VerifyVerified) {
+            widget.onDone(
+              licenceNumber: number,
+              state: _state,
+              tradeClass: _tradeClass,
+              result: r,
+            );
+          } else {
+            _pending = r;
+            _pendingNumber = number;
+          }
+        });
       },
+    );
+  }
+
+  void _continueWithResult() {
+    widget.onDone(
+      licenceNumber: _pendingNumber,
+      state: _state,
+      tradeClass: _tradeClass,
+      result: _pending,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    if (_pending != null) return _buildConfirm(c);
+    return _buildEntry(c);
+  }
+
+  Widget _buildConfirm(JColors c) {
+    final pending = _pending!;
+    final detail = pending is VerifyFailed
+        ? pending.detail
+        : pending is VerifyManualReview
+        ? pending.reason
+        : 'We couldn\'t confirm this licence automatically.';
+    final allowUpload = pending is VerifyManualReview
+        ? true
+        : pending is VerifyFailed
+        ? pending.manualFallbackAllowed
+        : true;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'We couldn\'t verify this licence',
+          style: TextStyle(
+            fontSize: 22.sp,
+            fontWeight: FontWeight.w700,
+            color: c.text1,
+          ),
+        ),
+        Gap(12.h),
+        Text(
+          detail,
+          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
+        ),
+        const Spacer(),
+        if (allowUpload) ...[
+          SizedBox(
+            width: double.infinity,
+            child: JButton(
+              label: 'UPLOAD DOCUMENT INSTEAD',
+              variant: JButtonVariant.secondary,
+              size: JButtonSize.standard,
+              onPressed: () => showManualUploadSheet(
+                context: context,
+                docType: DocType.tradeLicence,
+              ),
+            ),
+          ),
+          Gap(12.h),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: JButton(
+                label: 'TRY AGAIN',
+                variant: JButtonVariant.secondary,
+                size: JButtonSize.standard,
+                onPressed: () => setState(() {
+                  _pending = null;
+                  _pendingNumber = null;
+                }),
+              ),
+            ),
+            Gap(12.w),
+            Expanded(
+              child: JButton(
+                label: 'CONTINUE',
+                variant: JButtonVariant.primary,
+                size: JButtonSize.standard,
+                onPressed: _continueWithResult,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEntry(JColors c) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

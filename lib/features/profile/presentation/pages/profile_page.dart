@@ -435,6 +435,7 @@ class _TradeProfile extends StatelessWidget {
             VerificationReceipts(
               userId: p!.id,
               isOwner: true,
+              showAbnRow: false,
               showLicenceRow: true,
             ),
         ],

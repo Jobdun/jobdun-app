@@ -24,6 +24,7 @@ class VerificationReceipts extends ConsumerWidget {
     super.key,
     required this.userId,
     required this.isOwner,
+    this.showAbnRow = true,
     required this.showLicenceRow,
   });
 
@@ -34,7 +35,10 @@ class VerificationReceipts extends ConsumerWidget {
   /// do we show "Verify in about a minute →" CTAs.
   final bool isOwner;
 
-  /// Builders only verify ABN. Trades also verify a licence. Caller decides.
+  /// Builders verify ABN. Trades skip ABN entirely. Caller decides.
+  final bool showAbnRow;
+
+  /// Trades verify a licence. Builders skip licence. Caller decides.
   final bool showLicenceRow;
 
   @override
@@ -85,21 +89,22 @@ class VerificationReceipts extends ConsumerWidget {
     return JCard(
       title: 'WHAT\'S BEEN CHECKED',
       children: [
-        if (abn != null)
-          _ReceiptRow(
-            icon: AppIcons.verified,
-            label: 'Business (ABN)',
-            sub: _abnSubtitle(abn),
-            isVerified: true,
-          )
-        else
-          _ReceiptRow(
-            icon: AppIcons.closeCircle,
-            label: 'Business (ABN)',
-            sub: 'Not yet verified',
-            isVerified: false,
-            cta: isOwner ? _wizardCta(context) : null,
-          ),
+        if (showAbnRow)
+          if (abn != null)
+            _ReceiptRow(
+              icon: AppIcons.verified,
+              label: 'Business (ABN)',
+              sub: _abnSubtitle(abn),
+              isVerified: true,
+            )
+          else
+            _ReceiptRow(
+              icon: AppIcons.closeCircle,
+              label: 'Business (ABN)',
+              sub: 'Not yet verified',
+              isVerified: false,
+              cta: isOwner ? _wizardCta(context) : null,
+            ),
         if (showLicenceRow)
           if (licence != null)
             _ReceiptRow(

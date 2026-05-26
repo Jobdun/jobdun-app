@@ -1,8 +1,8 @@
-# Jobdun — Verification User Flows (v2)
+# Jobdun — Verification User Flows (v2.1)
 
 > **Companion to** `docs/VERIFICATION_AUDIT.md` (architecture) and `docs/W1_W3_REALITY_CHECK.md` (sprint state).
 > **Model decision locked (2026-05-26):** verification is **optional, never gating**. Everyone can join, post, apply, and message. Verification is a **visible feature of the profile** — receipts, not permission. Builders choose whether to filter for verified workers. Tradies choose whether to verify.
-> Supersedes the v1 "gated wizard" model entirely. The v1 doc framing (Apply / Post blocked until verified) is obsolete.
+> **Scope tightened (2026-05-27):** verification is now **role-scoped to a single kind** — Builders verify ABN (business identity), Trades verify trade licence (qualification). Each wizard is one step. Both surfaces offer a manual document-upload fallback when the regulator can't be reached or returns ambiguous results. Supersedes v1 + the v2 dual-step trade flow.
 
 This doc is the user journey, the architectural posture, and the punch list of v1→v2 changes.
 
@@ -53,29 +53,37 @@ The wizard is reachable from:
 - Profile → "Verify in about a minute →" CTA on each unverified receipt row
 - (Future) a contextual nudge after the first few applications
 
-### Wizard (optional throughout)
+### Wizard (single step, optional throughout)
 
 ```
-Step 1: ABN
-   → ABR call → entity name confirmation
-   → ABN row in `verifications` = verified
-
-Step 2: State + licence (Skip allowed)
-   → Adapter call → verified / failed / manual_review
-   → Licence row in `verifications` (only when not skipped)
-
-Step 3: Result
-   "Here's what we checked:
-    ✓ ABN active (Australian Business Register · just now)
-    ✓ NSW Electrical Licence (NSW Fair Trading · just now)
-      Expires 14 Feb 2028
-    [ Continue → ]"
+Step 1 of 1: State + licence
+   → Adapter call (verify-licence Edge Function)
+   → verified  → result screen, licence row in `verifications`
+   → failed    → "We couldn't verify this licence"
+                 [ UPLOAD DOCUMENT INSTEAD ] [ TRY AGAIN ] [ CONTINUE ]
+   → manual_review (regulator unreachable)
+                 [ UPLOAD DOCUMENT INSTEAD ] [ TRY AGAIN ] [ CONTINUE ]
 ```
 
-Key changes from v1:
-- No 412 "verify ABN first" gate at the Edge Function. Independent calls allowed.
-- Skip on the licence step is visible and supported.
-- No `pendingActionAfterVerify` deep-link return — nothing was blocked, so back-nav is normal.
+Tradies do **not** enter an ABN. The licence is the signal that matters
+for trade qualification; the ABN proves business identity (relevant for
+builders, not workers). A sole-trader sparkie's ABN doesn't make them a
+qualified electrician — the NSW Fair Trading licence does.
+
+**Manual-upload fallback.** When the regulator can't confirm a licence
+(stub, real outage, ambiguous match, no API for that state yet), the
+failure screen offers an "Upload document instead" CTA. The tradie
+picks a photo or PDF of their licence, it lands in
+`verification_documents` as `pending`, and a reviewer flips it to
+`verified` within 24 h. The profile receipt updates automatically when
+the row flips.
+
+Key changes from v2.0:
+- ABN step removed for trades entirely.
+- Step label "Step 1 of 1" (was "Step 2 of 2").
+- Failure path stays on the licence step instead of bouncing to the
+  result screen, so the upload fallback is visible at the moment of
+  failure rather than one screen later.
 
 ---
 
@@ -101,6 +109,19 @@ HOME (builder shell)
 ```
 
 Builder wizard = ABN-only, single step. Entirely optional.
+
+```
+Step 1 of 1: ABN
+   → ABR call (verify-abn Edge Function, JSONP-aware)
+   → verified  → entity-name confirm → "Yes, that's me"
+   → failed    → "We couldn't verify this ABN"
+                 [ UPLOAD DOCUMENT INSTEAD ] [ TRY A DIFFERENT ABN ]
+   → manual_review (ABR unreachable)
+                 [ UPLOAD DOCUMENT ] [ CONTINUE WITHOUT UPLOAD ]
+```
+
+Same manual-upload fallback as the trade flow. ABN certificate lands
+in `verification_documents` as `pending`; reviewer confirms within 24 h.
 
 ---
 
