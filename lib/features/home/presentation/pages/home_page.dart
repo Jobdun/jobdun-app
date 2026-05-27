@@ -22,7 +22,7 @@ import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../auth/presentation/widgets/role_selection_sheet.dart';
+import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../widgets/profile_completeness_banner.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
@@ -88,24 +88,34 @@ class _HomePageState extends ConsumerState<HomePage> {
   //      claim is absent (custom_access_token hook not wired in Dashboard)
   //      but a row exists server-side. If the row is there, hydrate the
   //      controller's role from it and DON'T show the sheet.
+  //
+  // 2026-05-27: gate widened from role-only to role-OR-display_name. SSO and
+  // phone signups now route into [OnboardingCompletionSheet], which collects
+  // role + name + optional avatar in one flow. The sheet's own skip-step
+  // logic decides which steps to render based on what's already populated.
   Future<void> _maybeShowRoleSheet(AuthState auth) async {
     if (_roleSheetShown) return;
-    if (!auth.isAuthenticated || !auth.isRoleLoaded || auth.role != null) {
-      return;
-    }
+    if (!auth.isAuthenticated || !auth.isRoleLoaded) return;
 
-    // Latch immediately so concurrent triggers (initState postFrame +
-    // ref.listen) don't both race past gate (2) and double-fire.
+    final hadRowInDb = auth.role != null
+        ? false
+        : await ref.read(authControllerProvider.notifier).hydrateRoleFromDb();
+    if (!mounted) return;
+
+    // After hydration the controller's role is updated if a DB row existed.
+    final refreshed = ref.read(authControllerProvider);
+    final profile = ref.read(profileControllerProvider).profile;
+    final needsRole = refreshed.role == null;
+    final needsName = (profile?.displayName ?? '').trim().isEmpty;
+    if (!needsRole && !needsName) return;
+    if (hadRowInDb && !needsName) return; // role hydrated + name present
+
+    // Latch only when we're actually going to show, so a brief race where
+    // both gates returned early doesn't permanently suppress the sheet.
     _roleSheetShown = true;
 
-    final hadRowInDb = await ref
-        .read(authControllerProvider.notifier)
-        .hydrateRoleFromDb();
-    if (!mounted) return;
-    if (hadRowInDb) return; // DB had a row → role is hydrated, no sheet.
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) RoleSelectionSheet.show(context);
+      if (mounted) OnboardingCompletionSheet.show(context);
     });
   }
 

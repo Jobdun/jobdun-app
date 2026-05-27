@@ -9,7 +9,10 @@ import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/features/auth/domain/entities/user_role.dart';
 import 'package:jobdun/features/auth/presentation/pages/login_page.dart';
 import 'package:jobdun/features/auth/presentation/pages/register_page.dart';
-import 'package:jobdun/features/auth/presentation/widgets/role_selection_sheet.dart';
+// TODO(auth-flow-unification): rewrite the deleted "Path 2 — RoleSelectionSheet"
+// test against OnboardingCompletionSheet. The new sheet is a 3-step PageView,
+// not the legacy single-screen role picker, so the assertions need to step
+// through role → name → avatar — different contract, separate test file.
 
 void main() {
   setUpAll(() async {
@@ -125,52 +128,8 @@ void main() {
     expect(find.text('CHANGE'), findsOneWidget);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Path 2 — RoleSelectionSheet (SSO landing): renders new copy with no
-  //          Continue button. Tap-to-confirm flow.
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('SSO sheet: tap-to-confirm, no Continue button', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        child: ScreenUtilInit(
-          designSize: const Size(390, 844),
-          builder: (_, _) => MaterialApp(
-            theme: AppTheme.dark(),
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => RoleSelectionSheet.show(context),
-                    child: const Text('open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
-
-    // Sheet shows the new SSO-specific header copy.
-    expect(find.text('ONE LAST THING'), findsOneWidget);
-    expect(find.text('Which side are you on?'), findsOneWidget);
-
-    // Both role cards present with their SSO-sheet descriptions.
-    expect(find.text("I'M HIRING"), findsOneWidget);
-    expect(find.text("I'M LOOKING FOR WORK"), findsOneWidget);
-    expect(
-      find.text('Post jobs, review applications, manage crews.'),
-      findsOneWidget,
-    );
-    expect(find.text('Browse jobs, apply, get hired.'), findsOneWidget);
-
-    // No Continue button — tap on a card is the confirmation.
-    expect(find.text('Continue'), findsNothing);
-    expect(find.text('CONTINUE'), findsNothing);
-    expect(find.text('Saving...'), findsNothing);
-  });
+  // Path 2 (formerly RoleSelectionSheet) — deleted with the role-only sheet.
+  // The new OnboardingCompletionSheet is a 3-step PageView (role → name →
+  // avatar) that needs its own dedicated test file; the assertions here no
+  // longer correspond to live widgets.
 }

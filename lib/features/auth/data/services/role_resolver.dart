@@ -11,7 +11,7 @@ import '../../domain/entities/user_role.dart';
 /// round-trip), then fall back to a DB lookup when the claim is absent
 /// (custom hook not wired, post-refresh race, SSO sign-up).
 ///
-/// Also owns [setRoleAndStubProfile] — the RoleSelectionSheet entry point —
+/// Also owns [setRoleAndStubProfile] — the OnboardingCompletionSheet entry point —
 /// which honours an existing immutable role row instead of overwriting it.
 class RoleResolver {
   RoleResolver(this._client);
@@ -81,7 +81,10 @@ class RoleResolver {
     return roleFromSession() ?? await roleFromDb(userId);
   }
 
-  /// Sets the role and creates the role-specific stub profile.
+  /// Sets the role and creates the role-specific stub profile. Optionally
+  /// writes a display name into profiles + the role-specific stub at the
+  /// same time — used by the unified onboarding completion sheet so SSO and
+  /// phone signups can capture a name post-auth without a second round-trip.
   ///
   /// Role is IMMUTABLE per the RBAC lockdown (supabase/migrations/
   /// 20260520000001_lock_user_role.sql): once a user_roles row exists, only
@@ -93,10 +96,13 @@ class RoleResolver {
   ///   3. If no row exists, INSERTs (permitted by user_roles_insert_own RLS:
   ///      auth.uid() = user_id AND role IN ('builder','trade')).
   ///   4. Creates the role-specific stub if missing (idempotent on PK 'id').
-  ///   5. refreshSession() so the new JWT claim is live.
+  ///   5. (optional) Writes display_name into profiles AND the role-specific
+  ///      column (trade_profiles.full_name or builder_profiles.contact_name).
+  ///   6. refreshSession() so the new JWT claim is live.
   Future<UserRole> setRoleAndStubProfile({
     required String userId,
     required UserRole requestedRole,
+    String? displayName,
   }) async {
     // Ensure profiles row exists before inserting role-specific child table.
     // The handle_new_user trigger normally creates this, but may race on SSO.
@@ -137,7 +143,30 @@ class RoleResolver {
       }, onConflict: 'id');
     }
 
-    // Step 5: force a JWT refresh so the user_role claim is in the session.
+    // Step 5: optional display-name write. Mirrors to both profiles and the
+    // role-specific stub so the existing UIs that read either column stay
+    // consistent. Email signup populates these at registration time; SSO /
+    // phone signups land here.
+    final trimmedName = displayName?.trim();
+    if (trimmedName != null && trimmedName.isNotEmpty) {
+      await _client
+          .from('profiles')
+          .update({'display_name': trimmedName})
+          .eq('id', userId);
+      if (effectiveRole == UserRole.builder) {
+        await _client
+            .from('builder_profiles')
+            .update({'contact_name': trimmedName})
+            .eq('id', userId);
+      } else if (effectiveRole == UserRole.trade) {
+        await _client
+            .from('trade_profiles')
+            .update({'full_name': trimmedName})
+            .eq('id', userId);
+      }
+    }
+
+    // Step 6: force a JWT refresh so the user_role claim is in the session.
     await _client.auth.refreshSession();
 
     return effectiveRole;

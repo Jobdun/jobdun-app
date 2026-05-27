@@ -11,8 +11,18 @@ import '../../../admin_auth/presentation/providers/admin_session_provider.dart';
 
 const double _expandedWidth = 240;
 const double _collapsedWidth = 72;
+const double _outerH = 12;
+const double _innerH = 12;
+const double _itemHeight = 44;
 const Duration _animDuration = Duration(milliseconds: 200);
 const Curve _animCurve = Curves.easeOut;
+
+/// Natural width of expanded-row content (icon + gap + label area). Fed into
+/// the OverflowBox + SizedBox pattern so the inner Row lays out at this fixed
+/// width regardless of the AnimatedContainer's interpolated parent width —
+/// the outer ClipRect hides the overflow during animation.
+const double _expandedInnerWidth =
+    _expandedWidth - (_outerH * 2) - (_innerH * 2);
 
 class AdminSidebar extends ConsumerWidget {
   const AdminSidebar({
@@ -64,35 +74,64 @@ class AdminSidebar extends ConsumerWidget {
               collapsed: collapsed,
               onTap: () => context.go(AdminRoutes.verifications),
             ),
+            _NavItem(
+              icon: AppIcons.applicantsOutline,
+              iconActive: AppIcons.applicantsFilled,
+              label: 'USERS',
+              isActive: activeRoute == AdminRoutes.users,
+              collapsed: collapsed,
+              comingSoon: true,
+              onTap: () => context.go(AdminRoutes.users),
+            ),
+            _NavItem(
+              icon: AppIcons.briefcase,
+              iconActive: AppIcons.briefcaseFilled,
+              label: 'JOBS',
+              isActive: activeRoute == AdminRoutes.jobs,
+              collapsed: collapsed,
+              comingSoon: true,
+              onTap: () => context.go(AdminRoutes.jobs),
+            ),
+            _NavItem(
+              icon: AppIcons.shield,
+              iconActive: AppIcons.shield,
+              label: 'AUDIT LOG',
+              isActive: activeRoute == AdminRoutes.audit,
+              collapsed: collapsed,
+              comingSoon: true,
+              onTap: () => context.go(AdminRoutes.audit),
+            ),
             const Spacer(),
             if (session != null) ...[
               Divider(color: c.border, height: 1),
               if (!collapsed)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SIGNED IN AS',
-                        style: GoogleFonts.openSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: c.text3,
+                _ClippedExpanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SIGNED IN AS',
+                          style: GoogleFonts.openSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: c.text3,
+                          ),
                         ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        session.email,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.openSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: c.text2,
+                        const Gap(4),
+                        Text(
+                          session.email,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.openSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: c.text2,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 )
               else
@@ -111,6 +150,26 @@ class AdminSidebar extends ConsumerWidget {
   }
 }
 
+/// Helper that lets a fixed-natural-width child render without being squeezed
+/// by an interpolated parent width. Outer ClipRect on the sidebar hides any
+/// overflow during the collapse/expand animation.
+class _ClippedExpanded extends StatelessWidget {
+  const _ClippedExpanded({required this.child, this.width = _expandedWidth});
+
+  final Widget child;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return OverflowBox(
+      alignment: Alignment.centerLeft,
+      minWidth: 0,
+      maxWidth: width,
+      child: SizedBox(width: width, child: child),
+    );
+  }
+}
+
 class _Header extends StatelessWidget {
   const _Header({required this.collapsed, required this.onToggle});
 
@@ -120,12 +179,36 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(collapsed ? 12 : 20, 24, 12, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          if (!collapsed)
+    final toggleButton = Tooltip(
+      message: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      child: Material(
+        color: c.surfaceRaised,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onToggle,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(AppIcons.sidebarToggle, size: 16, color: c.text1),
+          ),
+        ),
+      ),
+    );
+
+    if (collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 24, 0, 20),
+        child: Center(child: toggleButton),
+      );
+    }
+
+    return _ClippedExpanded(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 24, 12, 20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,30 +234,10 @@ class _Header extends StatelessWidget {
                   ),
                 ],
               ),
-            )
-          else
-            const Spacer(),
-          Tooltip(
-            message: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
-            child: Material(
-              color: c.surfaceRaised,
-              borderRadius: BorderRadius.circular(6),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(6),
-                onTap: onToggle,
-                child: SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: Icon(
-                    AppIcons.sidebarToggle,
-                    size: 16,
-                    color: c.text1,
-                  ),
-                ),
-              ),
             ),
-          ),
-        ],
+            toggleButton,
+          ],
+        ),
       ),
     );
   }
@@ -188,6 +251,7 @@ class _NavItem extends StatelessWidget {
     required this.isActive,
     required this.collapsed,
     required this.onTap,
+    this.comingSoon = false,
   });
 
   final IconData icon;
@@ -196,6 +260,7 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final bool collapsed;
   final VoidCallback onTap;
+  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
@@ -206,45 +271,105 @@ class _NavItem extends StatelessWidget {
       color: isActive ? c.action : c.text2,
     );
 
-    final content = Material(
+    Widget body;
+    if (collapsed) {
+      body = SizedBox(
+        height: _itemHeight,
+        child: Stack(
+          children: [
+            Center(child: iconWidget),
+            if (comingSoon)
+              Positioned(
+                top: 8,
+                right: 10,
+                child: _ComingSoonDot(color: c.action),
+              ),
+          ],
+        ),
+      );
+    } else {
+      body = SizedBox(
+        height: _itemHeight,
+        child: _ClippedExpanded(
+          width: _expandedInnerWidth + (_innerH * 2),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _innerH),
+            child: Row(
+              children: [
+                iconWidget,
+                const Gap(12),
+                Expanded(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.clip,
+                    softWrap: false,
+                    style: GoogleFonts.openSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: isActive ? c.text1 : c.text2,
+                    ),
+                  ),
+                ),
+                if (comingSoon)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.surfaceRaised,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      'SOON',
+                      style: GoogleFonts.openSans(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                        color: c.text3,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final material = Material(
       color: isActive ? c.surfaceRaised : Colors.transparent,
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: onTap,
-        child: SizedBox(
-          height: 44,
-          child: collapsed
-              ? Center(child: iconWidget)
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      iconWidget,
-                      const Gap(12),
-                      Expanded(
-                        child: Text(
-                          label,
-                          overflow: TextOverflow.clip,
-                          softWrap: false,
-                          style: GoogleFonts.openSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: isActive ? c.text1 : c.text2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
+        child: body,
       ),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: collapsed ? Tooltip(message: label, child: content) : content,
+      padding: const EdgeInsets.symmetric(horizontal: _outerH, vertical: 2),
+      child: collapsed
+          ? Tooltip(message: label, child: material)
+          : material,
+    );
+  }
+}
+
+class _ComingSoonDot extends StatelessWidget {
+  const _ComingSoonDot({required this.color});
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+      ),
     );
   }
 }
@@ -258,47 +383,57 @@ class _SignOutButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final button = Material(
+    final inner = collapsed
+        ? SizedBox(
+            height: _itemHeight,
+            child: Center(
+              child: Icon(AppIcons.signOut, size: 16, color: c.text1),
+            ),
+          )
+        : SizedBox(
+            height: _itemHeight,
+            child: _ClippedExpanded(
+              width: _expandedInnerWidth + (_innerH * 2),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _innerH),
+                child: Row(
+                  children: [
+                    Icon(AppIcons.signOut, size: 16, color: c.text1),
+                    const Gap(10),
+                    Expanded(
+                      child: Text(
+                        'SIGN OUT',
+                        overflow: TextOverflow.clip,
+                        softWrap: false,
+                        style: GoogleFonts.openSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          color: c.text1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+    final material = Material(
       color: c.surfaceRaised,
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: onPressed,
-        child: SizedBox(
-          height: 44,
-          child: collapsed
-              ? Center(
-                  child: Icon(AppIcons.signOut, size: 16, color: c.text1),
-                )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: [
-                      Icon(AppIcons.signOut, size: 16, color: c.text1),
-                      const Gap(10),
-                      Expanded(
-                        child: Text(
-                          'SIGN OUT',
-                          overflow: TextOverflow.clip,
-                          softWrap: false,
-                          style: GoogleFonts.openSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: c.text1,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
+        child: inner,
       ),
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: collapsed ? Tooltip(message: 'Sign out', child: button) : button,
+      padding: const EdgeInsets.symmetric(horizontal: _outerH),
+      child: collapsed
+          ? Tooltip(message: 'Sign out', child: material)
+          : material,
     );
   }
 }

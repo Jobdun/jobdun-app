@@ -84,7 +84,7 @@ class AuthController extends Notifier<AuthState> {
         clearRegisterDraft: verified,
       );
       // Load role from JWT/DB after every session change — without this,
-      // home would race-fire RoleSelectionSheet for users who already picked.
+      // home would race-fire OnboardingCompletionSheet for users who already picked.
       _loadRoleForCurrentUser();
     });
     ref.onDispose(() => _authSubscription?.cancel());
@@ -479,6 +479,43 @@ class AuthController extends Notifier<AuthState> {
     } catch (e, st) {
       assert(() {
         debugPrint('[AuthController] setRoleAndStubProfile: $e\n$st');
+        return true;
+      }());
+      _failLoading(e);
+      return false;
+    }
+  }
+
+  /// Single atomic-from-the-user-view commit of the post-auth onboarding
+  /// state — role + display_name. Used by [OnboardingCompletionSheet] for
+  /// SSO and phone signups that arrive on /home with partial state.
+  ///
+  /// Avatar upload (if any) is a separate concern handled by
+  /// ProfileController.uploadAvatar in the sheet — keeps the controller
+  /// boundaries clean (auth owns identity, profile owns appearance).
+  Future<bool> completeOnboarding({
+    required UserRole role,
+    required String displayName,
+  }) async {
+    if (!_ensureConfigured()) return false;
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return false;
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final effective = await _roles.setRoleAndStubProfile(
+        userId: userId,
+        requestedRole: role,
+        displayName: displayName,
+      );
+      state = state.copyWith(
+        role: effective,
+        isRoleLoaded: true,
+        isLoading: false,
+      );
+      return true;
+    } catch (e, st) {
+      assert(() {
+        debugPrint('[AuthController] completeOnboarding: $e\n$st');
         return true;
       }());
       _failLoading(e);

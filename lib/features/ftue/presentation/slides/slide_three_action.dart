@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/widgets/social_auth_button.dart';
 import '../../../auth/presentation/widgets/role_intent_cta.dart';
 import '../widgets/ftue_hero_photo.dart';
 import '../widgets/ftue_slide.dart';
@@ -18,6 +19,7 @@ class SlideThreeAction extends StatelessWidget {
     super.key,
     required this.onHiring,
     required this.onWorking,
+    this.onContinueWithGoogle,
     this.onLoginLink,
   });
 
@@ -25,6 +27,12 @@ class SlideThreeAction extends StatelessWidget {
 
   final VoidCallback onHiring;
   final VoidCallback onWorking;
+
+  /// Optional Google SSO shortcut — when non-null, renders a small icon-tile
+  /// between the role CTAs and the login link so users can jump straight to
+  /// Google without the email signup form. The OnboardingCompletionSheet on
+  /// /home handles role + name capture after SSO.
+  final VoidCallback? onContinueWithGoogle;
 
   /// null hides the bottom login link entirely. Passed null when the user
   /// reached /ftue via the Create-account link on /login.
@@ -45,6 +53,7 @@ class SlideThreeAction extends StatelessWidget {
       footer: _Ctas(
         onHiring: onHiring,
         onWorking: onWorking,
+        onContinueWithGoogle: onContinueWithGoogle,
         onLoginLink: onLoginLink,
       ),
     );
@@ -55,11 +64,13 @@ class _Ctas extends StatelessWidget {
   const _Ctas({
     required this.onHiring,
     required this.onWorking,
+    required this.onContinueWithGoogle,
     required this.onLoginLink,
   });
 
   final VoidCallback onHiring;
   final VoidCallback onWorking;
+  final VoidCallback? onContinueWithGoogle;
   final VoidCallback? onLoginLink;
 
   @override
@@ -83,6 +94,24 @@ class _Ctas extends StatelessWidget {
           subtitle: 'Find jobs near you.',
           onTap: onWorking,
         ),
+        if (onContinueWithGoogle != null) ...[
+          Gap(AppSpacing.md.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'or sign up faster with',
+                style: tt.bodySmall!.copyWith(color: c.text3),
+              ),
+              Gap(10.w),
+              SocialAuthButton.google(
+                key: const Key('ftue.sso.google'),
+                onTap: onContinueWithGoogle!,
+                isLoading: false,
+              ),
+            ],
+          ),
+        ],
         if (onLoginLink != null) ...[
           Gap(AppSpacing.md.h),
           Semantics(

@@ -40,8 +40,125 @@ class AdminDashboardPage extends ConsumerWidget {
               color: c.text2,
             ),
           ),
+          const Gap(32),
+          const _StatsStrip(),
           const Gap(40),
           const _PlaceholderGrid(),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsStrip extends StatelessWidget {
+  const _StatsStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tiles = const [
+          _StatTile(
+            label: 'TOTAL USERS',
+            value: '—',
+            sublabel: 'Builders + Trades',
+          ),
+          _StatTile(
+            label: 'PENDING VERIFICATIONS',
+            value: '—',
+            sublabel: 'Awaiting review',
+            highlight: true,
+          ),
+          _StatTile(
+            label: 'OPEN JOBS',
+            value: '—',
+            sublabel: 'Across all builders',
+          ),
+          _StatTile(
+            label: 'FLAGS THIS WEEK',
+            value: '—',
+            sublabel: 'Reports + escalations',
+          ),
+        ];
+
+        // 4 across when ≥1100, 2 across when ≥720, 1 across otherwise.
+        final cols = constraints.maxWidth >= 1100
+            ? 4
+            : (constraints.maxWidth >= 720 ? 2 : 1);
+        const spacing = 16.0;
+        final tileWidth =
+            (constraints.maxWidth - (spacing * (cols - 1))) / cols;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: tiles
+              .map((t) => SizedBox(width: tileWidth, child: t))
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.sublabel,
+    this.highlight = false,
+  });
+
+  final String label;
+  final String value;
+  final String sublabel;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: highlight
+              ? c.action.withValues(alpha: 0.4)
+              : c.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.openSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+              color: highlight ? c.action : c.text3,
+            ),
+          ),
+          const Gap(10),
+          Text(
+            value,
+            style: GoogleFonts.oswald(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: c.text1,
+            ),
+          ),
+          const Gap(4),
+          Text(
+            sublabel,
+            style: GoogleFonts.openSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: c.text2,
+            ),
+          ),
         ],
       ),
     );

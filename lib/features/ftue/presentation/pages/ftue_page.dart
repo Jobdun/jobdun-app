@@ -7,6 +7,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../../../core/services/ftue_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/ftue_geo_provider.dart';
 import '../slides/slide_one_trust.dart';
 import '../slides/slide_three_action.dart';
@@ -119,6 +120,24 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     _exit(exitPath: 'login_link', route: '/login');
   }
 
+  /// Shortcut for users who'd rather skip the role + email signup form and
+  /// jump straight to Google SSO. The router redirect listens to auth state
+  /// and routes to /home automatically on success; OnboardingCompletionSheet
+  /// then collects role + name + optional avatar in a single sheet.
+  Future<void> _onContinueWithGoogle() async {
+    if (_exited) return;
+    _exited = true;
+    FtueAnalytics.completed(
+      exitPath: 'google_sso',
+      totalTimeMs: DateTime.now().difference(_startedAt).inMilliseconds,
+    );
+    await FtueService.markFtueComplete();
+    if (!mounted) return;
+    // Don't navigate — auth-state listener in app_router redirects to /home
+    // (or /splash → /home) once the session is established.
+    await ref.read(authControllerProvider.notifier).signInWithGoogle();
+  }
+
   void _onBackToLogin() {
     if (_exited) return;
     _exited = true;
@@ -152,6 +171,7 @@ class _FtuePageState extends ConsumerState<FtuePage> {
                   SlideThreeAction(
                     onHiring: () => _onCta('builder'),
                     onWorking: () => _onCta('trade'),
+                    onContinueWithGoogle: _onContinueWithGoogle,
                     onLoginLink: widget.fromLogin ? null : _onLoginLink,
                   ),
                 ],

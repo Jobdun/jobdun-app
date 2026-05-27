@@ -141,6 +141,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                         Gap(AppSpacing.xl.h),
 
+                        // ── Icon row: Google · Apple · Phone ─────────────────
+                        // Lifted above the email form per AUTH_FLOW_UNIFICATION_PLAN
+                        // — SSO is the primary path for new users; email/password
+                        // is the fallback below the divider. Same icon-tile shape
+                        // (56x56) and brand colours retained to avoid disrupting
+                        // the existing design language.
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            SocialAuthButton.google(
+                              key: const Key('login.sso.google'),
+                              onTap: isBusy ? () {} : _onGoogle,
+                              isLoading: isBusy,
+                            ),
+                            SocialAuthButton.apple(
+                              key: const Key('login.sso.apple'),
+                              onTap: isBusy ? () {} : _onApple,
+                              isLoading: isBusy,
+                            ),
+                            SocialAuthButton.phone(
+                              key: const Key('login.sso.phone'),
+                              onTap: isBusy ? () {} : _onPhone,
+                              isLoading: isBusy,
+                            ),
+                          ],
+                        ),
+
+                        Gap(AppSpacing.lg.h),
+
+                        // ── Section divider ──────────────────────────────────
+                        _OrDivider(),
+
+                        Gap(AppSpacing.md.h),
+
                         // ── Form ─────────────────────────────────────────────
                         FormBuilder(
                           key: _formKey,
@@ -210,38 +244,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           label: isBusy ? 'LOGGING IN...' : 'LOG IN',
                           isLoading: isBusy,
                           onPressed: isBusy ? null : _submit,
-                        ),
-
-                        Gap(AppSpacing.lg.h),
-
-                        // ── Section divider ──────────────────────────────────
-                        _OrDivider(),
-
-                        Gap(AppSpacing.md.h),
-
-                        // ── Icon row: Google · Apple · Phone ─────────────────
-                        // Three peer-level icon-only entry points rendered as
-                        // 56x56 tiles. Brand colours preserved (multi-colour
-                        // Google G, white Apple, neutral phone).
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            SocialAuthButton.google(
-                              key: const Key('login.sso.google'),
-                              onTap: isBusy ? () {} : _onGoogle,
-                              isLoading: isBusy,
-                            ),
-                            SocialAuthButton.apple(
-                              key: const Key('login.sso.apple'),
-                              onTap: isBusy ? () {} : _onApple,
-                              isLoading: isBusy,
-                            ),
-                            SocialAuthButton.phone(
-                              key: const Key('login.sso.phone'),
-                              onTap: isBusy ? () {} : _onPhone,
-                              isLoading: isBusy,
-                            ),
-                          ],
                         ),
 
                         // Flexible spacer pushes the bottom group (create-

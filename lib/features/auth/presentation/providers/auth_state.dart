@@ -17,7 +17,7 @@ class AuthState {
     this.isLoading = false,
     // Goes true once we've actually tried to read role from the JWT/DB.
     // Distinguishes "role is null because user hasn't picked" from "role is
-    // null because the load hasn't finished yet" — drives RoleSelectionSheet.
+    // null because the load hasn't finished yet" — drives OnboardingCompletionSheet.
     this.isRoleLoaded = false,
     this.role,
     this.email,
