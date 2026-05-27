@@ -97,6 +97,16 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (_roleSheetShown) return;
     if (!auth.isAuthenticated || !auth.isRoleLoaded) return;
 
+    // Profile-loaded gate: ProfileState doesn't have an isProfileLoaded flag
+    // (unlike auth.isRoleLoaded), so we use `profile == null && error == null`
+    // as the "load hasn't resolved yet" signal. Without this guard the
+    // initState postFrame would see a stale-null profile and false-positive
+    // on needsName, opening the sheet for users whose name is actually set.
+    // The ref.listen on profile state in build() re-runs this gate once
+    // loadProfile resolves.
+    final profileState = ref.read(profileControllerProvider);
+    if (profileState.profile == null && profileState.error == null) return;
+
     final hadRowInDb = auth.role != null
         ? false
         : await ref.read(authControllerProvider.notifier).hydrateRoleFromDb();
@@ -166,6 +176,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     ref.listen<AuthState>(authControllerProvider, (_, next) {
       _maybeShowRoleSheet(next);
       _maybeShowWelcomeToast();
+    });
+    // Profile load is async + can resolve AFTER the initState postFrame ran
+    // the gate. Re-run when profile state changes so a populated display_name
+    // suppresses the sheet on the next pass.
+    ref.listen<ProfileState>(profileControllerProvider, (_, _) {
+      _maybeShowRoleSheet(ref.read(authControllerProvider));
     });
 
     final c = context.c;
