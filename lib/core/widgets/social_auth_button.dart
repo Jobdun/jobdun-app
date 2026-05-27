@@ -13,6 +13,8 @@ import '../../app/theme/app_colors.dart';
 /// preserved (multi-colour Google G, white Apple, neutral phone). Aligns
 /// with the Aggressive-Flat aesthetic in MASTER.md: 8px radius, surface
 /// background, 1px border, no shadow.
+enum SocialAuthProvider { google, apple, phone }
+
 class SocialAuthButton extends StatelessWidget {
   const SocialAuthButton({
     super.key,
@@ -144,4 +146,102 @@ class SocialAuthButton extends StatelessWidget {
 
   static Widget _phoneIcon(BuildContext context) =>
       Icon(AppIcons.phone, size: _iconSize.r, color: context.c.text1);
+}
+
+/// Full-width labeled variant — "[icon] Continue with Google" row style.
+/// Used on /login where the SSO entry points lead the page; the compact
+/// 56x56 tile lives on places (FTUE) where the icon is the focal element.
+/// Provider enum kept tight (3 values) so the icon + label resolution stays
+/// pattern-matched and the call sites can't ask for something that doesn't
+/// exist.
+class LabeledSocialAuthButton extends StatelessWidget {
+  const LabeledSocialAuthButton({
+    super.key,
+    required this.provider,
+    required this.onTap,
+    this.isLoading = false,
+  });
+
+  final SocialAuthProvider provider;
+  final VoidCallback onTap;
+  final bool isLoading;
+
+  String get _label => switch (provider) {
+    SocialAuthProvider.google => 'Sign in with Google',
+    SocialAuthProvider.apple => 'Sign in with Apple',
+    SocialAuthProvider.phone => 'Continue with phone number',
+  };
+
+  Widget _icon(BuildContext context) => switch (provider) {
+    SocialAuthProvider.google => SvgPicture.asset(
+      'lib/core/assets/icon-google-color.svg',
+      width: 22.r,
+      height: 22.r,
+    ),
+    SocialAuthProvider.apple => SvgPicture.asset(
+      'lib/core/assets/icon-apple.svg',
+      width: 22.r,
+      height: 22.r,
+      colorFilter: ColorFilter.mode(context.c.text1, BlendMode.srcIn),
+    ),
+    SocialAuthProvider.phone => Icon(
+      AppIcons.phone,
+      size: 22.r,
+      color: context.c.text1,
+    ),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final disabled = isLoading;
+    return Semantics(
+      button: true,
+      label: _label,
+      excludeSemantics: true,
+      child: Material(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          child: Ink(
+            height: 52.h,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.card.r),
+              border: Border.all(color: c.border),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
+              child: Row(
+                children: [
+                  SizedBox(width: 24.r, height: 24.r, child: _icon(context)),
+                  Gap(AppSpacing.md.w),
+                  Expanded(
+                    child: Text(
+                      _label,
+                      style: tt.bodyLarge!.copyWith(
+                        color: c.text1,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (isLoading)
+                    SizedBox(
+                      width: 16.r,
+                      height: 16.r,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: c.text2,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

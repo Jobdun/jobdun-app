@@ -141,31 +141,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                         Gap(AppSpacing.xl.h),
 
-                        // ── Icon row: Google · Apple · Phone ─────────────────
-                        // Lifted above the email form per AUTH_FLOW_UNIFICATION_PLAN
-                        // — SSO is the primary path for new users; email/password
-                        // is the fallback below the divider. Same icon-tile shape
-                        // (56x56) and brand colours retained to avoid disrupting
-                        // the existing design language.
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            SocialAuthButton.google(
-                              key: const Key('login.sso.google'),
-                              onTap: isBusy ? () {} : _onGoogle,
-                              isLoading: isBusy,
-                            ),
-                            SocialAuthButton.apple(
-                              key: const Key('login.sso.apple'),
-                              onTap: isBusy ? () {} : _onApple,
-                              isLoading: isBusy,
-                            ),
-                            SocialAuthButton.phone(
-                              key: const Key('login.sso.phone'),
-                              onTap: isBusy ? () {} : _onPhone,
-                              isLoading: isBusy,
-                            ),
-                          ],
+                        // ── SSO row: Google → Apple → Phone ──────────────────
+                        // Full-width labeled buttons — clearer than icon-only
+                        // tiles for first-time users who haven't memorised the
+                        // G / Apple / phone glyphs yet. Lifted above the email
+                        // form per AUTH_FLOW_UNIFICATION_PLAN — SSO is the
+                        // primary path for new users; email/password is the
+                        // fallback below the divider.
+                        LabeledSocialAuthButton(
+                          key: const Key('login.sso.google'),
+                          provider: SocialAuthProvider.google,
+                          onTap: _onGoogle,
+                          isLoading: isBusy,
+                        ),
+                        Gap(AppSpacing.sm.h),
+                        LabeledSocialAuthButton(
+                          key: const Key('login.sso.apple'),
+                          provider: SocialAuthProvider.apple,
+                          onTap: _onApple,
+                          isLoading: isBusy,
+                        ),
+                        Gap(AppSpacing.sm.h),
+                        LabeledSocialAuthButton(
+                          key: const Key('login.sso.phone'),
+                          provider: SocialAuthProvider.phone,
+                          onTap: _onPhone,
+                          isLoading: isBusy,
                         ),
 
                         Gap(AppSpacing.lg.h),
