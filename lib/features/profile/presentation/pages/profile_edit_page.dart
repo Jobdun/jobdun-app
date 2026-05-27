@@ -25,6 +25,7 @@ import '../../../../core/services/places_service.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/builder_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
 import '../widgets/portfolio_strip.dart';
@@ -325,23 +326,30 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                               _metadataFullName,
                         ),
                         Gap(AppSpacing.md.h),
-                        const FieldLabel('COMPANY NAME'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'company_name',
-                          hint: 'e.g. Pinnacle Construct',
+                        // ABN + Company Name lock once verified. The verified
+                        // entity-name backfill from verify-abn mirrors the
+                        // ABR record into these columns; letting the user
+                        // edit them post-verify would silently invalidate
+                        // the verification receipt (builders viewing this
+                        // profile see the trust signal on the COMPANY DETAILS
+                        // card). "Contact support to change" is the escape
+                        // hatch — a dedicated change flow can land later if
+                        // demand justifies it.
+                        _VerifiedLockedField(
+                          label: 'COMPANY NAME',
+                          fieldName: 'company_name',
                           initialValue: bp?.companyName,
-                          validator: FormBuilderValidators.required(
-                            errorText: 'Company name is required.',
-                          ),
+                          hint: 'e.g. Pinnacle Construct',
+                          locked: _isAbnVerified(bp),
+                          requiredField: true,
                         ),
                         Gap(AppSpacing.md.h),
-                        const FieldLabel('ABN'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'abn',
-                          hint: '12 345 678 901',
+                        _VerifiedLockedField(
+                          label: 'ABN',
+                          fieldName: 'abn',
                           initialValue: bp?.abn,
+                          hint: '12 345 678 901',
+                          locked: _isAbnVerified(bp),
                           keyboardType: TextInputType.number,
                         ),
                         Gap(AppSpacing.md.h),
@@ -1004,6 +1012,103 @@ class _StatusRow extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// True when the builder profile carries an ABN that was mirrored in from a
+/// successful verify-abn run — used to lock Company Name + ABN inputs.
+/// We treat `bp.abn != null` as proof of verification because the only path
+/// that writes to that column is the Edge Function's post-ABR mirror.
+bool _isAbnVerified(BuilderProfile? bp) =>
+    bp?.abn != null && bp!.abn!.trim().isNotEmpty;
+
+/// FormBuilder text input that switches into a read-only "verified, locked"
+/// state when the corresponding row already carries an ABR-confirmed value.
+/// Renders the same JTextField shell either way so layout stays stable —
+/// the lock state surfaces via a small "✓ Verified" chip next to the label,
+/// the disabled input itself, and a "Contact support to change" hint line.
+class _VerifiedLockedField extends StatelessWidget {
+  const _VerifiedLockedField({
+    required this.label,
+    required this.fieldName,
+    required this.initialValue,
+    required this.hint,
+    required this.locked,
+    this.keyboardType,
+    this.requiredField = false,
+  });
+
+  final String label;
+  final String fieldName;
+  final String? initialValue;
+  final String hint;
+  final bool locked;
+  final TextInputType? keyboardType;
+  final bool requiredField;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            FieldLabel(label),
+            if (locked) ...[
+              Gap(8.w),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: c.verifiedBg,
+                  borderRadius: BorderRadius.circular(4.r),
+                  border: Border.all(color: c.verified.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(AppIcons.verified, size: 11.r, color: c.verified),
+                    Gap(4.w),
+                    Text(
+                      'VERIFIED',
+                      style: tt.labelSmall!.copyWith(
+                        fontSize: 9.sp,
+                        letterSpacing: 0.8,
+                        fontWeight: FontWeight.w700,
+                        color: c.verified,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        Gap(AppSpacing.sm.h),
+        JTextField(
+          name: fieldName,
+          hint: hint,
+          initialValue: initialValue,
+          enabled: !locked,
+          keyboardType: keyboardType,
+          validator: requiredField
+              ? FormBuilderValidators.required(errorText: '$label is required.')
+              : null,
+        ),
+        if (locked) ...[
+          Gap(4.h),
+          Text(
+            'Locked after ABR verification. Contact support to change.',
+            style: tt.bodySmall!.copyWith(
+              fontSize: 11.sp,
+              color: c.text3,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -6,13 +6,22 @@ import 'package:intl/intl.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/theme/app_icons.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/verification.dart';
 
-/// Wizard final screen. Lists what was checked and the regulator result(s).
-/// Honest copy: shows verified rows AND failed rows; never lies about state.
+/// Wizard final screen. Honest about what was checked: green check when the
+/// role-relevant kind verified, neutral "here's what we checked" when there
+/// were attempts that didn't fully succeed, and a friendly "you can do this
+/// later" when the user skipped without trying.
+///
+/// `role` is required so "did we succeed?" is computed against the right kind
+/// (trade → licence, builder → ABN) — the prior dual-step shape that AND'd
+/// both kinds together always read false in v2.1 because the irrelevant kind
+/// is never collected.
 class WizardResultScreen extends StatelessWidget {
   const WizardResultScreen({
     super.key,
+    required this.role,
     required this.abnResult,
     required this.licenceResult,
     required this.abn,
@@ -22,6 +31,7 @@ class WizardResultScreen extends StatelessWidget {
     required this.onFinish,
   });
 
+  final UserRole role;
   final VerifyResult? abnResult;
   final VerifyResult? licenceResult;
   final String? abn;
@@ -33,59 +43,95 @@ class WizardResultScreen extends StatelessWidget {
   bool get _abnVerified => abnResult is VerifyVerified;
   bool get _licenceVerified => licenceResult is VerifyVerified;
 
+  bool get _allGood => role == UserRole.trade ? _licenceVerified : _abnVerified;
+  bool get _didAttempt => abnResult != null || licenceResult != null;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final allGood = _abnVerified && (licenceResult == null || _licenceVerified);
+    final (icon, iconColor, title, subtitle) = _headerCopy(c);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          allGood ? AppIcons.verified : AppIcons.shield,
-          size: 56.r,
-          color: allGood ? c.verified : c.text3,
-        ),
+        Icon(icon, size: 56.r, color: iconColor),
         Gap(12.h),
         Text(
-          allGood ? 'You\'re verified' : 'Here\'s what we checked',
+          title,
           style: TextStyle(
             fontSize: 24.sp,
             fontWeight: FontWeight.w700,
             color: c.text1,
           ),
         ),
-        Gap(20.h),
-        Expanded(
-          child: ListView(
-            children: [
-              if (abnResult != null)
-                _ResultRow(
-                  label: 'Business (ABN $abn)',
-                  result: abnResult!,
-                  regulatorFallback: 'Australian Business Register',
-                ),
-              if (licenceResult != null) ...[
-                Gap(12.h),
-                _ResultRow(
-                  label: _licenceLabel(),
-                  result: licenceResult!,
-                  regulatorFallback: licenceState != null
-                      ? '$licenceState Fair Trading\'s public register'
-                      : 'the state regulator',
-                ),
-              ],
-            ],
+        if (subtitle != null) ...[
+          Gap(6.h),
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
           ),
-        ),
+        ],
+        Gap(20.h),
+        Expanded(child: _buildBody(c)),
         SizedBox(
           width: double.infinity,
           child: JButton(
-            label: 'CONTINUE',
+            label: _allGood ? 'DONE' : 'CONTINUE',
             variant: JButtonVariant.primary,
             size: JButtonSize.standard,
             onPressed: onFinish,
           ),
         ),
+      ],
+    );
+  }
+
+  (IconData, Color, String, String?) _headerCopy(JColors c) {
+    if (_allGood) {
+      return (
+        AppIcons.verified,
+        c.verified,
+        'You\'re verified',
+        'Builders will see your receipt on your profile.',
+      );
+    }
+    if (_didAttempt) {
+      return (
+        AppIcons.shield,
+        c.text3,
+        'Here\'s what we checked',
+        'You can finish verification any time — your profile still works.',
+      );
+    }
+    // No attempt — user skipped the auto-check.
+    return (
+      AppIcons.shield,
+      c.text3,
+      'You can verify any time',
+      'Open this from your profile when you\'re ready. Verification is '
+          'optional — you can apply, post, and message either way.',
+    );
+  }
+
+  Widget _buildBody(JColors c) {
+    if (!_didAttempt) return const SizedBox.shrink();
+    return ListView(
+      children: [
+        if (abnResult != null)
+          _ResultRow(
+            label: 'Business (ABN $abn)',
+            result: abnResult!,
+            regulatorFallback: 'Australian Business Register',
+          ),
+        if (licenceResult != null) ...[
+          Gap(12.h),
+          _ResultRow(
+            label: _licenceLabel(),
+            result: licenceResult!,
+            regulatorFallback: licenceState != null
+                ? '$licenceState Fair Trading\'s public register'
+                : 'the state regulator',
+          ),
+        ],
       ],
     );
   }

@@ -240,6 +240,9 @@ abstract final class AppIcons {
   /// Sign out of the current session. Used by the admin web sidebar.
   static const IconData signOut = PhosphorIconsBold.signOut;
 
+  /// Collapse / expand side navigation rail. Used by the admin sidebar toggle.
+  static const IconData sidebarToggle = PhosphorIconsBold.sidebarSimple;
+
   /// Destructive remove (trash). Pair with [c.urgent] in destructive actions.
   static const IconData trash = PhosphorIconsBold.trash;
 

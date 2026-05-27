@@ -268,7 +268,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
               ),
             // ── Verification nudge banner (v2). Self-hides when already
             // fully verified or dismissed for this session.
-            const VerificationNudgeBanner(role: NudgeRole.trade),
+            const VerificationNudgeBanner(),
             // ── Results count. "X+ jobs found" while more pages remain so
             // the number never looks misleadingly small during scroll-load.
             Padding(

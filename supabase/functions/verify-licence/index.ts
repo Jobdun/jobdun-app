@@ -34,6 +34,29 @@ Deno.serve(async (req) => {
   let body: RequestBody;
   try { body = await req.json(); } catch { return jsonResponse({ error: "invalid_json" }, 400); }
 
+  // Phone-verified precondition. Same rationale as verify-abn: regulator
+  // lookup confirms the licence exists; it can't prove the human entering
+  // it holds it. Phone-verified profile is the cheap-but-real identity
+  // anchor. Returned as a structured 200 so the Flutter VerifyResult parser
+  // surfaces it as VerifyFailed{ reason: 'phone_required' }.
+  const dbForGate = serviceClient();
+  const { data: gateProfile } = await dbForGate
+    .from("profiles")
+    .select("phone_verified_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!gateProfile?.phone_verified_at) {
+    return jsonResponse({
+      status: "failed",
+      reason: "phone_required",
+      manual_fallback_allowed: false,
+      detail:
+        "Verify your phone number first — Profile → Edit → Phone. " +
+        "This is required before we mark a licence verified, so Trust & " +
+        "Safety has a reachable contact for the attestation.",
+    });
+  }
+
   const licenceNumber = (body.licence_number ?? "").trim();
   const state = (body.state ?? "").toUpperCase() as AusState;
   const tradeClass = (body.trade_class ?? "").trim();

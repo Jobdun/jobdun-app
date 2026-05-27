@@ -10,15 +10,23 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../domain/entities/verification.dart';
-import '../../domain/entities/verification_document.dart';
 import '../providers/verifications_provider.dart';
 import 'manual_upload_sheet.dart';
+import 'wizard_abn_step_widgets.dart';
 
 typedef OnAbnSuccess =
     void Function({required String abn, required VerifyResult result});
 
 /// Wizard Step 1: ABN entry + confirmation. Calls the verify-abn Edge
-/// Function, then shows a "Is this your business?" screen on success.
+/// Function, then shows a "Is this your business?" screen on success that
+/// requires an explicit attestation checkbox before the row is treated as
+/// owner-confirmed. A `reason='phone_required'` failure from the server
+/// (the phone-verified precondition gate) routes to a dedicated screen with
+/// a deep link into the phone-verification flow.
+///
+/// Confirm/failure/manual-review/phone-required panels live in
+/// `wizard_abn_step_widgets.dart` to keep this file under the 500-LOC
+/// hard ceiling.
 class WizardAbnStep extends ConsumerStatefulWidget {
   const WizardAbnStep({
     super.key,
@@ -69,6 +77,21 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
         _pending = r;
       }),
     );
+  }
+
+  Future<void> _onAttestVerified(VerifyVerified pending) async {
+    await ref
+        .read(verificationFunnelLoggerProvider.notifier)
+        .log(
+          'abn_attestation_recorded',
+          metadata: {
+            'abn': _abn,
+            'entity_name': pending.entityName,
+            'source': 'wizard_abn_step',
+          },
+        );
+    if (!mounted) return;
+    widget.onSuccess(abn: _abn, result: pending);
   }
 
   @override
@@ -159,209 +182,44 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
     if (pending == null) return const SizedBox.shrink();
 
     if (pending is VerifyFailed) {
-      return _ConfirmFailed(
+      if (pending.reason == 'phone_required') {
+        return ConfirmPhoneRequired(
+          detail: pending.detail,
+          onBack: () => setState(() => _pending = null),
+        );
+      }
+      return ConfirmAbnFailed(
         detail: pending.detail,
         manualFallbackAllowed: pending.manualFallbackAllowed,
         onTryAgain: () => setState(() => _pending = null),
         onUpload: pending.manualFallbackAllowed
             ? () => showManualUploadSheet(
                 context: context,
-                docType: DocType.abnCertificate,
+                kind: ManualDocKind.abnCertificate,
+                prefilledNumber: _abn,
               )
             : null,
       );
     }
     if (pending is VerifyManualReview) {
-      return _ConfirmManualReview(
+      return ConfirmAbnManualReview(
         reason: pending.reason,
         onContinue: () => widget.onSuccess(abn: _abn, result: pending),
         onUpload: () => showManualUploadSheet(
           context: context,
-          docType: DocType.abnCertificate,
+          kind: ManualDocKind.abnCertificate,
+          prefilledNumber: _abn,
         ),
       );
     }
     if (pending is VerifyVerified) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Is this your business?',
-            style: TextStyle(
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
-          ),
-          Gap(20.h),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(20.r),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: c.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pending.entityName?.toUpperCase() ?? 'Active business',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: c.text1,
-                  ),
-                ),
-                Gap(8.h),
-                Text(
-                  'ABN $_abn',
-                  style: TextStyle(fontSize: 13.sp, color: c.text2),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: JButton(
-                  label: 'NO, EDIT ABN',
-                  variant: JButtonVariant.secondary,
-                  size: JButtonSize.standard,
-                  onPressed: () => setState(() => _pending = null),
-                ),
-              ),
-              Gap(12.w),
-              Expanded(
-                child: JButton(
-                  label: 'YES, THAT\'S ME',
-                  variant: JButtonVariant.primary,
-                  size: JButtonSize.standard,
-                  onPressed: () => widget.onSuccess(abn: _abn, result: pending),
-                ),
-              ),
-            ],
-          ),
-        ],
+      return ConfirmYourBusiness(
+        abn: _abn,
+        entityName: pending.entityName,
+        onEdit: () => setState(() => _pending = null),
+        onAttest: () => _onAttestVerified(pending),
       );
     }
     return const SizedBox.shrink();
-  }
-}
-
-class _ConfirmFailed extends StatelessWidget {
-  const _ConfirmFailed({
-    required this.detail,
-    required this.manualFallbackAllowed,
-    required this.onTryAgain,
-    this.onUpload,
-  });
-
-  final String detail;
-  final bool manualFallbackAllowed;
-  final VoidCallback onTryAgain;
-  final VoidCallback? onUpload;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'We couldn\'t verify this ABN',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
-        ),
-        Gap(12.h),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 14.sp, color: c.text2),
-        ),
-        const Spacer(),
-        if (onUpload != null) ...[
-          SizedBox(
-            width: double.infinity,
-            child: JButton(
-              label: 'UPLOAD DOCUMENT INSTEAD',
-              variant: JButtonVariant.secondary,
-              size: JButtonSize.standard,
-              onPressed: onUpload,
-            ),
-          ),
-          Gap(12.h),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: JButton(
-            label: 'TRY A DIFFERENT ABN',
-            variant: JButtonVariant.primary,
-            size: JButtonSize.standard,
-            onPressed: onTryAgain,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ConfirmManualReview extends StatelessWidget {
-  const _ConfirmManualReview({
-    required this.reason,
-    required this.onContinue,
-    required this.onUpload,
-  });
-
-  final String reason;
-  final VoidCallback onContinue;
-  final VoidCallback onUpload;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'We\'ll finish this manually',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
-        ),
-        Gap(12.h),
-        Text(
-          'We couldn\'t reach the Australian Business Register right now. '
-          'Upload a copy of your ABN certificate and a reviewer will '
-          'confirm it within 24 hours.',
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-        ),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: JButton(
-            label: 'UPLOAD DOCUMENT',
-            variant: JButtonVariant.primary,
-            size: JButtonSize.standard,
-            onPressed: onUpload,
-          ),
-        ),
-        Gap(12.h),
-        SizedBox(
-          width: double.infinity,
-          child: JButton(
-            label: 'CONTINUE WITHOUT UPLOAD',
-            variant: JButtonVariant.secondary,
-            size: JButtonSize.standard,
-            onPressed: onContinue,
-          ),
-        ),
-      ],
-    );
   }
 }

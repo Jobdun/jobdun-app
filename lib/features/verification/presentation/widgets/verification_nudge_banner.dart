@@ -6,21 +6,31 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/verifications_provider.dart';
 
 /// Persistent dismissible banner that nudges the user toward the wizard.
 /// Self-hides when:
-///   - the user is fully verified for their role
+///   - the user is fully verified for their role (permanent — survives app
+///     restarts; the live verification state is what's checked on every
+///     build, no "I was verified once" flag)
 ///   - the user has tapped × this session
+///   - no role is assigned yet (defensive — never render the wrong copy)
 ///
-/// Copy is carrot-not-stick (v2 spec): never blocks anything.
+/// Role is derived from `authControllerProvider.role` so the banner always
+/// renders the right copy + uses the right summariser. The Jobs page used
+/// to hard-pass `NudgeRole.trade` regardless of the signed-in user — which
+/// meant verified builders kept seeing tradie copy AND the banner refused
+/// to hide because `summariseForTrade` looked for a licence row they don't
+/// have. Removing the parameter fixed both behaviors at once.
 class VerificationNudgeBanner extends ConsumerWidget {
-  const VerificationNudgeBanner({super.key, required this.role});
-
-  final NudgeRole role;
+  const VerificationNudgeBanner({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(authControllerProvider.select((s) => s.role));
+    if (role == null) return const SizedBox.shrink();
+
     final dismissed = ref.watch(verificationBannerDismissedProvider);
     if (dismissed) return const SizedBox.shrink();
 
@@ -29,7 +39,7 @@ class VerificationNudgeBanner extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
       data: (rows) {
-        final summary = role == NudgeRole.trade
+        final summary = role == UserRole.trade
             ? summariseForTrade(rows)
             : summariseForBuilder(rows);
         if (summary == VerificationSummary.fullyVerified) {
@@ -41,16 +51,14 @@ class VerificationNudgeBanner extends ConsumerWidget {
   }
 }
 
-enum NudgeRole { trade, builder }
-
 class _Banner extends ConsumerWidget {
   const _Banner({required this.role});
-  final NudgeRole role;
+  final UserRole role;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final copy = role == NudgeRole.trade
+    final copy = role == UserRole.trade
         ? 'Verified workers get hired faster. About a minute.'
         : 'Verified businesses get more applicants. About 15 seconds.';
 

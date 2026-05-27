@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
@@ -8,55 +9,102 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
-import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/image_upload_service.dart';
-import '../../../../core/theme/app_icons.dart';
 import '../../domain/entities/verification_document.dart';
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_upload_form.dart';
 
-/// Manual document upload fallback. Shown from any wizard failure surface
-/// when the regulator can't confirm the user automatically.
-///
-/// Writes to verification_documents (status='pending') via the existing
-/// VerificationRemoteDataSource — admin review flips the row to verified
-/// later. Receipts panel on the profile picks up the new row through
-/// `verificationsForUserProvider` invalidation on close.
-Future<void> showManualUploadSheet({
+/// Tight, role-scoped surface for the manual-upload sheet. Only the two real
+/// fallback shapes are exposed — anything else (white card, PI, etc.) belongs
+/// in a different upload UI when it ships.
+enum ManualDocKind { abnCertificate, tradeLicence }
+
+extension ManualDocKindX on ManualDocKind {
+  DocType get docType => switch (this) {
+    ManualDocKind.abnCertificate => DocType.abnCertificate,
+    ManualDocKind.tradeLicence => DocType.tradeLicence,
+  };
+
+  String get sheetTitle => switch (this) {
+    ManualDocKind.abnCertificate => 'Upload your ABN certificate',
+    ManualDocKind.tradeLicence => 'Upload your trade licence',
+  };
+
+  String get numberLabel => switch (this) {
+    ManualDocKind.abnCertificate => 'ABN',
+    ManualDocKind.tradeLicence => 'Licence number',
+  };
+
+  String get numberHint => switch (this) {
+    ManualDocKind.abnCertificate => '11 digits',
+    ManualDocKind.tradeLicence => 'e.g. EL-12345',
+  };
+
+  bool get requiresState => this == ManualDocKind.tradeLicence;
+  bool get requiresExpiry => this == ManualDocKind.tradeLicence;
+}
+
+/// Opens the manual-upload bottom sheet. Returns `true` when the user
+/// successfully submitted a document, `false` (or `null` from a swipe-dismiss)
+/// otherwise — callers use this to decide whether to invalidate receipts and
+/// close any upstream chrome.
+Future<bool> showManualUploadSheet({
   required BuildContext context,
-  required DocType docType,
-}) {
-  return showJSheet<void>(
+  required ManualDocKind kind,
+  String? prefilledState,
+  String? prefilledNumber,
+}) async {
+  final result = await showJSheet<bool>(
     context: context,
+    expand: false,
     backgroundColor: context.c.background,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => _ManualUploadSheet(docType: docType),
+    builder: (_) => _ManualUploadSheet(
+      kind: kind,
+      prefilledState: prefilledState,
+      prefilledNumber: prefilledNumber,
+    ),
   );
+  return result ?? false;
 }
 
 class _ManualUploadSheet extends ConsumerStatefulWidget {
-  const _ManualUploadSheet({required this.docType});
+  const _ManualUploadSheet({
+    required this.kind,
+    this.prefilledState,
+    this.prefilledNumber,
+  });
 
-  final DocType docType;
+  final ManualDocKind kind;
+  final String? prefilledState;
+  final String? prefilledNumber;
 
   @override
   ConsumerState<_ManualUploadSheet> createState() => _ManualUploadSheetState();
 }
 
 class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
+  final _formKey = GlobalKey<FormBuilderState>();
   File? _pickedFile;
   bool _uploading = false;
   bool _done = false;
+  bool _attested = false;
   String? _error;
+  String _state = 'NSW';
+  DateTime? _expiry;
 
-  String get _title => switch (widget.docType) {
-    DocType.abnCertificate => 'Upload your ABN certificate',
-    DocType.tradeLicence => 'Upload your trade licence',
-    _ => 'Upload document',
-  };
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefilledState != null &&
+        manualUploadStates.contains(widget.prefilledState)) {
+      _state = widget.prefilledState!;
+    }
+  }
 
   Future<void> _pick(ImageSource source) async {
     setState(() => _error = null);
@@ -77,6 +125,15 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     final userId = ref.read(currentUserIdSyncProvider);
     final file = _pickedFile;
     if (userId == null || file == null) return;
+    if (!_attested) return; // Defensive — UI already blocks this path.
+    final form = _formKey.currentState;
+    if (form == null || !form.saveAndValidate()) return;
+    final number = (form.value['document_number'] as String? ?? '').trim();
+    final issuer = issuerFor(
+      widget.kind,
+      widget.kind.requiresState ? _state : null,
+    );
+
     setState(() {
       _uploading = true;
       _error = null;
@@ -84,9 +141,30 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     try {
       await ref
           .read(verificationDatasourceProvider)
-          .uploadDocument(tradeId: userId, docType: widget.docType, file: file);
+          .uploadDocument(
+            tradeId: userId,
+            docType: widget.kind.docType,
+            file: file,
+            state: widget.kind.requiresState ? _state : null,
+            issuer: issuer,
+            documentNumber: number.isEmpty ? null : number,
+            expiryDate: _expiry,
+          );
       if (!mounted) return;
-      // Refresh receipts so the profile rows reflect the new pending row.
+      // Fire-and-forget attestation audit — admin sees this alongside the
+      // doc in the review queue.
+      await ref
+          .read(verificationFunnelLoggerProvider.notifier)
+          .log(
+            'manual_upload_attestation_recorded',
+            metadata: {
+              'kind': widget.kind.name,
+              'doc_type': widget.kind.docType.dbValue,
+              if (widget.kind.requiresState) 'state': _state,
+              if (number.isNotEmpty) 'document_number': number,
+            },
+          );
+      if (!mounted) return;
       ref.invalidate(verificationsForUserProvider(userId));
       setState(() {
         _uploading = false;
@@ -101,13 +179,25 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     }
   }
 
+  Future<void> _onPickExpiry() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _expiry ?? DateTime(now.year + 2, now.month, now.day),
+      firstDate: now,
+      lastDate: DateTime(now.year + 20),
+    );
+    if (picked != null) setState(() => _expiry = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
       top: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h + viewInsets),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +214,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
             ),
             Gap(16.h),
             Text(
-              _done ? 'Sent for review' : _title,
+              _done ? 'Sent for review' : widget.kind.sheetTitle,
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
@@ -136,17 +226,28 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
               _done
                   ? 'A reviewer will check this within 24 hours. We\'ll '
                         'update your profile receipts when it\'s approved.'
-                  : 'Pick a clear photo or PDF. A reviewer will confirm '
-                        'it within 24 hours.',
+                  : 'A reviewer confirms within 24 hours. Fields below help '
+                        'them cross-check the doc faster.',
               style: TextStyle(fontSize: 13.sp, color: c.text2, height: 1.45),
             ),
-            Gap(20.h),
+            Gap(16.h),
             if (_done)
-              _DoneBlock(onClose: () => Navigator.of(context).maybePop())
+              ManualUploadDoneBlock(
+                onClose: () => Navigator.of(context).pop(true),
+              )
             else
-              _PickerBlock(
+              ManualUploadActiveBody(
+                kind: widget.kind,
+                formKey: _formKey,
+                state: _state,
+                onStateChanged: (v) => setState(() => _state = v),
+                expiry: _expiry,
+                onPickExpiry: _onPickExpiry,
+                prefilledNumber: widget.prefilledNumber,
                 pickedFile: _pickedFile,
                 uploading: _uploading,
+                attested: _attested,
+                onAttestedChanged: (v) => setState(() => _attested = v),
                 onCamera: () => _pick(ImageSource.camera),
                 onGallery: () => _pick(ImageSource.gallery),
                 onUpload: _upload,
@@ -161,120 +262,6 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PickerBlock extends StatelessWidget {
-  const _PickerBlock({
-    required this.pickedFile,
-    required this.uploading,
-    required this.onCamera,
-    required this.onGallery,
-    required this.onUpload,
-  });
-
-  final File? pickedFile;
-  final bool uploading;
-  final VoidCallback onCamera;
-  final VoidCallback onGallery;
-  final VoidCallback onUpload;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    if (pickedFile == null) {
-      return Row(
-        children: [
-          Expanded(
-            child: JButton(
-              label: 'CAMERA',
-              variant: JButtonVariant.secondary,
-              size: JButtonSize.standard,
-              onPressed: onCamera,
-            ),
-          ),
-          Gap(12.w),
-          Expanded(
-            child: JButton(
-              label: 'GALLERY',
-              variant: JButtonVariant.primary,
-              size: JButtonSize.standard,
-              onPressed: onGallery,
-            ),
-          ),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8.r),
-          child: Image.file(
-            pickedFile!,
-            height: 180.h,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Gap(12.h),
-        Row(
-          children: [
-            Expanded(
-              child: JButton(
-                label: 'CHANGE',
-                variant: JButtonVariant.secondary,
-                size: JButtonSize.standard,
-                onPressed: uploading ? null : onGallery,
-              ),
-            ),
-            Gap(12.w),
-            Expanded(
-              child: JButton(
-                label: uploading ? 'UPLOADING…' : 'UPLOAD',
-                variant: JButtonVariant.primary,
-                size: JButtonSize.standard,
-                onPressed: uploading ? null : onUpload,
-              ),
-            ),
-          ],
-        ),
-        if (uploading) ...[
-          Gap(8.h),
-          LinearProgressIndicator(
-            backgroundColor: c.border,
-            valueColor: AlwaysStoppedAnimation<Color>(c.action),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _DoneBlock extends StatelessWidget {
-  const _DoneBlock({required this.onClose});
-
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(AppIcons.verified, size: 32.r, color: c.verified),
-        Gap(12.h),
-        SizedBox(
-          width: double.infinity,
-          child: JButton(
-            label: 'DONE',
-            variant: JButtonVariant.primary,
-            size: JButtonSize.standard,
-            onPressed: onClose,
-          ),
-        ),
-      ],
     );
   }
 }

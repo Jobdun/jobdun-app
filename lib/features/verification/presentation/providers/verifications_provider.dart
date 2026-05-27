@@ -53,15 +53,15 @@ final myVerificationsProvider = Provider<AsyncValue<List<Verification>>>((ref) {
 enum VerificationSummary { none, partial, fullyVerified }
 
 VerificationSummary summariseForTrade(List<Verification> rows) {
-  final abnVerified = rows.any(
-    (v) => v.kind == VerificationKind.abn && v.isVerified,
-  );
+  // v2.1 — trades only verify a trade licence (no ABN step). "Fully verified"
+  // for a trade = licence verified. Pre-v2 logic required ABN + licence, which
+  // always read partial because the ABN step was removed.
   final licenceVerified = rows.any(
     (v) => v.kind == VerificationKind.licence && v.isVerified,
   );
-  if (abnVerified && licenceVerified) return VerificationSummary.fullyVerified;
-  if (abnVerified || licenceVerified) return VerificationSummary.partial;
-  return VerificationSummary.none;
+  return licenceVerified
+      ? VerificationSummary.fullyVerified
+      : VerificationSummary.none;
 }
 
 VerificationSummary summariseForBuilder(List<Verification> rows) {
@@ -83,6 +83,39 @@ class BannerDismissNotifier extends Notifier<bool> {
 
 final verificationBannerDismissedProvider =
     NotifierProvider<BannerDismissNotifier, bool>(BannerDismissNotifier.new);
+
+// ── Verification funnel telemetry ────────────────────────────────────────────
+// Fire-and-forget event writer for `verification_funnel_events`. Used by the
+// wizard + manual-upload sheet to record attestations and skip/upload taps.
+// Kept inside providers/ so SupabaseConfig.client stays out of widgets/
+// (Clean Architecture rule — see scripts/check-architecture.sh).
+//
+// Errors are deliberately swallowed: telemetry never blocks the user flow.
+class VerificationFunnelLogger extends Notifier<void> {
+  @override
+  void build() {}
+
+  Future<void> log(String step, {Map<String, dynamic>? metadata}) async {
+    final userId = ref.read(currentUserIdSyncProvider);
+    if (userId == null) return;
+    try {
+      await SupabaseConfig.client.from('verification_funnel_events').insert({
+        'user_id': userId,
+        'step': step,
+        // ignore: use_null_aware_elements
+        if (metadata != null) 'metadata': metadata,
+      });
+    } catch (_) {
+      // Telemetry is fire-and-forget — never block the user on a logging
+      // failure. Errors visible in Supabase logs if they matter.
+    }
+  }
+}
+
+final verificationFunnelLoggerProvider =
+    NotifierProvider<VerificationFunnelLogger, void>(
+      VerificationFunnelLogger.new,
+    );
 
 // ── Builder "include unverified workers" acknowledgement ─────────────────────
 // Reads + writes `builder_unverified_acknowledgements`. Kept inside the

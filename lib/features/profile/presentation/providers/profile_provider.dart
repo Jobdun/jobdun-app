@@ -65,15 +65,18 @@ class ProfileController extends Notifier<ProfileState> {
 
     state = state.copyWith(isLoading: true, error: null);
 
+    // Each of the three reads is independent — if one fails (e.g. a transient
+    // network blip on profiles), we still want builder/trade to populate so
+    // the page can render the COMPANY DETAILS / TRADE DETAILS card. Prior
+    // versions bailed out of the whole loadProfile() at the first failure,
+    // which produced the "all fields say Not set" symptom on profile.
     final profileResult = await ref
         .read(getProfileUseCaseProvider)
         .call(userId);
-    profileResult.fold((f) {
-      state = state.copyWith(isLoading: false, error: f.message);
-      return;
-    }, (profile) => state = state.copyWith(profile: profile));
-
-    if (state.error != null) return;
+    profileResult.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (profile) => state = state.copyWith(profile: profile),
+    );
 
     final builderResult = await _repo.getBuilderProfile(userId);
     builderResult.fold(
@@ -82,10 +85,7 @@ class ProfileController extends Notifier<ProfileState> {
     );
 
     final tradeResult = await _repo.getTradeProfile(userId);
-    tradeResult.fold(
-      (_) {},
-      (tp) => state = state.copyWith(tradeProfile: tp, isLoading: false),
-    );
+    tradeResult.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
 
     state = state.copyWith(isLoading: false);
   }

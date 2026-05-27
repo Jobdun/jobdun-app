@@ -13,6 +13,7 @@ import '../../domain/entities/verification.dart';
 import '../../domain/entities/verification_document.dart' as docs;
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_upload_sheet.dart';
 
 /// "What's been checked" receipts panel. Lives on the profile page.
 ///
@@ -175,7 +176,36 @@ class VerificationReceipts extends ConsumerWidget {
       label: label,
       sub: 'Not yet verified',
       isVerified: false,
-      cta: isOwner ? _wizardCta(context) : null,
+      cta: isOwner ? _ownerCtas(context, docType) : null,
+    );
+  }
+
+  static Widget _ownerCtas(BuildContext context, docs.DocType docType) {
+    final manualKind = docType == docs.DocType.tradeLicence
+        ? ManualDocKind.tradeLicence
+        : ManualDocKind.abnCertificate;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _wizardCta(context),
+        InkWell(
+          onTap: () =>
+              showManualUploadSheet(context: context, kind: manualKind),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 4.h),
+            child: Text(
+              'Or upload a document →',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w500,
+                color: context.c.text3,
+                decoration: TextDecoration.underline,
+                decorationColor: context.c.text3,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

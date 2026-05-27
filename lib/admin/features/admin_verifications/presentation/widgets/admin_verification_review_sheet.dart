@@ -82,13 +82,51 @@ class _AdminVerificationReviewSheetState
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      _prettyDocType(i.docType),
-                      style: GoogleFonts.oswald(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: c.text1,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _prettyDocType(i.docType),
+                          style: GoogleFonts.oswald(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: c.text1,
+                          ),
+                        ),
+                        const Gap(4),
+                        Row(
+                          children: [
+                            Text(
+                              i.displayName,
+                              style: GoogleFonts.openSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: c.text1,
+                              ),
+                            ),
+                            const Gap(8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: c.background,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text(
+                                'ROLE: ${i.roleLabel}',
+                                style: GoogleFonts.openSans(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: c.text3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -99,7 +137,7 @@ class _AdminVerificationReviewSheetState
               ),
               const Gap(4),
               Text(
-                'trade ${i.tradeId} · submitted ${_fmt(i.submittedAt)}',
+                'user ${i.tradeId} · submitted ${_fmt(i.submittedAt)}',
                 style: GoogleFonts.openSans(fontSize: 12, color: c.text2),
               ),
               const Gap(16),
@@ -111,6 +149,13 @@ class _AdminVerificationReviewSheetState
                       _ImageBlock(filePath: i.filePath),
                       const Gap(16),
                       _MetaTable(item: i),
+                      if (i.lastVerificationFailureReason != null) ...[
+                        const Gap(16),
+                        _RegulatorFailureBlock(
+                          status: i.lastVerificationStatus,
+                          detail: i.lastVerificationFailureReason!,
+                        ),
+                      ],
                       const Gap(16),
                       TextField(
                         controller: _notesController,
@@ -247,6 +292,73 @@ class _ImageBlock extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _RegulatorFailureBlock extends StatelessWidget {
+  const _RegulatorFailureBlock({required this.status, required this.detail});
+
+  final String? status;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.urgent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.urgent.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: c.urgent, size: 16),
+              const Gap(6),
+              Text(
+                'WHAT THE REGULATOR SAID',
+                style: GoogleFonts.openSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: c.urgent,
+                ),
+              ),
+              if (status != null) ...[
+                const Gap(8),
+                Text(
+                  '· ${status!.toUpperCase()}',
+                  style: GoogleFonts.openSans(fontSize: 11, color: c.text3),
+                ),
+              ],
+            ],
+          ),
+          const Gap(6),
+          Text(
+            detail,
+            style: GoogleFonts.openSans(
+              fontSize: 13,
+              color: c.text1,
+              height: 1.4,
+            ),
+          ),
+          const Gap(4),
+          Text(
+            'The user fell back to manual upload after this regulator '
+            'response. Approve only if the document independently confirms '
+            'the claim.',
+            style: GoogleFonts.openSans(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: c.text3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

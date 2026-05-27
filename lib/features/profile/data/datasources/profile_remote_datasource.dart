@@ -32,10 +32,17 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<UserProfileModel> getProfile(String userId) async {
     try {
+      // Select only columns that actually exist in public.profiles. Earlier
+      // versions of this query asked for `bio` and `onboarding_completed_at`
+      // (legacy fields that were never added to the schema) — Postgres returns
+      // a 400 on the missing-column case, which propagated up and short-
+      // circuited loadProfile() before builder_profiles / trade_profiles
+      // ever loaded. Symptom on the profile page: COMPANY DETAILS card stuck
+      // on "Not set" for every field even though the row was populated.
       final data = await _client
           .from('profiles')
           .select(
-            'id, display_name, phone, phone_verified_at, avatar_url, bio, onboarding_completed_at, created_at, updated_at',
+            'id, display_name, phone, phone_verified_at, avatar_url, created_at, updated_at',
           )
           .eq('id', userId)
           .single();

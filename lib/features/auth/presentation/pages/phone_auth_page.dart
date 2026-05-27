@@ -1,23 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
-import 'package:pinput/pinput.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/design/widgets/jobdun_logo.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/services/phone_auth_storage.dart';
 import '../../../../core/validators/phone_validator.dart';
-import '../../../../core/design/widgets/j_button.dart';
-import '../../../../core/widgets/status_banner.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/country_picker_sheet.dart';
+import '../widgets/phone_auth_steps.dart';
 
 // Two callers:
 //   PhoneAuthMode.signIn      — public route /phone-auth, creates a session
@@ -25,6 +22,11 @@ import '../widgets/country_picker_sheet.dart';
 //   PhoneAuthMode.addToAccount — gated route /profile/verify-phone, attaches
 //                               a verified phone to the already-authed user
 //                               so the T1 banner's phone slot can hit 100%.
+//                               Short-circuits to a success state when the
+//                               profile already has phone_verified_at set —
+//                               re-entering the page after a prior verify
+//                               would otherwise loop the user through fresh
+//                               OTP attempts that surface as otp_expired.
 enum PhoneAuthMode { signIn, addToAccount }
 
 class PhoneAuthPage extends ConsumerStatefulWidget {
@@ -48,17 +50,37 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   String? _phoneError;
   Country _country = defaultCountry();
 
+  // addToAccount-only state: gates the initial render until we've checked
+  // whether the profile already carries phone_verified_at.
+  bool _checkingVerifiedStatus = false;
+  bool _alreadyVerified = false;
+  String? _verifiedPhone;
+
+  // Briefly rendered after a successful verify so the user sees confirmation
+  // before the page pops back to /profile/edit. Without this, the previous
+  // implementation popped silently — easy to mistake for "nothing happened".
+  bool _justVerified = false;
+
+  // Local override for authState.errorMessage when the raw Supabase auth
+  // error is jargon-y. Surfaced via _OtpStep.friendlyErrorMessage.
+  String? _friendlyErrorOverride;
+
   @override
   void initState() {
     super.initState();
-    // The "continue with the in-flight OTP from last session" prompt only
-    // makes sense for the sign-in flow. In add-to-account mode the user
-    // is already authed and any persisted record predates them attaching
-    // a phone — restore would just confuse.
     if (widget.mode == PhoneAuthMode.signIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _restorePendingPhone();
+      });
+    } else {
+      // addToAccount: check the live profile state before exposing the form
+      // so a returning user doesn't get re-routed through OTP for a phone
+      // that's already verified.
+      _checkingVerifiedStatus = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _checkAlreadyVerified();
       });
     }
   }
@@ -70,6 +92,19 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
     _otpController.dispose();
     _resendTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkAlreadyVerified() async {
+    // Force a fresh read — the cached state may pre-date a verify that
+    // happened in another session.
+    await ref.read(profileControllerProvider.notifier).loadProfile();
+    if (!mounted) return;
+    final profile = ref.read(profileControllerProvider).profile;
+    setState(() {
+      _checkingVerifiedStatus = false;
+      _alreadyVerified = profile?.isPhoneVerified ?? false;
+      _verifiedPhone = profile?.phone;
+    });
   }
 
   Future<void> _restorePendingPhone() async {
@@ -120,13 +155,11 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
 
     if (!mounted) return;
     if (choice == _RestoreChoice.continueIt) {
-      // Skip straight to the OTP step — the SMS was already sent.
       setState(() {
         _step = 1;
         _submittedPhone = pending.e164;
         if (restoredCountry != null) _country = restoredCountry;
       });
-      // Sync the provider so verifyPhoneOtp knows which phone to verify against.
       ref.read(authControllerProvider.notifier).setPendingPhone(pending.e164);
       _pageController.jumpToPage(1);
       _startResendTimer();
@@ -179,8 +212,6 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         : await notifier.sendPhoneVerification(e164);
 
     if (ok && mounted) {
-      // Only persist for sign-in — add-to-account resume after kill is a
-      // weaker UX win (user is already authed; they can just re-tap).
       if (widget.mode == PhoneAuthMode.signIn) {
         await PhoneAuthStorage.save(
           e164Phone: e164,
@@ -208,24 +239,57 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         : await notifier.confirmPhoneVerification(token);
     if (ok) {
       await PhoneAuthStorage.clear();
-      // In add-to-account mode we don't navigate — the user came from
-      // /profile/edit and the trigger has now flipped phone_verified_at,
-      // so we just pop back. Reload profile so the new state is visible.
       if (widget.mode == PhoneAuthMode.addToAccount && mounted) {
         await ref.read(profileControllerProvider.notifier).loadProfile();
+        if (!mounted) return;
+        // Surface a brief success state so the verify doesn't feel silent.
+        // Then pop back to wherever the user came from (typically the
+        // verification wizard or /profile/edit).
+        setState(() => _justVerified = true);
+        await Future.delayed(const Duration(milliseconds: 1400));
         if (mounted) context.pop();
       }
+    } else if (mounted) {
+      // Auth notifier sets errorMessage on failure. Map known jargon to a
+      // friendlier line + auto-clear the OTP input so the user can retype
+      // immediately without manually deleting the failed attempt.
+      final raw = ref.read(authControllerProvider).errorMessage ?? '';
+      setState(() {
+        _friendlyErrorOverride = _friendlyOtpError(raw);
+      });
+      _otpController.clear();
     }
+  }
+
+  static String? _friendlyOtpError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('expired') ||
+        lower.contains('invalid') ||
+        lower.contains('otp_expired')) {
+      return "That code didn't work or has expired. "
+          'Tap Resend code to get a fresh one.';
+    }
+    if (lower.contains('rate') || lower.contains('too many')) {
+      return 'Too many attempts — wait a minute, then resend.';
+    }
+    return raw.isEmpty ? null : raw;
   }
 
   Future<void> _resend() async {
     if (_resendCountdown > 0) return;
+    setState(() {
+      _friendlyErrorOverride = null;
+    });
+    _otpController.clear();
     await ref.read(authControllerProvider.notifier).resendPhoneOtp();
     _startResendTimer();
   }
 
   Future<void> _backToPhone() async {
-    setState(() => _step = 0);
+    setState(() {
+      _step = 0;
+      _friendlyErrorOverride = null;
+    });
     _otpController.clear();
     ref.read(authControllerProvider.notifier).clearPendingPhone();
     await PhoneAuthStorage.clear();
@@ -240,14 +304,13 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
         backgroundColor: c.background,
-        leading: _step == 0
+        leading: _step == 0 || _alreadyVerified || _justVerified
             ? IconButton(
                 icon: Icon(AppIcons.back, color: c.text1),
                 onPressed: () {
@@ -264,335 +327,166 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
               ),
         elevation: 0,
       ),
-      body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _PhoneStep(
-              phoneController: _phoneController,
-              country: _country,
-              onPickCountry: _pickCountry,
-              authState: authState,
-              onSubmit: _submitPhone,
-              phoneError: _phoneError,
-              c: c,
-              tt: tt,
-            ),
-            _OtpStep(
-              otpController: _otpController,
-              phone: _submittedPhone,
-              authState: authState,
-              resendCountdown: _resendCountdown,
-              onOtpComplete: _submitOtp,
-              onResend: _resend,
-              c: c,
-              tt: tt,
-            ),
-          ],
+      body: SafeArea(child: _buildBody(authState)),
+    );
+  }
+
+  Widget _buildBody(AuthState authState) {
+    if (_checkingVerifiedStatus) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_alreadyVerified && widget.mode == PhoneAuthMode.addToAccount) {
+      return _AlreadyVerifiedView(
+        phone: _verifiedPhone,
+        onDone: () => context.canPop() ? context.pop() : context.go('/profile'),
+      );
+    }
+    if (_justVerified) return const _JustVerifiedOverlay();
+    return PageView(
+      controller: _pageController,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        PhoneAuthPhoneStep(
+          phoneController: _phoneController,
+          country: _country,
+          onPickCountry: _pickCountry,
+          authState: authState,
+          onSubmit: _submitPhone,
+          phoneError: _phoneError,
         ),
-      ),
+        PhoneAuthOtpStep(
+          otpController: _otpController,
+          phone: _submittedPhone,
+          authState: authState,
+          resendCountdown: _resendCountdown,
+          onOtpComplete: _submitOtp,
+          onResend: _resend,
+          friendlyErrorMessage: _friendlyErrorOverride,
+        ),
+      ],
     );
   }
 }
 
 enum _RestoreChoice { continueIt, cancelAndStartOver }
 
-// ── Step 0: Phone entry ──────────────────────────────────────────────────────
+/// Shown on `/profile/verify-phone` when the profile already carries a
+/// non-null `phone_verified_at`. Replaces the previous behaviour where the
+/// page would route the user back into a fresh OTP flow for a phone they
+/// had already confirmed — that path surfaced `otp_expired` errors that
+/// read like real failures.
+class _AlreadyVerifiedView extends StatelessWidget {
+  const _AlreadyVerifiedView({required this.phone, required this.onDone});
 
-class _PhoneStep extends StatelessWidget {
-  const _PhoneStep({
-    required this.phoneController,
-    required this.country,
-    required this.onPickCountry,
-    required this.authState,
-    required this.onSubmit,
-    required this.phoneError,
-    required this.c,
-    required this.tt,
-  });
-
-  final TextEditingController phoneController;
-  final Country country;
-  final VoidCallback onPickCountry;
-  final AuthState authState;
-  final VoidCallback onSubmit;
-  final String? phoneError;
-  final JColors c;
-  final TextTheme tt;
+  final String? phone;
+  final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final masked = _mask(phone);
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Gap(32.h),
-          Center(
-            child: JobdunLogo(variant: LogoVariant.mark, height: 56.r),
+          Gap(48.h),
+          Container(
+            width: 88.r,
+            height: 88.r,
+            decoration: BoxDecoration(
+              color: c.verifiedBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(AppIcons.verified, size: 44.r, color: c.verified),
           ),
-          Gap(AppSpacing.md.h),
+          Gap(AppSpacing.lg.h),
           Text(
-            'PHONE SIGN IN',
+            'PHONE VERIFIED',
             textAlign: TextAlign.center,
             style: tt.headlineMedium!.copyWith(
-              fontSize: 26.sp,
+              fontSize: 24.sp,
               letterSpacing: 2,
+              color: c.text1,
             ),
           ),
           Gap(8.h),
           Text(
-            'Enter your mobile number to receive a verification code.',
+            masked == null
+                ? 'Your phone number is verified on this account.'
+                : 'Verified on this account: $masked',
             textAlign: TextAlign.center,
-            style: tt.bodyMedium!.copyWith(color: c.text2),
+            style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.45),
           ),
-          Gap(AppSpacing.xl.h),
-
+          Gap(AppSpacing.md.h),
           Text(
-            'MOBILE NUMBER',
-            style: tt.labelSmall!.copyWith(
-              letterSpacing: 0.12 * 11,
-              color: c.text2,
-            ),
+            'To change your phone number, contact support — for now this is '
+            'locked to the number you verified.',
+            textAlign: TextAlign.center,
+            style: tt.bodySmall!.copyWith(color: c.text3, height: 1.45),
           ),
-          Gap(6.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Country selector — tap to open picker.
-              InkWell(
-                onTap: onPickCountry,
-                borderRadius: BorderRadius.circular(AppRadius.input.r),
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 13.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.input.r),
-                    border: Border.all(color: c.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(country.flag, style: TextStyle(fontSize: 20.sp)),
-                      Gap(8.w),
-                      Text(
-                        '+${country.dialCode}',
-                        style: tt.bodyLarge!.copyWith(
-                          color: c.text1,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Gap(4.w),
-                      Icon(AppIcons.chevronDown, size: 14.r, color: c.text3),
-                    ],
-                  ),
-                ),
-              ),
-              Gap(8.w),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.input.r),
-                    border: Border.all(color: c.border),
-                  ),
-                  child: TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => onSubmit(),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[\d\s]')),
-                    ],
-                    style: tt.bodyLarge!.copyWith(
-                      color: c.text1,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: country.localFormatHint,
-                      hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 14.w,
-                        vertical: 13.h,
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          if (phoneError != null) ...[
-            Gap(AppSpacing.md.h),
-            StatusBanner(message: phoneError!, isError: true),
-          ],
-          if (authState.errorMessage != null) ...[
-            Gap(AppSpacing.md.h),
-            StatusBanner(message: authState.errorMessage!, isError: true),
-          ],
-          if (authState.infoMessage != null) ...[
-            Gap(AppSpacing.md.h),
-            StatusBanner(message: authState.infoMessage!, isError: false),
-          ],
-
-          Gap(AppSpacing.xl.h),
-          JButton(
-            label: authState.isLoading ? 'SENDING CODE...' : 'SEND CODE',
-            isLoading: authState.isLoading,
-            onPressed: authState.isLoading ? null : onSubmit,
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: JButton(label: 'DONE', isLoading: false, onPressed: onDone),
           ),
           Gap(AppSpacing.xl.h),
         ],
       ),
     );
   }
+
+  /// Masks all but the last 4 digits so the verified state can show the
+  /// number for confirmation without leaking it in case of shoulder-surfing.
+  static String? _mask(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final digits = raw.replaceAll(RegExp(r'[^\d+]'), '');
+    if (digits.length <= 4) return digits;
+    final visible = digits.substring(digits.length - 4);
+    final hidden = '•' * (digits.length - 4);
+    return '$hidden$visible';
+  }
 }
 
-// ── Step 1: OTP entry ────────────────────────────────────────────────────────
-
-class _OtpStep extends StatelessWidget {
-  const _OtpStep({
-    required this.otpController,
-    required this.phone,
-    required this.authState,
-    required this.resendCountdown,
-    required this.onOtpComplete,
-    required this.onResend,
-    required this.c,
-    required this.tt,
-  });
-
-  final TextEditingController otpController;
-  final String phone;
-  final AuthState authState;
-  final int resendCountdown;
-  final ValueChanged<String> onOtpComplete;
-  final VoidCallback onResend;
-  final JColors c;
-  final TextTheme tt;
+/// Rendered for ~1.4s after a successful OTP confirmation in
+/// `addToAccount` mode, just before the page pops. The previous
+/// implementation popped silently, which read as "nothing happened" when
+/// the user expected confirmation.
+class _JustVerifiedOverlay extends StatelessWidget {
+  const _JustVerifiedOverlay();
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = authState.isLoading;
-
-    final pinTheme = PinTheme(
-      width: 48.w,
-      height: 56.h,
-      textStyle: tt.headlineSmall!.copyWith(
-        color: c.text1,
-        fontWeight: FontWeight.w700,
-      ),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
-      ),
-    );
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Gap(32.h),
-          Center(
-            child: Container(
-              width: 64.r,
-              height: 64.r,
-              decoration: BoxDecoration(
-                color: c.actionBg,
-                borderRadius: BorderRadius.circular(AppRadius.card.r),
-              ),
-              child: Icon(AppIcons.chat, size: 32.r, color: c.action),
+          Container(
+            width: 96.r,
+            height: 96.r,
+            decoration: BoxDecoration(
+              color: c.verifiedBg,
+              shape: BoxShape.circle,
             ),
+            child: Icon(AppIcons.verified, size: 48.r, color: c.verified),
           ),
-          Gap(AppSpacing.md.h),
+          Gap(AppSpacing.lg.h),
           Text(
-            'ENTER CODE',
+            'PHONE VERIFIED',
             textAlign: TextAlign.center,
             style: tt.headlineMedium!.copyWith(
-              fontSize: 26.sp,
+              fontSize: 24.sp,
               letterSpacing: 2,
+              color: c.text1,
             ),
           ),
           Gap(8.h),
           Text(
-            'We sent a 6-digit code to\n$phone',
-            textAlign: TextAlign.center,
+            'Taking you back…',
             style: tt.bodyMedium!.copyWith(color: c.text2),
           ),
-          Gap(AppSpacing.xl.h),
-
-          Center(
-            child: Pinput(
-              controller: otpController,
-              length: 6,
-              enabled: !isLoading,
-              defaultPinTheme: pinTheme,
-              focusedPinTheme: pinTheme.copyDecorationWith(
-                border: Border.all(color: c.action, width: 2),
-              ),
-              onCompleted: isLoading ? null : onOtpComplete,
-            ),
-          ),
-
-          if (authState.errorMessage != null) ...[
-            Gap(AppSpacing.md.h),
-            StatusBanner(message: authState.errorMessage!, isError: true),
-          ],
-          if (authState.infoMessage != null) ...[
-            Gap(AppSpacing.md.h),
-            StatusBanner(message: authState.infoMessage!, isError: false),
-          ],
-
-          Gap(AppSpacing.xl.h),
-
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: otpController,
-            builder: (context, value, _) {
-              final isComplete = value.text.length == 6;
-              return JButton(
-                label: isLoading ? 'VERIFYING...' : 'VERIFY',
-                isLoading: isLoading,
-                onPressed: (isLoading || !isComplete)
-                    ? null
-                    : () => onOtpComplete(otpController.text),
-              );
-            },
-          ),
-
-          Gap(AppSpacing.md.h),
-
-          Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 24.w),
-              child: GestureDetector(
-                onTap: (resendCountdown > 0 || isLoading) ? null : onResend,
-                child: Opacity(
-                  opacity: (resendCountdown > 0 || isLoading) ? 0.4 : 1.0,
-                  child: Text(
-                    resendCountdown > 0
-                        ? 'Resend in ${resendCountdown}s'
-                        : 'Resend code',
-                    style: tt.bodyMedium!.copyWith(
-                      color: c.action,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          Gap(AppSpacing.xl.h),
         ],
       ),
     );

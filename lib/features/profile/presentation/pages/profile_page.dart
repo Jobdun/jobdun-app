@@ -18,6 +18,8 @@ import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../../../verification/domain/entities/verification.dart';
+import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../../verification/presentation/widgets/verification_receipts.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
@@ -226,13 +228,13 @@ class _ProfileHeader extends StatelessWidget {
 
 // ── Builder Profile ────────────────────────────────────────────────────────────
 
-class _BuilderProfile extends StatelessWidget {
+class _BuilderProfile extends ConsumerWidget {
   const _BuilderProfile({this.profile});
 
   final BuilderProfile? profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final p = profile;
 
@@ -241,10 +243,49 @@ class _BuilderProfile extends StatelessWidget {
     final jobsPosted = (p?.totalJobsPosted ?? 0).toString();
 
     final companyName = _blank(p?.companyName);
-    final abn = _blank(p?.abn);
+    final abn = _formatAbn(p?.abn);
     final location = _blank(p?.displayLocation);
-    final contact = _blank(p?.contactPhone);
     final website = _blank(p?.website);
+
+    // Profile-level identity signals — distinct from the business-level ABN
+    // verification rendered in the WHAT'S BEEN CHECKED card below.
+    final userProfile = ref.watch(
+      profileControllerProvider.select((s) => s.profile),
+    );
+    final userPhone = _formatPhone(userProfile?.phone);
+    final phoneVerified = userProfile?.isPhoneVerified ?? false;
+
+    // Contact row prefers an explicit business contact_phone the builder set
+    // on /profile/edit; otherwise falls back to the verified primary phone
+    // so the row isn't useless on a brand-new profile. The verified tick
+    // surfaces only on the fallback (the primary phone is the one we
+    // actually verified — contact_phone is self-attested).
+    final contactPhone = _formatPhone(p?.contactPhone);
+    final contactValue = contactPhone ?? userPhone;
+    final contactVerified = contactPhone == null && phoneVerified;
+
+    // Verifications drive the right-column ABR facts (entity type, registered
+    // address, in-business-since). Distinct from builder_profiles.service_*
+    // which is where the user actually works — see VERIFICATION_AUDIT.md.
+    final verifs = ref.watch(myVerificationsProvider);
+    final abnVerification = verifs.maybeWhen<Verification?>(
+      data: (rows) {
+        for (final v in rows) {
+          if (v.kind == VerificationKind.abn && v.isVerified) return v;
+        }
+        return null;
+      },
+      orElse: () => null,
+    );
+    final abnVerified = abnVerification != null;
+    final entityType = abnVerification?.entityType;
+    final abrState = abnVerification?.abrState;
+    final abrPostcode = abnVerification?.abrPostcode;
+    final abnRegisteredAt = abnVerification?.abnRegisteredAt;
+    final registeredLocation = _formatRegisteredLocation(abrState, abrPostcode);
+    final inBusinessSince = _formatInBusinessSince(abnRegisteredAt);
+
+    void editProfile() => context.push('/profile/edit');
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -284,23 +325,52 @@ class _BuilderProfile extends StatelessWidget {
                 label: 'Company',
                 value: companyName,
               ),
-              _InfoRow(icon: AppIcons.receipt, label: 'ABN', value: abn),
+              _InfoRow(
+                icon: AppIcons.receipt,
+                label: 'ABN',
+                value: abn,
+                verified: abnVerified,
+              ),
               _InfoRow(
                 icon: AppIcons.briefcase,
                 label: 'Type',
-                value: 'Company',
+                value: entityType ?? 'Company',
+                verified: entityType != null,
+              ),
+              if (inBusinessSince != null)
+                _InfoRow(
+                  icon: AppIcons.calendar,
+                  label: 'In business since',
+                  value: inBusinessSince,
+                  verified: true,
+                ),
+              if (registeredLocation != null)
+                _InfoRow(
+                  icon: AppIcons.building,
+                  label: 'Registered',
+                  value: registeredLocation,
+                  verified: true,
+                ),
+              _InfoRow(
+                icon: AppIcons.phone,
+                label: 'Phone',
+                value: contactValue,
+                verified: contactVerified,
+                onTap: contactValue == null ? editProfile : null,
               ),
               _InfoRow(
                 icon: AppIcons.location,
-                label: 'Location',
+                label: 'Services in',
                 value: location,
+                onTap: location == null ? editProfile : null,
               ),
-              _InfoRow(icon: AppIcons.phone, label: 'Contact', value: contact),
               _InfoRow(
                 icon: AppIcons.website,
                 label: 'Website',
                 value: website,
-                onTap: website == null ? null : () => _launchWebsite(website),
+                onTap: website == null
+                    ? editProfile
+                    : () => _launchWebsite(website),
               ),
             ],
           ),
@@ -319,13 +389,13 @@ class _BuilderProfile extends StatelessWidget {
 
 // ── Trade Profile ──────────────────────────────────────────────────────────────
 
-class _TradeProfile extends StatelessWidget {
+class _TradeProfile extends ConsumerWidget {
   const _TradeProfile({this.profile});
 
   final TradeProfile? profile;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final p = profile;
@@ -337,7 +407,16 @@ class _TradeProfile extends StatelessWidget {
     final trade = _blank(p?.displayTrade);
     final location = _blank(p?.displayLocation);
     final hasLicence = p?.hasLicence ?? false;
-    final isVerified = p?.isVerified ?? false;
+    // Verified flag derives from the new verifications table (the legacy
+    // trade_profiles.is_verified column isn't written by the v2.1 wizard,
+    // so reading it would leave this banner stuck on "Available for work"
+    // even after a successful licence check).
+    final verifs = ref.watch(myVerificationsProvider);
+    final isVerified = verifs.maybeWhen(
+      data: (rows) =>
+          rows.any((v) => v.kind == VerificationKind.licence && v.isVerified),
+      orElse: () => p?.isVerified ?? false,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -506,6 +585,7 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.onTap,
+    this.verified = false,
   });
 
   final IconData icon;
@@ -518,13 +598,31 @@ class _InfoRow extends StatelessWidget {
   /// fires when [value] is non-blank — "Not set" rows aren't actionable.
   final VoidCallback? onTap;
 
+  /// When true, a small green seal-check renders to the right of the value.
+  /// Used today to confirm a builder's ABN has been matched against the
+  /// Australian Business Register — the full receipt still lives in the
+  /// VerificationReceipts panel below, this is just an inline confirmation.
+  final bool verified;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
     final hasValue = value != null && value!.trim().isNotEmpty;
-    final tappable = hasValue && onTap != null;
+    // Three tap modes:
+    //   • value present + onTap set → action on the value (e.g. open website)
+    //   • value missing + onTap set → "Add" affordance routing to edit page
+    //   • no onTap → static row
+    final tappable = onTap != null;
+    final isAddCta = !hasValue && tappable;
+    final showTick = verified && hasValue;
+
+    final valueColor = isAddCta
+        ? c.action
+        : hasValue
+        ? (tappable ? c.action : c.text1)
+        : c.text3;
 
     final row = Padding(
       padding: EdgeInsets.symmetric(
@@ -532,30 +630,110 @@ class _InfoRow extends StatelessWidget {
         vertical: 12.h,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 16.r, color: c.text3),
           Gap(12.w),
           Text(label, style: tt.bodyMedium!.copyWith(color: c.text2)),
-          const Spacer(),
-          Flexible(
+          Gap(12.w),
+          Expanded(
             child: Text(
-              hasValue ? value! : 'Not set',
-              style: tt.bodyMedium!.copyWith(
-                fontWeight: hasValue ? FontWeight.w600 : FontWeight.w400,
-                color: tappable ? c.action : (hasValue ? c.text1 : c.text3),
-                decoration: tappable ? TextDecoration.underline : null,
-                decorationColor: tappable ? c.action : null,
-              ),
-              textAlign: TextAlign.end,
+              hasValue ? value! : (isAddCta ? 'Add' : 'Not set'),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: tt.bodyMedium!.copyWith(
+                fontWeight: hasValue
+                    ? FontWeight.w600
+                    : (isAddCta ? FontWeight.w600 : FontWeight.w400),
+                color: valueColor,
+              ),
             ),
           ),
+          if (showTick) ...[
+            Gap(8.w),
+            Tooltip(
+              message: verified && label == 'Phone'
+                  ? 'Phone number verified via SMS'
+                  : 'Checked against the Australian Business Register',
+              child: Icon(AppIcons.verified, size: 16.r, color: c.verified),
+            ),
+          ],
+          if (isAddCta) ...[
+            Gap(6.w),
+            Icon(AppIcons.chevronRight, size: 16.r, color: c.action),
+          ],
         ],
       ),
     );
     if (!tappable) return row;
     return InkWell(onTap: onTap, child: row);
   }
+}
+
+/// `WA` + `6061` → `WA 6061`. Either or both can be null — return null only
+/// when nothing is set so the row hides entirely.
+String? _formatRegisteredLocation(String? state, String? postcode) {
+  final hasState = state != null && state.trim().isNotEmpty;
+  final hasPostcode = postcode != null && postcode.trim().isNotEmpty;
+  if (!hasState && !hasPostcode) return null;
+  if (hasState && hasPostcode) return '${state.trim()} ${postcode.trim()}';
+  return (state ?? postcode)!.trim();
+}
+
+/// `2013-08-12` → `Aug 2013`. Returns null for null input so the row hides.
+/// Day precision is irrelevant to the human reading "in business since" —
+/// month + year is the trust signal.
+String? _formatInBusinessSince(DateTime? d) {
+  if (d == null) return null;
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[d.month - 1]} ${d.year}';
+}
+
+/// `93779861687` → `93 779 861 687`. Returns null for null/blank input. Spaces
+/// after the leading 2 digits + every following triplet match ABR's display
+/// convention and read significantly faster on small screens.
+String? _formatAbn(String? raw) {
+  if (raw == null) return null;
+  final digits = raw.replaceAll(RegExp(r'\D'), '');
+  if (digits.length != 11) return raw; // unexpected — return as-is
+  return '${digits.substring(0, 2)} '
+      '${digits.substring(2, 5)} '
+      '${digits.substring(5, 8)} '
+      '${digits.substring(8, 11)}';
+}
+
+/// `+639917934774` → `+63 991 793 4774`. Falls back to the raw string if the
+/// number isn't long enough to chunk cleanly — we never want to mangle a
+/// number the user is reading off a screen to copy-confirm.
+String? _formatPhone(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return null;
+  // Tolerate stored-without-`+` values like the one set by Supabase Auth.
+  var s = raw.trim();
+  if (!s.startsWith('+')) s = '+$s';
+  final digits = s.substring(1).replaceAll(RegExp(r'\D'), '');
+  if (digits.length < 8) return s;
+  // Heuristic split: 2-digit country code, then 3-3-rest.
+  final cc = digits.substring(0, 2);
+  final rest = digits.substring(2);
+  if (rest.length <= 6) return '+$cc $rest';
+  final a = rest.substring(0, 3);
+  final b = rest.substring(3, 6);
+  final tail = rest.substring(6);
+  return '+$cc $a $b $tail';
 }
 
 /// Returns null for null/blank strings so [_InfoRow] shows its empty state

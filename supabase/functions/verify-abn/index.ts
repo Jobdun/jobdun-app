@@ -22,7 +22,19 @@ import { fetchWithRetry } from "../_shared/retry.ts";
 interface AbrResponse {
   Abn?: string;
   AbnStatus?: string;          // "Active" | "Cancelled"
+  // ABR uses both names across responses — `AbnStatusFromDate` is the
+  // standard, `AbnStatusEffectiveFrom` shows up on a few endpoints/cached
+  // shapes. We read whichever is present.
+  AbnStatusFromDate?: string;
+  AbnStatusEffectiveFrom?: string;
   EntityName?: string;
+  EntityTypeCode?: string;     // e.g. "IND", "PRV", "PUB", "TRT"
+  EntityTypeName?: string;     // e.g. "Individual/Sole Trader"
+  // BusinessName comes back as an array in newer responses but a string
+  // in some older cached envelopes — tolerate both.
+  BusinessName?: string[] | string;
+  AddressState?: string;       // "NSW" / "VIC" / ...
+  AddressPostcode?: string;    // "2000"
   Gst?: string | null;
   Message?: string;
   Exception?: { Code?: string; Description?: string };
@@ -38,6 +50,31 @@ Deno.serve(async (req) => {
 
   let body: { abn?: string };
   try { body = await req.json(); } catch { return jsonResponse({ error: "invalid_json" }, 400); }
+
+  // Phone-verified precondition. ABR confirms an ABN exists; it cannot
+  // prove the human submitting the form actually operates the business.
+  // Requiring a phone-verified profile raises the cost of throwaway-account
+  // fraud and gives Trust & Safety a reachable identifier per attestation.
+  // Returns the failure as a structured 200 (not 412) so the existing
+  // VerifyResult parser on the Flutter side surfaces it as VerifyFailed
+  // with reason='phone_required' — no protocol change needed client-side.
+  const dbForGate = serviceClient();
+  const { data: gateProfile } = await dbForGate
+    .from("profiles")
+    .select("phone_verified_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!gateProfile?.phone_verified_at) {
+    return jsonResponse({
+      status: "failed",
+      reason: "phone_required",
+      manual_fallback_allowed: false,
+      detail:
+        "Verify your phone number first — Profile → Edit → Phone. " +
+        "This is required before we mark an ABN verified, so Trust & " +
+        "Safety has a reachable contact for the attestation.",
+    });
+  }
 
   const abn = normaliseAbn(body.abn ?? "");
   const devMode = Deno.env.get("ABR_DEV_MODE") === "true";
@@ -154,16 +191,65 @@ Deno.serve(async (req) => {
 
   const status = raw.AbnStatus?.toLowerCase();
   if (status === "active") {
+    // Normalise ABR's date variants to ISO YYYY-MM-DD before storing.
+    // ABR responses are typically already in that shape but occasionally
+    // arrive as full ISO datetimes — we strip to the date portion.
+    const registeredAtRaw =
+      raw.AbnStatusFromDate ?? raw.AbnStatusEffectiveFrom ?? null;
+    const abnRegisteredAt =
+      registeredAtRaw && registeredAtRaw.length >= 10
+        ? registeredAtRaw.substring(0, 10)
+        : null;
+
     await db
       .from("verifications")
       .update({
         status: "verified",
         abn_entity_name: raw.EntityName ?? null,
+        entity_type: raw.EntityTypeName ?? null,
+        abn_registered_at: abnRegisteredAt,
+        abr_state: raw.AddressState ?? null,
+        abr_postcode: raw.AddressPostcode ?? null,
         verified_at: new Date().toISOString(),
         failure_reason: null,
         manual_fallback_allowed: false,
       })
       .eq("id", row.id);
+
+    // Mirror the verified ABN back into builder_profiles so the COMPANY
+    // DETAILS card on the profile reflects the just-verified value instead
+    // of "Not set". Only fills fields that are currently NULL — never
+    // overwrites a user-chosen company_name with the ABR legal-entity name
+    // (those legitimately differ for sole traders / trading-as setups).
+    //
+    // Gated on the caller actually being role='builder' so a trade can't
+    // accidentally seed a stray builder_profiles row via this path.
+    const { data: roleRow } = await db
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (roleRow?.role === "builder") {
+      const { data: bp } = await db
+        .from("builder_profiles")
+        .select("id, abn, company_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const patch: Record<string, unknown> = {
+        id: user.id,
+        abn,
+        updated_at: new Date().toISOString(),
+      };
+      // Only seed company_name if the row has nothing — don't clobber a
+      // user-chosen trading name with the ABR legal-entity name.
+      if (!bp?.company_name && raw.EntityName) {
+        patch.company_name = raw.EntityName;
+      }
+      await db
+        .from("builder_profiles")
+        .upsert(patch, { onConflict: "id" });
+    }
+
     return jsonResponse({
       status: "verified",
       entity_name: raw.EntityName ?? null,
@@ -208,7 +294,12 @@ function synthesiseAbrResponse(abn: string): AbrResponse {
   return {
     Abn: abn,
     AbnStatus: "Active",
+    AbnStatusFromDate: "2018-07-01",
     EntityName: `Dev Test Business ${abn.slice(-4)}`,
+    EntityTypeCode: "PRV",
+    EntityTypeName: "Australian Private Company",
+    AddressState: "NSW",
+    AddressPostcode: "2000",
     Gst: "Active",
   };
 }

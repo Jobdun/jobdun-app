@@ -22,6 +22,10 @@ class Verification extends Equatable {
     required this.updatedAt,
     this.abn,
     this.abnEntityName,
+    this.entityType,
+    this.abnRegisteredAt,
+    this.abrState,
+    this.abrPostcode,
     this.licenceNumber,
     this.licenceState,
     this.licenceTradeClass,
@@ -38,6 +42,17 @@ class Verification extends Equatable {
 
   final String? abn;
   final String? abnEntityName;
+
+  // Additional ABR-sourced facts. Stored on the verifications row (not
+  // builder_profiles) because they're regulator-truth, not user-entered.
+  // entityType: e.g. "Individual/Sole Trader" — replaces hardcoded "Type".
+  // abnRegisteredAt: date the current AbnStatus took effect.
+  // abrState + abrPostcode: registered business address (state/postcode only
+  // — ABR doesn't expose street addresses).
+  final String? entityType;
+  final DateTime? abnRegisteredAt;
+  final String? abrState;
+  final String? abrPostcode;
 
   final String? licenceNumber;
   final String? licenceState;
@@ -62,6 +77,10 @@ class Verification extends Equatable {
     status,
     abn,
     abnEntityName,
+    entityType,
+    abnRegisteredAt,
+    abrState,
+    abrPostcode,
     licenceNumber,
     licenceState,
     licenceTradeClass,

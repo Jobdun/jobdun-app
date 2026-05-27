@@ -7,7 +7,10 @@ import 'admin_topbar.dart';
 /// Two-column desktop chrome — sidebar on the left, topbar + content on the
 /// right. Pages compose this around their content so navigation is consistent
 /// across the admin app.
-class AdminScaffold extends StatelessWidget {
+///
+/// Owns the sidebar collapsed state so the toggle is preserved across page
+/// changes within a session.
+class AdminScaffold extends StatefulWidget {
   const AdminScaffold({
     super.key,
     required this.title,
@@ -22,6 +25,15 @@ class AdminScaffold extends StatelessWidget {
   final List<Widget>? trailing;
 
   @override
+  State<AdminScaffold> createState() => _AdminScaffoldState();
+}
+
+class _AdminScaffoldState extends State<AdminScaffold> {
+  bool _collapsed = false;
+
+  void _toggle() => setState(() => _collapsed = !_collapsed);
+
+  @override
   Widget build(BuildContext context) {
     final c = context.c;
     return Scaffold(
@@ -29,16 +41,20 @@ class AdminScaffold extends StatelessWidget {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AdminSidebar(activeRoute: activeRoute),
+          AdminSidebar(
+            activeRoute: widget.activeRoute,
+            collapsed: _collapsed,
+            onToggle: _toggle,
+          ),
           Expanded(
             child: Column(
               children: [
-                AdminTopbar(title: title, trailing: trailing),
+                AdminTopbar(title: widget.title, trailing: widget.trailing),
                 Expanded(
                   child: Container(
                     color: c.background,
                     padding: const EdgeInsets.fromLTRB(40, 32, 40, 40),
-                    child: child,
+                    child: widget.child,
                   ),
                 ),
               ],

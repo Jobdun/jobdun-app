@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../providers/admin_verifications_provider.dart';
+import '../widgets/admin_verification_queue_row.dart';
 import '../widgets/admin_verification_review_sheet.dart';
 
-/// Verification queue surface for admins. Lists every document submitted via
-/// the wizard's manual-upload fallback, newest first; tap a row to open the
-/// review sheet, view the image, and approve / reject.
+/// Admin verification queue. Classifies documents by audience (Trade Licence /
+/// Builder ABN / Other) via chip filters, surfaces the uploader's name + role,
+/// and shows the regulator's failure reason when the upload was a fallback
+/// from a failed API check.
 class AdminVerificationsPage extends ConsumerWidget {
   const AdminVerificationsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
     final async = ref.watch(adminVerificationsProvider);
     return AdminScaffold(
       title: 'VERIFICATIONS',
@@ -34,37 +34,70 @@ class AdminVerificationsPage extends ConsumerWidget {
       child: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorBlock(error: e.toString()),
-        data: (items) {
-          final pending = items.where((i) => i.status == 'pending').toList();
-          final reviewed = items.where((i) => i.status != 'pending').toList();
-          if (items.isEmpty) {
-            return _EmptyBlock();
-          }
-          return ListView(
-            children: [
-              _SectionHeader(
-                title: 'PENDING',
-                count: pending.length,
-                accent: c.action,
-              ),
-              const Gap(8),
-              ...pending.map(
-                (i) => _QueueRow(item: i, onTap: () => _openSheet(context, i)),
-              ),
-              const Gap(24),
-              _SectionHeader(
-                title: 'REVIEWED',
-                count: reviewed.length,
-                accent: c.text3,
-              ),
-              const Gap(8),
-              ...reviewed.map(
-                (i) => _QueueRow(item: i, onTap: () => _openSheet(context, i)),
-              ),
-            ],
-          );
-        },
+        data: (s) => _Body(state: s),
       ),
+    );
+  }
+}
+
+class _Body extends ConsumerWidget {
+  const _Body({required this.state});
+  final AdminVerificationsState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final items = state.filteredItems;
+    final pending = items.where((i) => i.status == 'pending').toList();
+    final reviewed = items.where((i) => i.status != 'pending').toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _FilterRow(
+          state: state,
+          onChanged: (f) =>
+              ref.read(adminVerificationsProvider.notifier).setFilter(f),
+        ),
+        const Gap(16),
+        Expanded(
+          child: state.items.isEmpty
+              ? const _EmptyBlock(label: 'No verification documents yet.')
+              : items.isEmpty
+              ? const _EmptyBlock(
+                  label: 'Nothing in this category right now.',
+                  hint: 'Try a different filter chip above.',
+                )
+              : ListView(
+                  children: [
+                    _SectionHeader(
+                      title: 'PENDING',
+                      count: pending.length,
+                      accent: c.action,
+                    ),
+                    const Gap(8),
+                    ...pending.map(
+                      (i) => AdminVerificationQueueRow(
+                        item: i,
+                        onTap: () => _openSheet(context, i),
+                      ),
+                    ),
+                    const Gap(24),
+                    _SectionHeader(
+                      title: 'REVIEWED',
+                      count: reviewed.length,
+                      accent: c.text3,
+                    ),
+                    const Gap(8),
+                    ...reviewed.map(
+                      (i) => AdminVerificationQueueRow(
+                        item: i,
+                        onTap: () => _openSheet(context, i),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 
@@ -72,6 +105,99 @@ class AdminVerificationsPage extends ConsumerWidget {
     return showDialog<void>(
       context: context,
       builder: (_) => AdminVerificationReviewSheet(item: item),
+    );
+  }
+}
+
+class _FilterRow extends StatelessWidget {
+  const _FilterRow({required this.state, required this.onChanged});
+  final AdminVerificationsState state;
+  final ValueChanged<AdminVerificationKindFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: AdminVerificationKindFilter.values
+          .map(
+            (f) => _Chip(
+              label: _labelFor(f),
+              count: state.countFor(f),
+              selected: state.filter == f,
+              onTap: () => onChanged(f),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  static String _labelFor(AdminVerificationKindFilter f) => switch (f) {
+    AdminVerificationKindFilter.all => 'All',
+    AdminVerificationKindFilter.tradeLicence => 'Trade Licence',
+    AdminVerificationKindFilter.builderAbn => 'Builder ABN',
+    AdminVerificationKindFilter.other => 'Other',
+  };
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Material(
+      color: selected ? c.action : c.surface,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.openSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: selected ? Colors.white : c.text1,
+                ),
+              ),
+              const Gap(6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : c.background,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.openSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : c.text2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -122,120 +248,11 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _QueueRow extends StatelessWidget {
-  const _QueueRow({required this.item, required this.onTap});
-
-  final AdminVerificationItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                _StatusDot(status: item.status),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _prettyDocType(item.docType),
-                        style: GoogleFonts.openSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: c.text1,
-                        ),
-                      ),
-                      const Gap(2),
-                      Text(
-                        'trade ${item.tradeId.substring(0, 8)}… '
-                        '· submitted ${_fmt(item.submittedAt)}'
-                        '${item.state == null ? '' : ' · ${item.state}'}'
-                        '${item.documentNumber == null ? '' : ' · #${item.documentNumber}'}',
-                        style: GoogleFonts.openSans(
-                          fontSize: 12,
-                          color: c.text2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  item.status.toUpperCase(),
-                  style: GoogleFonts.openSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: _statusColor(context, item.status),
-                  ),
-                ),
-                const Gap(12),
-                Icon(Icons.chevron_right, color: c.text3),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _prettyDocType(String dbValue) => switch (dbValue) {
-    'trade_licence' => 'Trade Licence',
-    'abn_certificate' => 'ABN Certificate',
-    'public_liability' => 'Public Liability',
-    'workers_compensation' => 'Workers Compensation',
-    'white_card' => 'White Card',
-    'photo_id' => 'Photo ID',
-    _ => dbValue,
-  };
-
-  static String _fmt(DateTime t) => DateFormat('d MMM yyyy · HH:mm').format(t);
-
-  static Color _statusColor(BuildContext context, String status) {
-    final c = context.c;
-    return switch (status) {
-      'pending' => c.action,
-      'approved' => c.verified,
-      'rejected' => c.urgent,
-      'expired' => c.text3,
-      _ => c.text3,
-    };
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.status});
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final color = switch (status) {
-      'pending' => c.action,
-      'approved' => c.verified,
-      'rejected' => c.urgent,
-      _ => c.text3,
-    };
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
 class _EmptyBlock extends StatelessWidget {
+  const _EmptyBlock({required this.label, this.hint});
+  final String label;
+  final String? hint;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -246,9 +263,16 @@ class _EmptyBlock extends StatelessWidget {
           Icon(Icons.inbox_outlined, size: 48, color: c.text3),
           const Gap(12),
           Text(
-            'No verification documents yet.',
+            label,
             style: GoogleFonts.openSans(fontSize: 14, color: c.text2),
           ),
+          if (hint != null) ...[
+            const Gap(4),
+            Text(
+              hint!,
+              style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
+            ),
+          ],
         ],
       ),
     );
