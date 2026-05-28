@@ -11,31 +11,38 @@ import '../../domain/repositories/admin_user_detail_repository.dart';
 
 class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
   AdminUserDetailRepositoryImpl({SupabaseClient? client})
-      : _client = client ?? SupabaseConfig.client;
+    : _client = client ?? SupabaseConfig.client;
 
   final SupabaseClient _client;
 
   @override
-  Future<Either<Failure, AdminUserDetail>> getUserDetail(
-    String userId,
-  ) async {
+  Future<Either<Failure, AdminUserDetail>> getUserDetail(String userId) async {
     try {
-      final results = await Future.wait([
-        _fetchProfile(userId),
-        _fetchRole(userId),
-        _fetchBuilder(userId),
-        _fetchTrade(userId),
-        _fetchVerifications(userId),
+      // Run all five fetches in parallel. Trade fetch returns a record
+      // because licence_url lives on trade_profiles (NOT profiles, despite
+      // the AdminUserDetail.licenceUrl field name) and we want it surfaced
+      // at the top level for the profile card.
+      final profileF = _fetchProfile(userId);
+      final roleF = _fetchRole(userId);
+      final builderF = _fetchBuilder(userId);
+      final tradeF = _fetchTrade(userId);
+      final verifsF = _fetchVerifications(userId);
+      await Future.wait<Object?>([
+        profileF,
+        roleF,
+        builderF,
+        tradeF,
+        verifsF,
       ]);
 
-      final profile = results[0] as Map<String, dynamic>?;
+      final profile = await profileF;
       if (profile == null) {
         return const Left(ServerFailure('Profile not found.'));
       }
-      final role = (results[1] as String?) ?? 'unknown';
-      final builder = results[2] as AdminBuilderProfile?;
-      final trade = results[3] as AdminTradeProfile?;
-      final verifications = results[4] as List<AdminVerificationSummary>;
+      final role = (await roleF) ?? 'unknown';
+      final builder = await builderF;
+      final tradeResult = await tradeF;
+      final verifications = await verifsF;
 
       DateTime? parseOpt(Object? v) =>
           v == null ? null : DateTime.parse(v as String).toLocal();
@@ -43,25 +50,21 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
       return Right(
         AdminUserDetail(
           id: profile['id'] as String,
-          displayName: (profile['display_name'] as String?)
-                          ?.trim()
-                          .isNotEmpty ==
-                      true
+          displayName:
+              (profile['display_name'] as String?)?.trim().isNotEmpty == true
               ? (profile['display_name'] as String).trim()
               : '${(profile['id'] as String).substring(0, 8)}…',
           role: role,
           avatarUrl: profile['avatar_url'] as String?,
           phone: profile['phone'] as String?,
           phoneVerifiedAt: parseOpt(profile['phone_verified_at']),
-          onboardingCompletedAt:
-              parseOpt(profile['onboarding_completed_at']),
-          createdAt:
-              DateTime.parse(profile['created_at'] as String).toLocal(),
+          onboardingCompletedAt: parseOpt(profile['onboarding_completed_at']),
+          createdAt: DateTime.parse(profile['created_at'] as String).toLocal(),
           updatedAt: parseOpt(profile['updated_at']),
           deletedAt: parseOpt(profile['deleted_at']),
-          licenceUrl: profile['licence_url'] as String?,
+          licenceUrl: tradeResult.licenceUrl,
           builder: builder,
-          trade: trade,
+          trade: tradeResult.trade,
           verifications: verifications,
         ),
       );
@@ -72,16 +75,14 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
     }
   }
 
-  Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
-      _client
-          .from('profiles')
-          .select(
-            'id, display_name, avatar_url, phone, phone_verified_at, '
-            'onboarding_completed_at, created_at, updated_at, '
-            'deleted_at, licence_url',
-          )
-          .eq('id', userId)
-          .maybeSingle();
+  Future<Map<String, dynamic>?> _fetchProfile(String userId) => _client
+      .from('profiles')
+      .select(
+        'id, display_name, avatar_url, phone, phone_verified_at, '
+        'onboarding_completed_at, created_at, updated_at, deleted_at',
+      )
+      .eq('id', userId)
+      .maybeSingle();
 
   Future<String?> _fetchRole(String userId) async {
     final row = await _client
@@ -119,35 +120,40 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
     );
   }
 
-  Future<AdminTradeProfile?> _fetchTrade(String userId) async {
+  Future<({AdminTradeProfile? trade, String? licenceUrl})> _fetchTrade(
+    String userId,
+  ) async {
     final row = await _client
         .from('trade_profiles')
         .select(
           'full_name, primary_trade, is_verified, bio, portfolio_urls, '
           'hourly_rate, day_rate, years_experience, about, '
-          'base_suburb, base_state, base_postcode',
+          'base_suburb, base_state, base_postcode, licence_url',
         )
         .eq('id', userId)
         .maybeSingle();
-    if (row == null) return null;
+    if (row == null) return (trade: null, licenceUrl: null);
     double? toDouble(Object? v) => v == null
         ? null
         : (v is num ? v.toDouble() : double.tryParse(v.toString()));
     List<String> toList(Object? v) =>
         v is List ? v.map((e) => e.toString()).toList() : const [];
-    return AdminTradeProfile(
-      fullName: row['full_name'] as String?,
-      primaryTrade: row['primary_trade'] as String?,
-      isVerified: (row['is_verified'] as bool?) ?? false,
-      bio: row['bio'] as String?,
-      portfolioUrls: toList(row['portfolio_urls']),
-      hourlyRate: toDouble(row['hourly_rate']),
-      dayRate: toDouble(row['day_rate']),
-      yearsExperience: row['years_experience'] as int?,
-      about: row['about'] as String?,
-      baseSuburb: row['base_suburb'] as String?,
-      baseState: row['base_state'] as String?,
-      basePostcode: row['base_postcode'] as String?,
+    return (
+      trade: AdminTradeProfile(
+        fullName: row['full_name'] as String?,
+        primaryTrade: row['primary_trade'] as String?,
+        isVerified: (row['is_verified'] as bool?) ?? false,
+        bio: row['bio'] as String?,
+        portfolioUrls: toList(row['portfolio_urls']),
+        hourlyRate: toDouble(row['hourly_rate']),
+        dayRate: toDouble(row['day_rate']),
+        yearsExperience: row['years_experience'] as int?,
+        about: row['about'] as String?,
+        baseSuburb: row['base_suburb'] as String?,
+        baseState: row['base_state'] as String?,
+        basePostcode: row['base_postcode'] as String?,
+      ),
+      licenceUrl: row['licence_url'] as String?,
     );
   }
 
