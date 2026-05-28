@@ -17,7 +17,7 @@ Out of scope this pass: row-level actions (suspend, force-close, role override),
 
 ## Architectural blocker (must fix first)
 
-Admin currently has **no RLS read access** to `profiles`, `builder_profiles`, `trade_profiles`, `user_roles`, `jobs`, or `job_applications`. Existing policies are owner-scoped only. The verifications tables already have admin-read policies (`verifications_admin_read`, `verification_documents_admin_select`, etc.) — we replicate that pattern.
+Admin currently has **no RLS read access** to `profiles`, `builder_profiles`, `trade_profiles`, `user_roles`, `jobs`, or `applications`. Existing policies are owner-scoped only. The verifications tables already have admin-read policies (`verifications_admin_read`, `verification_documents_admin_select`, etc.) — we replicate that pattern.
 
 **Migration:** `supabase/migrations/20260528000001_admin_read_policies.sql`
 
@@ -27,7 +27,7 @@ Adds `SELECT` policies named `<table>_admin_read` on:
 - `public.trade_profiles`
 - `public.user_roles`
 - `public.jobs`
-- `public.job_applications`
+- `public.applications`
 
 Predicate (lifted verbatim from existing pattern):
 ```sql

@@ -4,7 +4,7 @@
 
 **Goal:** Make the Flutter admin web app (`lib/admin/`) show real Supabase data across the dashboard, users, jobs, and audit views.
 
-**Architecture:** Per-feature Clean Architecture under `lib/admin/features/` — each new feature has `domain/` (entity + repo contract + use case), `data/` (Supabase-backed repo impl), and `presentation/` (AsyncNotifier provider + page widgets). One additive Supabase migration grants admin-role SELECT on `profiles`, `builder_profiles`, `trade_profiles`, `user_roles`, `jobs`, `job_applications`. Mobile RLS is unchanged.
+**Architecture:** Per-feature Clean Architecture under `lib/admin/features/` — each new feature has `domain/` (entity + repo contract + use case), `data/` (Supabase-backed repo impl), and `presentation/` (AsyncNotifier provider + page widgets). One additive Supabase migration grants admin-role SELECT on `profiles`, `builder_profiles`, `trade_profiles`, `user_roles`, `jobs`, `applications`. Mobile RLS is unchanged.
 
 **Tech Stack:** Flutter 3.11.5, Riverpod 3 (`AsyncNotifier`), GoRouter, Supabase Postgres + RLS, `fpdart`, `infinite_scroll_pagination`, `mocktail` for tests.
 
@@ -174,10 +174,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
--- job_applications -------------------------------------------
+-- applications -----------------------------------------------
 DO $$ BEGIN
-  CREATE POLICY "job_applications_admin_read"
-    ON public.job_applications FOR SELECT
+  CREATE POLICY "applications_admin_read"
+    ON public.applications FOR SELECT
     TO authenticated
     USING (
       EXISTS (
