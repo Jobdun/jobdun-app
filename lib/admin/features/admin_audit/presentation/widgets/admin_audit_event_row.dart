@@ -13,6 +13,8 @@ class AdminAuditEventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    // Render timestamps in Asia/Sydney (UTC+10, no DST for v1 per spec).
+    final sydney = event.occurredAt.toUtc().add(const Duration(hours: 10));
     final fmt = DateFormat('d MMM y · HH:mm');
     final actor = event.actorId == null
         ? '—'
@@ -71,7 +73,7 @@ class AdminAuditEventRow extends StatelessWidget {
           ),
           const Gap(12),
           Text(
-            fmt.format(event.occurredAt),
+            fmt.format(sydney),
             style: GoogleFonts.openSans(
               fontSize: 11,
               fontWeight: FontWeight.w500,

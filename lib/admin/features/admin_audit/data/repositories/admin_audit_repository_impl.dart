@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,9 +14,10 @@ import '../../domain/repositories/admin_audit_repository.dart';
 ///   - user_role_events     (id, user_id, old_role, new_role, changed_by,
 ///                           reason, created_at)
 ///
-/// Schema note: verification_events has no direct user_id column; the
-/// verification_id FK is used as targetUserId so admins can drill into it.
-/// actor_id (the admin who triggered the event) maps to actorId.
+/// Schema note: verification_events joins through verifications!inner to
+/// resolve the actual user_id; actor_id (the admin who triggered the event)
+/// maps to actorId. Events pointing at deleted verifications are excluded
+/// by the !inner join (orphaned events have no meaningful target user).
 class AdminAuditRepositoryImpl implements AdminAuditRepository {
   AdminAuditRepositoryImpl({SupabaseClient? client})
       : _client = client ?? SupabaseConfig.client;
@@ -51,19 +54,39 @@ class AdminAuditRepositoryImpl implements AdminAuditRepository {
   Future<List<AdminAuditEvent>> _fetchVerification(int limit) async {
     final rows = await _client
         .from('verification_events')
-        .select('id, verification_id, event_type, actor_id, created_at')
+        .select(
+          'id, verification_id, event_type, actor_id, raw_response, '
+          'created_at, verifications!inner(user_id)',
+        )
         .order('created_at', ascending: false)
         .limit(limit);
     return (rows as List).cast<Map<String, dynamic>>().map((r) {
       final eventType = r['event_type'] as String?;
+
+      // Resolve the actual user who owns the verification.
+      final verif = r['verifications'] as Map<String, dynamic>?;
+      final targetUser = verif?['user_id'] as String?;
+
+      // Build a 1-line JSON preview from raw_response (capped at 120 chars).
+      final raw = r['raw_response'];
+      String? preview;
+      if (raw is Map) {
+        preview = jsonEncode(raw);
+      } else if (raw is String) {
+        preview = raw;
+      }
+      if (preview != null && preview.length > 120) {
+        preview = '${preview.substring(0, 120)}…';
+      }
+
       return AdminAuditEvent(
         id: 'v:${r['id']}',
         occurredAt: DateTime.parse(r['created_at'] as String).toLocal(),
         source: AdminAuditSource.verification,
         eventType: eventType ?? 'verif.event',
         actorId: r['actor_id'] as String?,
-        // verification_id is the closest FK to a "target" on this table
-        targetUserId: r['verification_id'] as String?,
+        targetUserId: targetUser,
+        payloadPreview: preview,
       );
     }).toList();
   }
