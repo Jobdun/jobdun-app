@@ -203,6 +203,7 @@ class _PlaceholderGrid extends StatelessWidget {
             icon: AppIcons.briefcase,
             title: 'JOBS',
             copy: 'Moderate reported jobs and inspect lifecycle transitions.',
+            route: AdminRoutes.jobs,
           ),
           _ComingSoonCard(
             icon: AppIcons.shield,

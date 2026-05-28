@@ -8,6 +8,7 @@ import '../../features/admin_auth/presentation/providers/admin_session_provider.
 import '../../../core/theme/app_icons.dart';
 import '../../features/admin_shell/presentation/pages/admin_dashboard_page.dart';
 import '../../features/admin_shell/presentation/pages/admin_placeholder_page.dart';
+import '../../features/admin_jobs/presentation/pages/admin_jobs_page.dart';
 import '../../features/admin_users/presentation/pages/admin_users_page.dart';
 import '../../features/admin_verifications/presentation/pages/admin_verifications_page.dart';
 import 'admin_routes.dart';
@@ -62,20 +63,7 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AdminRoutes.jobs,
-        builder: (context, state) => const AdminPlaceholderPage(
-          title: 'JOBS',
-          icon: AppIcons.briefcase,
-          activeRoute: AdminRoutes.jobs,
-          copy:
-              'Moderate reported jobs, audit lifecycle transitions, and override '
-              'state when needed (e.g. close abandoned jobs).',
-          bullets: [
-            'Filter by status: Draft / Open / In Review / Assigned / Closed.',
-            'Inline review of flagged jobs with reason and reporter.',
-            'Force-close or restore jobs with audit trail.',
-            'Drill into application history for each job.',
-          ],
-        ),
+        builder: (context, state) => const AdminJobsPage(),
       ),
       GoRoute(
         path: AdminRoutes.audit,
