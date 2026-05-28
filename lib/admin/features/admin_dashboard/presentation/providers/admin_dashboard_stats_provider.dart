@@ -7,19 +7,18 @@ import '../../domain/usecases/get_admin_dashboard_stats.dart';
 
 final adminDashboardStatsRepositoryProvider =
     Provider<AdminDashboardStatsRepository>(
-  (ref) => AdminDashboardStatsRepositoryImpl(),
-);
+      (ref) => AdminDashboardStatsRepositoryImpl(),
+    );
 
 final getAdminDashboardStatsProvider = Provider<GetAdminDashboardStats>(
-  (ref) => GetAdminDashboardStats(
-    ref.watch(adminDashboardStatsRepositoryProvider),
-  ),
+  (ref) =>
+      GetAdminDashboardStats(ref.watch(adminDashboardStatsRepositoryProvider)),
 );
 
 final adminDashboardStatsProvider =
     AsyncNotifierProvider<AdminDashboardStatsController, AdminDashboardStats>(
-  AdminDashboardStatsController.new,
-);
+      AdminDashboardStatsController.new,
+    );
 
 class AdminDashboardStatsController extends AsyncNotifier<AdminDashboardStats> {
   @override

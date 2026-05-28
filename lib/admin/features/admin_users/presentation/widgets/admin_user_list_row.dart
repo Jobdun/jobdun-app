@@ -103,15 +103,15 @@ class _Avatar extends StatelessWidget {
   }
 
   Widget _initialFallback(JColors c, String letter) => Container(
-        color: c.surfaceRaised,
-        alignment: Alignment.center,
-        child: Text(
-          letter,
-          style: GoogleFonts.oswald(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: c.text2,
-          ),
-        ),
-      );
+    color: c.surfaceRaised,
+    alignment: Alignment.center,
+    child: Text(
+      letter,
+      style: GoogleFonts.oswald(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: c.text2,
+      ),
+    ),
+  );
 }

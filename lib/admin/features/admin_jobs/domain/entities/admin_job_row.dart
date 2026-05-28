@@ -19,11 +19,11 @@ class AdminJobRow extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        title,
-        status,
-        builderDisplayName,
-        applicationCount,
-        createdAt,
-      ];
+    id,
+    title,
+    status,
+    builderDisplayName,
+    applicationCount,
+    createdAt,
+  ];
 }

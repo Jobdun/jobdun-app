@@ -31,8 +31,8 @@ class AdminUsersState {
 
 final adminUsersProvider =
     NotifierProvider<AdminUsersController, AdminUsersState>(
-  AdminUsersController.new,
-);
+      AdminUsersController.new,
+    );
 
 class AdminUsersController extends Notifier<AdminUsersState> {
   late final PagingController<int, AdminUserRow> pagingController;
@@ -47,23 +47,22 @@ class AdminUsersController extends Notifier<AdminUsersState> {
 
   Future<void> _fetchPage(int offset) async {
     final useCase = ref.read(listAdminUsersProvider);
-    final result = await useCase(ListAdminUsersParams(
-      limit: kAdminUsersPageSize,
-      offset: offset,
-      filter: state.filter,
-      query: state.query.isEmpty ? null : state.query,
-    ));
-    result.fold(
-      (failure) => pagingController.error = failure.message,
-      (rows) {
-        final isLast = rows.length < kAdminUsersPageSize;
-        if (isLast) {
-          pagingController.appendLastPage(rows);
-        } else {
-          pagingController.appendPage(rows, offset + rows.length);
-        }
-      },
+    final result = await useCase(
+      ListAdminUsersParams(
+        limit: kAdminUsersPageSize,
+        offset: offset,
+        filter: state.filter,
+        query: state.query.isEmpty ? null : state.query,
+      ),
     );
+    result.fold((failure) => pagingController.error = failure.message, (rows) {
+      final isLast = rows.length < kAdminUsersPageSize;
+      if (isLast) {
+        pagingController.appendLastPage(rows);
+      } else {
+        pagingController.appendPage(rows, offset + rows.length);
+      }
+    });
   }
 
   void setFilter(AdminUserRoleFilter f) {

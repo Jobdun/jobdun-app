@@ -32,34 +32,44 @@ void main() {
       applicationCount: 3,
       createdAt: DateTime(2026, 1, 1),
     );
-    when(() => repo.listJobs(
-          limit: 50,
-          offset: 0,
-          filter: AdminJobStatusFilter.open,
-        )).thenAnswer((_) async => Right([row]));
+    when(
+      () => repo.listJobs(
+        limit: 50,
+        offset: 0,
+        filter: AdminJobStatusFilter.open,
+      ),
+    ).thenAnswer((_) async => Right([row]));
 
-    final result = await useCase(const ListAdminJobsParams(
-      limit: 50,
-      offset: 0,
-      filter: AdminJobStatusFilter.open,
-    ));
+    final result = await useCase(
+      const ListAdminJobsParams(
+        limit: 50,
+        offset: 0,
+        filter: AdminJobStatusFilter.open,
+      ),
+    );
 
     expect(result.isRight(), isTrue);
-    verify(() => repo.listJobs(
-          limit: 50,
-          offset: 0,
-          filter: AdminJobStatusFilter.open,
-        )).called(1);
+    verify(
+      () => repo.listJobs(
+        limit: 50,
+        offset: 0,
+        filter: AdminJobStatusFilter.open,
+      ),
+    ).called(1);
   });
 
   test('propagates failures', () async {
-    when(() => repo.listJobs(
-          limit: any(named: 'limit'),
-          offset: any(named: 'offset'),
-          filter: any(named: 'filter'),
-        )).thenAnswer((_) async => const Left(ServerFailure('boom')));
+    when(
+      () => repo.listJobs(
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+        filter: any(named: 'filter'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
 
-    final result = await useCase(const ListAdminJobsParams(limit: 50, offset: 0));
+    final result = await useCase(
+      const ListAdminJobsParams(limit: 50, offset: 0),
+    );
 
     expect(result.isLeft(), isTrue);
   });

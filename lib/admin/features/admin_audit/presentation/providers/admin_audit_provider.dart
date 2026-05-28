@@ -16,8 +16,9 @@ final listAdminAuditEventsProvider = Provider<ListAdminAuditEvents>(
   (ref) => ListAdminAuditEvents(ref.watch(adminAuditRepositoryProvider)),
 );
 
-final adminAuditProvider =
-    NotifierProvider<AdminAuditController, void>(AdminAuditController.new);
+final adminAuditProvider = NotifierProvider<AdminAuditController, void>(
+  AdminAuditController.new,
+);
 
 class AdminAuditController extends Notifier<void> {
   late final PagingController<int, AdminAuditEvent> pagingController;
@@ -31,21 +32,17 @@ class AdminAuditController extends Notifier<void> {
 
   Future<void> _fetchPage(int offset) async {
     final useCase = ref.read(listAdminAuditEventsProvider);
-    final result = await useCase(ListAdminAuditEventsParams(
-      limit: kAdminAuditPageSize,
-      offset: offset,
-    ));
-    result.fold(
-      (failure) => pagingController.error = failure.message,
-      (rows) {
-        final isLast = rows.length < kAdminAuditPageSize;
-        if (isLast) {
-          pagingController.appendLastPage(rows);
-        } else {
-          pagingController.appendPage(rows, offset + rows.length);
-        }
-      },
+    final result = await useCase(
+      ListAdminAuditEventsParams(limit: kAdminAuditPageSize, offset: offset),
     );
+    result.fold((failure) => pagingController.error = failure.message, (rows) {
+      final isLast = rows.length < kAdminAuditPageSize;
+      if (isLast) {
+        pagingController.appendLastPage(rows);
+      } else {
+        pagingController.appendPage(rows, offset + rows.length);
+      }
+    });
   }
 
   Future<void> refresh() async => pagingController.refresh();

@@ -18,8 +18,7 @@ class AdminJobsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final controller =
-        ref.watch(adminJobsProvider.notifier).pagingController;
+    final controller = ref.watch(adminJobsProvider.notifier).pagingController;
     final stateValue = ref.watch(adminJobsProvider);
 
     return AdminScaffold(
@@ -54,8 +53,7 @@ class AdminJobsPage extends ConsumerWidget {
                     ),
                   ),
                   firstPageErrorIndicatorBuilder: (_) => _ErrorBlock(
-                    message:
-                        controller.error?.toString() ?? 'Try again.',
+                    message: controller.error?.toString() ?? 'Try again.',
                     onRetry: () => controller.refresh(),
                   ),
                   noItemsFoundIndicatorBuilder: (_) => Padding(
@@ -102,8 +100,7 @@ class _FilterBar extends ConsumerWidget {
           _Chip(
             label: label,
             isActive: filter == active,
-            onTap: () =>
-                ref.read(adminJobsProvider.notifier).setFilter(filter),
+            onTap: () => ref.read(adminJobsProvider.notifier).setFilter(filter),
           ),
       ],
     );

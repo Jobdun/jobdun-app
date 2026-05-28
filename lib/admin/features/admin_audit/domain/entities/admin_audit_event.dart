@@ -23,12 +23,12 @@ class AdminAuditEvent extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        occurredAt,
-        source,
-        eventType,
-        actorId,
-        targetUserId,
-        payloadPreview,
-      ];
+    id,
+    occurredAt,
+    source,
+    eventType,
+    actorId,
+    targetUserId,
+    payloadPreview,
+  ];
 }

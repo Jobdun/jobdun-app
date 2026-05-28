@@ -171,9 +171,7 @@ class AdminVerificationsController
         .map((r) => _projectRow(r, roleByUser, latestVerifByPair))
         .toList();
     final currentFilter =
-        keepFilter ??
-        state.value?.filter ??
-        AdminVerificationKindFilter.all;
+        keepFilter ?? state.value?.filter ?? AdminVerificationKindFilter.all;
     return AdminVerificationsState(items: items, filter: currentFilter);
   }
 

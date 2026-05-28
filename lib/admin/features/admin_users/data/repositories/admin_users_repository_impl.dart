@@ -9,7 +9,7 @@ import '../../domain/repositories/admin_users_repository.dart';
 
 class AdminUsersRepositoryImpl implements AdminUsersRepository {
   AdminUsersRepositoryImpl({SupabaseClient? client})
-      : _client = client ?? SupabaseConfig.client;
+    : _client = client ?? SupabaseConfig.client;
 
   final SupabaseClient _client;
 
@@ -53,18 +53,18 @@ class AdminUsersRepositoryImpl implements AdminUsersRepository {
   }
 
   String _roleString(AdminUserRoleFilter f) => switch (f) {
-        AdminUserRoleFilter.all => 'all',
-        AdminUserRoleFilter.builder => 'builder',
-        AdminUserRoleFilter.trade => 'trade',
-        AdminUserRoleFilter.admin => 'admin',
-      };
+    AdminUserRoleFilter.all => 'all',
+    AdminUserRoleFilter.builder => 'builder',
+    AdminUserRoleFilter.trade => 'trade',
+    AdminUserRoleFilter.admin => 'admin',
+  };
 
   AdminUserRow _toRow(Map<String, dynamic> r) {
     final roles = r['user_roles'];
     String role = 'unknown';
     if (roles is List && roles.isNotEmpty) {
-      role = (roles.first as Map<String, dynamic>)['role'] as String? ??
-          'unknown';
+      role =
+          (roles.first as Map<String, dynamic>)['role'] as String? ?? 'unknown';
     } else if (roles is Map<String, dynamic>) {
       role = roles['role'] as String? ?? 'unknown';
     }

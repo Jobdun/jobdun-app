@@ -9,7 +9,7 @@ import '../../domain/repositories/admin_dashboard_stats_repository.dart';
 class AdminDashboardStatsRepositoryImpl
     implements AdminDashboardStatsRepository {
   AdminDashboardStatsRepositoryImpl({SupabaseClient? client})
-      : _client = client ?? SupabaseConfig.client;
+    : _client = client ?? SupabaseConfig.client;
 
   final SupabaseClient _client;
 
@@ -22,12 +22,14 @@ class AdminDashboardStatsRepositoryImpl
         _countOpenJobs(),
         _countRejectedLast7Days(),
       ]);
-      return Right(AdminDashboardStats(
-        totalUsers: results[0],
-        pendingVerifications: results[1],
-        openJobs: results[2],
-        rejectedLast7Days: results[3],
-      ));
+      return Right(
+        AdminDashboardStats(
+          totalUsers: results[0],
+          pendingVerifications: results[1],
+          openJobs: results[2],
+          rejectedLast7Days: results[3],
+        ),
+      );
     } on PostgrestException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {
@@ -46,10 +48,8 @@ class AdminDashboardStatsRepositoryImpl
       .eq('status', 'pending')
       .isFilter('deleted_at', null);
 
-  Future<int> _countOpenJobs() => _client
-      .from('jobs')
-      .count(CountOption.exact)
-      .eq('status', 'open');
+  Future<int> _countOpenJobs() =>
+      _client.from('jobs').count(CountOption.exact).eq('status', 'open');
 
   Future<int> _countRejectedLast7Days() {
     final cutoff = DateTime.now()

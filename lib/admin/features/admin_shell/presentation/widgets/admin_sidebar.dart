@@ -211,8 +211,7 @@ class _Header extends StatelessWidget {
         child: Column(
           children: [
             _BrandMark(
-              onTap: () =>
-                  GoRouter.of(context).go(AdminRoutes.dashboard),
+              onTap: () => GoRouter.of(context).go(AdminRoutes.dashboard),
             ),
             const Gap(12),
             toggleButton,

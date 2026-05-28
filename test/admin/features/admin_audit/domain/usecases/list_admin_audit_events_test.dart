@@ -25,8 +25,9 @@ void main() {
       source: AdminAuditSource.verification,
       eventType: 'document_submitted',
     );
-    when(() => repo.listEvents(limit: 50, offset: 0))
-        .thenAnswer((_) async => Right([event]));
+    when(
+      () => repo.listEvents(limit: 50, offset: 0),
+    ).thenAnswer((_) async => Right([event]));
 
     final result = await useCase(
       const ListAdminAuditEventsParams(limit: 50, offset: 0),
@@ -37,10 +38,12 @@ void main() {
   });
 
   test('propagates failures', () async {
-    when(() => repo.listEvents(
-          limit: any(named: 'limit'),
-          offset: any(named: 'offset'),
-        )).thenAnswer((_) async => const Left(ServerFailure('boom')));
+    when(
+      () => repo.listEvents(
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
 
     final result = await useCase(
       const ListAdminAuditEventsParams(limit: 50, offset: 0),

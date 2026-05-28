@@ -17,8 +17,7 @@ class AdminAuditPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final controller =
-        ref.watch(adminAuditProvider.notifier).pagingController;
+    final controller = ref.watch(adminAuditProvider.notifier).pagingController;
 
     return AdminScaffold(
       title: 'AUDIT LOG',
@@ -54,10 +53,7 @@ class AdminAuditPage extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'No audit events yet.',
-                  style: GoogleFonts.openSans(
-                    fontSize: 13,
-                    color: c.text2,
-                  ),
+                  style: GoogleFonts.openSans(fontSize: 13, color: c.text2),
                 ),
               ),
             ),

@@ -24,8 +24,7 @@ class AdminJobsState {
       AdminJobsState(filter: filter ?? this.filter);
 }
 
-final adminJobsProvider =
-    NotifierProvider<AdminJobsController, AdminJobsState>(
+final adminJobsProvider = NotifierProvider<AdminJobsController, AdminJobsState>(
   AdminJobsController.new,
 );
 
@@ -42,22 +41,21 @@ class AdminJobsController extends Notifier<AdminJobsState> {
 
   Future<void> _fetchPage(int offset) async {
     final useCase = ref.read(listAdminJobsProvider);
-    final result = await useCase(ListAdminJobsParams(
-      limit: kAdminJobsPageSize,
-      offset: offset,
-      filter: state.filter,
-    ));
-    result.fold(
-      (failure) => pagingController.error = failure.message,
-      (rows) {
-        final isLast = rows.length < kAdminJobsPageSize;
-        if (isLast) {
-          pagingController.appendLastPage(rows);
-        } else {
-          pagingController.appendPage(rows, offset + rows.length);
-        }
-      },
+    final result = await useCase(
+      ListAdminJobsParams(
+        limit: kAdminJobsPageSize,
+        offset: offset,
+        filter: state.filter,
+      ),
     );
+    result.fold((failure) => pagingController.error = failure.message, (rows) {
+      final isLast = rows.length < kAdminJobsPageSize;
+      if (isLast) {
+        pagingController.appendLastPage(rows);
+      } else {
+        pagingController.appendPage(rows, offset + rows.length);
+      }
+    });
   }
 
   void setFilter(AdminJobStatusFilter f) {

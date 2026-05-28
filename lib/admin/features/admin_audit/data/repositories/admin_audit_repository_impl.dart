@@ -20,7 +20,7 @@ import '../../domain/repositories/admin_audit_repository.dart';
 /// by the !inner join (orphaned events have no meaningful target user).
 class AdminAuditRepositoryImpl implements AdminAuditRepository {
   AdminAuditRepositoryImpl({SupabaseClient? client})
-      : _client = client ?? SupabaseConfig.client;
+    : _client = client ?? SupabaseConfig.client;
 
   final SupabaseClient _client;
 

@@ -17,6 +17,5 @@ class ListAdminAuditEvents {
 
   Future<Either<Failure, List<AdminAuditEvent>>> call(
     ListAdminAuditEventsParams params,
-  ) =>
-      _repository.listEvents(limit: params.limit, offset: params.offset);
+  ) => _repository.listEvents(limit: params.limit, offset: params.offset);
 }

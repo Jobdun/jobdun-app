@@ -18,6 +18,12 @@ class AdminUserRow extends Equatable {
   final String? avatarUrl;
 
   @override
-  List<Object?> get props =>
-      [id, displayName, role, isVerified, createdAt, avatarUrl];
+  List<Object?> get props => [
+    id,
+    displayName,
+    role,
+    isVerified,
+    createdAt,
+    avatarUrl,
+  ];
 }

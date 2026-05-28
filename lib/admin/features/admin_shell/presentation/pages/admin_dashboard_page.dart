@@ -135,9 +135,7 @@ class _StatTile extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: highlight
-              ? c.action.withValues(alpha: 0.4)
-              : c.border,
+          color: highlight ? c.action.withValues(alpha: 0.4) : c.border,
         ),
       ),
       child: Column(

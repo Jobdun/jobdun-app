@@ -22,9 +22,7 @@ class ListAdminJobs {
 
   final AdminJobsRepository _repository;
 
-  Future<Either<Failure, List<AdminJobRow>>> call(
-    ListAdminJobsParams params,
-  ) {
+  Future<Either<Failure, List<AdminJobRow>>> call(ListAdminJobsParams params) {
     return _repository.listJobs(
       limit: params.limit,
       offset: params.offset,

@@ -9,7 +9,7 @@ import '../../domain/repositories/admin_jobs_repository.dart';
 
 class AdminJobsRepositoryImpl implements AdminJobsRepository {
   AdminJobsRepositoryImpl({SupabaseClient? client})
-      : _client = client ?? SupabaseConfig.client;
+    : _client = client ?? SupabaseConfig.client;
 
   final SupabaseClient _client;
 
@@ -20,7 +20,9 @@ class AdminJobsRepositoryImpl implements AdminJobsRepository {
     AdminJobStatusFilter filter = AdminJobStatusFilter.all,
   }) async {
     try {
-      var builder = _client.from('jobs').select(
+      var builder = _client
+          .from('jobs')
+          .select(
             'id, title, status, application_count, created_at, '
             'profiles!jobs_builder_id_fkey(display_name)',
           );
@@ -54,8 +56,8 @@ class AdminJobsRepositoryImpl implements AdminJobsRepository {
       status: r['status'] as String,
       builderDisplayName:
           (builder?['display_name'] as String?)?.trim().isNotEmpty == true
-              ? (builder!['display_name'] as String).trim()
-              : '—',
+          ? (builder!['display_name'] as String).trim()
+          : '—',
       applicationCount: (r['application_count'] as int?) ?? 0,
       createdAt: DateTime.parse(r['created_at'] as String).toLocal(),
     );

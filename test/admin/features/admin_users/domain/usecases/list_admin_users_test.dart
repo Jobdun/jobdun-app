@@ -31,39 +31,48 @@ void main() {
       isVerified: true,
       createdAt: DateTime(2026, 1, 1),
     );
-    when(() => repo.listUsers(
-          limit: 50,
-          offset: 0,
-          filter: AdminUserRoleFilter.trade,
-          query: 'ali',
-        )).thenAnswer((_) async => Right([row]));
+    when(
+      () => repo.listUsers(
+        limit: 50,
+        offset: 0,
+        filter: AdminUserRoleFilter.trade,
+        query: 'ali',
+      ),
+    ).thenAnswer((_) async => Right([row]));
 
-    final result = await useCase(const ListAdminUsersParams(
-      limit: 50,
-      offset: 0,
-      filter: AdminUserRoleFilter.trade,
-      query: 'ali',
-    ));
+    final result = await useCase(
+      const ListAdminUsersParams(
+        limit: 50,
+        offset: 0,
+        filter: AdminUserRoleFilter.trade,
+        query: 'ali',
+      ),
+    );
 
     expect(result.isRight(), isTrue);
-    verify(() => repo.listUsers(
-          limit: 50,
-          offset: 0,
-          filter: AdminUserRoleFilter.trade,
-          query: 'ali',
-        )).called(1);
+    verify(
+      () => repo.listUsers(
+        limit: 50,
+        offset: 0,
+        filter: AdminUserRoleFilter.trade,
+        query: 'ali',
+      ),
+    ).called(1);
   });
 
   test('propagates failures', () async {
-    when(() => repo.listUsers(
-          limit: any(named: 'limit'),
-          offset: any(named: 'offset'),
-          filter: any(named: 'filter'),
-          query: any(named: 'query'),
-        )).thenAnswer((_) async => const Left(ServerFailure('boom')));
+    when(
+      () => repo.listUsers(
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+        filter: any(named: 'filter'),
+        query: any(named: 'query'),
+      ),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
 
     final result = await useCase(
-        const ListAdminUsersParams(limit: 50, offset: 0));
+      const ListAdminUsersParams(limit: 50, offset: 0),
+    );
 
     expect(result.isLeft(), isTrue);
   });

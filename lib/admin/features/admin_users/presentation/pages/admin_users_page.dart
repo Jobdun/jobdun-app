@@ -18,8 +18,7 @@ class AdminUsersPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final controller =
-        ref.watch(adminUsersProvider.notifier).pagingController;
+    final controller = ref.watch(adminUsersProvider.notifier).pagingController;
     final stateValue = ref.watch(adminUsersProvider);
 
     return AdminScaffold(
@@ -174,8 +173,10 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
         hintStyle: GoogleFonts.openSans(fontSize: 13, color: c.text3),
         filled: true,
         fillColor: c.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(6),
           borderSide: BorderSide(color: c.border),

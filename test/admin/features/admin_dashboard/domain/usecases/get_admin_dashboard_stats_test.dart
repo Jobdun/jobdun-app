@@ -34,9 +34,9 @@ void main() {
   });
 
   test('propagates repository failures', () async {
-    when(() => repo.getStats()).thenAnswer(
-      (_) async => const Left(ServerFailure('boom')),
-    );
+    when(
+      () => repo.getStats(),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
 
     final result = await useCase();
 
