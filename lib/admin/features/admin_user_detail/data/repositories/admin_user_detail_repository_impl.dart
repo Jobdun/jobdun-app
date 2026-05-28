@@ -58,7 +58,8 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
           avatarUrl: profile['avatar_url'] as String?,
           phone: profile['phone'] as String?,
           phoneVerifiedAt: parseOpt(profile['phone_verified_at']),
-          onboardingCompletedAt: parseOpt(profile['onboarding_completed_at']),
+          // onboarding_completed_at was dropped by 20260521000001.
+          onboardingCompletedAt: null,
           createdAt: DateTime.parse(profile['created_at'] as String).toLocal(),
           updatedAt: parseOpt(profile['updated_at']),
           // profiles has no deleted_at; soft-delete lives on subprofiles.
@@ -80,9 +81,12 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
 
   Future<Map<String, dynamic>?> _fetchProfile(String userId) => _client
       .from('profiles')
+      // NB: onboarding_completed_at, bio (and others) were dropped by
+      // 20260521000001_profile_schema_cleanup.sql. Only request columns
+      // that still exist on the live schema.
       .select(
         'id, display_name, avatar_url, phone, phone_verified_at, '
-        'onboarding_completed_at, created_at, updated_at',
+        'created_at, updated_at',
       )
       .eq('id', userId)
       .maybeSingle();
@@ -97,12 +101,13 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
   }
 
   Future<AdminBuilderProfile?> _fetchBuilder(String userId) async {
+    // logo_url + description were dropped by 20260521000001. Builder logos
+    // now share the avatar_url field on profiles.
     final row = await _client
         .from('builder_profiles')
         .select(
-          'company_name, abn, logo_url, description, contact_name, '
-          'contact_phone, about, website, years_in_business, '
-          'service_suburb, service_state, service_postcode',
+          'company_name, abn, contact_name, contact_phone, about, website, '
+          'years_in_business, service_suburb, service_state, service_postcode',
         )
         .eq('id', userId)
         .maybeSingle();
@@ -110,8 +115,8 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
     return AdminBuilderProfile(
       companyName: row['company_name'] as String?,
       abn: row['abn'] as String?,
-      logoUrl: row['logo_url'] as String?,
-      description: row['description'] as String?,
+      logoUrl: null,
+      description: null,
       contactName: row['contact_name'] as String?,
       contactPhone: row['contact_phone'] as String?,
       about: row['about'] as String?,
@@ -126,11 +131,15 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
   Future<({AdminTradeProfile? trade, String? licenceUrl})> _fetchTrade(
     String userId,
   ) async {
+    // bio, hourly_rate, day_rate were dropped by 20260521000001 in favour
+    // of hourly_rate_min/max. We surface min as the headline rate so the
+    // admin still sees a number — day rate stays null until / unless the
+    // schema brings it back.
     final row = await _client
         .from('trade_profiles')
         .select(
-          'full_name, primary_trade, is_verified, bio, portfolio_urls, '
-          'hourly_rate, day_rate, years_experience, about, '
+          'full_name, primary_trade, is_verified, portfolio_urls, '
+          'hourly_rate_min, years_experience, about, '
           'base_suburb, base_state, base_postcode, licence_url',
         )
         .eq('id', userId)
@@ -146,10 +155,10 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
         fullName: row['full_name'] as String?,
         primaryTrade: row['primary_trade'] as String?,
         isVerified: (row['is_verified'] as bool?) ?? false,
-        bio: row['bio'] as String?,
+        bio: null,
         portfolioUrls: toList(row['portfolio_urls']),
-        hourlyRate: toDouble(row['hourly_rate']),
-        dayRate: toDouble(row['day_rate']),
+        hourlyRate: toDouble(row['hourly_rate_min']),
+        dayRate: null,
         yearsExperience: row['years_experience'] as int?,
         about: row['about'] as String?,
         baseSuburb: row['base_suburb'] as String?,
