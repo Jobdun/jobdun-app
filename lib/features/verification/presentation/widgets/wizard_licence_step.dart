@@ -22,7 +22,14 @@ typedef OnLicenceDone =
 /// States with a live `LicenceAdapter` in the verify-licence Edge Function.
 /// Mirrors `supabase/functions/_shared/regulators/index.ts`. Update when new
 /// adapters land in Phase 7.
-const _supportedStates = ['NSW'];
+///
+/// Manual-only launch (2026-05-29): empty list so every state routes to
+/// `LicenceUnsupportedHint` → manual upload. The NSW adapter is still a
+/// deterministic dev stub (`*00000` → fake-verified) and must not be reachable
+/// in production. Restore once a real regulator scraper is wired up AND the
+/// server-side `AUTO_VERIFY_ENABLED` flag in
+/// `supabase/functions/verify-licence/index.ts` is flipped back to `true`.
+const _supportedStates = <String>[];
 const _allStates = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT'];
 
 // Starter list — expand per regulator once real adapters land.

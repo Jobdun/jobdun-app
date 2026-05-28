@@ -37,6 +37,10 @@ class JTextField extends StatefulWidget {
     this.maxLines = 1,
     this.autofillHints,
     this.labelTrailing,
+    this.focusNode,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.keyboardAppearance,
   });
 
   final String name;
@@ -71,6 +75,23 @@ class JTextField extends StatefulWidget {
   /// /login to inline "Forgot?" next to the Password label so the escape
   /// hatch lives in industry-standard position.
   final Widget? labelTrailing;
+
+  /// External focus node — required when callers want to drive focus
+  /// traversal explicitly (e.g. email → password Next-key wiring on /login).
+  /// When null, the underlying FormBuilderTextField creates its own.
+  final FocusNode? focusNode;
+
+  /// Autocorrect / IME suggestion bar. Default true (Flutter default).
+  /// MUST be disabled for email and password fields — autocorrect mangles
+  /// addresses, and the Android suggestion bar steals ~40dp of vertical
+  /// space above the keyboard.
+  final bool autocorrect;
+  final bool enableSuggestions;
+
+  /// iOS-only — tints the system keyboard to match a dark theme. Set to
+  /// Brightness.dark on auth screens so the light keyboard doesn't strobe
+  /// against the dark scaffold background.
+  final Brightness? keyboardAppearance;
 
   @override
   State<JTextField> createState() => _JTextFieldState();
@@ -143,10 +164,14 @@ class _JTextFieldState extends State<JTextField> {
             enabled: widget.enabled,
             initialValue: widget.initialValue,
             controller: widget.controller,
+            focusNode: widget.focusNode,
             obscureText: _obscured,
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
             textCapitalization: widget.textCapitalization,
+            keyboardAppearance: widget.keyboardAppearance,
+            autocorrect: widget.autocorrect,
+            enableSuggestions: widget.enableSuggestions,
             onSubmitted: widget.onSubmitted,
             onChanged: widget.onChanged,
             inputFormatters: widget.inputFormatters,

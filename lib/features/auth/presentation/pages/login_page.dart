@@ -9,12 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../app/theme/app_gradients.dart';
-import '../../../../app/theme/app_theme.dart';
 import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
-import '../../../../core/widgets/social_auth_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_link_text.dart';
 import '../providers/auth_provider.dart';
@@ -28,8 +25,11 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormBuilderState>();
-  // Remember-me checkbox was removed (T1.4): Supabase Auth already persists
-  // sessions via flutter_secure_storage, and the checkbox was never wired up.
+  // Owned focus nodes wire the email → password Next-key traversal
+  // deterministically. Without them Flutter's auto-traversal usually works
+  // inside a FormBuilder but isn't guaranteed across platform IMEs.
+  final _emailFocus = FocusNode(debugLabel: 'login.email');
+  final _passwordFocus = FocusNode(debugLabel: 'login.password');
   bool _ready = false;
 
   @override
@@ -39,6 +39,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) setState(() => _ready = true);
     });
+  }
+
+  @override
+  void dispose() {
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 
   void _submit() {
@@ -89,7 +96,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       backgroundColor: c.background,
-      body: SafeArea(
+      // Tap-outside-to-dismiss — taps on the dark background between fields
+      // unfocus the active editor so the keyboard retracts. behavior:opaque
+      // ensures the gesture wins against InkWell ripples on SSO tiles.
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
         child: AnimatedOpacity(
           opacity: _ready ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 150),
@@ -106,123 +119,84 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   child: IntrinsicHeight(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      // Top group flows from the top; the bottom group (create
-                      // account + legal) is pushed to the viewport bottom by
-                      // the Spacer in between.
                       children: [
-                        // ── Hero — mark + gradient wordmark ──────────────────
-                        // Sized per design-system/jobdun/pages/auth-onboarding
-                        // ("Top 40% — Logo + bold identity statement"). 64px
-                        // mark + 56sp wordmark land the hero at ~30% of a
-                        // 640px viewport — dominant without pushing LOG IN
-                        // out of the thumb zone on tall devices.
-                        Gap(AppSpacing.lg.h),
-                        Center(
-                          child: SvgPicture.asset(
-                            'lib/core/assets/mark-jobdun.svg',
-                            width: 64.r,
-                            height: 64.r,
-                          ),
-                        ),
-                        Gap(AppSpacing.sm.h),
-                        Center(
-                          child: ShaderMask(
-                            shaderCallback: (bounds) =>
-                                AppGradients.brandFlame.createShader(bounds),
-                            child: Text(
-                              'JOBDUN',
-                              style: AppTheme.brandDisplay(
-                                Colors
-                                    .white, // intentional: ShaderMask requires white
-                              ).copyWith(fontSize: 56.sp),
+                        // Fixed hero zone — gives the mark predictable
+                        // breathing room (~22% of a 640dp viewport) so it
+                        // brands the moment without competing with the form.
+                        // Centering inside a fixed-height box lands the mark
+                        // in the upper third regardless of viewport size,
+                        // matching the "Top 40% — logo zone" rule in
+                        // design-system/jobdun/pages/auth-onboarding.md.
+                        SizedBox(
+                          height: 140.h,
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'lib/core/assets/mark-jobdun.svg',
+                              width: 56.r,
+                              height: 56.r,
                             ),
                           ),
                         ),
 
-                        Gap(AppSpacing.xl.h),
-
-                        // ── SSO row: Google → Apple → Phone ──────────────────
-                        // Full-width labeled buttons — clearer than icon-only
-                        // tiles for first-time users who haven't memorised the
-                        // G / Apple / phone glyphs yet. Lifted above the email
-                        // form per AUTH_FLOW_UNIFICATION_PLAN — SSO is the
-                        // primary path for new users; email/password is the
-                        // fallback below the divider.
-                        LabeledSocialAuthButton(
-                          key: const Key('login.sso.google'),
-                          provider: SocialAuthProvider.google,
-                          onTap: _onGoogle,
-                          isLoading: isBusy,
-                        ),
-                        Gap(AppSpacing.sm.h),
-                        LabeledSocialAuthButton(
-                          key: const Key('login.sso.apple'),
-                          provider: SocialAuthProvider.apple,
-                          onTap: _onApple,
-                          isLoading: isBusy,
-                        ),
-                        Gap(AppSpacing.sm.h),
-                        LabeledSocialAuthButton(
-                          key: const Key('login.sso.phone'),
-                          provider: SocialAuthProvider.phone,
-                          onTap: _onPhone,
-                          isLoading: isBusy,
-                        ),
-
                         Gap(AppSpacing.lg.h),
 
-                        // ── Section divider ──────────────────────────────────
-                        _OrDivider(),
-
-                        Gap(AppSpacing.md.h),
-
-                        // ── Form ─────────────────────────────────────────────
-                        FormBuilder(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              JTextField(
-                                name: 'email',
-                                label: 'Email',
-                                hint: 'you@example.com',
-                                prefixIcon: AppIcons.email,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.email],
-                                validator: FormBuilderValidators.compose([
-                                  FormBuilderValidators.required(
-                                    errorText: 'Email is required.',
-                                  ),
-                                  FormBuilderValidators.email(
-                                    errorText: 'Enter a valid email.',
-                                  ),
-                                ]),
-                              ),
-                              JTextField(
-                                name: 'password',
-                                label: 'Password',
-                                hint: 'Enter your password',
-                                prefixIcon: AppIcons.lock,
-                                obscureText: true,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [AutofillHints.password],
-                                onSubmitted: (_) => _submit(),
-                                validator: FormBuilderValidators.required(
-                                  errorText: 'Password is required.',
+                        // AutofillGroup binds email + password into a single
+                        // credential pair so iOS Keychain / Android Autofill
+                        // can offer "Save password?" atomically after a
+                        // successful first login.
+                        AutofillGroup(
+                          child: FormBuilder(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                JTextField(
+                                  name: 'email',
+                                  label: 'Email',
+                                  hint: 'you@example.com',
+                                  prefixIcon: AppIcons.email,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  autofillHints: const [AutofillHints.email],
+                                  focusNode: _emailFocus,
+                                  autocorrect: false,
+                                  enableSuggestions: false,
+                                  keyboardAppearance: Brightness.dark,
+                                  onSubmitted: (_) => _passwordFocus.requestFocus(),
+                                  validator: FormBuilderValidators.compose([
+                                    FormBuilderValidators.required(
+                                      errorText: 'Email is required.',
+                                    ),
+                                    FormBuilderValidators.email(
+                                      errorText: 'Enter a valid email.',
+                                    ),
+                                  ]),
                                 ),
-                                // Inline Forgot? link — industry-standard
-                                // position; muted to keep c.action reserved
-                                // for the LOG IN CTA only.
-                                labelTrailing: _ForgotPasswordLink(
-                                  onTap: _onForgotPassword,
+                                JTextField(
+                                  name: 'password',
+                                  label: 'Password',
+                                  hint: 'Enter your password',
+                                  prefixIcon: AppIcons.lock,
+                                  obscureText: true,
+                                  textInputAction: TextInputAction.done,
+                                  autofillHints: const [AutofillHints.password],
+                                  focusNode: _passwordFocus,
+                                  autocorrect: false,
+                                  enableSuggestions: false,
+                                  keyboardAppearance: Brightness.dark,
+                                  onSubmitted: (_) => _submit(),
+                                  validator: FormBuilderValidators.required(
+                                    errorText: 'Password is required.',
+                                  ),
+                                  labelTrailing: _ForgotPasswordLink(
+                                    onTap: _onForgotPassword,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
 
-                        // ── Status banners ───────────────────────────────────
                         if (authState.errorMessage != null) ...[
                           Gap(AppSpacing.sm.h),
                           StatusBanner(
@@ -238,34 +212,54 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ],
 
-                        Gap(AppSpacing.md.h),
+                        Gap(AppSpacing.sm.h),
 
-                        // ── Primary CTA ──────────────────────────────────────
+                        _CreateAccountInlineLink(
+                          key: const Key('login.create_account_link'),
+                          onTap: _onCreateAccount,
+                        ),
+
+                        Gap(AppSpacing.sm.h),
+
                         JButton(
                           label: isBusy ? 'LOGGING IN...' : 'LOG IN',
                           isLoading: isBusy,
                           onPressed: isBusy ? null : _submit,
                         ),
 
-                        // Flexible spacer pushes the bottom group (create-
-                        // account + legal) to the viewport bottom on tall
-                        // devices. Minimum gap ensures separation even on
-                        // short screens where the spacer collapses.
-                        const Spacer(),
-                        Gap(AppSpacing.xxl.h),
+                        Gap(AppSpacing.lg.h),
 
-                        // ── Create account (the friend-referral path) ────────
-                        _CreateAccountLink(
-                          key: const Key('login.create_account_link'),
-                          onTap: _onCreateAccount,
+                        _OrContinueWith(),
+
+                        Gap(AppSpacing.md.h),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _BrandSsoTile(
+                              key: const Key('login.sso.google'),
+                              provider: _SsoProvider.google,
+                              onTap: _onGoogle,
+                              isLoading: isBusy,
+                            ),
+                            _BrandSsoTile(
+                              key: const Key('login.sso.apple'),
+                              provider: _SsoProvider.apple,
+                              onTap: _onApple,
+                              isLoading: isBusy,
+                            ),
+                            _BrandSsoTile(
+                              key: const Key('login.sso.phone'),
+                              provider: _SsoProvider.phone,
+                              onTap: _onPhone,
+                              isLoading: isBusy,
+                            ),
+                          ],
                         ),
 
-                        Gap(AppSpacing.xl.h),
+                        const Spacer(),
+                        Gap(AppSpacing.lg.h),
 
-                        // ── Legal footer ─────────────────────────────────────
-                        // Applies to every auth path above (email login, SSO,
-                        // phone, create account). Pinned to the viewport
-                        // bottom by the Spacer above.
                         const LegalLinkText(minimal: true),
 
                         Gap(AppSpacing.lg.h),
@@ -278,18 +272,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         ),
       ),
+      ),
     );
   }
 }
 
-// ── Forgot-password inline link ─────────────────────────────────────────────
-// Muted (text3) so the orange c.action stays reserved for the primary CTA.
-// 48px hit area enforced via Padding inside a HitTestBehavior.opaque gesture.
-//
-// Note: lives inside JTextField's MergeSemantics. Wrapping this in an
-// explicit Semantics(button: true, ...) conflicts with that merge during
-// the framework's semantics flush — let GestureDetector's tap callback
-// generate the tappable semantic node naturally.
+// Muted text3 so the orange c.action stays reserved for the primary CTA.
+// Lives inside JTextField's MergeSemantics — an explicit Semantics wrapper
+// conflicts with that merge, so the GestureDetector's tap callback generates
+// the tappable semantic node naturally.
 class _ForgotPasswordLink extends StatelessWidget {
   const _ForgotPasswordLink({required this.onTap});
 
@@ -306,7 +297,7 @@ class _ForgotPasswordLink extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
         child: Text(
-          'Forgot?',
+          'Forgot password?',
           style: tt.labelMedium!.copyWith(
             color: c.text3,
             decoration: TextDecoration.underline,
@@ -318,35 +309,22 @@ class _ForgotPasswordLink extends StatelessWidget {
   }
 }
 
-// ── "── or ──" section divider ──────────────────────────────────────────────
-class _OrDivider extends StatelessWidget {
+class _OrContinueWith extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
-          child: Text('or', style: tt.bodySmall!.copyWith(color: c.text3)),
-        ),
-        Expanded(child: Divider(color: c.border, thickness: 1, height: 1)),
-      ],
+    return Center(
+      child: Text(
+        'or continue with',
+        style: tt.bodySmall!.copyWith(color: c.text3),
+      ),
     );
   }
 }
 
-// ── Create account link ─────────────────────────────────────────────────────
-// "Create account →" — the missing-link fix for users who landed on /login
-// via friend referral / share with no existing account. Trimmed from the
-// previous "New to Jobdun? Create account →" copy: the orange accent +
-// arrow already mark this as the signup action; the prefix was filler
-// (Hick's Law).
-class _CreateAccountLink extends StatelessWidget {
-  const _CreateAccountLink({super.key, required this.onTap});
+class _CreateAccountInlineLink extends StatelessWidget {
+  const _CreateAccountInlineLink({super.key, required this.onTap});
 
   final VoidCallback onTap;
 
@@ -354,7 +332,8 @@ class _CreateAccountLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final linkStyle = tt.bodyMedium!.copyWith(
+    final base = tt.bodyMedium!.copyWith(color: c.text2);
+    final link = tt.bodyMedium!.copyWith(
       color: c.action,
       fontWeight: FontWeight.w700,
     );
@@ -366,23 +345,118 @@ class _CreateAccountLink extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
           child: RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
-              style: linkStyle,
+              style: base,
               children: [
-                const TextSpan(text: 'Create account'),
-                const TextSpan(text: ' '),
-                WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child: Icon(
-                    AppIcons.chevronRight,
-                    size: 14.r,
-                    color: c.action,
-                  ),
-                ),
+                const TextSpan(text: "Don't have an account? "),
+                TextSpan(text: 'Create account', style: link),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Brand-colored 56×56 SSO tile — Google (white), Apple (black), Phone (orange).
+// Each provider gets its own colour block per the reference. 48dp minimum
+// touch target is met (tile is 56dp). InkWell sits on top so the splash
+// stays inside the rounded square. Loading state shows a centred spinner
+// tinted for visibility against the brand background.
+enum _SsoProvider { google, apple, phone }
+
+class _BrandSsoTile extends StatelessWidget {
+  const _BrandSsoTile({
+    super.key,
+    required this.provider,
+    required this.onTap,
+    required this.isLoading,
+  });
+
+  final _SsoProvider provider;
+  final VoidCallback onTap;
+  final bool isLoading;
+
+  static const double _tileSize = 56;
+  static const double _iconSize = 26;
+
+  ({Color bg, Color fg, Color border, String label}) _spec(BuildContext context) {
+    final c = context.c;
+    return switch (provider) {
+      _SsoProvider.google => (
+        bg: Colors.white, // intentional: Google brand requires white tile
+        fg: Colors.white, // unused for Google (multi-colour SVG)
+        border: c.border,
+        label: 'Sign in with Google',
+      ),
+      _SsoProvider.apple => (
+        bg: Colors.black, // intentional: Apple HIG monochrome on dark tile
+        fg: Colors.white, // intentional: Apple HIG requires white mark on black
+        border: Colors.black,
+        label: 'Sign in with Apple',
+      ),
+      _SsoProvider.phone => (
+        bg: c.action,
+        fg: c.actionTx,
+        border: c.action,
+        label: 'Continue with phone number',
+      ),
+    };
+  }
+
+  Widget _icon(BuildContext context, Color fg) {
+    return switch (provider) {
+      _SsoProvider.google => SvgPicture.asset(
+        'lib/core/assets/icon-google-color.svg',
+        width: _iconSize.r,
+        height: _iconSize.r,
+      ),
+      _SsoProvider.apple => SvgPicture.asset(
+        'lib/core/assets/icon-apple.svg',
+        width: _iconSize.r,
+        height: _iconSize.r,
+        colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
+      ),
+      _SsoProvider.phone => Icon(AppIcons.phone, size: _iconSize.r, color: fg),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _spec(context);
+    final disabled = isLoading;
+
+    return Semantics(
+      button: true,
+      label: s.label,
+      excludeSemantics: true,
+      child: Material(
+        color: s.bg,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: disabled ? null : onTap,
+          child: Ink(
+            width: _tileSize.r,
+            height: _tileSize.r,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.card.r),
+              border: Border.all(color: s.border),
+            ),
+            child: Center(
+              child: isLoading
+                  ? SizedBox.square(
+                      dimension: 18.r,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: s.fg,
+                      ),
+                    )
+                  : _icon(context, s.fg),
             ),
           ),
         ),

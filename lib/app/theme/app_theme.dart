@@ -277,6 +277,11 @@ class AppTheme {
         prefixIconColor: c.text3,
         suffixIconColor: c.text3,
       ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: c.action,
+        selectionColor: c.action.withValues(alpha: 0.32),
+        selectionHandleColor: c.action,
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: c.card,

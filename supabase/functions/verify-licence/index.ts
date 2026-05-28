@@ -23,6 +23,14 @@ interface RequestBody {
 
 const AUS_STATES: AusState[] = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"];
 
+// Manual-only kill switch. Set true once a real regulator adapter is
+// production-ready AND `_supportedStates` in `wizard_licence_step.dart` is
+// restored. While false every request short-circuits to manual_review
+// without touching any adapter — the dev stubs in nsw_adapter.ts are
+// unreachable. Preserves all infra (rate limit, circuit breaker, audit
+// trail, phone gate) so flipping back to `true` re-enables auto-verify.
+const AUTO_VERIFY_ENABLED = false;
+
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -54,6 +62,22 @@ Deno.serve(async (req) => {
         "Verify your phone number first — Profile → Edit → Phone. " +
         "This is required before we mark a licence verified, so Trust & " +
         "Safety has a reachable contact for the attestation.",
+    });
+  }
+
+  // Manual-only mode: short-circuit before any adapter / rate-limit / DB
+  // write so the NSW stub branches cannot produce a fake verified row.
+  // Returned as a structured 200 so the Flutter VerifyResult parser surfaces
+  // it as VerifyManualReview and the wizard routes to manual upload.
+  if (!AUTO_VERIFY_ENABLED) {
+    return jsonResponse({
+      status: "manual_review",
+      reason: "auto_verify_disabled",
+      manual_fallback_allowed: true,
+      detail:
+        "Automated licence verification is temporarily disabled. " +
+        "Please upload a clear photo of your trade licence — a reviewer " +
+        "confirms within 24 hours.",
     });
   }
 

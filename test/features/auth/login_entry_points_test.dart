@@ -210,12 +210,12 @@ void main() {
   // ───────────────────────────────────────────────────────────────────────────
   // Forgot password? → /forgot-password
   // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('Forgot? link routes to /forgot-password', (tester) async {
+  testWidgets('Forgot password? link routes to /forgot-password', (tester) async {
     final router = buildRouter();
     await tester.pumpWidget(wrap(router));
     await tester.pumpAndSettle();
 
-    final forgot = find.text('Forgot?');
+    final forgot = find.text('Forgot password?');
     expect(forgot, findsOneWidget);
 
     await tester.tap(forgot, warnIfMissed: false);
