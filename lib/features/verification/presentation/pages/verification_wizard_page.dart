@@ -17,14 +17,23 @@ import '../widgets/wizard_result_screen.dart';
 
 /// Verification wizard, scoped by role:
 ///
-///   Trade   → Choose → Licence entry → Result   (kind = licence)
+///   Trade   → manual upload sheet directly (kind = licence)
 ///   Builder → Choose → ABN entry → ABN confirm → Result   (kind = abn)
 ///
 /// Verification is OPTIONAL (v2 model) — the wizard never blocks anything.
-/// `_Step.choose` is the new default entry: two co-equal CTAs (regulator vs.
-/// manual upload). Users with an already-verified row for their role pop
-/// immediately with a friendly "you're already verified" snackbar rather
-/// than landing on an empty result screen.
+///
+/// Manual-only routing for trades (2026-05-29): the licence auto-path is
+/// disabled until a real state-regulator adapter ships (see
+/// `wizard_licence_step.dart` `_supportedStates`), so for trades the intro
+/// step would offer a single useful CTA — that's a pointless gate. Trades
+/// skip straight to the manual upload sheet; the priming the intro used to
+/// carry is now baked into the sheet itself (`ManualUploadPrimingBlock`).
+/// Builders keep the choose-then-ABN-then-result flow because their auto
+/// path against the Australian Business Register is live.
+///
+/// Users with an already-verified row for their role pop immediately with a
+/// friendly "you're already verified" snackbar rather than landing on an
+/// empty result screen.
 class VerificationWizardPage extends ConsumerStatefulWidget {
   const VerificationWizardPage({super.key});
 
@@ -58,19 +67,42 @@ class _VerificationWizardPageState
         ? VerificationKind.licence
         : VerificationKind.abn;
     final alreadyVerified = rows.any((v) => v.kind == kind && v.isVerified);
-    if (!alreadyVerified) return;
-    // Defer to next frame so we don't pop / show a snackbar mid-build.
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: const Text("You're already verified."),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      context.pop();
-    });
+    if (alreadyVerified) {
+      // Defer to next frame so we don't pop / show a snackbar mid-build.
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: const Text("You're already verified."),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        context.pop();
+      });
+      return;
+    }
+    // Trades bypass the intro entirely — the only real action is manual
+    // upload (auto-path is disabled until regulator adapters ship). Open
+    // the sheet on the first frame, then pop the wizard whether the user
+    // submits or cancels — there's nothing else on this page for them.
+    if (_role == UserRole.trade) {
+      SchedulerBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final submitted = await showManualUploadSheet(
+          context: context,
+          kind: ManualDocKind.tradeLicence,
+        );
+        if (!mounted) return;
+        if (submitted) {
+          final userId = ref.read(currentUserIdSyncProvider);
+          if (userId != null) {
+            ref.invalidate(verificationsForUserProvider(userId));
+          }
+        }
+        context.pop();
+      });
+    }
   }
 
   void _onChooseAutomatic() {
@@ -167,6 +199,13 @@ class _VerificationWizardPageState
   Widget _buildStep() {
     switch (_step) {
       case _Step.choose:
+        // Trades never see the intro — the first frame fires
+        // `_maybeShortCircuit` which opens the manual sheet directly.
+        // Show a neutral spinner for that single frame so we don't flash
+        // the dead-end choose cards before the sheet overlays them.
+        if (_role == UserRole.trade) {
+          return const Center(child: CircularProgressIndicator());
+        }
         return WizardIntroStep(
           role: _role,
           onChooseAutomatic: _onChooseAutomatic,

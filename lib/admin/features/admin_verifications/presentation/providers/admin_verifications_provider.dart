@@ -180,11 +180,15 @@ class AdminVerificationsController
     Map<String, String> roleByUser,
     Map<String, Map<String, dynamic>> latestVerifByPair,
   ) {
-    DateTime parseDate(Object? v) => DateTime.parse(v as String).toLocal();
     DateTime? parseOptDate(Object? v) =>
         v == null ? null : DateTime.parse(v as String).toLocal();
+    // `doc_type`, `file_path`, `submitted_at` were added as NULLABLE columns
+    // in 20260516000001_schema_reconciliation. Legacy rows (and rows from any
+    // future insert path that forgets to set them) have NULL there — mirror
+    // the mobile model's fallbacks instead of blowing up the whole queue.
     final tradeId = row['trade_id'] as String;
-    final docType = row['doc_type'] as String;
+    final docType =
+        (row['doc_type'] as String?) ?? (row['type'] as String?) ?? 'other';
     final kind = _kindForDocType(docType);
     final profile = row['profiles'] as Map<String, dynamic>?;
     final verifKind = kind == AdminVerificationKind.tradeLicence
@@ -195,14 +199,15 @@ class AdminVerificationsController
     final lastVerif = verifKind == null
         ? null
         : latestVerifByPair['$tradeId::$verifKind'];
+    final submittedRaw = row['submitted_at'] ?? row['created_at'];
     return AdminVerificationItem(
       id: row['id'] as String,
       tradeId: tradeId,
       docType: docType,
       kind: kind,
-      status: row['status'] as String,
-      submittedAt: parseDate(row['submitted_at']),
-      filePath: row['file_path'] as String,
+      status: (row['status'] as String?) ?? 'pending',
+      submittedAt: parseOptDate(submittedRaw) ?? DateTime.now().toLocal(),
+      filePath: (row['file_path'] as String?) ?? (row['url'] as String?) ?? '',
       state: row['state'] as String?,
       issuer: row['issuer'] as String?,
       documentNumber: row['document_number'] as String?,

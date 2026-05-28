@@ -474,16 +474,6 @@ class _TradeProfile extends ConsumerWidget {
                     color: isVerified ? c.verifiedTx : c.text2,
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'Change',
-                  style: tt.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: c.text3,
-                    decoration: TextDecoration.underline,
-                    decorationColor: c.text3,
-                  ),
-                ),
               ],
             ),
           ),

@@ -15,6 +15,7 @@ import '../../domain/entities/verification_document.dart';
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
 import 'manual_upload_form.dart';
+import 'manual_upload_priming.dart';
 
 /// Tight, role-scoped surface for the manual-upload sheet. Only the two real
 /// fallback shapes are exposed — anything else (white card, PI, etc.) belongs
@@ -194,9 +195,16 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
   Widget build(BuildContext context) {
     final c = context.c;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
+    // SingleChildScrollView is load-bearing: the sheet contains a form, an
+    // attestation block, picker buttons, optional 180px preview, and the
+    // keyboard's viewInsets pad. On a 360w / sub-800h screen the column
+    // exceeds the modal's maxHeight and RenderFlex overflows. Wrapping in
+    // a scroll view keeps the sheet content reachable in every keyboard
+    // and content state without resorting to expand=true (which would make
+    // the sheet fullscreen and feel jarring for a quick upload).
     return SafeArea(
       top: false,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h + viewInsets),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -226,8 +234,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
               _done
                   ? 'A reviewer will check this within 24 hours. We\'ll '
                         'update your profile receipts when it\'s approved.'
-                  : 'A reviewer confirms within 24 hours. Fields below help '
-                        'them cross-check the doc faster.',
+                  : 'A real person reviews uploads — usually within 24 hours.',
               style: TextStyle(fontSize: 13.sp, color: c.text2, height: 1.45),
             ),
             Gap(16.h),
@@ -235,7 +242,9 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
               ManualUploadDoneBlock(
                 onClose: () => Navigator.of(context).pop(true),
               )
-            else
+            else ...[
+              const ManualUploadPrimingBlock(),
+              Gap(16.h),
               ManualUploadActiveBody(
                 kind: widget.kind,
                 formKey: _formKey,
@@ -252,6 +261,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                 onGallery: () => _pick(ImageSource.gallery),
                 onUpload: _upload,
               ),
+            ],
             if (_error != null) ...[
               Gap(12.h),
               Text(

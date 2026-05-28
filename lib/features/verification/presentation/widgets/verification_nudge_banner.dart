@@ -58,8 +58,10 @@ class _Banner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    // Trade copy avoids the "about a minute" auto-path promise — for trades
+    // we now route straight to manual upload + a person reviews within ~24 h.
     final copy = role == UserRole.trade
-        ? 'Verified workers get hired faster. About a minute.'
+        ? 'Verified workers get hired faster. Upload takes a minute.'
         : 'Verified businesses get more applicants. About 15 seconds.';
 
     return Container(

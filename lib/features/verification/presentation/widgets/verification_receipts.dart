@@ -184,6 +184,27 @@ class VerificationReceipts extends ConsumerWidget {
     final manualKind = docType == docs.DocType.tradeLicence
         ? ManualDocKind.tradeLicence
         : ManualDocKind.abnCertificate;
+    // For trades, the wizard route now collapses to the manual sheet
+    // anyway, and "about a minute" is an auto-path promise we can't keep
+    // (a human reviews uploads, usually within 24 h). Show one honest CTA
+    // that opens the sheet directly. Builders keep the wizard CTA because
+    // their ABR auto-path IS live and IS roughly a minute.
+    if (docType == docs.DocType.tradeLicence) {
+      return InkWell(
+        onTap: () => showManualUploadSheet(context: context, kind: manualKind),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 6.h),
+          child: Text(
+            'Upload your licence →',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: context.c.action,
+            ),
+          ),
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
