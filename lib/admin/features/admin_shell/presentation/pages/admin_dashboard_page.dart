@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../../../../app/router/admin_routes.dart';
+import '../../../admin_dashboard/presentation/providers/admin_dashboard_stats_provider.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminDashboardPage extends ConsumerWidget {
@@ -50,34 +52,37 @@ class AdminDashboardPage extends ConsumerWidget {
   }
 }
 
-class _StatsStrip extends StatelessWidget {
+class _StatsStrip extends ConsumerWidget {
   const _StatsStrip();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(adminDashboardStatsProvider);
+    final stats = statsAsync.value;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tiles = const [
+        final tiles = [
           _StatTile(
             label: 'TOTAL USERS',
-            value: '—',
+            value: _format(stats?.totalUsers, statsAsync),
             sublabel: 'Builders + Trades',
           ),
           _StatTile(
             label: 'PENDING VERIFICATIONS',
-            value: '—',
+            value: _format(stats?.pendingVerifications, statsAsync),
             sublabel: 'Awaiting review',
             highlight: true,
           ),
           _StatTile(
             label: 'OPEN JOBS',
-            value: '—',
+            value: _format(stats?.openJobs, statsAsync),
             sublabel: 'Across all builders',
           ),
           _StatTile(
-            label: 'FLAGS THIS WEEK',
-            value: '—',
-            sublabel: 'Reports + escalations',
+            label: 'REJECTED (7D)',
+            value: _format(stats?.rejectedLast7Days, statsAsync),
+            sublabel: 'Verifications rejected this week',
           ),
         ];
 
@@ -98,6 +103,13 @@ class _StatsStrip extends StatelessWidget {
         );
       },
     );
+  }
+
+  static String _format(int? value, AsyncValue<Object?> async) {
+    if (async.isLoading) return '…';
+    if (async.hasError) return '—';
+    if (value == null) return '—';
+    return NumberFormat.decimalPattern().format(value);
   }
 }
 
