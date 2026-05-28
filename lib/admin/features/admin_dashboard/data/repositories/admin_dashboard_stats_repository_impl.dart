@@ -37,10 +37,12 @@ class AdminDashboardStatsRepositoryImpl
     }
   }
 
-  Future<int> _countTotalUsers() => _client
-      .from('profiles')
-      .count(CountOption.exact)
-      .isFilter('deleted_at', null);
+  // `profiles` has no `deleted_at` column — soft-delete lives on the
+  // role-specific subprofile tables (`builder_profiles.deleted_at`,
+  // `trade_profiles.deleted_at`). Counting all profile rows is the right
+  // signal for "total user accounts ever created" on the dashboard.
+  Future<int> _countTotalUsers() =>
+      _client.from('profiles').count(CountOption.exact);
 
   Future<int> _countPendingVerifications() => _client
       .from('verification_documents')

@@ -45,11 +45,13 @@ class AdminUsersRepositoryImpl implements AdminUsersRepository {
         if (allowedIds.isEmpty) return const Right([]);
       }
 
-      // 2. Fetch the profiles page.
+      // 2. Fetch the profiles page. `profiles` has no `deleted_at` column —
+      //    soft-delete lives on the role-specific subprofile tables, not
+      //    here. Admins see all profile rows; status/role/verified info is
+      //    enriched below.
       var profileQuery = _client
           .from('profiles')
-          .select('id, display_name, avatar_url, created_at')
-          .isFilter('deleted_at', null);
+          .select('id, display_name, avatar_url, created_at');
       if (allowedIds != null) {
         profileQuery = profileQuery.inFilter('id', allowedIds);
       }

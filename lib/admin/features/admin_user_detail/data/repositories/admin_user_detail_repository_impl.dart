@@ -61,7 +61,10 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
           onboardingCompletedAt: parseOpt(profile['onboarding_completed_at']),
           createdAt: DateTime.parse(profile['created_at'] as String).toLocal(),
           updatedAt: parseOpt(profile['updated_at']),
-          deletedAt: parseOpt(profile['deleted_at']),
+          // profiles has no deleted_at; soft-delete lives on subprofiles.
+          // builder_profiles.deleted_at / trade_profiles.deleted_at can
+          // surface this later if needed.
+          deletedAt: null,
           licenceUrl: tradeResult.licenceUrl,
           builder: builder,
           trade: tradeResult.trade,
@@ -79,7 +82,7 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
       .from('profiles')
       .select(
         'id, display_name, avatar_url, phone, phone_verified_at, '
-        'onboarding_completed_at, created_at, updated_at, deleted_at',
+        'onboarding_completed_at, created_at, updated_at',
       )
       .eq('id', userId)
       .maybeSingle();
