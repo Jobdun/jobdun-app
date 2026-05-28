@@ -1,0 +1,182 @@
+import 'package:fpdart/fpdart.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../../core/config/supabase_config.dart';
+import '../../../../../core/errors/failures.dart';
+import '../../domain/entities/admin_builder_profile.dart';
+import '../../domain/entities/admin_trade_profile.dart';
+import '../../domain/entities/admin_user_detail.dart';
+import '../../domain/entities/admin_verification_summary.dart';
+import '../../domain/repositories/admin_user_detail_repository.dart';
+
+class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
+  AdminUserDetailRepositoryImpl({SupabaseClient? client})
+      : _client = client ?? SupabaseConfig.client;
+
+  final SupabaseClient _client;
+
+  @override
+  Future<Either<Failure, AdminUserDetail>> getUserDetail(
+    String userId,
+  ) async {
+    try {
+      final results = await Future.wait([
+        _fetchProfile(userId),
+        _fetchRole(userId),
+        _fetchBuilder(userId),
+        _fetchTrade(userId),
+        _fetchVerifications(userId),
+      ]);
+
+      final profile = results[0] as Map<String, dynamic>?;
+      if (profile == null) {
+        return const Left(ServerFailure('Profile not found.'));
+      }
+      final role = (results[1] as String?) ?? 'unknown';
+      final builder = results[2] as AdminBuilderProfile?;
+      final trade = results[3] as AdminTradeProfile?;
+      final verifications = results[4] as List<AdminVerificationSummary>;
+
+      DateTime? parseOpt(Object? v) =>
+          v == null ? null : DateTime.parse(v as String).toLocal();
+
+      return Right(
+        AdminUserDetail(
+          id: profile['id'] as String,
+          displayName: (profile['display_name'] as String?)
+                          ?.trim()
+                          .isNotEmpty ==
+                      true
+              ? (profile['display_name'] as String).trim()
+              : '${(profile['id'] as String).substring(0, 8)}…',
+          role: role,
+          avatarUrl: profile['avatar_url'] as String?,
+          phone: profile['phone'] as String?,
+          phoneVerifiedAt: parseOpt(profile['phone_verified_at']),
+          onboardingCompletedAt:
+              parseOpt(profile['onboarding_completed_at']),
+          createdAt:
+              DateTime.parse(profile['created_at'] as String).toLocal(),
+          updatedAt: parseOpt(profile['updated_at']),
+          deletedAt: parseOpt(profile['deleted_at']),
+          licenceUrl: profile['licence_url'] as String?,
+          builder: builder,
+          trade: trade,
+          verifications: verifications,
+        ),
+      );
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchProfile(String userId) =>
+      _client
+          .from('profiles')
+          .select(
+            'id, display_name, avatar_url, phone, phone_verified_at, '
+            'onboarding_completed_at, created_at, updated_at, '
+            'deleted_at, licence_url',
+          )
+          .eq('id', userId)
+          .maybeSingle();
+
+  Future<String?> _fetchRole(String userId) async {
+    final row = await _client
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+    return row?['role'] as String?;
+  }
+
+  Future<AdminBuilderProfile?> _fetchBuilder(String userId) async {
+    final row = await _client
+        .from('builder_profiles')
+        .select(
+          'company_name, abn, logo_url, description, contact_name, '
+          'contact_phone, about, website, years_in_business, '
+          'service_suburb, service_state, service_postcode',
+        )
+        .eq('id', userId)
+        .maybeSingle();
+    if (row == null) return null;
+    return AdminBuilderProfile(
+      companyName: row['company_name'] as String?,
+      abn: row['abn'] as String?,
+      logoUrl: row['logo_url'] as String?,
+      description: row['description'] as String?,
+      contactName: row['contact_name'] as String?,
+      contactPhone: row['contact_phone'] as String?,
+      about: row['about'] as String?,
+      website: row['website'] as String?,
+      yearsInBusiness: row['years_in_business'] as int?,
+      serviceSuburb: row['service_suburb'] as String?,
+      serviceState: row['service_state'] as String?,
+      servicePostcode: row['service_postcode'] as String?,
+    );
+  }
+
+  Future<AdminTradeProfile?> _fetchTrade(String userId) async {
+    final row = await _client
+        .from('trade_profiles')
+        .select(
+          'full_name, primary_trade, is_verified, bio, portfolio_urls, '
+          'hourly_rate, day_rate, years_experience, about, '
+          'base_suburb, base_state, base_postcode',
+        )
+        .eq('id', userId)
+        .maybeSingle();
+    if (row == null) return null;
+    double? toDouble(Object? v) => v == null
+        ? null
+        : (v is num ? v.toDouble() : double.tryParse(v.toString()));
+    List<String> toList(Object? v) =>
+        v is List ? v.map((e) => e.toString()).toList() : const [];
+    return AdminTradeProfile(
+      fullName: row['full_name'] as String?,
+      primaryTrade: row['primary_trade'] as String?,
+      isVerified: (row['is_verified'] as bool?) ?? false,
+      bio: row['bio'] as String?,
+      portfolioUrls: toList(row['portfolio_urls']),
+      hourlyRate: toDouble(row['hourly_rate']),
+      dayRate: toDouble(row['day_rate']),
+      yearsExperience: row['years_experience'] as int?,
+      about: row['about'] as String?,
+      baseSuburb: row['base_suburb'] as String?,
+      baseState: row['base_state'] as String?,
+      basePostcode: row['base_postcode'] as String?,
+    );
+  }
+
+  Future<List<AdminVerificationSummary>> _fetchVerifications(
+    String userId,
+  ) async {
+    final rows = await _client
+        .from('verifications')
+        .select('kind, status, failure_reason, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', ascending: false);
+    final list = (rows as List).cast<Map<String, dynamic>>();
+    // Keep latest row per kind only
+    final seen = <String>{};
+    final result = <AdminVerificationSummary>[];
+    for (final r in list) {
+      final kind = r['kind'] as String? ?? 'unknown';
+      if (!seen.add(kind)) continue;
+      result.add(
+        AdminVerificationSummary(
+          kind: kind,
+          status: r['status'] as String? ?? 'unknown',
+          failureReason: r['failure_reason'] as String?,
+          updatedAt: r['updated_at'] == null
+              ? null
+              : DateTime.parse(r['updated_at'] as String).toLocal(),
+        ),
+      );
+    }
+    return result;
+  }
+}
