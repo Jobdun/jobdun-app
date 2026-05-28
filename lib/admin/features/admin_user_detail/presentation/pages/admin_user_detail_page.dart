@@ -43,8 +43,17 @@ class _DetailBody extends StatelessWidget {
 
   final AdminUserDetail detail;
 
+  /// Only the subprofile matching the user's current `role` is shown.
+  /// Mobile-facing RLS (`builder_profiles_select_authenticated` /
+  /// `trade_profiles_select_authenticated` in 20260520000003) already hides
+  /// orphan subprofile rows from other-role users; the admin-read policies
+  /// from 20260528000001 don't carry that guard, so we apply the same
+  /// rule at the UI layer until the data-cleanup option ships.
   @override
   Widget build(BuildContext context) {
+    final showBuilder = detail.role == 'builder' && detail.builder != null;
+    final showTrade = detail.role == 'trade' && detail.trade != null;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,11 +61,11 @@ class _DetailBody extends StatelessWidget {
           AdminUserDetailHeader(detail: detail),
           const Gap(24),
           AdminUserProfileCard(detail: detail),
-          if (detail.builder != null) ...[
+          if (showBuilder) ...[
             const Gap(16),
             AdminUserBuilderCard(profile: detail.builder!),
           ],
-          if (detail.trade != null) ...[
+          if (showTrade) ...[
             const Gap(16),
             AdminUserTradeCard(profile: detail.trade!),
           ],
