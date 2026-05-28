@@ -14,13 +14,13 @@ const double _collapsedWidth = 72;
 const double _outerH = 12;
 const double _innerH = 12;
 const double _itemHeight = 44;
+const double _accentBarWidth = 3;
 const Duration _animDuration = Duration(milliseconds: 200);
 const Curve _animCurve = Curves.easeOut;
 
-/// Natural width of expanded-row content (icon + gap + label area). Fed into
-/// the OverflowBox + SizedBox pattern so the inner Row lays out at this fixed
-/// width regardless of the AnimatedContainer's interpolated parent width —
-/// the outer ClipRect hides the overflow during animation.
+/// Inner row width when expanded — used to force the labelled layout to stop
+/// shrinking as the AnimatedContainer interpolates its parent width during
+/// collapse / expand. The outer ClipRect hides the overflow.
 const double _expandedInnerWidth =
     _expandedWidth - (_outerH * 2) - (_innerH * 2);
 
@@ -105,33 +105,36 @@ class AdminSidebar extends ConsumerWidget {
             if (session != null) ...[
               Divider(color: c.border, height: 1),
               if (!collapsed)
-                _ClippedExpanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SIGNED IN AS',
-                          style: GoogleFonts.openSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: c.text3,
-                          ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SIGNED IN AS',
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                        softWrap: false,
+                        style: GoogleFonts.openSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          color: c.text3,
                         ),
-                        const Gap(4),
-                        Text(
-                          session.email,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.openSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: c.text2,
-                          ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        session.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        style: GoogleFonts.openSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: c.text2,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 )
               else
@@ -150,9 +153,16 @@ class AdminSidebar extends ConsumerWidget {
   }
 }
 
-/// Helper that lets a fixed-natural-width child render without being squeezed
-/// by an interpolated parent width. Outer ClipRect on the sidebar hides any
+/// Lets a fixed-natural-width child render without being squeezed by an
+/// interpolated parent width. The sidebar's outer ClipRect hides any visual
 /// overflow during the collapse/expand animation.
+///
+/// IMPORTANT: must be used inside a parent that supplies a **finite vertical
+/// constraint** (e.g. a `SizedBox(height: ...)`). `OverflowBox` defaults its
+/// own max height to the parent's max height — using this directly inside a
+/// `Column` (where children measure with `maxHeight: Infinity`) will assert.
+/// For unbounded-height callers, use plain layout with `softWrap: false` +
+/// `overflow: TextOverflow.clip` on text instead.
 class _ClippedExpanded extends StatelessWidget {
   const _ClippedExpanded({required this.child, this.width = _expandedWidth});
 
@@ -197,46 +207,104 @@ class _Header extends StatelessWidget {
     );
 
     if (collapsed) {
+      // Mark + toggle stacked, centered to the rail. Centers align with nav
+      // icons below (both share the 36-px column center).
       return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 24, 0, 20),
-        child: Center(child: toggleButton),
+        padding: const EdgeInsets.fromLTRB(0, 20, 0, 16),
+        child: Column(
+          children: [
+            _BrandMark(
+              onTap: () =>
+                  GoRouter.of(context).go(AdminRoutes.dashboard),
+            ),
+            const Gap(12),
+            toggleButton,
+          ],
+        ),
       );
     }
 
-    return _ClippedExpanded(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 12, 20),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'JOBDUN',
-                    style: GoogleFonts.oswald(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 3,
-                      color: c.text1,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 12, 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: () => GoRouter.of(context).go(AdminRoutes.dashboard),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'JOBDUN',
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      softWrap: false,
+                      style: GoogleFonts.oswald(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 3,
+                        color: c.text1,
+                      ),
                     ),
-                  ),
-                  const Gap(2),
-                  Text(
-                    'ADMIN',
-                    style: GoogleFonts.openSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
-                      color: c.action,
+                    const Gap(2),
+                    Text(
+                      'ADMIN',
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      softWrap: false,
+                      style: GoogleFonts.openSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                        color: c.action,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            toggleButton,
-          ],
+          ),
+          toggleButton,
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Tooltip(
+      message: 'Dashboard',
+      child: Material(
+        color: c.action,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Center(
+              child: Text(
+                'J',
+                style: GoogleFonts.oswald(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: c.background,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -348,11 +416,27 @@ class _NavItem extends StatelessWidget {
       ),
     );
 
+    // Active accent: 3px bar on the left edge, rounded to match the pill.
+    final pill = ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: Stack(
+        children: [
+          material,
+          if (isActive)
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: _accentBarWidth,
+              child: Container(color: c.action),
+            ),
+        ],
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _outerH, vertical: 2),
-      child: collapsed
-          ? Tooltip(message: label, child: material)
-          : material,
+      child: collapsed ? Tooltip(message: label, child: pill) : pill,
     );
   }
 }

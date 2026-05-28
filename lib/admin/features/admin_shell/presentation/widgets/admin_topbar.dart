@@ -25,6 +25,8 @@ class AdminTopbar extends StatelessWidget {
           Expanded(
             child: Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.oswald(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,

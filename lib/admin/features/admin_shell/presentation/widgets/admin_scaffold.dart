@@ -4,12 +4,18 @@ import '../../../../../app/theme/app_colors.dart';
 import 'admin_sidebar.dart';
 import 'admin_topbar.dart';
 
+/// Below this viewport width the sidebar auto-collapses to its rail. Picked
+/// to keep at least 800px of content area when the sidebar is expanded
+/// (1024 - 240 = 784).
+const double _autoCollapseBreakpoint = 1024;
+
 /// Two-column desktop chrome — sidebar on the left, topbar + content on the
 /// right. Pages compose this around their content so navigation is consistent
 /// across the admin app.
 ///
-/// Owns the sidebar collapsed state so the toggle is preserved across page
-/// changes within a session.
+/// Owns the sidebar collapsed state. Default behaviour follows the viewport
+/// (auto-collapse < 1024 px). Once the user toggles, their preference takes
+/// over until they toggle again.
 class AdminScaffold extends StatefulWidget {
   const AdminScaffold({
     super.key,
@@ -29,13 +35,22 @@ class AdminScaffold extends StatefulWidget {
 }
 
 class _AdminScaffoldState extends State<AdminScaffold> {
-  bool _collapsed = false;
+  /// `null` → follow the viewport breakpoint.
+  /// `true`/`false` → user has explicitly chosen a state.
+  bool? _userCollapsed;
 
-  void _toggle() => setState(() => _collapsed = !_collapsed);
+  bool _autoCollapsed(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < _autoCollapseBreakpoint;
+
+  void _handleToggle() {
+    final current = _userCollapsed ?? _autoCollapsed(context);
+    setState(() => _userCollapsed = !current);
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final collapsed = _userCollapsed ?? _autoCollapsed(context);
     return Scaffold(
       backgroundColor: c.background,
       body: Row(
@@ -43,8 +58,8 @@ class _AdminScaffoldState extends State<AdminScaffold> {
         children: [
           AdminSidebar(
             activeRoute: widget.activeRoute,
-            collapsed: _collapsed,
-            onToggle: _toggle,
+            collapsed: collapsed,
+            onToggle: _handleToggle,
           ),
           Expanded(
             child: Column(
