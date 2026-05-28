@@ -7,4 +7,6 @@ class AdminRoutes {
   static const String users = '/users';
   static const String jobs = '/jobs';
   static const String audit = '/audit';
+
+  static String userDetail(String id) => '/users/$id';
 }

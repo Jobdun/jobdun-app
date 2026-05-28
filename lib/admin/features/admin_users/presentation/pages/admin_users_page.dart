@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
@@ -37,8 +38,13 @@ class AdminUsersPage extends ConsumerWidget {
               child: PagedListView<int, AdminUserRow>(
                 pagingController: controller,
                 builderDelegate: PagedChildBuilderDelegate<AdminUserRow>(
-                  itemBuilder: (context, row, index) =>
-                      AdminUserListRow(row: row),
+                  itemBuilder: (context, row, index) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => context.go(AdminRoutes.userDetail(row.id)),
+                      child: AdminUserListRow(row: row),
+                    ),
+                  ),
                   firstPageProgressIndicatorBuilder: (_) =>
                       const Center(child: CircularProgressIndicator()),
                   newPageProgressIndicatorBuilder: (_) => Padding(
