@@ -8,6 +8,7 @@ import '../../features/admin_auth/presentation/providers/admin_session_provider.
 import '../../../core/theme/app_icons.dart';
 import '../../features/admin_shell/presentation/pages/admin_dashboard_page.dart';
 import '../../features/admin_shell/presentation/pages/admin_placeholder_page.dart';
+import '../../features/admin_users/presentation/pages/admin_users_page.dart';
 import '../../features/admin_verifications/presentation/pages/admin_verifications_page.dart';
 import 'admin_routes.dart';
 
@@ -57,21 +58,7 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AdminRoutes.users,
-        builder: (context, state) => const AdminPlaceholderPage(
-          title: 'USERS',
-          icon: AppIcons.applicantsOutline,
-          activeRoute: AdminRoutes.users,
-          copy:
-              'Search and inspect builder and trade accounts, view role history, '
-              'and suspend or reactivate users. Lands when the moderation tooling '
-              'is ready.',
-          bullets: [
-            'Full-text search by email, ABN, or display name.',
-            'Role timeline — promotions, demotions, and self-deactivations.',
-            'Suspend, reactivate, and force sign-out controls.',
-            'Linked verifications and live job count per user.',
-          ],
-        ),
+        builder: (context, state) => const AdminUsersPage(),
       ),
       GoRoute(
         path: AdminRoutes.jobs,

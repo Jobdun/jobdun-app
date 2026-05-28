@@ -190,6 +190,7 @@ class _PlaceholderGrid extends StatelessWidget {
             icon: AppIcons.applicantsOutline,
             title: 'USERS',
             copy: 'Search profiles, inspect role history, suspend accounts.',
+            route: AdminRoutes.users,
           ),
           _ComingSoonCard(
             icon: AppIcons.verified,

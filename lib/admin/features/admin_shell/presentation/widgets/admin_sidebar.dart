@@ -80,7 +80,6 @@ class AdminSidebar extends ConsumerWidget {
               label: 'USERS',
               isActive: activeRoute == AdminRoutes.users,
               collapsed: collapsed,
-              comingSoon: true,
               onTap: () => context.go(AdminRoutes.users),
             ),
             _NavItem(
