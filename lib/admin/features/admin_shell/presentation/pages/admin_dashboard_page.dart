@@ -209,6 +209,7 @@ class _PlaceholderGrid extends StatelessWidget {
             icon: AppIcons.shield,
             title: 'AUDIT LOG',
             copy: 'Role changes, sign-in attempts, and other security events.',
+            route: AdminRoutes.audit,
           ),
         ];
         return Wrap(

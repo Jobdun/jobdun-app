@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/admin_auth/domain/entities/admin_session.dart';
 import '../../features/admin_auth/presentation/pages/admin_login_page.dart';
 import '../../features/admin_auth/presentation/providers/admin_session_provider.dart';
-import '../../../core/theme/app_icons.dart';
+import '../../features/admin_audit/presentation/pages/admin_audit_page.dart';
 import '../../features/admin_shell/presentation/pages/admin_dashboard_page.dart';
-import '../../features/admin_shell/presentation/pages/admin_placeholder_page.dart';
 import '../../features/admin_jobs/presentation/pages/admin_jobs_page.dart';
 import '../../features/admin_users/presentation/pages/admin_users_page.dart';
 import '../../features/admin_verifications/presentation/pages/admin_verifications_page.dart';
@@ -67,22 +66,7 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AdminRoutes.audit,
-        builder: (context, state) => const AdminPlaceholderPage(
-          title: 'AUDIT LOG',
-          icon: AppIcons.shield,
-          activeRoute: AdminRoutes.audit,
-          copy:
-              'Tamper-evident log of admin and system events: role changes, '
-              'sign-in attempts, manual verification overrides, and policy '
-              'actions. Backed by the `verification_events` table plus future '
-              'admin_audit table.',
-          bullets: [
-            'Filter by actor, event type, and date range.',
-            'Drill into raw payload for each event.',
-            'Export to CSV for compliance review.',
-            'Read-only — entries cannot be edited or deleted.',
-          ],
-        ),
+        builder: (context, state) => const AdminAuditPage(),
       ),
     ],
   );

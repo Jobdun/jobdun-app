@@ -96,7 +96,6 @@ class AdminSidebar extends ConsumerWidget {
               label: 'AUDIT LOG',
               isActive: activeRoute == AdminRoutes.audit,
               collapsed: collapsed,
-              comingSoon: true,
               onTap: () => context.go(AdminRoutes.audit),
             ),
             const Spacer(),
@@ -317,7 +316,6 @@ class _NavItem extends StatelessWidget {
     required this.isActive,
     required this.collapsed,
     required this.onTap,
-    this.comingSoon = false,
   });
 
   final IconData icon;
@@ -326,7 +324,6 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final bool collapsed;
   final VoidCallback onTap;
-  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
@@ -341,17 +338,7 @@ class _NavItem extends StatelessWidget {
     if (collapsed) {
       body = SizedBox(
         height: _itemHeight,
-        child: Stack(
-          children: [
-            Center(child: iconWidget),
-            if (comingSoon)
-              Positioned(
-                top: 8,
-                right: 10,
-                child: _ComingSoonDot(color: c.action),
-              ),
-          ],
-        ),
+        child: Center(child: iconWidget),
       );
     } else {
       body = SizedBox(
@@ -377,26 +364,6 @@ class _NavItem extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (comingSoon)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: c.surfaceRaised,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'SOON',
-                      style: GoogleFonts.openSans(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                        color: c.text3,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -435,23 +402,6 @@ class _NavItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _outerH, vertical: 2),
       child: collapsed ? Tooltip(message: label, child: pill) : pill,
-    );
-  }
-}
-
-class _ComingSoonDot extends StatelessWidget {
-  const _ComingSoonDot({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(3),
-      ),
     );
   }
 }
