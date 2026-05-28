@@ -20,33 +20,43 @@ class AdminDashboardPage extends ConsumerWidget {
     return AdminScaffold(
       title: 'DASHBOARD',
       activeRoute: AdminRoutes.dashboard,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'WELCOME, ADMIN.',
-            style: GoogleFonts.oswald(
-              fontSize: 40,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-              color: c.text1,
+      trailing: [
+        IconButton(
+          tooltip: 'Refresh stats',
+          onPressed: () =>
+              ref.read(adminDashboardStatsProvider.notifier).refresh(),
+          icon: const Icon(Icons.refresh),
+        ),
+      ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'WELCOME, ADMIN.',
+              style: GoogleFonts.oswald(
+                fontSize: 40,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
+                color: c.text1,
+              ),
             ),
-          ),
-          const Gap(8),
-          Text(
-            'Tools and dashboards will appear here as we build them. For now, the shell is yours.',
-            style: GoogleFonts.openSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 1.5,
-              color: c.text2,
+            const Gap(8),
+            Text(
+              'Tools and dashboards will appear here as we build them. For now, the shell is yours.',
+              style: GoogleFonts.openSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                height: 1.5,
+                color: c.text2,
+              ),
             ),
-          ),
-          const Gap(32),
-          const _StatsStrip(),
-          const Gap(40),
-          const _PlaceholderGrid(),
-        ],
+            const Gap(32),
+            const _StatsStrip(),
+            const Gap(40),
+            const _PlaceholderGrid(),
+          ],
+        ),
       ),
     );
   }
