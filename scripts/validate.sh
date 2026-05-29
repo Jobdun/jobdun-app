@@ -86,20 +86,14 @@ echo ""
 # Files in OVERSIZE_ALLOWLIST are grandfathered debt — they must be split
 # before more lines are added. Do NOT grow this list without an entry in
 # docs/STATE_MANAGEMENT_AUDIT.md justifying the exception.
+#
+# 2026-05-30: allowlist drained to empty. Every previously grandfathered file
+# was split under the 500 LOC ceiling (page bodies + god-controllers carved
+# into `part` files / extracted widgets). The gate now enforces 500 with no
+# exceptions — keep it that way.
 echo -e "${BOLD}[1.5/3] File-size budget${RESET}"
 
-OVERSIZE_ALLOWLIST=(
-  "lib/features/home/presentation/pages/home_page.dart"
-  "lib/features/profile/presentation/pages/profile_edit_page.dart"
-  # auth_provider.dart split out via data/services/ — back under 500 LOC.
-  "lib/features/auth/presentation/pages/register_page.dart"
-  "lib/features/profile/presentation/pages/profile_page.dart"
-  "lib/features/jobs/presentation/pages/jobs_page.dart"
-  "lib/features/applications/presentation/pages/applications_page.dart"
-  "lib/features/auth/presentation/pages/phone_auth_page.dart"
-  "lib/features/profile/presentation/widgets/trade_category_picker.dart"
-  "lib/features/jobs/presentation/pages/job_detail_page.dart"
-)
+OVERSIZE_ALLOWLIST=()
 
 printf "  %-54s" "No new .dart file > 500 LOC (excl. allowlist)"
 violations=""
@@ -111,9 +105,13 @@ while IFS= read -r -d '' file; do
   esac
   lines=$(wc -l < "$file" | tr -d ' ')
   in_allow=0
-  for allow in "${OVERSIZE_ALLOWLIST[@]}"; do
-    if [[ "$rel" == "$allow" ]]; then in_allow=1; break; fi
-  done
+  # `${#arr[@]}` is set-u-safe on an empty array (the allowlist is now empty);
+  # only iterate when there's something to match against.
+  if [[ ${#OVERSIZE_ALLOWLIST[@]} -gt 0 ]]; then
+    for allow in "${OVERSIZE_ALLOWLIST[@]}"; do
+      if [[ "$rel" == "$allow" ]]; then in_allow=1; break; fi
+    done
+  fi
   if [[ "$lines" -gt 500 && "$in_allow" -eq 0 ]]; then
     violations+="$rel ($lines LOC)\n"
   elif [[ "$lines" -gt 400 && "$in_allow" -eq 0 ]]; then
