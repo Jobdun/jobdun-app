@@ -41,19 +41,19 @@ class AdminUserDetail extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        displayName,
-        role,
-        createdAt,
-        avatarUrl,
-        phone,
-        phoneVerifiedAt,
-        onboardingCompletedAt,
-        updatedAt,
-        deletedAt,
-        licenceUrl,
-        builder,
-        trade,
-        verifications,
-      ];
+    id,
+    displayName,
+    role,
+    createdAt,
+    avatarUrl,
+    phone,
+    phoneVerifiedAt,
+    onboardingCompletedAt,
+    updatedAt,
+    deletedAt,
+    licenceUrl,
+    builder,
+    trade,
+    verifications,
+  ];
 }

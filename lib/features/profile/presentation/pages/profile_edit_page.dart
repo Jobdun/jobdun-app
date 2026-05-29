@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +12,6 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/design/colors.dart';
-import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
@@ -29,6 +27,7 @@ import '../../domain/entities/builder_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
 import '../widgets/portfolio_strip.dart';
+import '../widgets/profile_edit_avatar.dart';
 import '../widgets/profile_location_field.dart';
 import '../widgets/trade_category_picker.dart';
 
@@ -53,6 +52,29 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   // is a simple bool so we hand-roll it.
   bool? _hourlyRateVisible;
 
+  // Sticky avatar error — the controller wipes its `error` on the next
+  // mutation, but the snackbar fades after 4s. Keeping a local copy means
+  // a failed upload stays visible under the avatar (with a retry chip)
+  // until the user picks again.
+  String? _avatarError;
+
+  // Sticky save error — same reasoning, surfaces a persistent red bar
+  // above the BottomActionBar so the user sees what broke after the
+  // snackbar fades.
+  String? _saveError;
+
+  // Bumped after every successful avatar upload / remove. Threaded into
+  // CachedNetworkImage's `cacheKey` so the same Supabase storage URL
+  // re-fetches when the file behind it changes (Supabase upserts replace
+  // the object in place; the URL doesn't change).
+  int _avatarCacheGen = 0;
+
+  // Set true once the in-flight initial loadProfile() resolves OR we
+  // detect the profile was already loaded by /home or /profile. Gates
+  // the page-level loading view so we don't flash an empty form on
+  // first paint.
+  bool _readyToRender = false;
+
   // Fresh sign-ups land here with an empty profile row; fall back to the
   // name they typed at sign-up (stored on auth.users.user_metadata.full_name
   // by register_page) so they don't retype it.
@@ -66,11 +88,25 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   @override
   void initState() {
     super.initState();
-    final tp = ref.read(profileControllerProvider).tradeProfile;
+    final initial = ref.read(profileControllerProvider);
+    final tp = initial.tradeProfile;
     if (tp != null && tp.primaryTrade.isNotEmpty) {
       _tradeSlug = tp.primaryTrade;
     }
     _hourlyRateVisible = tp?.hourlyRateVisible ?? true;
+    // If /home or /profile already loaded the row, skip the spinner —
+    // straight to the form. Otherwise fire a fresh load so deep-linking
+    // into /profile/edit doesn't render an empty form.
+    if (initial.profile != null) {
+      _readyToRender = true;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await ref.read(profileControllerProvider.notifier).loadProfile();
+        if (!mounted) return;
+        setState(() => _readyToRender = true);
+      });
+    }
   }
 
   Future<void> _pickTrade() async {
@@ -90,20 +126,27 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   Future<void> _pickAvatar() async {
     final hasAvatar =
         ref.read(profileControllerProvider).profile?.avatarUrl != null;
-    final action = await showJSheet<_AvatarAction>(
+    final action = await showJSheet<ProfileEditAvatarAction>(
       context: context,
       backgroundColor: context.c.card,
-      builder: (_) => _AvatarPickerSheet(hasAvatar: hasAvatar),
+      builder: (_) => ProfileEditAvatarPickerSheet(hasAvatar: hasAvatar),
     );
     if (action == null || !mounted) return;
+
+    // Tapping the avatar to retry should clear the sticky error so the chip
+    // doesn't linger after a successful retry.
+    setState(() => _avatarError = null);
 
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(profileControllerProvider.notifier);
 
-    if (action == _AvatarAction.remove) {
+    if (action == ProfileEditAvatarAction.remove) {
       final ok = await controller.removeAvatar();
       if (!mounted) return;
-      if (!ok) {
+      if (ok) {
+        setState(() => _avatarCacheGen++);
+      } else {
+        setState(() => _avatarError = "Couldn't remove photo — tap to retry.");
         messenger.showSnackBar(
           const SnackBar(content: Text("Couldn't remove avatar.")),
         );
@@ -111,7 +154,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       return;
     }
 
-    final source = action == _AvatarAction.camera
+    final source = action == ProfileEditAvatarAction.camera
         ? ImageSource.camera
         : ImageSource.gallery;
     File? file;
@@ -122,6 +165,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       );
     } on UploadGuardException catch (error) {
       if (!mounted) return;
+      setState(() => _avatarError = error.message);
       messenger.showSnackBar(SnackBar(content: Text(error.message)));
       return;
     }
@@ -129,7 +173,10 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
     final ok = await controller.uploadAvatar(file);
     if (!mounted) return;
-    if (!ok) {
+    if (ok) {
+      setState(() => _avatarCacheGen++);
+    } else {
+      setState(() => _avatarError = "Upload failed — tap to retry.");
       messenger.showSnackBar(
         const SnackBar(content: Text("Couldn't upload avatar.")),
       );
@@ -140,6 +187,10 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final auth = ref.read(authControllerProvider);
     final role = auth.role;
     if (role == null) return;
+
+    // Clear last save error the moment the user tries again — keeps the
+    // persistent banner honest about which attempt the error belongs to.
+    setState(() => _saveError = null);
 
     final formOk = _formKey.currentState?.saveAndValidate() ?? false;
     final isTrade = role == UserRole.trade;
@@ -235,10 +286,15 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
         ),
       );
     } else {
+      final controllerError = ref.read(profileControllerProvider).error?.trim();
+      final message = (controllerError != null && controllerError.isNotEmpty)
+          ? controllerError
+          : "Couldn't save changes. Try again.";
+      setState(() => _saveError = message);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            "Couldn't save changes. Try again.",
+            message,
             style: tt.bodyMedium!.copyWith(
               color: Colors.white, // intentional: white-on-error
             ),
@@ -260,7 +316,17 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final profile = profileState.profile;
     final bp = profileState.builderProfile;
     final tp = profileState.tradeProfile;
-    final isSaving = profileState.isLoading;
+
+    // Disambiguate the controller's single `isLoading` flag. It's flipped
+    // by both loadProfile() and saveProfile() — treating it as "saving"
+    // makes the SAVE button spin during a fresh page load. Scope the
+    // saving signal to "we already have a profile in hand" so the button
+    // only spins during an actual save.
+    final isInitialLoading =
+        profileState.isLoading && profile == null && !_readyToRender;
+    final isSaving = profileState.isLoading && profile != null;
+    final initialLoadFailed =
+        !isInitialLoading && profile == null && _readyToRender;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -289,317 +355,430 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             ),
             Divider(height: 1, color: c.border),
 
-            Expanded(
-              child: FormBuilder(
-                key: _formKey,
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    20.w,
-                    20.h,
-                    20.w,
-                    AppSpacing.lg.h,
-                  ),
+            if (isInitialLoading)
+              Expanded(
+                child: Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _AvatarHeader(
-                        avatarUrl: profile?.avatarUrl,
-                        initials: StringUtils.initials(
-                          profile?.displayName ?? '?',
-                        ),
-                        isUploading: profileState.isUploadingAvatar,
-                        onTap: profileState.isUploadingAvatar
-                            ? null
-                            : _pickAvatar,
-                      ),
-                      Gap(AppSpacing.lg.h),
-                      if (isBuilder) ...[
-                        const FieldLabel('YOUR NAME'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'contact_name',
-                          hint: 'Your full name',
-                          initialValue:
-                              bp?.contactName ??
-                              profile?.displayName ??
-                              _metadataFullName,
-                        ),
-                        Gap(AppSpacing.md.h),
-                        // ABN + Company Name lock once verified. The verified
-                        // entity-name backfill from verify-abn mirrors the
-                        // ABR record into these columns; letting the user
-                        // edit them post-verify would silently invalidate
-                        // the verification receipt (builders viewing this
-                        // profile see the trust signal on the COMPANY DETAILS
-                        // card). "Contact support to change" is the escape
-                        // hatch — a dedicated change flow can land later if
-                        // demand justifies it.
-                        _VerifiedLockedField(
-                          label: 'COMPANY NAME',
-                          fieldName: 'company_name',
-                          initialValue: bp?.companyName,
-                          hint: 'e.g. Pinnacle Construct',
-                          locked: _isAbnVerified(bp),
-                          requiredField: true,
-                        ),
-                        Gap(AppSpacing.md.h),
-                        _VerifiedLockedField(
-                          label: 'ABN',
-                          fieldName: 'abn',
-                          initialValue: bp?.abn,
-                          hint: '12 345 678 901',
-                          locked: _isAbnVerified(bp),
-                          keyboardType: TextInputType.number,
-                        ),
-                        Gap(AppSpacing.md.h),
-                        const FieldLabel('YEARS IN BUSINESS'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'years_in_business',
-                          hint: 'e.g. 5',
-                          initialValue: bp?.yearsInBusiness?.toString(),
-                          keyboardType: TextInputType.number,
-                          validator: FormBuilderValidators.compose([
-                            FormBuilderValidators.integer(
-                              errorText: 'Whole numbers only.',
-                            ),
-                            FormBuilderValidators.min(
-                              0,
-                              errorText: 'Must be 0 or more.',
-                            ),
-                            FormBuilderValidators.max(
-                              60,
-                              errorText: 'Must be 60 or fewer.',
-                            ),
-                          ]),
-                        ),
-                        Gap(AppSpacing.md.h),
-                        const FieldLabel('WEBSITE'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'website',
-                          hint: 'https://yourcompany.com.au',
-                          initialValue: bp?.website,
-                          keyboardType: TextInputType.url,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return null;
-                            return FormBuilderValidators.url(
-                              protocols: ['https', 'http'],
-                              errorText: 'Enter a valid URL.',
-                            )(v);
-                          },
-                        ),
-                        Gap(AppSpacing.md.h),
-                      ] else ...[
-                        const FieldLabel('LEGAL NAME'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'full_name',
-                          hint: 'For invoices and verification',
-                          initialValue: tp?.fullName ?? _metadataFullName,
-                          validator: FormBuilderValidators.required(
-                            errorText: 'Legal name is required.',
-                          ),
-                        ),
-                        Gap(AppSpacing.md.h),
-                        const FieldLabel('TRADE'),
-                        Gap(AppSpacing.sm.h),
-                        _TradePickerTile(
-                          slug: _tradeSlug,
-                          otherText: _tradeOther,
-                          onTap: _pickTrade,
-                          hasError: _showTradeError && _tradeSlug == null,
-                        ),
-                        if (_showTradeError && _tradeSlug == null) ...[
-                          Gap(4.h),
-                          Text(
-                            'Pick a trade to continue.',
-                            style: tt.bodySmall!.copyWith(
-                              color: c.urgent,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                        ],
-                        Gap(AppSpacing.md.h),
-                        const FieldLabel('YEARS OF EXPERIENCE'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'years_experience',
-                          hint: 'e.g. 8',
-                          initialValue: tp?.yearsExperience?.toString(),
-                          keyboardType: TextInputType.number,
-                          validator: FormBuilderValidators.compose([
-                            FormBuilderValidators.integer(
-                              errorText: 'Whole numbers only.',
-                            ),
-                            FormBuilderValidators.min(
-                              0,
-                              errorText: 'Must be 0 or more.',
-                            ),
-                            FormBuilderValidators.max(
-                              60,
-                              errorText: 'Must be 60 or fewer.',
-                            ),
-                          ]),
-                        ),
-                        Gap(AppSpacing.md.h),
-                        const FieldLabel('HOURLY RATE (AUD)'),
-                        Gap(AppSpacing.sm.h),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: JTextField(
-                                name: 'hourly_rate_min',
-                                hint: 'Min',
-                                initialValue: tp?.hourlyRateMin
-                                    ?.toStringAsFixed(0),
-                                keyboardType: TextInputType.number,
-                                validator: FormBuilderValidators.compose([
-                                  FormBuilderValidators.numeric(
-                                    errorText: 'Numbers only.',
-                                  ),
-                                  FormBuilderValidators.min(
-                                    0,
-                                    errorText: 'Must be 0 or more.',
-                                  ),
-                                ]),
-                              ),
-                            ),
-                            Gap(10.w),
-                            Expanded(
-                              child: JTextField(
-                                name: 'hourly_rate_max',
-                                hint: 'Max',
-                                initialValue: tp?.hourlyRateMax
-                                    ?.toStringAsFixed(0),
-                                keyboardType: TextInputType.number,
-                                validator: (v) {
-                                  if (v == null || v.trim().isEmpty) {
-                                    return null;
-                                  }
-                                  final max = double.tryParse(v);
-                                  if (max == null) return 'Numbers only.';
-                                  if (max < 0) return 'Must be 0 or more.';
-                                  final minStr =
-                                      _formKey
-                                              .currentState
-                                              ?.fields['hourly_rate_min']
-                                              ?.value
-                                          as String?;
-                                  final min = double.tryParse(minStr ?? '');
-                                  if (min != null && max < min) {
-                                    return 'Must be ≥ min.';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        Gap(AppSpacing.md.h),
-                        _RateVisibilityRow(
-                          value: _hourlyRateVisible ?? true,
-                          onChanged: (v) =>
-                              setState(() => _hourlyRateVisible = v),
-                        ),
-                        Gap(AppSpacing.md.h),
-                      ],
-                      const FieldLabel('DISPLAY NAME'),
-                      Gap(AppSpacing.sm.h),
-                      JTextField(
-                        name: 'display_name',
-                        hint: 'Shown publicly to other users',
-                        initialValue: profile?.displayName ?? _metadataFullName,
-                        validator: FormBuilderValidators.required(
-                          errorText: 'Display name is required.',
-                        ),
-                      ),
+                      const CircularProgressIndicator(),
                       Gap(AppSpacing.md.h),
-                      ProfileLocationField(
-                        label: isBuilder ? 'SERVICE LOCATION' : 'BASE LOCATION',
-                        legacyInitial: (
-                          suburb: isBuilder
-                              ? bp?.serviceSuburb
-                              : tp?.baseSuburb,
-                          state: isBuilder ? bp?.serviceState : tp?.baseState,
-                          postcode: isBuilder
-                              ? bp?.servicePostcode
-                              : tp?.basePostcode,
-                        ),
-                        placeInitial: buildProfilePlaceInitial(
-                          isBuilder: isBuilder,
-                          builderProfile: bp,
-                          tradeProfile: tp,
-                        ),
+                      Text(
+                        'Loading your profile…',
+                        style: tt.bodyMedium!.copyWith(color: c.text2),
                       ),
-                      Gap(AppSpacing.md.h),
-                      if (isBuilder) ...[
-                        const FieldLabel('CONTACT PHONE'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'contact_phone',
-                          hint: '+61 4 1234 5678',
-                          initialValue: bp?.contactPhone,
-                          keyboardType: TextInputType.phone,
-                        ),
-                        Gap(AppSpacing.md.h),
-                      ],
-                      const FieldLabel('ABOUT'),
-                      Gap(AppSpacing.sm.h),
-                      JTextField(
-                        name: 'about',
-                        hint: isBuilder
-                            ? 'Tell tradies about your company…'
-                            : 'Tell builders about your experience…',
-                        initialValue: isBuilder ? bp?.about : tp?.about,
-                        maxLines: 4,
-                      ),
-
-                      // ── Verification + portfolio ─────────────────────
-                      // Status rows for the slots the T1 completeness banner
-                      // grades on. Each row reads the same field the SQL view
-                      // does so the screen and the banner always agree.
-                      Gap(AppSpacing.lg.h),
-                      const FieldLabel('VERIFICATION'),
-                      Gap(AppSpacing.sm.h),
-                      _StatusRow(
-                        icon: AppIcons.phone,
-                        label: 'Phone',
-                        done: profile?.isPhoneVerified ?? false,
-                        ctaLabel: 'VERIFY',
-                        onCta: () => context.push('/profile/verify-phone'),
-                      ),
-                      if (!isBuilder) ...[
-                        Gap(8.h),
-                        _StatusRow(
-                          icon: AppIcons.document,
-                          label: 'Trade licence',
-                          done: tp?.hasLicence ?? false,
-                          ctaLabel: 'UPLOAD',
-                          onCta: () => context.push('/verification'),
-                        ),
-                        Gap(AppSpacing.lg.h),
-                        const FieldLabel('PORTFOLIO'),
-                        Gap(AppSpacing.sm.h),
-                        const PortfolioStrip(),
-                      ],
                     ],
                   ),
                 ),
-              ),
-            ),
+              )
+            else if (initialLoadFailed)
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(AppIcons.urgent, size: 32.r, color: c.urgent),
+                        Gap(AppSpacing.sm.h),
+                        Text(
+                          "Couldn't load your profile",
+                          style: tt.titleMedium!.copyWith(color: c.text1),
+                        ),
+                        Gap(4.h),
+                        Text(
+                          profileState.error ??
+                              'Check your connection and try again.',
+                          textAlign: TextAlign.center,
+                          style: tt.bodySmall!.copyWith(color: c.text2),
+                        ),
+                        Gap(AppSpacing.lg.h),
+                        SizedBox(
+                          width: 180.w,
+                          child: JButton(
+                            label: 'RETRY',
+                            isLoading: profileState.isLoading,
+                            onPressed: profileState.isLoading
+                                ? null
+                                : () => ref
+                                      .read(profileControllerProvider.notifier)
+                                      .loadProfile(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else ...[
+              Expanded(
+                child: FormBuilder(
+                  key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      20.w,
+                      20.h,
+                      20.w,
+                      AppSpacing.lg.h,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ProfileEditAvatarHeader(
+                          avatarUrl: profile?.avatarUrl,
+                          initials: StringUtils.initials(
+                            profile?.displayName ?? '?',
+                          ),
+                          isUploading: profileState.isUploadingAvatar,
+                          cacheGeneration: _avatarCacheGen,
+                          errorMessage: _avatarError,
+                          onTap: profileState.isUploadingAvatar
+                              ? null
+                              : _pickAvatar,
+                        ),
+                        Gap(AppSpacing.lg.h),
+                        if (isBuilder) ...[
+                          const FieldLabel('YOUR NAME'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'contact_name',
+                            hint: 'Your full name',
+                            initialValue:
+                                bp?.contactName ??
+                                profile?.displayName ??
+                                _metadataFullName,
+                          ),
+                          Gap(AppSpacing.md.h),
+                          // ABN + Company Name lock once verified. The verified
+                          // entity-name backfill from verify-abn mirrors the
+                          // ABR record into these columns; letting the user
+                          // edit them post-verify would silently invalidate
+                          // the verification receipt (builders viewing this
+                          // profile see the trust signal on the COMPANY DETAILS
+                          // card). "Contact support to change" is the escape
+                          // hatch — a dedicated change flow can land later if
+                          // demand justifies it.
+                          _VerifiedLockedField(
+                            label: 'COMPANY NAME',
+                            fieldName: 'company_name',
+                            initialValue: bp?.companyName,
+                            hint: 'e.g. Pinnacle Construct',
+                            locked: _isAbnVerified(bp),
+                            requiredField: true,
+                          ),
+                          Gap(AppSpacing.md.h),
+                          _VerifiedLockedField(
+                            label: 'ABN',
+                            fieldName: 'abn',
+                            initialValue: bp?.abn,
+                            hint: '12 345 678 901',
+                            locked: _isAbnVerified(bp),
+                            keyboardType: TextInputType.number,
+                          ),
+                          Gap(AppSpacing.md.h),
+                          const FieldLabel('YEARS IN BUSINESS'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'years_in_business',
+                            hint: 'e.g. 5',
+                            initialValue: bp?.yearsInBusiness?.toString(),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(
+                                errorText: 'Whole numbers only.',
+                              ),
+                              FormBuilderValidators.min(
+                                0,
+                                errorText: 'Must be 0 or more.',
+                              ),
+                              FormBuilderValidators.max(
+                                60,
+                                errorText: 'Must be 60 or fewer.',
+                              ),
+                            ]),
+                          ),
+                          Gap(AppSpacing.md.h),
+                          const FieldLabel('WEBSITE'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'website',
+                            hint: 'https://yourcompany.com.au',
+                            initialValue: bp?.website,
+                            keyboardType: TextInputType.url,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return null;
+                              return FormBuilderValidators.url(
+                                protocols: ['https', 'http'],
+                                errorText: 'Enter a valid URL.',
+                              )(v);
+                            },
+                          ),
+                          Gap(AppSpacing.md.h),
+                        ] else ...[
+                          const FieldLabel('LEGAL NAME'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'full_name',
+                            hint: 'For invoices and verification',
+                            initialValue: tp?.fullName ?? _metadataFullName,
+                            validator: FormBuilderValidators.required(
+                              errorText: 'Legal name is required.',
+                            ),
+                          ),
+                          Gap(AppSpacing.md.h),
+                          const FieldLabel('TRADE'),
+                          Gap(AppSpacing.sm.h),
+                          _TradePickerTile(
+                            slug: _tradeSlug,
+                            otherText: _tradeOther,
+                            onTap: _pickTrade,
+                            hasError: _showTradeError && _tradeSlug == null,
+                          ),
+                          if (_showTradeError && _tradeSlug == null) ...[
+                            Gap(4.h),
+                            Text(
+                              'Pick a trade to continue.',
+                              style: tt.bodySmall!.copyWith(
+                                color: c.urgent,
+                                fontSize: 12.sp,
+                              ),
+                            ),
+                          ],
+                          Gap(AppSpacing.md.h),
+                          const FieldLabel('YEARS OF EXPERIENCE'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'years_experience',
+                            hint: 'e.g. 8',
+                            initialValue: tp?.yearsExperience?.toString(),
+                            keyboardType: TextInputType.number,
+                            validator: FormBuilderValidators.compose([
+                              FormBuilderValidators.integer(
+                                errorText: 'Whole numbers only.',
+                              ),
+                              FormBuilderValidators.min(
+                                0,
+                                errorText: 'Must be 0 or more.',
+                              ),
+                              FormBuilderValidators.max(
+                                60,
+                                errorText: 'Must be 60 or fewer.',
+                              ),
+                            ]),
+                          ),
+                          Gap(AppSpacing.md.h),
+                          const FieldLabel('HOURLY RATE (AUD)'),
+                          Gap(AppSpacing.sm.h),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: JTextField(
+                                  name: 'hourly_rate_min',
+                                  hint: 'Min',
+                                  initialValue: tp?.hourlyRateMin
+                                      ?.toStringAsFixed(0),
+                                  keyboardType: TextInputType.number,
+                                  validator: FormBuilderValidators.compose([
+                                    FormBuilderValidators.numeric(
+                                      errorText: 'Numbers only.',
+                                    ),
+                                    FormBuilderValidators.min(
+                                      0,
+                                      errorText: 'Must be 0 or more.',
+                                    ),
+                                  ]),
+                                ),
+                              ),
+                              Gap(10.w),
+                              Expanded(
+                                child: JTextField(
+                                  name: 'hourly_rate_max',
+                                  hint: 'Max',
+                                  initialValue: tp?.hourlyRateMax
+                                      ?.toStringAsFixed(0),
+                                  keyboardType: TextInputType.number,
+                                  validator: (v) {
+                                    if (v == null || v.trim().isEmpty) {
+                                      return null;
+                                    }
+                                    final max = double.tryParse(v);
+                                    if (max == null) return 'Numbers only.';
+                                    if (max < 0) return 'Must be 0 or more.';
+                                    final minStr =
+                                        _formKey
+                                                .currentState
+                                                ?.fields['hourly_rate_min']
+                                                ?.value
+                                            as String?;
+                                    final min = double.tryParse(minStr ?? '');
+                                    if (min != null && max < min) {
+                                      return 'Must be ≥ min.';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          Gap(AppSpacing.md.h),
+                          _RateVisibilityRow(
+                            value: _hourlyRateVisible ?? true,
+                            onChanged: (v) =>
+                                setState(() => _hourlyRateVisible = v),
+                          ),
+                          Gap(AppSpacing.md.h),
+                        ],
+                        const FieldLabel('DISPLAY NAME'),
+                        Gap(AppSpacing.sm.h),
+                        JTextField(
+                          name: 'display_name',
+                          hint: 'Shown publicly to other users',
+                          initialValue:
+                              profile?.displayName ?? _metadataFullName,
+                          validator: FormBuilderValidators.required(
+                            errorText: 'Display name is required.',
+                          ),
+                        ),
+                        Gap(AppSpacing.md.h),
+                        ProfileLocationField(
+                          label: isBuilder
+                              ? 'SERVICE LOCATION'
+                              : 'BASE LOCATION',
+                          legacyInitial: (
+                            suburb: isBuilder
+                                ? bp?.serviceSuburb
+                                : tp?.baseSuburb,
+                            state: isBuilder ? bp?.serviceState : tp?.baseState,
+                            postcode: isBuilder
+                                ? bp?.servicePostcode
+                                : tp?.basePostcode,
+                          ),
+                          placeInitial: buildProfilePlaceInitial(
+                            isBuilder: isBuilder,
+                            builderProfile: bp,
+                            tradeProfile: tp,
+                          ),
+                        ),
+                        Gap(AppSpacing.md.h),
+                        if (isBuilder) ...[
+                          const FieldLabel('CONTACT PHONE'),
+                          Gap(AppSpacing.sm.h),
+                          JTextField(
+                            name: 'contact_phone',
+                            hint: '+61 4 1234 5678',
+                            initialValue: bp?.contactPhone,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          Gap(AppSpacing.md.h),
+                        ],
+                        const FieldLabel('ABOUT'),
+                        Gap(AppSpacing.sm.h),
+                        JTextField(
+                          name: 'about',
+                          hint: isBuilder
+                              ? 'Tell tradies about your company…'
+                              : 'Tell builders about your experience…',
+                          initialValue: isBuilder ? bp?.about : tp?.about,
+                          maxLines: 4,
+                        ),
 
-            BottomActionBar(
-              primary: JButton(
-                label: isSaving ? 'SAVING...' : 'SAVE CHANGES',
-                isLoading: isSaving,
-                onPressed: isSaving ? null : _save,
+                        // ── Verification + portfolio ─────────────────────
+                        // Status rows for the slots the T1 completeness banner
+                        // grades on. Each row reads the same field the SQL view
+                        // does so the screen and the banner always agree.
+                        Gap(AppSpacing.lg.h),
+                        const FieldLabel('VERIFICATION'),
+                        Gap(AppSpacing.sm.h),
+                        _StatusRow(
+                          icon: AppIcons.phone,
+                          label: 'Phone',
+                          done: profile?.isPhoneVerified ?? false,
+                          ctaLabel: 'VERIFY',
+                          onCta: () => context.push('/profile/verify-phone'),
+                        ),
+                        if (!isBuilder) ...[
+                          Gap(8.h),
+                          _StatusRow(
+                            icon: AppIcons.document,
+                            label: 'Trade licence',
+                            done: tp?.hasLicence ?? false,
+                            ctaLabel: 'UPLOAD',
+                            onCta: () => context.push('/verification'),
+                          ),
+                          Gap(AppSpacing.lg.h),
+                          const FieldLabel('PORTFOLIO'),
+                          Gap(AppSpacing.sm.h),
+                          const PortfolioStrip(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
+              if (_saveError != null)
+                _SaveErrorBanner(
+                  message: _saveError!,
+                  onDismiss: () => setState(() => _saveError = null),
+                ),
+              BottomActionBar(
+                primary: JButton(
+                  // JButton swaps content to spinner-only when isLoading
+                  // is true (j_button.dart:67), so passing a "SAVING..."
+                  // label here is dead — stick to a single stable label.
+                  label: 'SAVE CHANGES',
+                  isLoading: isSaving,
+                  onPressed: isSaving ? null : _save,
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Persistent red bar above the BottomActionBar surfacing the last save
+/// failure. Snackbars auto-dismiss after ~4 s and the user can easily miss
+/// them; the banner stays until the user re-attempts save or hits dismiss.
+class _SaveErrorBanner extends StatelessWidget {
+  const _SaveErrorBanner({required this.message, required this.onDismiss});
+
+  final String message;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      color: c.urgentBg,
+      padding: EdgeInsets.fromLTRB(16.w, 10.h, 8.w, 10.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(AppIcons.urgent, size: 16.r, color: c.urgent),
+          Gap(10.w),
+          Expanded(
+            child: Text(
+              message,
+              style: tt.bodySmall!.copyWith(
+                color: c.urgentTx,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Dismiss',
+            onPressed: onDismiss,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(AppIcons.close, size: 16.r, color: c.urgentTx),
+          ),
+        ],
       ),
     );
   }
@@ -724,219 +903,6 @@ class _RateVisibilityRow extends StatelessWidget {
           Gap(10.w),
           JSwitch(value: value, onChanged: onChanged),
         ],
-      ),
-    );
-  }
-}
-
-// Tappable avatar at the top of /profile/edit. Pulls double duty as the
-// affordance for editing the avatar AND as the visual confirmation of the
-// current avatar — tap opens the picker sheet, the upload spinner overlays
-// in place. Hero tag matches the profile page's header avatar so the
-// transition flows when that page wires its own Hero in a follow-up.
-class _AvatarHeader extends StatelessWidget {
-  const _AvatarHeader({
-    required this.avatarUrl,
-    required this.initials,
-    required this.isUploading,
-    required this.onTap,
-  });
-
-  final String? avatarUrl;
-  final String initials;
-  final bool isUploading;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Center(
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: Hero(
-              tag: 'profile-avatar',
-              child: Stack(
-                children: [
-                  avatarUrl != null
-                      ? ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: avatarUrl!,
-                            width: 96.r,
-                            height: 96.r,
-                            fit: BoxFit.cover,
-                            placeholder: (_, _) =>
-                                AvatarBlock(initials: initials, size: 96),
-                            errorWidget: (_, _, _) =>
-                                AvatarBlock(initials: initials, size: 96),
-                          ),
-                        )
-                      : AvatarBlock(initials: initials, size: 96),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 30.r,
-                      height: 30.r,
-                      decoration: BoxDecoration(
-                        color: c.action,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.card, width: 2),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        AppIcons.camera,
-                        size: 14.r,
-                        color: Colors
-                            .white, // intentional: white-on-orange action chip
-                      ),
-                    ),
-                  ),
-                  if (isUploading)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.black45,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(
-                          color: Colors
-                              .white, // intentional: white-on-dark-overlay
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Gap(AppSpacing.sm.h),
-          Text(
-            'Tap to change photo',
-            style: tt.labelSmall!.copyWith(
-              color: c.text3,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-enum _AvatarAction { camera, gallery, remove }
-
-class _AvatarPickerSheet extends StatelessWidget {
-  const _AvatarPickerSheet({required this.hasAvatar});
-
-  final bool hasAvatar;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final radius = BorderRadius.vertical(
-      top: Radius.circular(AppRadius.card.r),
-    );
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(color: c.card, borderRadius: radius),
-        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36.w,
-              height: 4.h,
-              margin: EdgeInsets.only(bottom: 12.h),
-              decoration: BoxDecoration(
-                color: c.border,
-                borderRadius: BorderRadius.circular(2.r),
-              ),
-            ),
-            _SheetAction(
-              icon: AppIcons.camera,
-              label: 'Take photo',
-              onTap: () => Navigator.of(context).pop(_AvatarAction.camera),
-            ),
-            _SheetAction(
-              icon: AppIcons.image,
-              label: 'Pick from gallery',
-              onTap: () => Navigator.of(context).pop(_AvatarAction.gallery),
-            ),
-            if (hasAvatar)
-              _SheetAction(
-                icon: AppIcons.trash,
-                label: 'Remove photo',
-                destructive: true,
-                onTap: () => Navigator.of(context).pop(_AvatarAction.remove),
-              ),
-            Gap(8.h),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).pop(),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                child: Text(
-                  'CANCEL',
-                  textAlign: TextAlign.center,
-                  style: tt.labelMedium!.copyWith(
-                    color: c.text3,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetAction extends StatelessWidget {
-  const _SheetAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.destructive = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool destructive;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final color = destructive ? c.urgent : c.text1;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.input.r),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 14.h),
-        child: Row(
-          children: [
-            Icon(icon, size: 22.r, color: color),
-            Gap(14.w),
-            Text(
-              label,
-              style: tt.bodyLarge!.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

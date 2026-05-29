@@ -126,7 +126,6 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PageHeader(
-                    eyebrow: isBuilder ? 'POSTED JOBS' : 'FIND WORK',
                     title: isBuilder ? 'Your listings' : 'Open near you',
                     trailing: isBuilder
                         ? SizedBox(

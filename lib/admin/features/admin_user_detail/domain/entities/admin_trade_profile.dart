@@ -31,17 +31,17 @@ class AdminTradeProfile extends Equatable {
 
   @override
   List<Object?> get props => [
-        fullName,
-        primaryTrade,
-        isVerified,
-        bio,
-        portfolioUrls,
-        hourlyRate,
-        dayRate,
-        yearsExperience,
-        about,
-        baseSuburb,
-        baseState,
-        basePostcode,
-      ];
+    fullName,
+    primaryTrade,
+    isVerified,
+    bio,
+    portfolioUrls,
+    hourlyRate,
+    dayRate,
+    yearsExperience,
+    about,
+    baseSuburb,
+    baseState,
+    basePostcode,
+  ];
 }

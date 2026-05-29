@@ -14,7 +14,8 @@ import 'field_label.dart';
 ///           sub-pages (job_create, profile_edit).
 enum PageHeaderSize { hero, tab, sub }
 
-/// Canonical page title block — eyebrow + title (+ optional trailing widget).
+/// Canonical page title block — optional eyebrow + title (+ optional
+/// trailing widget).
 ///
 /// **Sizing.** Picks one of three theme tokens via [PageHeaderSize] — see the
 /// enum doc above. There is no other "screen title" treatment in the app; if
@@ -25,19 +26,27 @@ enum PageHeaderSize { hero, tab, sub }
 /// [PageHeader] concern, not a global — callers pass title strings in their
 /// natural form.
 ///
+/// **Eyebrow usage.** Pass an eyebrow only when the title is dynamic and the
+/// section needs naming (e.g. `JOB DETAILS` above a specific job's title, or
+/// `EDIT PROFILE` above the user's name). On bottom-nav landings the bottom
+/// bar already tells the user which screen they're on, and the title alone
+/// (in Oswald) is enough — an eyebrow there is redundant noise. The old
+/// `labelSmall` + muted-tint + wide-tracking treatment is also physically
+/// small and low-contrast on phone, so skip it unless it earns its keep.
+///
 /// **No `ShaderMask`.** The brand-flame gradient is reserved for the JOBDUN
 /// wordmark in `/login` and `/register` via `AppTheme.brandDisplay`.
 /// [PageHeader] is flat `c.text1` only.
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
-    required this.eyebrow,
     required this.title,
+    this.eyebrow,
     this.size = PageHeaderSize.tab,
     this.trailing,
   });
 
-  final String eyebrow;
+  final String? eyebrow;
   final String title;
   final PageHeaderSize size;
   final Widget? trailing;
@@ -54,6 +63,7 @@ class PageHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final hasEyebrow = (eyebrow ?? '').trim().isNotEmpty;
     final titleWidget = Text(
       title.toUpperCase(),
       style: _titleStyle(context).copyWith(color: c.text1),
@@ -62,8 +72,7 @@ class PageHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FieldLabel(eyebrow),
-        Gap(AppSpacing.xs.h),
+        if (hasEyebrow) ...[FieldLabel(eyebrow!), Gap(AppSpacing.xs.h)],
         if (trailing == null)
           titleWidget
         else

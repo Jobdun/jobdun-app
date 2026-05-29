@@ -31,17 +31,17 @@ class AdminBuilderProfile extends Equatable {
 
   @override
   List<Object?> get props => [
-        companyName,
-        abn,
-        logoUrl,
-        description,
-        contactName,
-        contactPhone,
-        about,
-        website,
-        yearsInBusiness,
-        serviceSuburb,
-        serviceState,
-        servicePostcode,
-      ];
+    companyName,
+    abn,
+    logoUrl,
+    description,
+    contactName,
+    contactPhone,
+    about,
+    website,
+    yearsInBusiness,
+    serviceSuburb,
+    serviceState,
+    servicePostcode,
+  ];
 }

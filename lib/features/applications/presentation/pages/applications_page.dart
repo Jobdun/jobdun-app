@@ -100,10 +100,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PageHeader(
-                    eyebrow: isBuilder ? 'INCOMING' : 'MY APPLICATIONS',
-                    title: isBuilder ? 'Applicants' : 'Track status',
-                  ),
+                  PageHeader(title: isBuilder ? 'Applicants' : 'Track status'),
                   if (isBuilder) ...[
                     Gap(8.h),
                     _VerifiedOnlyToggle(

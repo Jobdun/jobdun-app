@@ -190,10 +190,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     final jobsState = ref.watch(jobsControllerProvider);
     final appsState = ref.watch(applicationsControllerProvider);
 
-    final role = authState.role;
-    final isBuilder = role == UserRole.builder;
-    final email = authState.email ?? '';
-    final displayName = profileState.profile?.displayName ?? _firstName(email);
+    final isBuilder = authState.role == UserRole.builder;
 
     final location = isBuilder
         ? profileState.builderProfile?.displayLocation ?? 'Sydney, NSW'
@@ -237,12 +234,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _Header(
-                      role: role,
-                      displayName: displayName,
-                      isBuilder: isBuilder,
-                      location: location,
-                    ),
+                    child: _Header(isBuilder: isBuilder, location: location),
                   ),
                   const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
                   SliverToBoxAdapter(child: Gap(20.h)),
@@ -348,14 +340,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  static String _firstName(String email) {
-    final local = email.split('@').first;
-    final parts = local.replaceAll(RegExp(r'[._\-]'), ' ').split(' ');
-    final first = parts.isNotEmpty ? parts.first : local;
-    if (first.isEmpty) return 'there';
-    return '${first[0].toUpperCase()}${first.substring(1)}';
-  }
-
   static String _fmtDate(DateTime d) {
     final now = DateTime.now();
     final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
@@ -383,15 +367,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 // ── Header ─────────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header({
-    required this.role,
-    required this.displayName,
-    required this.isBuilder,
-    required this.location,
-  });
+  const _Header({required this.isBuilder, required this.location});
 
-  final UserRole? role;
-  final String displayName;
   final bool isBuilder;
   final String location;
 
@@ -399,9 +376,6 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final roleLabel = role != null
-        ? '${role!.label.toUpperCase()} · ${displayName.toUpperCase()}'
-        : 'JOBDUN';
 
     return Container(
       color: c.card,
@@ -414,9 +388,13 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PageHeader(
-                  eyebrow: roleLabel,
+                  // Same `tab` size (24sp Oswald w600) as Jobs / Applications
+                  // / Messages so the four bottom-nav landings render with
+                  // identical chrome. The previous `hero` (32sp) was a
+                  // landing-page emphasis the bottom nav already provides,
+                  // and made the title visibly inconsistent when swiping
+                  // between tabs.
                   title: isBuilder ? 'Find a tradie' : 'Jobs nearby',
-                  size: PageHeaderSize.hero,
                 ),
                 Gap(4.h),
                 Row(

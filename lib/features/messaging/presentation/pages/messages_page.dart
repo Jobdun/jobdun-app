@@ -59,9 +59,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
               padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: PageHeader(eyebrow: 'INBOX', title: 'Messages'),
-                  ),
+                  const Expanded(child: PageHeader(title: 'Messages')),
                   if (totalUnread > 0)
                     Container(
                       padding: EdgeInsets.symmetric(
