@@ -24,12 +24,16 @@ import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/builder_profile.dart';
+import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
 import '../providers/trade_categories_provider.dart';
 import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_edit_avatar.dart';
 import '../widgets/profile_location_field.dart';
 import '../widgets/trade_category_picker.dart';
+
+part 'profile_edit_widgets.dart';
+part 'profile_edit_form_fields.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
   const ProfileEditPage({super.key});
@@ -217,20 +221,6 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final String? resolvedPostcode =
         pickedPlace?.postcode ?? values['postcode'] as String?;
 
-    int? parseIntOrNull(Object? v) {
-      if (v == null) return null;
-      final s = v.toString().trim();
-      if (s.isEmpty) return null;
-      return int.tryParse(s);
-    }
-
-    double? parseDoubleOrNull(Object? v) {
-      if (v == null) return null;
-      final s = v.toString().trim();
-      if (s.isEmpty) return null;
-      return double.tryParse(s);
-    }
-
     final ok = await ref
         .read(profileControllerProvider.notifier)
         .saveProfile(
@@ -248,14 +238,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           abn: values['abn'] as String?,
           contactName: values['contact_name'] as String?,
           contactPhone: values['contact_phone'] as String?,
-          yearsInBusiness: parseIntOrNull(values['years_in_business']),
+          yearsInBusiness: _parseIntOrNull(values['years_in_business']),
           website: values['website'] as String?,
           fullName: values['full_name'] as String?,
           primaryTrade: _tradeSlug,
           tradeOther: _tradeOther,
-          yearsExperience: parseIntOrNull(values['years_experience']),
-          hourlyRateMin: parseDoubleOrNull(values['hourly_rate_min']),
-          hourlyRateMax: parseDoubleOrNull(values['hourly_rate_max']),
+          yearsExperience: _parseIntOrNull(values['years_experience']),
+          hourlyRateMin: _parseDoubleOrNull(values['hourly_rate_min']),
+          hourlyRateMax: _parseDoubleOrNull(values['hourly_rate_max']),
           hourlyRateVisible: _hourlyRateVisible,
         );
 
@@ -439,280 +429,37 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                               : _pickAvatar,
                         ),
                         Gap(AppSpacing.lg.h),
-                        if (isBuilder) ...[
-                          const FieldLabel('YOUR NAME'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'contact_name',
-                            hint: 'Your full name',
-                            initialValue:
-                                bp?.contactName ??
-                                profile?.displayName ??
-                                _metadataFullName,
-                          ),
-                          Gap(AppSpacing.md.h),
-                          // ABN + Company Name lock once verified. The verified
-                          // entity-name backfill from verify-abn mirrors the
-                          // ABR record into these columns; letting the user
-                          // edit them post-verify would silently invalidate
-                          // the verification receipt (builders viewing this
-                          // profile see the trust signal on the COMPANY DETAILS
-                          // card). "Contact support to change" is the escape
-                          // hatch — a dedicated change flow can land later if
-                          // demand justifies it.
-                          _VerifiedLockedField(
-                            label: 'COMPANY NAME',
-                            fieldName: 'company_name',
-                            initialValue: bp?.companyName,
-                            hint: 'e.g. Pinnacle Construct',
-                            locked: _isAbnVerified(bp),
-                            requiredField: true,
-                          ),
-                          Gap(AppSpacing.md.h),
-                          _VerifiedLockedField(
-                            label: 'ABN',
-                            fieldName: 'abn',
-                            initialValue: bp?.abn,
-                            hint: '12 345 678 901',
-                            locked: _isAbnVerified(bp),
-                            keyboardType: TextInputType.number,
-                          ),
-                          Gap(AppSpacing.md.h),
-                          const FieldLabel('YEARS IN BUSINESS'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'years_in_business',
-                            hint: 'e.g. 5',
-                            initialValue: bp?.yearsInBusiness?.toString(),
-                            keyboardType: TextInputType.number,
-                            validator: FormBuilderValidators.compose([
-                              FormBuilderValidators.integer(
-                                errorText: 'Whole numbers only.',
-                              ),
-                              FormBuilderValidators.min(
-                                0,
-                                errorText: 'Must be 0 or more.',
-                              ),
-                              FormBuilderValidators.max(
-                                60,
-                                errorText: 'Must be 60 or fewer.',
-                              ),
-                            ]),
-                          ),
-                          Gap(AppSpacing.md.h),
-                          const FieldLabel('WEBSITE'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'website',
-                            hint: 'https://yourcompany.com.au',
-                            initialValue: bp?.website,
-                            keyboardType: TextInputType.url,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return null;
-                              return FormBuilderValidators.url(
-                                protocols: ['https', 'http'],
-                                errorText: 'Enter a valid URL.',
-                              )(v);
-                            },
-                          ),
-                          Gap(AppSpacing.md.h),
-                        ] else ...[
-                          const FieldLabel('LEGAL NAME'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'full_name',
-                            hint: 'For invoices and verification',
-                            initialValue: tp?.fullName ?? _metadataFullName,
-                            validator: FormBuilderValidators.required(
-                              errorText: 'Legal name is required.',
-                            ),
-                          ),
-                          Gap(AppSpacing.md.h),
-                          const FieldLabel('TRADE'),
-                          Gap(AppSpacing.sm.h),
-                          _TradePickerTile(
-                            slug: _tradeSlug,
-                            otherText: _tradeOther,
-                            onTap: _pickTrade,
-                            hasError: _showTradeError && _tradeSlug == null,
-                          ),
-                          if (_showTradeError && _tradeSlug == null) ...[
-                            Gap(4.h),
-                            Text(
-                              'Pick a trade to continue.',
-                              style: tt.bodySmall!.copyWith(
-                                color: c.urgent,
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ],
-                          Gap(AppSpacing.md.h),
-                          const FieldLabel('YEARS OF EXPERIENCE'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'years_experience',
-                            hint: 'e.g. 8',
-                            initialValue: tp?.yearsExperience?.toString(),
-                            keyboardType: TextInputType.number,
-                            validator: FormBuilderValidators.compose([
-                              FormBuilderValidators.integer(
-                                errorText: 'Whole numbers only.',
-                              ),
-                              FormBuilderValidators.min(
-                                0,
-                                errorText: 'Must be 0 or more.',
-                              ),
-                              FormBuilderValidators.max(
-                                60,
-                                errorText: 'Must be 60 or fewer.',
-                              ),
-                            ]),
-                          ),
-                          Gap(AppSpacing.md.h),
-                          const FieldLabel('HOURLY RATE (AUD)'),
-                          Gap(AppSpacing.sm.h),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: JTextField(
-                                  name: 'hourly_rate_min',
-                                  hint: 'Min',
-                                  initialValue: tp?.hourlyRateMin
-                                      ?.toStringAsFixed(0),
-                                  keyboardType: TextInputType.number,
-                                  validator: FormBuilderValidators.compose([
-                                    FormBuilderValidators.numeric(
-                                      errorText: 'Numbers only.',
-                                    ),
-                                    FormBuilderValidators.min(
-                                      0,
-                                      errorText: 'Must be 0 or more.',
-                                    ),
-                                  ]),
-                                ),
-                              ),
-                              Gap(10.w),
-                              Expanded(
-                                child: JTextField(
-                                  name: 'hourly_rate_max',
-                                  hint: 'Max',
-                                  initialValue: tp?.hourlyRateMax
-                                      ?.toStringAsFixed(0),
-                                  keyboardType: TextInputType.number,
-                                  validator: (v) {
-                                    if (v == null || v.trim().isEmpty) {
-                                      return null;
-                                    }
-                                    final max = double.tryParse(v);
-                                    if (max == null) return 'Numbers only.';
-                                    if (max < 0) return 'Must be 0 or more.';
-                                    final minStr =
-                                        _formKey
-                                                .currentState
-                                                ?.fields['hourly_rate_min']
-                                                ?.value
-                                            as String?;
-                                    final min = double.tryParse(minStr ?? '');
-                                    if (min != null && max < min) {
-                                      return 'Must be ≥ min.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          Gap(AppSpacing.md.h),
-                          _RateVisibilityRow(
-                            value: _hourlyRateVisible ?? true,
-                            onChanged: (v) =>
+                        if (isBuilder)
+                          _BuilderFields(
+                            bp: bp,
+                            fallbackName:
+                                profile?.displayName ?? _metadataFullName,
+                          )
+                        else
+                          _TradeFields(
+                            tp: tp,
+                            metadataFullName: _metadataFullName,
+                            tradeSlug: _tradeSlug,
+                            tradeOther: _tradeOther,
+                            onPickTrade: _pickTrade,
+                            showTradeError: _showTradeError,
+                            formKey: _formKey,
+                            hourlyRateVisible: _hourlyRateVisible ?? true,
+                            onRateVisibilityChanged: (v) =>
                                 setState(() => _hourlyRateVisible = v),
                           ),
-                          Gap(AppSpacing.md.h),
-                        ],
-                        const FieldLabel('DISPLAY NAME'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'display_name',
-                          hint: 'Shown publicly to other users',
-                          initialValue:
+                        _CommonFields(
+                          isBuilder: isBuilder,
+                          displayNameInitial:
                               profile?.displayName ?? _metadataFullName,
-                          validator: FormBuilderValidators.required(
-                            errorText: 'Display name is required.',
-                          ),
+                          bp: bp,
+                          tp: tp,
                         ),
-                        Gap(AppSpacing.md.h),
-                        ProfileLocationField(
-                          label: isBuilder
-                              ? 'SERVICE LOCATION'
-                              : 'BASE LOCATION',
-                          legacyInitial: (
-                            suburb: isBuilder
-                                ? bp?.serviceSuburb
-                                : tp?.baseSuburb,
-                            state: isBuilder ? bp?.serviceState : tp?.baseState,
-                            postcode: isBuilder
-                                ? bp?.servicePostcode
-                                : tp?.basePostcode,
-                          ),
-                          placeInitial: buildProfilePlaceInitial(
-                            isBuilder: isBuilder,
-                            builderProfile: bp,
-                            tradeProfile: tp,
-                          ),
+                        _VerificationSection(
+                          isBuilder: isBuilder,
+                          phoneVerified: profile?.isPhoneVerified ?? false,
+                          hasLicence: tp?.hasLicence ?? false,
                         ),
-                        Gap(AppSpacing.md.h),
-                        if (isBuilder) ...[
-                          const FieldLabel('CONTACT PHONE'),
-                          Gap(AppSpacing.sm.h),
-                          JTextField(
-                            name: 'contact_phone',
-                            hint: '+61 4 1234 5678',
-                            initialValue: bp?.contactPhone,
-                            keyboardType: TextInputType.phone,
-                          ),
-                          Gap(AppSpacing.md.h),
-                        ],
-                        const FieldLabel('ABOUT'),
-                        Gap(AppSpacing.sm.h),
-                        JTextField(
-                          name: 'about',
-                          hint: isBuilder
-                              ? 'Tell tradies about your company…'
-                              : 'Tell builders about your experience…',
-                          initialValue: isBuilder ? bp?.about : tp?.about,
-                          maxLines: 4,
-                        ),
-
-                        // ── Verification + portfolio ─────────────────────
-                        // Status rows for the slots the T1 completeness banner
-                        // grades on. Each row reads the same field the SQL view
-                        // does so the screen and the banner always agree.
-                        Gap(AppSpacing.lg.h),
-                        const FieldLabel('VERIFICATION'),
-                        Gap(AppSpacing.sm.h),
-                        _StatusRow(
-                          icon: AppIcons.phone,
-                          label: 'Phone',
-                          done: profile?.isPhoneVerified ?? false,
-                          ctaLabel: 'VERIFY',
-                          onCta: () => context.push('/profile/verify-phone'),
-                        ),
-                        if (!isBuilder) ...[
-                          Gap(8.h),
-                          _StatusRow(
-                            icon: AppIcons.document,
-                            label: 'Trade licence',
-                            done: tp?.hasLicence ?? false,
-                            ctaLabel: 'UPLOAD',
-                            onCta: () => context.push('/verification'),
-                          ),
-                          Gap(AppSpacing.lg.h),
-                          const FieldLabel('PORTFOLIO'),
-                          Gap(AppSpacing.sm.h),
-                          const PortfolioStrip(),
-                        ],
                       ],
                     ),
                   ),
@@ -737,344 +484,6 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Persistent red bar above the BottomActionBar surfacing the last save
-/// failure. Snackbars auto-dismiss after ~4 s and the user can easily miss
-/// them; the banner stays until the user re-attempts save or hits dismiss.
-class _SaveErrorBanner extends StatelessWidget {
-  const _SaveErrorBanner({required this.message, required this.onDismiss});
-
-  final String message;
-  final VoidCallback onDismiss;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      color: c.urgentBg,
-      padding: EdgeInsets.fromLTRB(16.w, 10.h, 8.w, 10.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(AppIcons.urgent, size: 16.r, color: c.urgent),
-          Gap(10.w),
-          Expanded(
-            child: Text(
-              message,
-              style: tt.bodySmall!.copyWith(
-                color: c.urgentTx,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Dismiss',
-            onPressed: onDismiss,
-            visualDensity: VisualDensity.compact,
-            icon: Icon(AppIcons.close, size: 16.r, color: c.urgentTx),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Tappable input-shaped tile that mirrors JTextField's chrome and opens the
-// TradeCategoryPicker. Resolves display label from the cached categories list;
-// falls back to the slug if the row isn't in the live list (renamed category).
-class _TradePickerTile extends ConsumerWidget {
-  const _TradePickerTile({
-    required this.slug,
-    required this.otherText,
-    required this.onTap,
-    required this.hasError,
-  });
-
-  final String? slug;
-  final String? otherText;
-  final VoidCallback onTap;
-  final bool hasError;
-
-  String _label(AsyncValue<dynamic> async) {
-    if (slug == null) return 'Pick your trade';
-    if (slug == 'other') {
-      return (otherText == null || otherText!.isEmpty)
-          ? 'Other'
-          : 'Other — $otherText';
-    }
-    return async.maybeWhen(
-      data: (rows) {
-        final list = rows as List<dynamic>;
-        for (final r in list) {
-          if (r.slug == slug) return r.displayName as String;
-        }
-        return slug!;
-      },
-      orElse: () => slug!,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final async = ref.watch(tradeCategoriesProvider);
-    final hasValue = slug != null;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        child: Container(
-          decoration: BoxDecoration(
-            color: c.surface,
-            borderRadius: BorderRadius.circular(AppRadius.input.r),
-            border: Border.all(color: hasError ? c.urgent : c.border),
-          ),
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _label(async),
-                  style: tt.bodyLarge!.copyWith(
-                    color: hasValue ? c.text1 : c.text3,
-                  ),
-                ),
-              ),
-              Icon(AppIcons.chevronDown, size: 16.r, color: c.text3),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Two-up: label + helper text on the left, JSwitch on the right. The
-// helper line changes wording when the toggle flips so the affordance and
-// its consequence sit next to each other.
-class _RateVisibilityRow extends StatelessWidget {
-  const _RateVisibilityRow({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Show my rate to builders',
-                  style: tt.bodyMedium!.copyWith(
-                    color: c.text1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Gap(2.h),
-                Text(
-                  value
-                      ? 'Your hourly range appears on your applications.'
-                      : 'Builders see "Rate on request" instead.',
-                  style: tt.bodySmall!.copyWith(color: c.text3),
-                ),
-              ],
-            ),
-          ),
-          Gap(10.w),
-          JSwitch(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-// Inline status row used in the VERIFICATION section. Done = check mark in
-// the verified accent; not-done = small uppercase CTA that pushes the
-// relevant fix-it screen.
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.icon,
-    required this.label,
-    required this.done,
-    required this.ctaLabel,
-    required this.onCta,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool done;
-  final String ctaLabel;
-  final VoidCallback onCta;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18.r, color: done ? c.verified : c.text3),
-          Gap(12.w),
-          Expanded(
-            child: Text(label, style: tt.bodyMedium!.copyWith(color: c.text1)),
-          ),
-          if (done)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(AppIcons.successCircle, size: 16.r, color: c.verified),
-                Gap(6.w),
-                Text(
-                  'VERIFIED',
-                  style: tt.labelSmall!.copyWith(
-                    color: c.verified,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            )
-          else
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onCta,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                child: Text(
-                  ctaLabel,
-                  style: tt.labelSmall!.copyWith(
-                    color: c.action,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// True when the builder profile carries an ABN that was mirrored in from a
-/// successful verify-abn run — used to lock Company Name + ABN inputs.
-/// We treat `bp.abn != null` as proof of verification because the only path
-/// that writes to that column is the Edge Function's post-ABR mirror.
-bool _isAbnVerified(BuilderProfile? bp) =>
-    bp?.abn != null && bp!.abn!.trim().isNotEmpty;
-
-/// FormBuilder text input that switches into a read-only "verified, locked"
-/// state when the corresponding row already carries an ABR-confirmed value.
-/// Renders the same JTextField shell either way so layout stays stable —
-/// the lock state surfaces via a small "✓ Verified" chip next to the label,
-/// the disabled input itself, and a "Contact support to change" hint line.
-class _VerifiedLockedField extends StatelessWidget {
-  const _VerifiedLockedField({
-    required this.label,
-    required this.fieldName,
-    required this.initialValue,
-    required this.hint,
-    required this.locked,
-    this.keyboardType,
-    this.requiredField = false,
-  });
-
-  final String label;
-  final String fieldName;
-  final String? initialValue;
-  final String hint;
-  final bool locked;
-  final TextInputType? keyboardType;
-  final bool requiredField;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            FieldLabel(label),
-            if (locked) ...[
-              Gap(8.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: c.verifiedBg,
-                  borderRadius: BorderRadius.circular(4.r),
-                  border: Border.all(color: c.verified.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppIcons.verified, size: 11.r, color: c.verified),
-                    Gap(4.w),
-                    Text(
-                      'VERIFIED',
-                      style: tt.labelSmall!.copyWith(
-                        fontSize: 9.sp,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
-                        color: c.verified,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-        Gap(AppSpacing.sm.h),
-        JTextField(
-          name: fieldName,
-          hint: hint,
-          initialValue: initialValue,
-          enabled: !locked,
-          keyboardType: keyboardType,
-          validator: requiredField
-              ? FormBuilderValidators.required(errorText: '$label is required.')
-              : null,
-        ),
-        if (locked) ...[
-          Gap(4.h),
-          Text(
-            'Locked after ABR verification. Contact support to change.',
-            style: tt.bodySmall!.copyWith(
-              fontSize: 11.sp,
-              color: c.text3,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
