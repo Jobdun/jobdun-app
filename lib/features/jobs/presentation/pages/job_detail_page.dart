@@ -11,60 +11,10 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
-import '../../../../core/utils/string_utils.dart';
-import '../../domain/entities/job.dart';
+import 'job_apply_sheet.dart';
+import 'job_detail_args.dart';
 
-// Passed via GoRouter `extra` when pushing to /jobs/:id
-class JobDetailArgs {
-  const JobDetailArgs({
-    this.id,
-    required this.title,
-    required this.description,
-    required this.rate,
-    required this.startDate,
-    required this.distanceKm,
-    required this.isUrgent,
-    this.tradeType = 'Trades',
-    this.suburb,
-    this.state,
-    this.companyName,
-    this.builderInitials,
-    this.requiresWhiteCard = false,
-    this.requiresLiability = true,
-  });
-
-  final String? id;
-  final String title;
-  final String description;
-  final String rate;
-  final String startDate;
-  final double distanceKm;
-  final bool isUrgent;
-  final String tradeType;
-  final String? suburb;
-  final String? state;
-  final String? companyName;
-  final String? builderInitials;
-  final bool requiresWhiteCard;
-  final bool requiresLiability;
-
-  factory JobDetailArgs.fromJob(Job job) => JobDetailArgs(
-    id: job.id,
-    title: job.title,
-    description: job.description,
-    rate: job.displayBudget,
-    startDate: job.startDate != null
-        ? StringUtils.fmtDate(job.startDate!)
-        : 'TBD',
-    distanceKm: 0.0,
-    isUrgent: job.urgency == JobUrgency.urgent,
-    tradeType: job.tradeTypeRequired,
-    suburb: job.suburb,
-    state: job.state,
-    requiresWhiteCard: job.requiresWhiteCard,
-    requiresLiability: job.requiresPublicLiability,
-  );
-}
+export 'job_detail_args.dart';
 
 class JobDetailPage extends StatefulWidget {
   const JobDetailPage({super.key, required this.args});
@@ -359,123 +309,12 @@ class _JobDetailPageState extends State<JobDetailPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
       ),
-      builder: (ctx) => _ApplySheet(
+      builder: (ctx) => JobApplySheet(
         args: args,
         onSubmit: () {
           Navigator.pop(ctx);
           setState(() => _applied = true);
         },
-      ),
-    );
-  }
-}
-
-// ── Apply sheet ────────────────────────────────────────────────────────────────
-
-class _ApplySheet extends StatefulWidget {
-  const _ApplySheet({required this.args, required this.onSubmit});
-  final JobDetailArgs args;
-  final VoidCallback onSubmit;
-
-  @override
-  State<_ApplySheet> createState() => _ApplySheetState();
-}
-
-class _ApplySheetState extends State<_ApplySheet> {
-  final _rateCtrl = TextEditingController();
-  final _noteCtrl = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _rateCtrl.text = widget.args.rate.replaceAll(RegExp(r'[^\d.]'), '');
-  }
-
-  @override
-  void dispose() {
-    _rateCtrl.dispose();
-    _noteCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20.w,
-        AppSpacing.lg.h,
-        20.w,
-        MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg.h,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PageHeader(
-            eyebrow: 'APPLY FOR THIS JOB',
-            title: widget.args.title,
-            size: PageHeaderSize.sub,
-          ),
-          Gap(20.h),
-          const FieldLabel('YOUR RATE'),
-          Gap(AppSpacing.sm.h),
-          Container(
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.input.r),
-              border: Border.all(color: c.border),
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 2.h),
-            child: Row(
-              children: [
-                Text(
-                  '\$',
-                  style: tt.headlineSmall!.copyWith(
-                    fontSize: 20.sp,
-                    color: c.text3,
-                  ),
-                ),
-                Gap(4.w),
-                Expanded(
-                  child: TextField(
-                    controller: _rateCtrl,
-                    keyboardType: TextInputType.number,
-                    style: tt.headlineSmall!.copyWith(
-                      fontSize: 20.sp,
-                      color: c.action,
-                    ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      hintText: '85',
-                    ),
-                  ),
-                ),
-                Text('/hr', style: tt.bodyMedium!.copyWith(color: c.text3)),
-              ],
-            ),
-          ),
-          Gap(AppSpacing.md.h),
-          const FieldLabel('COVER NOTE (OPTIONAL)'),
-          Gap(AppSpacing.sm.h),
-          // design-system-ok: TextEditingController not FormBuilder; theme draws chrome.
-          TextField(
-            controller: _noteCtrl,
-            maxLines: 3,
-            style: tt.bodyMedium!.copyWith(color: c.text1),
-            decoration: const InputDecoration(
-              hintText: "Tell the builder why you're the right fit…",
-            ),
-          ),
-          Gap(20.h),
-          JButton(label: 'SUBMIT APPLICATION', onPressed: widget.onSubmit),
-        ],
       ),
     );
   }
