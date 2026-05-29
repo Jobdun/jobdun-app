@@ -19,6 +19,8 @@ import 'auth_state.dart';
 export '../../domain/entities/user_role.dart';
 export 'auth_state.dart';
 
+part 'auth_provider_phone.dart';
+
 // ── Service providers (public so tests can override) ──────────────────────────
 final emailAuthServiceProvider = Provider<EmailAuthService>(
   (ref) => EmailAuthService(SupabaseConfig.client),
@@ -46,9 +48,10 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 /// every state transition lives in one file — easier to reason about role
 /// hydration, error mapping, and the "pending verification" gate without
 /// chasing through SDK calls.
-class AuthController extends Notifier<AuthState> {
+class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
   late EmailAuthService _email;
   late OAuthService _oauth;
+  @override
   late PhoneAuthService _phone;
   late RoleResolver _roles;
   StreamSubscription<supabase.AuthState>? _authSubscription;
@@ -109,6 +112,7 @@ class AuthController extends Notifier<AuthState> {
       ? ErrorMessages.from(AuthFailure(e.message))
       : ErrorMessages.from(ServerFailure(e.toString()));
 
+  @override
   void _startLoading() {
     state = state.copyWith(
       isLoading: true,
@@ -117,6 +121,7 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
+  @override
   void _failLoading(Object e, {StackTrace? stackTrace, String? action}) {
     state = state.copyWith(
       isLoading: false,
@@ -135,6 +140,7 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
+  @override
   bool _ensureConfigured() {
     if (SupabaseConfig.isInitialized) return true;
     state = state.copyWith(
@@ -147,6 +153,7 @@ class AuthController extends Notifier<AuthState> {
     return false;
   }
 
+  @override
   Future<void> _loadRoleForCurrentUser() async {
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) {
@@ -340,91 +347,7 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  // ── Phone / OTP ────────────────────────────────────────────────────────────
-
-  Future<bool> signInWithPhone(String phone) async {
-    if (!_ensureConfigured()) return false;
-    _startLoading();
-    try {
-      await _phone.sendOtp(phone);
-      state = state.copyWith(
-        isLoading: false,
-        pendingPhoneNumber: phone.trim(),
-        infoMessage: 'Code sent — check your SMS.',
-      );
-      return true;
-    } catch (e) {
-      _failLoading(e);
-      return false;
-    }
-  }
-
-  Future<bool> verifyPhoneOtp(String token) async {
-    final phone = state.pendingPhoneNumber;
-    if (phone == null || !_ensureConfigured()) return false;
-    _startLoading();
-    try {
-      final response = await _phone.verifyOtp(phone: phone, token: token);
-      await _loadRoleForCurrentUser();
-      state = state.copyWith(
-        isAuthenticated: response.user != null,
-        email: response.user?.email,
-        isLoading: false,
-        clearPhone: true,
-      );
-      return state.isAuthenticated;
-    } catch (e) {
-      _failLoading(e);
-      return false;
-    }
-  }
-
-  Future<bool> sendPhoneVerification(String phone) async {
-    if (!_ensureConfigured()) return false;
-    _startLoading();
-    try {
-      await _phone.sendPhoneVerification(phone);
-      state = state.copyWith(
-        isLoading: false,
-        pendingPhoneNumber: phone.trim(),
-        infoMessage: 'Code sent — check your SMS.',
-      );
-      return true;
-    } catch (e) {
-      _failLoading(e);
-      return false;
-    }
-  }
-
-  Future<bool> confirmPhoneVerification(String token) async {
-    final phone = state.pendingPhoneNumber;
-    if (phone == null || !_ensureConfigured()) return false;
-    _startLoading();
-    try {
-      await _phone.confirmPhoneVerification(phone: phone, token: token);
-      state = state.copyWith(
-        isLoading: false,
-        clearPhone: true,
-        infoMessage: 'Phone verified.',
-      );
-      return true;
-    } catch (e) {
-      _failLoading(e);
-      return false;
-    }
-  }
-
-  Future<void> resendPhoneOtp() async {
-    final phone = state.pendingPhoneNumber;
-    if (phone == null || !_ensureConfigured()) return;
-    _startLoading();
-    try {
-      await _phone.resendOtp(phone);
-      state = state.copyWith(isLoading: false, infoMessage: 'New code sent.');
-    } catch (e) {
-      _failLoading(e);
-    }
-  }
+  // ── Verification / draft resets ──────────────────────────────────────────
 
   void clearPendingVerification() {
     state = state.copyWith(clearPendingVerification: true);
@@ -434,16 +357,8 @@ class AuthController extends Notifier<AuthState> {
     state = state.copyWith(clearRegisterDraft: true);
   }
 
-  void clearPendingPhone() {
-    state = state.copyWith(clearPhone: true);
-  }
-
-  // Used by the phone-auth restore flow: rehydrates the pending phone from
-  // SharedPreferences without sending another SMS (Supabase imposes a 60s
-  // resend cooldown, so re-sending would just error out the user).
-  void setPendingPhone(String e164) {
-    state = state.copyWith(pendingPhoneNumber: e164);
-  }
+  // Phone / OTP flows live in `_AuthControllerPhone` (auth_provider_phone.dart),
+  // mixed in above to keep this file under the size budget.
 
   // ── Role hydration & assignment ────────────────────────────────────────────
 
