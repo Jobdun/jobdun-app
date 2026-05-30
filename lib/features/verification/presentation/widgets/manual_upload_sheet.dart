@@ -5,12 +5,15 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/image_upload_service.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../domain/entities/verification_document.dart';
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
@@ -95,7 +98,9 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
   bool _done = false;
   bool _attested = false;
   String? _error;
+  bool _phoneRequired = false;
   String _state = 'NSW';
+  String _tradeClass = manualUploadTradeClasses.first;
   DateTime? _expiry;
 
   @override
@@ -127,6 +132,18 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     final file = _pickedFile;
     if (userId == null || file == null) return;
     if (!_attested) return; // Defensive — UI already blocks this path.
+    // F2: mirror the auto-path phone gate. Both edge functions refuse to mint
+    // a verified row without a verified phone (the identity anchor); the manual
+    // path must hold the same bar. Read the verified state off the profile
+    // controller (never Supabase from a widget) — it's already hydrated by the
+    // profile page that hosts every entry point into this sheet.
+    final phoneVerified = ref.read(
+      profileControllerProvider.select((s) => s.profile?.isPhoneVerified),
+    );
+    if (phoneVerified != true) {
+      _showPhoneRequired();
+      return;
+    }
     final form = _formKey.currentState;
     if (form == null || !form.saveAndValidate()) return;
     final number = (form.value['document_number'] as String? ?? '').trim();
@@ -138,6 +155,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     setState(() {
       _uploading = true;
       _error = null;
+      _phoneRequired = false;
     });
     try {
       await ref
@@ -150,6 +168,11 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
             issuer: issuer,
             documentNumber: number.isEmpty ? null : number,
             expiryDate: _expiry,
+            // A3: only a trade licence carries a trade class — ABN certificates
+            // have none, so leave it null and don't write the column.
+            tradeClass: widget.kind == ManualDocKind.tradeLicence
+                ? _tradeClass
+                : null,
           );
       if (!mounted) return;
       // Fire-and-forget attestation audit — admin sees this alongside the
@@ -162,6 +185,8 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
               'kind': widget.kind.name,
               'doc_type': widget.kind.docType.dbValue,
               if (widget.kind.requiresState) 'state': _state,
+              if (widget.kind == ManualDocKind.tradeLicence)
+                'trade_class': _tradeClass,
               if (number.isNotEmpty) 'document_number': number,
             },
           );
@@ -178,6 +203,24 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
         _error = e.toString();
       });
     }
+  }
+
+  // F2: block the upload and steer the user to verify their phone — same intent
+  // as the edge-function `phone_required` gate. Inline (not a snackbar) so the
+  // CTA stays reachable while the sheet is open.
+  void _showPhoneRequired() {
+    setState(() {
+      _uploading = false;
+      _phoneRequired = true;
+      _error =
+          'Verify your phone number first — it confirms the licence is '
+          'really yours. Tap below to verify in under a minute.';
+    });
+  }
+
+  void _goVerifyPhone() {
+    Navigator.of(context).pop(false);
+    context.push('/profile/verify-phone');
   }
 
   Future<void> _onPickExpiry() async {
@@ -250,6 +293,8 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                 formKey: _formKey,
                 state: _state,
                 onStateChanged: (v) => setState(() => _state = v),
+                tradeClass: _tradeClass,
+                onTradeClassChanged: (v) => setState(() => _tradeClass = v),
                 expiry: _expiry,
                 onPickExpiry: _onPickExpiry,
                 prefilledNumber: widget.prefilledNumber,
@@ -268,9 +313,34 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                 _error!,
                 style: TextStyle(fontSize: 12.sp, color: c.urgent),
               ),
+              if (_phoneRequired) ...[
+                Gap(12.h),
+                _PhoneRequiredCta(onVerifyPhone: _goVerifyPhone),
+              ],
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// F2: phone-verify CTA shown inline when a manual upload is blocked because
+/// the user's phone isn't verified. Single caller — the sheet above.
+class _PhoneRequiredCta extends StatelessWidget {
+  const _PhoneRequiredCta({required this.onVerifyPhone});
+
+  final VoidCallback onVerifyPhone;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: JButton(
+        label: 'VERIFY MY PHONE',
+        variant: JButtonVariant.primary,
+        size: JButtonSize.standard,
+        onPressed: onVerifyPhone,
       ),
     );
   }

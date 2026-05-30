@@ -8,6 +8,8 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/verification.dart';
+import '../../domain/entities/verification_document.dart' as docs;
+import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
 import '../widgets/manual_upload_sheet.dart';
 import '../widgets/wizard_abn_step.dart';
@@ -33,9 +35,14 @@ import '../widgets/wizard_result_screen.dart';
 ///
 /// Users with an already-verified row for their role pop immediately with a
 /// friendly "you're already verified" snackbar rather than landing on an
-/// empty result screen.
+/// empty result screen — UNLESS [reverify] is set (the "Re-verify →" CTA),
+/// in which case the short-circuit is bypassed so they can redo the check.
 class VerificationWizardPage extends ConsumerStatefulWidget {
-  const VerificationWizardPage({super.key});
+  const VerificationWizardPage({super.key, this.reverify = false});
+
+  /// True when entered via `/verification/wizard?reverify=1`. Lets an
+  /// already-verified user redo their check instead of being popped out (B3).
+  final bool reverify;
 
   @override
   ConsumerState<VerificationWizardPage> createState() =>
@@ -55,19 +62,28 @@ class _VerificationWizardPageState
   String? _licenceTradeClass;
   bool _initialised = false;
 
-  // Wizard requires an authenticated user. Default to builder if the role
-  // is transiently null so the ABN flow loads (matches pre-v2 behavior).
-  UserRole get _role =>
-      ref.read(authControllerProvider).role ?? UserRole.builder;
+  // Wizard requires an authenticated user. The role can be transiently null
+  // while the JWT/DB resolve — F1: we must NOT default to builder, or a trade
+  // briefly gets the ABN screen. Returns null until the role is actually known
+  // (`isRoleLoaded` AND a non-null role); the build shows a spinner meanwhile.
+  UserRole? get _resolvedRole {
+    final auth = ref.read(authControllerProvider);
+    return auth.isRoleLoaded ? auth.role : null;
+  }
 
   void _maybeShortCircuit(List<Verification> rows) {
     if (_initialised) return;
+    final role = _resolvedRole;
+    // F1: don't branch until the role is known — wait for a later rebuild.
+    if (role == null) return;
     _initialised = true;
-    final kind = _role == UserRole.trade
+    final kind = role == UserRole.trade
         ? VerificationKind.licence
         : VerificationKind.abn;
     final alreadyVerified = rows.any((v) => v.kind == kind && v.isVerified);
-    if (alreadyVerified) {
+    // B3: in reverify mode an already-verified row is the whole point — let
+    // the user redo the check instead of popping them straight back out.
+    if (alreadyVerified && !widget.reverify) {
       // Defer to next frame so we don't pop / show a snackbar mid-build.
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -86,7 +102,18 @@ class _VerificationWizardPageState
     // upload (auto-path is disabled until regulator adapters ship). Open
     // the sheet on the first frame, then pop the wizard whether the user
     // submits or cancels — there's nothing else on this page for them.
-    if (_role == UserRole.trade) {
+    if (role == UserRole.trade) {
+      // B5: don't open a second upload sheet over an existing pending doc —
+      // the reviewer already has one in the queue. Skip the guard in reverify
+      // mode (the user explicitly chose to redo).
+      if (!widget.reverify && _hasPendingDoc(docs.DocType.tradeLicence)) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showUnderReview();
+          context.pop();
+        });
+        return;
+      }
       SchedulerBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         final submitted = await showManualUploadSheet(
@@ -105,14 +132,38 @@ class _VerificationWizardPageState
     }
   }
 
+  // B5: true when the user already has a pending (not-yet-reviewed) upload of
+  // this type. Reads the realtime-backed documents list off the controller.
+  bool _hasPendingDoc(docs.DocType docType) {
+    final documents = ref.read(verificationControllerProvider).documents;
+    return documents.any(
+      (d) =>
+          d.docType == docType && d.status == docs.VerificationStatus.pending,
+    );
+  }
+
+  void _showUnderReview() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          'Already under review — a reviewer will confirm within 24 h.',
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _onChooseAutomatic() {
+    // Only reachable from WizardIntroStep, which renders for builders only
+    // (role already resolved). Default to builder defensively.
     setState(() {
-      _step = _role == UserRole.trade ? _Step.licence : _Step.abn;
+      _step = _resolvedRole == UserRole.trade ? _Step.licence : _Step.abn;
     });
   }
 
   Future<void> _onChooseManual() async {
-    final docType = _role == UserRole.trade
+    final docType = _resolvedRole == UserRole.trade
         ? ManualDocKind.tradeLicence
         : ManualDocKind.abnCertificate;
     final submitted = await showManualUploadSheet(
@@ -167,6 +218,13 @@ class _VerificationWizardPageState
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    // Watch role-loaded so the build re-runs (and the short-circuit fires)
+    // once the role resolves — F1: until then we render a spinner, never the
+    // builder ABN flow by default.
+    final roleLoaded = ref.watch(
+      authControllerProvider.select((s) => s.isRoleLoaded),
+    );
+    final role = _resolvedRole;
     // Short-circuit when the user is already verified for their role's kind.
     final myVerifs = ref.watch(myVerificationsProvider);
     myVerifs.whenData(_maybeShortCircuit);
@@ -190,24 +248,26 @@ class _VerificationWizardPageState
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: _buildStep(),
+          child: (!roleLoaded || role == null)
+              ? const Center(child: CircularProgressIndicator())
+              : _buildStep(role),
         ),
       ),
     );
   }
 
-  Widget _buildStep() {
+  Widget _buildStep(UserRole role) {
     switch (_step) {
       case _Step.choose:
         // Trades never see the intro — the first frame fires
         // `_maybeShortCircuit` which opens the manual sheet directly.
         // Show a neutral spinner for that single frame so we don't flash
         // the dead-end choose cards before the sheet overlays them.
-        if (_role == UserRole.trade) {
+        if (role == UserRole.trade) {
           return const Center(child: CircularProgressIndicator());
         }
         return WizardIntroStep(
-          role: _role,
+          role: role,
           onChooseAutomatic: _onChooseAutomatic,
           onChooseManual: _onChooseManual,
         );
@@ -224,7 +284,7 @@ class _VerificationWizardPageState
         );
       case _Step.result:
         return WizardResultScreen(
-          role: _role,
+          role: role,
           abnResult: _abnResult,
           licenceResult: _licenceResult,
           abn: _abn,

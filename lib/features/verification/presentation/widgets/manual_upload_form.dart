@@ -25,6 +25,20 @@ const manualUploadStates = [
   'NT',
 ];
 
+/// Trade classes a manual licence can be filed under. Single source of truth —
+/// the auto-path `wizard_licence_step.dart` imports this list too, so the two
+/// surfaces never drift. Expand per regulator once real adapters land.
+const manualUploadTradeClasses = [
+  'Electrician',
+  'Plumber',
+  'Carpenter',
+  'Painter',
+  'Tiler',
+  'Plasterer',
+  'Refrigeration mechanic',
+  'Gasfitter',
+];
+
 String issuerFor(ManualDocKind kind, String? state) => switch (kind) {
   ManualDocKind.abnCertificate => 'Australian Business Register',
   ManualDocKind.tradeLicence =>
@@ -40,6 +54,8 @@ class ManualUploadActiveBody extends StatelessWidget {
     required this.formKey,
     required this.state,
     required this.onStateChanged,
+    required this.tradeClass,
+    required this.onTradeClassChanged,
     required this.expiry,
     required this.onPickExpiry,
     required this.prefilledNumber,
@@ -56,6 +72,13 @@ class ManualUploadActiveBody extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
   final String state;
   final ValueChanged<String> onStateChanged;
+
+  /// Selected trade class for a licence upload (A3) — `null`/ignored for ABN
+  /// certificates. Captured so the approved row carries `licence_trade_class`
+  /// instead of leaving the counterparty `licence_class` blank.
+  final String tradeClass;
+  final ValueChanged<String> onTradeClassChanged;
+
   final DateTime? expiry;
   final VoidCallback onPickExpiry;
   final String? prefilledNumber;
@@ -90,7 +113,19 @@ class ManualUploadActiveBody extends StatelessWidget {
               if (kind.requiresState) ...[
                 const _Label(text: 'STATE'),
                 Gap(6.h),
-                _StateDropdown(value: state, onChanged: onStateChanged),
+                _ChoiceDropdown(
+                  value: state,
+                  items: manualUploadStates,
+                  onChanged: onStateChanged,
+                ),
+                Gap(12.h),
+                const _Label(text: 'TRADE CLASS'),
+                Gap(6.h),
+                _ChoiceDropdown(
+                  value: tradeClass,
+                  items: manualUploadTradeClasses,
+                  onChanged: onTradeClassChanged,
+                ),
                 Gap(12.h),
               ],
               _Label(text: kind.numberLabel.toUpperCase()),
@@ -174,9 +209,14 @@ class _Label extends StatelessWidget {
   }
 }
 
-class _StateDropdown extends StatelessWidget {
-  const _StateDropdown({required this.value, required this.onChanged});
+class _ChoiceDropdown extends StatelessWidget {
+  const _ChoiceDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
   final String value;
+  final List<String> items;
   final ValueChanged<String> onChanged;
 
   @override
@@ -195,7 +235,7 @@ class _StateDropdown extends StatelessWidget {
           value: value,
           dropdownColor: c.surface,
           style: TextStyle(fontSize: 14.sp, color: c.text1),
-          items: manualUploadStates
+          items: items
               .map((s) => DropdownMenuItem(value: s, child: Text(s)))
               .toList(),
           onChanged: (v) => v == null ? null : onChanged(v),

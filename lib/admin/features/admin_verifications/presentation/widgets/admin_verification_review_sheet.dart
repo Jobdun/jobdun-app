@@ -6,9 +6,12 @@ import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../data/state_licence_registers.dart';
+import '../../data/verification_kind.dart';
 import '../providers/admin_verifications_provider.dart';
 import 'admin_captured_details_card.dart';
+import 'admin_confirm_fields.dart';
 import 'admin_official_register_link.dart';
+import 'admin_revoke_action.dart';
 
 /// Document review dialog. Renders the image via a 60s signed URL, the
 /// claim metadata (state/issuer/number/dates), and exposes Approve / Reject
@@ -27,8 +30,16 @@ class AdminVerificationReviewSheet extends ConsumerStatefulWidget {
 class _AdminVerificationReviewSheetState
     extends ConsumerState<AdminVerificationReviewSheet> {
   final _notesController = TextEditingController();
+  // Admin-confirmed identifier + trade class — what the reviewer actually read
+  // off the document image. Pre-filled from the user-typed values so the common
+  // "it matches" case is one tap, but editable so a typo doesn't get trusted
+  // blindly (audit A2/A3).
+  final _confirmedNumberController = TextEditingController();
+  final _tradeClassController = TextEditingController();
   bool _saving = false;
   String? _error;
+
+  bool get _isTradeLicence => widget.item.docType == 'trade_licence';
 
   @override
   void initState() {
@@ -36,11 +47,16 @@ class _AdminVerificationReviewSheetState
     if (widget.item.reviewNotes != null) {
       _notesController.text = widget.item.reviewNotes!;
     }
+    if (widget.item.documentNumber != null) {
+      _confirmedNumberController.text = widget.item.documentNumber!;
+    }
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _confirmedNumberController.dispose();
+    _tradeClassController.dispose();
     super.dispose();
   }
 
@@ -56,6 +72,9 @@ class _AdminVerificationReviewSheetState
             id: widget.item.id,
             status: status,
             notes: _notesController.text,
+            // Only meaningful on approve; the provider drops these on reject.
+            confirmedNumber: _confirmedNumberController.text,
+            tradeClass: _isTradeLicence ? _tradeClassController.text : null,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -175,6 +194,12 @@ class _AdminVerificationReviewSheetState
                         ),
                       ],
                       const Gap(16),
+                      AdminConfirmFields(
+                        numberController: _confirmedNumberController,
+                        tradeClassController: _tradeClassController,
+                        showTradeClass: _isTradeLicence,
+                      ),
+                      const Gap(16),
                       TextField(
                         controller: _notesController,
                         maxLines: 3,
@@ -185,6 +210,18 @@ class _AdminVerificationReviewSheetState
                           fillColor: c.background,
                         ),
                       ),
+                      if (canRevokeVerification(
+                        docType: i.docType,
+                        lastVerificationStatus: i.lastVerificationStatus,
+                      )) ...[
+                        const Gap(20),
+                        AdminRevokeAction(
+                          item: i,
+                          onDone: () {
+                            if (mounted) Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),

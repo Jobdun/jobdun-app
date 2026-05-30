@@ -18,6 +18,7 @@ abstract interface class VerificationRemoteDataSource {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   });
   Future<void> softDeleteDocument(String documentId);
   Stream<List<VerificationDocumentModel>> watchMyDocuments(String tradeId);
@@ -59,6 +60,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   }) async {
     try {
       final ext = file.path.split('.').last;
@@ -92,6 +94,10 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
             if (issuer != null) 'issuer': issuer,
             // ignore: use_null_aware_elements
             if (documentNumber != null) 'document_number': documentNumber,
+            // trade_class column added by a parallel migration; only written
+            // when supplied (trade licence uploads — never ABN certificates).
+            // ignore: use_null_aware_elements
+            if (tradeClass != null) 'trade_class': tradeClass,
             if (issuedDate != null)
               'issued_date': issuedDate.toIso8601String().split('T').first,
             if (expiryDate != null)

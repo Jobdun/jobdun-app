@@ -181,6 +181,11 @@ class VerificationReceipts extends ConsumerWidget {
     );
   }
 
+  // B5: this CTA only renders in the "no doc at all" branch of `_buildRow`
+  // (verified / approved / pending are all handled before it), so a user with
+  // a pending upload sees the "Under review · …" row instead of an "Upload"
+  // affordance — they can't open a second sheet from here. Keep that ordering
+  // intact; it's the guard against duplicate pending uploads on this surface.
   static Widget _ownerCtas(BuildContext context, docs.DocType docType) {
     final manualKind = docType == docs.DocType.tradeLicence
         ? ManualDocKind.tradeLicence
@@ -278,7 +283,10 @@ class VerificationReceipts extends ConsumerWidget {
   }
 
   // Owner-only re-verify affordance on an already-verified row. ABN re-runs the
-  // ABR wizard; licence re-opens the manual upload sheet.
+  // ABR wizard; licence re-opens the manual upload sheet. Both carry the
+  // explicit re-verify intent so the wizard doesn't short-circuit the
+  // already-verified row straight back out (B3) — without `?reverify=1` the
+  // ABN CTA used to dead-end on a "you're already verified" snackbar.
   static Widget _reverifyCta(BuildContext context, docs.DocType docType) {
     final isLicence = docType == docs.DocType.tradeLicence;
     return InkWell(
@@ -287,7 +295,7 @@ class VerificationReceipts extends ConsumerWidget {
               context: context,
               kind: ManualDocKind.tradeLicence,
             )
-          : context.push('/verification/wizard'),
+          : context.push('/verification/wizard?reverify=1'),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 6.h),
         child: Text(

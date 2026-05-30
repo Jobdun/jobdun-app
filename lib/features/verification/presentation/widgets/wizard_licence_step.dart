@@ -8,6 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../domain/entities/verification.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_upload_form.dart';
 import 'manual_upload_sheet.dart';
 import 'wizard_licence_step_widgets.dart';
 
@@ -32,17 +33,9 @@ typedef OnLicenceDone =
 const _supportedStates = <String>[];
 const _allStates = ['NSW', 'VIC', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT'];
 
-// Starter list — expand per regulator once real adapters land.
-const _classes = [
-  'Electrician',
-  'Plumber',
-  'Carpenter',
-  'Painter',
-  'Tiler',
-  'Plasterer',
-  'Refrigeration mechanic',
-  'Gasfitter',
-];
+// Trade-class list now lives in `manual_upload_form.dart` as
+// `manualUploadTradeClasses` — single source of truth shared with the manual
+// upload sheet so the auto-path and manual-path classes never drift (A3).
 
 /// Trade-only step: licence entry against a state regulator. When the user
 /// picks a state without a live adapter, the screen auto-swaps to a "no
@@ -260,7 +253,7 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
         LicenceDropdownRow(
           label: 'TRADE CLASS',
           value: _tradeClass,
-          items: _classes,
+          items: manualUploadTradeClasses,
           onChanged: (v) => setState(() => _tradeClass = v),
         ),
         Gap(12.h),

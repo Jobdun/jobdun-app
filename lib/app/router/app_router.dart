@@ -258,7 +258,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'wizard',
-            builder: (_, _) => const VerificationWizardPage(),
+            builder: (_, state) => VerificationWizardPage(
+              // `?reverify=1` lets an already-verified user redo their check
+              // (builder → ABN entry, trade → manual sheet) instead of being
+              // short-circuited straight back out. See B3 in the verification
+              // flow audit.
+              reverify: state.uri.queryParameters['reverify'] == '1',
+            ),
           ),
         ],
       ),

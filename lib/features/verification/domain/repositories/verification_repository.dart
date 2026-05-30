@@ -18,6 +18,7 @@ abstract interface class VerificationRepository {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   });
   Future<Either<Failure, void>> softDeleteDocument(String documentId);
   Stream<List<VerificationDocument>> watchMyDocuments(String tradeId);

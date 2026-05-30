@@ -12,6 +12,7 @@ import '../../domain/repositories/verification_repository.dart';
 import '../../domain/usecases/delete_document.dart';
 import '../../domain/usecases/get_my_documents.dart';
 import '../../domain/usecases/upload_document.dart';
+import 'verifications_provider.dart';
 
 // ── Data layer providers (public so tests can override) ───────────────────────
 final verificationDatasourceProvider = Provider<VerificationRemoteDataSource>(
@@ -61,9 +62,42 @@ class VerificationController extends Notifier<VerificationState> {
     _sub = _repo
         .watchMyDocuments(userId)
         .listen(
-          (docs) => state = state.copyWith(documents: docs),
+          (docs) => _onDocuments(userId, docs),
           onError: (Object e) => state = state.copyWith(error: e.toString()),
         );
+  }
+
+  // B1: the `verifications` row (driving the availability banner, nudge banner
+  // and builder COMPANY DETAILS card via `myVerificationsProvider`) has no
+  // realtime channel — it's owner-read-only and admin-written. The documents
+  // stream IS realtime, so when a doc's review status flips (e.g. an admin
+  // approves/rejects and the RPC upserts the verified row), we use that signal
+  // to invalidate the verifications family so every stale surface re-fetches.
+  //
+  // Guarded on an actual status change (or a new/removed doc) so we don't
+  // invalidate on every identical realtime echo — Supabase re-emits the full
+  // row set on reconnect and on unrelated column writes.
+  void _onDocuments(String userId, List<VerificationDocument> docs) {
+    final changed = _statusChanged(state.documents, docs);
+    state = state.copyWith(documents: docs);
+    if (changed) {
+      ref.invalidate(verificationsForUserProvider(userId));
+    }
+  }
+
+  // True when a document's review status differs from the previous snapshot,
+  // or a document was added/removed. Keyed by document id so reordering alone
+  // doesn't count as a change.
+  static bool _statusChanged(
+    List<VerificationDocument> prev,
+    List<VerificationDocument> next,
+  ) {
+    if (prev.length != next.length) return true;
+    final prevById = {for (final d in prev) d.id: d.status};
+    for (final d in next) {
+      if (prevById[d.id] != d.status) return true;
+    }
+    return false;
   }
 
   Future<void> load() async {
@@ -85,6 +119,7 @@ class VerificationController extends Notifier<VerificationState> {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   }) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return false;
@@ -100,6 +135,7 @@ class VerificationController extends Notifier<VerificationState> {
           documentNumber: documentNumber,
           issuedDate: issuedDate,
           expiryDate: expiryDate,
+          tradeClass: tradeClass,
         );
     return result.fold(
       (f) {

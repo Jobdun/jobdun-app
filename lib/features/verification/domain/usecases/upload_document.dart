@@ -19,6 +19,7 @@ class UploadDocument {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   }) => _repository.uploadDocument(
     tradeId: tradeId,
     docType: docType,
@@ -28,5 +29,6 @@ class UploadDocument {
     documentNumber: documentNumber,
     issuedDate: issuedDate,
     expiryDate: expiryDate,
+    tradeClass: tradeClass,
   );
 }

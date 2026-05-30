@@ -33,6 +33,7 @@ class VerificationRepositoryImpl implements VerificationRepository {
     String? documentNumber,
     DateTime? issuedDate,
     DateTime? expiryDate,
+    String? tradeClass,
   }) async {
     try {
       return right(
@@ -45,6 +46,7 @@ class VerificationRepositoryImpl implements VerificationRepository {
           documentNumber: documentNumber,
           issuedDate: issuedDate,
           expiryDate: expiryDate,
+          tradeClass: tradeClass,
         ),
       );
     } on StorageException catch (e) {
