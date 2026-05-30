@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
+import '../../domain/entities/builder_public_verification.dart';
 import '../../domain/entities/verification.dart';
 import '../../domain/repositories/verifications_repository.dart';
 import '../datasources/verifications_remote_datasource.dart';
@@ -14,6 +15,17 @@ class VerificationsRepositoryImpl implements VerificationsRepository {
   Future<Either<Failure, List<Verification>>> getForUser(String userId) async {
     try {
       return right(await _datasource.getForUser(userId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<BuilderPublicVerification>>> getPublicVerification(
+    String userId,
+  ) async {
+    try {
+      return right(await _datasource.getPublicVerification(userId));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }

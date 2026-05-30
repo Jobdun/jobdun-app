@@ -33,6 +33,9 @@ class Verification extends Equatable {
     this.expiresAt,
     this.lastCheckedAt,
     this.failureReason,
+    this.gstRegistered,
+    this.registerSource,
+    this.detailCapturedAt,
   });
 
   final String id;
@@ -64,6 +67,14 @@ class Verification extends Equatable {
   final String? failureReason;
   final bool manualFallbackAllowed;
 
+  // Curated display projection (STEP 6). gstRegistered: ABR GST registration.
+  // registerSource: which register produced this row ('ABR' / 'admin_manual' /
+  // regulator code). detailCapturedAt: the "as at" timestamp — render next to
+  // every verified badge so a stale snapshot never reads as a bare "Verified".
+  final bool? gstRegistered;
+  final String? registerSource;
+  final DateTime? detailCapturedAt;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -89,6 +100,9 @@ class Verification extends Equatable {
     lastCheckedAt,
     failureReason,
     manualFallbackAllowed,
+    gstRegistered,
+    registerSource,
+    detailCapturedAt,
     createdAt,
     updatedAt,
   ];

@@ -22,6 +22,9 @@ class VerificationModel extends Verification {
     super.expiresAt,
     super.lastCheckedAt,
     super.failureReason,
+    super.gstRegistered,
+    super.registerSource,
+    super.detailCapturedAt,
   });
 
   factory VerificationModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +50,9 @@ class VerificationModel extends Verification {
       expiresAt: _parseDate(json['expires_at']),
       lastCheckedAt: _parseDate(json['last_checked_at']),
       failureReason: json['failure_reason'] as String?,
+      gstRegistered: json['gst_registered'] as bool?,
+      registerSource: json['register_source'] as String?,
+      detailCapturedAt: _parseDate(json['detail_captured_at']),
     );
   }
 

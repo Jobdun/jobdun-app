@@ -4,8 +4,10 @@ import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/verifications_remote_datasource.dart';
 import '../../data/repositories/verifications_repository_impl.dart';
+import '../../domain/entities/builder_public_verification.dart';
 import '../../domain/entities/verification.dart';
 import '../../domain/repositories/verifications_repository.dart';
+import '../../domain/usecases/get_builder_public_verification.dart';
 import '../../domain/usecases/get_my_verifications.dart';
 import '../../domain/usecases/invoke_verify_abn.dart';
 import '../../domain/usecases/invoke_verify_licence.dart';
@@ -33,6 +35,11 @@ final invokeVerifyLicenceUseCaseProvider = Provider(
   (ref) => InvokeVerifyLicence(ref.read(verificationsRepositoryProvider)),
 );
 
+final getBuilderPublicVerificationUseCaseProvider = Provider(
+  (ref) =>
+      GetBuilderPublicVerification(ref.read(verificationsRepositoryProvider)),
+);
+
 // ── Per-user verifications (FutureProvider.family) ────────────────────────────
 final verificationsForUserProvider =
     FutureProvider.family<List<Verification>, String>((ref, userId) async {
@@ -48,6 +55,20 @@ final myVerificationsProvider = Provider<AsyncValue<List<Verification>>>((ref) {
   if (userId == null) return const AsyncData(<Verification>[]);
   return ref.watch(verificationsForUserProvider(userId));
 });
+
+// ── Counterparty projection (minimized "Verified business" trust signal) ──────
+// Reads the get_builder_public_verification RPC for another user — the badge a
+// trade sees on a builder (and vice-versa). Returns 0..N verified credentials.
+final builderPublicVerificationProvider =
+    FutureProvider.family<List<BuilderPublicVerification>, String>((
+      ref,
+      userId,
+    ) async {
+      final result = await ref
+          .read(getBuilderPublicVerificationUseCaseProvider)
+          .call(userId);
+      return result.fold((f) => throw Exception(f.message), (rows) => rows);
+    });
 
 // Derived: highest-level summary of a user's verification state, for UI.
 enum VerificationSummary { none, partial, fullyVerified }

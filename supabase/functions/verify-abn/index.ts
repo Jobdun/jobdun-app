@@ -201,6 +201,13 @@ Deno.serve(async (req) => {
         ? registeredAtRaw.substring(0, 10)
         : null;
 
+    // ABR's Gst field carries the GST registration date (or "Active") when
+    // registered, and is null/empty when not. Map to a boolean for the
+    // curated display column; treat explicit negatives as not-registered.
+    const gstRaw = raw.Gst?.trim().toLowerCase() ?? "";
+    const gstRegistered =
+      gstRaw !== "" && gstRaw !== "none" && gstRaw !== "cancelled";
+
     await db
       .from("verifications")
       .update({
@@ -210,6 +217,9 @@ Deno.serve(async (req) => {
         abn_registered_at: abnRegisteredAt,
         abr_state: raw.AddressState ?? null,
         abr_postcode: raw.AddressPostcode ?? null,
+        gst_registered: gstRegistered,
+        register_source: "ABR",
+        detail_captured_at: new Date().toISOString(),
         verified_at: new Date().toISOString(),
         failure_reason: null,
         manual_fallback_allowed: false,
