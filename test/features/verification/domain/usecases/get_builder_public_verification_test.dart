@@ -12,9 +12,8 @@ class _FakeRepo implements VerificationsRepository {
   String? lastUserId;
 
   @override
-  Future<Either<Failure, List<BuilderPublicVerification>>> getPublicVerification(
-    String userId,
-  ) async {
+  Future<Either<Failure, List<BuilderPublicVerification>>>
+  getPublicVerification(String userId) async {
     lastUserId = userId;
     return right(_rows);
   }
@@ -36,23 +35,26 @@ class _FakeRepo implements VerificationsRepository {
 }
 
 void main() {
-  test('GetBuilderPublicVerification delegates to repo with the userId', () async {
-    final rows = [
-      const BuilderPublicVerification(
-        userId: 'u1',
-        kind: VerificationKind.abn,
-        verifiedLegalName: 'Acme Building Pty Ltd',
-      ),
-    ];
-    final repo = _FakeRepo(rows);
-    final usecase = GetBuilderPublicVerification(repo);
+  test(
+    'GetBuilderPublicVerification delegates to repo with the userId',
+    () async {
+      final rows = [
+        const BuilderPublicVerification(
+          userId: 'u1',
+          kind: VerificationKind.abn,
+          verifiedLegalName: 'Acme Building Pty Ltd',
+        ),
+      ];
+      final repo = _FakeRepo(rows);
+      final usecase = GetBuilderPublicVerification(repo);
 
-    final result = await usecase.call('u1');
+      final result = await usecase.call('u1');
 
-    expect(repo.lastUserId, 'u1');
-    expect(
-      result.getOrElse((_) => const []).single.verifiedLegalName,
-      'Acme Building Pty Ltd',
-    );
-  });
+      expect(repo.lastUserId, 'u1');
+      expect(
+        result.getOrElse((_) => const []).single.verifiedLegalName,
+        'Acme Building Pty Ltd',
+      );
+    },
+  );
 }

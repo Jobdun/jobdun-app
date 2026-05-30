@@ -21,9 +21,8 @@ class VerificationsRepositoryImpl implements VerificationsRepository {
   }
 
   @override
-  Future<Either<Failure, List<BuilderPublicVerification>>> getPublicVerification(
-    String userId,
-  ) async {
+  Future<Either<Failure, List<BuilderPublicVerification>>>
+  getPublicVerification(String userId) async {
     try {
       return right(await _datasource.getPublicVerification(userId));
     } on ServerException catch (e) {

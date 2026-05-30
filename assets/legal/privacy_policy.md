@@ -60,6 +60,15 @@ We collect the following categories of personal information:
 - Business or trading name
 - Qualifications and certifications
 
+**Register-confirmed business details.** When you verify an ABN or licence, we
+record a curated set of facts returned by the relevant public register — your
+verified legal/entity name, ABN status, GST registration status, entity type,
+and business state/postcode, together with the date the check was performed
+("as at"). These are sourced from the public registers in clause 3.3, not typed
+by you, and are shown as a "verified business" trust signal (see clause 6.1). We
+retain the full register response as an internal audit record; it is not shown
+to other users.
+
 ### 2.4 Profile Data
 - Profile photo or avatar
 - Trade specialties and skills
@@ -113,6 +122,10 @@ Not collected at this stage. If payment processing is introduced, this policy wi
 
 - **Google:** if you sign in with Google, we receive your name and email address from Google's OAuth service.
 - **Apple:** if you use Sign in with Apple, we receive your name and Apple-generated email (or relay address).
+- **Australian Business Register (ABR):** when you submit an ABN for verification, we query the ABR's public web services and receive your business's registered details (entity name, ABN status, GST registration, entity type, business state/postcode).
+- **State licensing registers** (e.g., NSW Fair Trading, QBCC): when you submit a licence for verification, we check the relevant state regulator's public register to confirm the licence details.
+
+Submitting an ABN or licence for verification constitutes your consent to these checks.
 
 **3.4** This policy serves as our notification of collection as required by APP 5.
 

@@ -1,6 +1,10 @@
 # STEP 6 — Capture & Display Verified Builder Details (Spec + Orchestration)
 
-> **Status:** SPEC ONLY — no feature code written yet. Awaiting greenlight to build (see Orchestration).
+> **Status:** BUILT (2026-05-30) on branch `feat/verified-builder-details-step6`. Migrations are written but
+> **not yet applied to a live DB** (Docker was down at build time — apply via `supabase db reset`). One design
+> correction vs the original spec: the counterparty projection is a SECURITY DEFINER **function**
+> `get_builder_public_verification()`, not a `security_invoker` view (a view would re-apply owner+admin RLS and
+> hide cross-user reads). The admin approval→`verifications` upsert and the audited "view raw" are RPCs too.
 > **Author trail:** distilled from a pasted "STEP 6 / Verification v3" plan, then *corrected* against the
 > live repo by three Explore agents (2026-05-30). Several assumptions in the original plan were stale —
 > the corrected scope below is what actually applies.
@@ -181,9 +185,15 @@ Mirror the existing `user_role_events` / `log_role_event()` pattern (`2026052000
 
 ## 10. Privacy (APP 3 / 5 / 12 — partially addresses `F-PRIV-12`)
 
-- Add `gst_registered`, `register_source`, `detail_captured_at` **and** the existing `abn_entity_name`,
-  `entity_type`, `abr_state`, `abr_postcode` to a documented **erasure inventory** (the columns a future
-  `delete-my-account` must null/anonymise). `builder_public_verification` already excludes soft-deleted users.
+- **Erasure inventory** — the columns a future `delete-my-account` (`F-PRIV-12`) must null/anonymise when a
+  user is erased (the `get_builder_public_verification` function already excludes soft-deleted users, and
+  `ON DELETE CASCADE` on `verifications.user_id` removes rows on hard auth-user deletion):
+
+  | Table | PII columns to null/anonymise |
+  |---|---|
+  | `verifications` | `abn`, `abn_entity_name`, `entity_type`, `abr_state`, `abr_postcode`, `gst_registered`, `register_source`, `detail_captured_at`, `licence_number`, `licence_state`, `licence_trade_class`, `failure_reason` |
+  | `verification_events` | `raw_response` (the full register payload — purge or redact) |
+  | `admin_actions` | `metadata`, `target_id` referencing an erased user (retain the audit row, scrub PII) |
 - Name the **ABR + state registers** as data sources in `assets/legal/privacy_policy.md` (APP 5 notice).
 - "As-at" label everywhere a verification is shown (owner, counterparty, admin) — **never** a bare "Verified".
 - **Out of scope here:** the full `delete-my-account` Edge Function (P0, separate workstream) — this spec only

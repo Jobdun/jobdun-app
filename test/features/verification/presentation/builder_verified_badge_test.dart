@@ -17,7 +17,9 @@ Future<void> _pump(WidgetTester tester, ProviderScope app) async {
 ProviderScope _badgeScope(List<BuilderPublicVerification> rows) {
   return ProviderScope(
     overrides: [
-      builderPublicVerificationProvider.overrideWith((ref, userId) async => rows),
+      builderPublicVerificationProvider.overrideWith(
+        (ref, userId) async => rows,
+      ),
     ],
     child: ScreenUtilInit(
       designSize: const Size(393, 852),

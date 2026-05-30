@@ -13,9 +13,8 @@ abstract interface class VerificationsRepository {
   /// Minimized, register-derived projection for COUNTERPARTY display (the
   /// "Verified business" badge). Reads the `get_builder_public_verification`
   /// RPC — never the raw row. Returns 0..N verified credentials.
-  Future<Either<Failure, List<BuilderPublicVerification>>> getPublicVerification(
-    String userId,
-  );
+  Future<Either<Failure, List<BuilderPublicVerification>>>
+  getPublicVerification(String userId);
 
   Future<Either<Failure, VerifyResult>> verifyAbn(String abn);
 
