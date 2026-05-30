@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../providers/admin_verifications_provider.dart';
+import 'admin_captured_details_card.dart';
 
 /// Document review dialog. Renders the image via a 60s signed URL, the
 /// claim metadata (state/issuer/number/dates), and exposes Approve / Reject
@@ -149,6 +150,10 @@ class _AdminVerificationReviewSheetState
                       _ImageBlock(filePath: i.filePath),
                       const Gap(16),
                       _MetaTable(item: i),
+                      if (i.verificationId != null) ...[
+                        const Gap(16),
+                        AdminCapturedDetailsCard(item: i),
+                      ],
                       if (i.lastVerificationFailureReason != null) ...[
                         const Gap(16),
                         _RegulatorFailureBlock(

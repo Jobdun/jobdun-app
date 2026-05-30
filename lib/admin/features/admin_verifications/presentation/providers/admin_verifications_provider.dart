@@ -40,6 +40,13 @@ class AdminVerificationItem {
     this.userRole,
     this.lastVerificationStatus,
     this.lastVerificationFailureReason,
+    this.verificationId,
+    this.capturedLegalName,
+    this.capturedEntityType,
+    this.gstRegistered,
+    this.registerSource,
+    this.detailCapturedAt,
+    this.abrState,
   });
 
   final String id;
@@ -61,6 +68,16 @@ class AdminVerificationItem {
   final String? userRole;
   final String? lastVerificationStatus;
   final String? lastVerificationFailureReason;
+
+  // STEP 6 curated display projection from the latest matching verifications
+  // row, so the admin sees what was captured (and can open the raw receipt).
+  final String? verificationId;
+  final String? capturedLegalName;
+  final String? capturedEntityType;
+  final bool? gstRegistered;
+  final String? registerSource;
+  final DateTime? detailCapturedAt;
+  final String? abrState;
 
   String get displayName => (userDisplayName?.trim().isNotEmpty ?? false)
       ? userDisplayName!.trim()
@@ -156,7 +173,11 @@ class AdminVerificationsController
         ? <Map<String, dynamic>>[]
         : (await _client
                   .from('verifications')
-                  .select('user_id, kind, status, failure_reason, updated_at')
+                  .select(
+                    'id, user_id, kind, status, failure_reason, updated_at, '
+                    'abn_entity_name, entity_type, gst_registered, '
+                    'register_source, detail_captured_at, abr_state',
+                  )
                   .inFilter('user_id', userIds)
                   .order('updated_at', ascending: false))
               .cast<Map<String, dynamic>>();
@@ -220,6 +241,13 @@ class AdminVerificationsController
       userRole: roleByUser[tradeId],
       lastVerificationStatus: lastVerif?['status'] as String?,
       lastVerificationFailureReason: lastVerif?['failure_reason'] as String?,
+      verificationId: lastVerif?['id'] as String?,
+      capturedLegalName: lastVerif?['abn_entity_name'] as String?,
+      capturedEntityType: lastVerif?['entity_type'] as String?,
+      gstRegistered: lastVerif?['gst_registered'] as bool?,
+      registerSource: lastVerif?['register_source'] as String?,
+      detailCapturedAt: parseOptDate(lastVerif?['detail_captured_at']),
+      abrState: lastVerif?['abr_state'] as String?,
     );
   }
 
@@ -261,5 +289,16 @@ class AdminVerificationsController
   /// 60s — long enough to load + view, short enough not to leak.
   Future<String> signedUrl(String filePath) async {
     return _client.storage.from('private-docs').createSignedUrl(filePath, 60);
+  }
+
+  /// Audited read of the raw regulator payload. The RPC writes an admin_actions
+  /// row before returning verification_events.raw_response (admin-only). See
+  /// 20260530000004_admin_view_verification_raw.sql.
+  Future<Map<String, dynamic>?> viewRaw(String verificationId) async {
+    final res = await _client.rpc(
+      'admin_view_verification_raw',
+      params: {'p_verification_id': verificationId},
+    );
+    return res is Map<String, dynamic> ? res : null;
   }
 }
