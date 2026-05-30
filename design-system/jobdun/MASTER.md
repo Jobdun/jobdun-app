@@ -43,12 +43,18 @@ This is a platform for people who work with their hands. The UI should feel like
 | Primary Text | `#F1F5F9` | `Color(0xFFF1F5F9)` | Body text on dark |
 | Secondary Text | `#94A3B8` | `Color(0xFF94A3B8)` | Labels, hints, metadata |
 | Border | `#334155` | `Color(0xFF334155)` | Input borders, dividers |
-| Error | `#EF4444` | `Color(0xFFEF4444)` | Errors only — never decorative |
+| Error | `#EF4444` | `Color(0xFFEF4444)` | Errors / destructive only — never decorative |
 | Success | `#22C55E` | `Color(0xFF22C55E)` | Confirmations only |
+| Warning | `#F59E0B` | `Color(0xFFF59E0B)` | Caution / pending / in-review / expiring — `c.warning` |
+
+> The table is the summary. The verified source of truth (with tinted bg/text pairs, `onAction`, `borderStrong`, `available`, `star`) is `lib/app/theme/app_colors.dart`; every dark pair is enforced by `test/colors_contrast_test.dart`.
 
 **Color Rules:**
 - Background is ALWAYS `#0F172A`. Never use white (`#FFFFFF`) or light gray (`#F8FAFC`) as a screen background.
-- Orange `#F97316` is reserved for CTAs and critical status indicators only — do not use it decoratively.
+- Orange `#F97316` is reserved for CTAs and critical status indicators only — do not use it decoratively, and do not use it for a *status* (a status is not an action).
+- **Caution ≠ error.** Pending / awaiting / in-review / expiring states use **Warning amber `#F59E0B`** (`c.warning` + `c.warningBg`/`c.warningTx`), NOT Error red (`c.urgent`) and NOT the brand orange (`c.action`).
+- **`surfaceRaised` (`#334155`) carries primary text (`text1`) only.** Secondary/tertiary text (`text2`/`text3`) and interactive borders (`borderStrong`) fall below WCAG AA on it (4.04 / 3.54 / 2.57). Put muted text and input controls on `background` or `surface`.
+- Foreground on the orange CTA is **dark** (`onAction` `#0F172A`, 6.37:1) — white-on-orange is 2.80:1 and fails. Likewise dark-on-orange for any filled orange tile/icon.
 - No gradients. No blurs on backgrounds. No frosted glass. Flat.
 
 ---

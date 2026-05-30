@@ -11,6 +11,55 @@ class AppTheme {
   static ThemeData light() => _build(JColors.light, Brightness.light);
   static ThemeData dark() => _build(JColors.dark, Brightness.dark);
 
+  /// The Material 3 ColorScheme pinned to Jobdun tokens. Pure (no fonts) so the
+  /// contrast guard can verify the on-pairs that drive stock Material widgets.
+  /// `_build` consumes this too — single source for the scheme.
+  static ColorScheme colorScheme(Brightness brightness) => _scheme(
+    brightness == Brightness.dark ? JColors.dark : JColors.light,
+    brightness,
+  );
+
+  static ColorScheme _scheme(JColors c, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    // fromSeed fills every M3 role (surface ramp, *Fixed, scrim, shadow);
+    // copyWith pins the brand-critical ones to exact, contrast-verified hex.
+    // Single-accent: secondary/tertiary reuse the orange — no green-as-tertiary
+    // (that was white-on-green 2.28:1). Stock Material widgets theme from this.
+    return ColorScheme.fromSeed(
+      seedColor: c.action,
+      brightness: brightness,
+    ).copyWith(
+      primary: c.action,
+      onPrimary: c.onAction, // 6.37:1
+      primaryContainer: c.actionBg,
+      onPrimaryContainer: c.actionTx, // dark 11.56 / light 6.38
+      secondary: c.action,
+      onSecondary: c.onAction,
+      secondaryContainer: c.actionBg,
+      onSecondaryContainer: c.actionTx,
+      tertiary: c.action,
+      onTertiary: c.onAction,
+      tertiaryContainer: c.actionBg,
+      onTertiaryContainer: c.actionTx,
+      error: c.urgent,
+      // dark: slate900-on-red500 = 4.74 · light: white-on-red600 = 4.83
+      onError: isDark ? c.onAction : Colors.white,
+      errorContainer: c.urgentBg,
+      onErrorContainer: c.urgentTx, // 8.51 / 6.80
+      surface: c.surface,
+      onSurface: c.text1, // 13.35 / 17.85
+      onSurfaceVariant: c.text2, // 5.71 / 7.58
+      surfaceContainerLowest: c.background,
+      surfaceContainerLow: c.surface,
+      surfaceContainer: c.surface,
+      surfaceContainerHigh: c.surfaceRaised,
+      surfaceContainerHighest: c.surfaceRaised,
+      outline: c.borderStrong, // 3.63:1 — interactive edges
+      outlineVariant: c.border, // subtle divider
+      surfaceTint: Colors.transparent, // kill M3 elevation tint
+    );
+  }
+
   /// Brand wordmark style — Inter Black 900. Use only for logo/wordmark text.
   /// Example: Text('JOBDUN', style: AppTheme.brandDisplay(context.c.text1))
   static TextStyle brandDisplay(Color color) => GoogleFonts.oswald(
@@ -55,33 +104,7 @@ class AppTheme {
   static ThemeData _build(JColors c, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
-    final colorScheme = ColorScheme(
-      brightness: brightness,
-      primary: c.action,
-      onPrimary: c.onAction,
-      primaryContainer: c.actionBg,
-      onPrimaryContainer: c.actionTx,
-      secondary: c.surfaceRaised,
-      onSecondary: c.text1,
-      secondaryContainer: c.surface,
-      onSecondaryContainer: c.text2,
-      tertiary: c.verified,
-      onTertiary: Colors.white, // intentional: white-on-action
-      tertiaryContainer: c.verifiedBg,
-      onTertiaryContainer: c.verifiedTx,
-      error: c.urgent,
-      onError: Colors.white, // intentional: white-on-action
-      errorContainer: c.urgentBg,
-      onErrorContainer: c.urgentTx,
-      surface: c.card,
-      onSurface: c.text1,
-      surfaceContainerHighest: c.surface,
-      onSurfaceVariant: c.text2,
-      outline: c.border,
-      outlineVariant: c.border,
-      inverseSurface: isDark ? c.text1 : c.text1,
-      onInverseSurface: isDark ? c.background : c.background,
-    );
+    final colorScheme = _scheme(c, brightness);
 
     final openSansBase = GoogleFonts.openSansTextTheme(
       ThemeData(brightness: brightness).textTheme,
@@ -138,10 +161,11 @@ class AppTheme {
       bodyMedium: GoogleFonts.openSans(
         fontSize: 13,
         fontWeight: FontWeight.w400,
+        height: 1.45, // comfortable leading on the most-used secondary body
         color: c.text2,
       ),
       bodySmall: GoogleFonts.openSans(
-        fontSize: 11,
+        fontSize: 12, // floor raised from 11 — 12 is the readable minimum
         fontWeight: FontWeight.w500,
         color: c.text2,
       ),
@@ -158,7 +182,8 @@ class AppTheme {
         color: c.text2,
       ),
       labelSmall: GoogleFonts.openSans(
-        fontSize: 10,
+        fontSize:
+            11, // floor raised from 10 — eyebrows/FieldLabel were too small
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
         color: c.text3,
@@ -226,11 +251,11 @@ class AppTheme {
         fillColor: c.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: BorderSide(color: c.border),
+          borderSide: BorderSide(color: c.borderStrong),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),
-          borderSide: BorderSide(color: c.border),
+          borderSide: BorderSide(color: c.borderStrong),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.input),

@@ -279,7 +279,8 @@ class _AppCard extends StatelessWidget {
                         style: tt.labelMedium!.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
-                          color: Colors.white, // intentional: white-on-action
+                          color: c
+                              .onAction, // dark-on-fill: white-on-green is 2.28:1 (fails); onAction = 7.83:1
                         ),
                       ),
                     ),
@@ -334,7 +335,7 @@ class _AppCard extends StatelessWidget {
   }
 
   static Color _statusColor(ApplicationStatus s, JColors c) => switch (s) {
-    ApplicationStatus.pending => c.action,
+    ApplicationStatus.pending => c.warning,
     ApplicationStatus.shortlisted => c.available,
     ApplicationStatus.hired => c.verified,
     ApplicationStatus.rejected => c.urgent,

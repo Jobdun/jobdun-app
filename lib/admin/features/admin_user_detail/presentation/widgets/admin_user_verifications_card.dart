@@ -120,7 +120,7 @@ class _VerificationRow extends StatelessWidget {
       switch (status.toLowerCase()) {
         'verified' => (c.verifiedBg, c.verifiedTx),
         'failed' => (c.urgentBg, c.urgentTx),
-        'pending' => (c.actionBg, c.actionTx),
+        'pending' => (c.warningBg, c.warningTx),
         _ => (c.surfaceRaised, c.text2),
       };
 }

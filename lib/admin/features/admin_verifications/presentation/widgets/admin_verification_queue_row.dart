@@ -116,7 +116,7 @@ class AdminVerificationQueueRow extends StatelessWidget {
   static Color _statusColor(BuildContext context, String status) {
     final c = context.c;
     return switch (status) {
-      'pending' => c.action,
+      'pending' => c.warning,
       'approved' => c.verified,
       'rejected' => c.urgent,
       'expired' => c.text3,
@@ -227,7 +227,7 @@ class AdminVerificationStatusDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final color = switch (status) {
-      'pending' => c.action,
+      'pending' => c.warning,
       'approved' => c.verified,
       'rejected' => c.urgent,
       _ => c.text3,
