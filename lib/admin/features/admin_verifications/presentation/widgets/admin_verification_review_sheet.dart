@@ -5,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../data/state_licence_registers.dart';
 import '../providers/admin_verifications_provider.dart';
 import 'admin_captured_details_card.dart';
+import 'admin_official_register_link.dart';
 
 /// Document review dialog. Renders the image via a 60s signed URL, the
 /// claim metadata (state/issuer/number/dates), and exposes Approve / Reject
@@ -150,6 +152,17 @@ class _AdminVerificationReviewSheetState
                       _ImageBlock(filePath: i.filePath),
                       const Gap(16),
                       _MetaTable(item: i),
+                      // Trade licence: one-click link to the correct state
+                      // register so the admin can confirm the licence on the
+                      // official source. Only shows when the state is known.
+                      if (i.docType == 'trade_licence' &&
+                          licenceRegisterFor(i.state) != null) ...[
+                        const Gap(16),
+                        AdminOfficialRegisterLink(
+                          state: i.state,
+                          licenceNumber: i.documentNumber,
+                        ),
+                      ],
                       if (i.verificationId != null) ...[
                         const Gap(16),
                         AdminCapturedDetailsCard(item: i),
