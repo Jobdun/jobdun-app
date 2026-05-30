@@ -1,6 +1,7 @@
 # Claude Code Skills — Jobdun Inventory & Plain-English Usage Guide
 
-> Snapshot: 2026-05-20. Regenerate by running the scope checks in §7.
+> Snapshot: 2026-05-30. Regenerate by running the scope checks in §7.
+> **Mandatory four (always use):** `ui-ux-pro-max`, `impeccable`, `superpowers` (obra), `context7` — see `CLAUDE.md → Required skills — ALWAYS use`.
 > **What is a "skill"?** A folder of instructions Claude loads *on demand* when your
 > request matches it. Think of it as a specialist Claude can phone for advice mid-task.
 > You don't install knowledge into your code — Claude reads the skill, then acts.
@@ -17,6 +18,8 @@
 | You're doing… | Skill that fires | Layman's terms |
 |---------------|------------------|----------------|
 | Any screen / widget / colour / layout | **ui-ux-pro-max** | Your design-system brain. Knows Jobdun's dark+orange look. |
+| Polishing a screen / killing AI-slop look | **impeccable** | A second design opinion: shape → craft → critique → polish. Pairs with ui-ux-pro-max. |
+| Need exact Flutter/Supabase/Riverpod API | **context7** (MCP) | Live, version-accurate docs. Trust it over memory before using an API. |
 | Anything Supabase (DB, auth, RLS, storage, edge fn) | **supabase** | Backend expert for your exact Supabase client version. |
 | Writing/finalising a migration or slow query | **supabase-postgres-best-practices** | Database tuning — indexes, RLS speed, scale to 25k users. |
 | Starting a feature | **brainstorming** → **writing-plans** | Forces "what & why" before code. Stops wasted work. |
@@ -39,6 +42,7 @@ These define how Claude works **on Jobdun specifically** and bind any teammate +
 | Skill | What it is (layman) | Use it in Jobdun when… |
 |-------|---------------------|------------------------|
 | **ui-ux-pro-max** | A design consultant that knows 67 styles, 96 palettes, fonts, Flutter UI patterns — and is wired to *your* design system. | **Any** visual work: a new screen, a button, spacing, colours, "make this look better". It auto-reads `design-system/jobdun/MASTER.md` then the page override. ⚠️ Also installed globally (identical) — see §5. |
+| **impeccable** | An anti-AI-slop design skill (24 commands: `/impeccable shape`, `/craft`, `/critique`, `/audit`, `/polish`, `/typeset`, `/layout`, `/colorize`, `/animate`, `/distill`, `/clarify`, `/harden`, …). Installed via `npx impeccable skills install`; lives in `.claude/skills/impeccable/` (committed) and `.github/skills/` (Copilot). | **Every** screen, alongside ui-ux-pro-max: `/impeccable shape` to plan UX before code, `/impeccable critique`+`/audit` to review, then the refine commands to fix type/layout/colour/motion. ⚠️ Flutter caveat: the `npx impeccable detect` CLI/Chrome detector are web-only (TSX/Astro/CSS) — won't parse Dart; use the design-thinking commands, not the detector. |
 
 ### 1.2 Project-scoped plugins — declared in `./.claude/settings.json`
 
@@ -52,6 +56,12 @@ Source: `supabase-agent-skills` marketplace (official Supabase). Version `daaed4
 
 **Why PROJECT not GLOBAL:** they encode *Jobdun's* backend; they must bind CI and a
 future teammate, and must NOT fire on unrelated non-Supabase projects.
+
+### 1.3 Project-scoped MCP — declared in `./.mcp.json`
+
+| Server | What it is (layman) | Use it in Jobdun when… |
+|--------|---------------------|------------------------|
+| **context7** (`@upstash/context7-mcp`) | A live-docs MCP server (not a skill folder). Fetches version-accurate docs for any library. | Before relying on any Flutter / Dart / Supabase / Riverpod / GoRouter / Key-packages API. Project-scoped in `.mcp.json` so it travels to cloud/remote runs (it's also available globally via the official marketplace). |
 
 ---
 

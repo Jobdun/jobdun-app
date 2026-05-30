@@ -10,9 +10,11 @@ Guidance for AI coding agents (Claude Code, Copilot, Codex, Gemini, etc.) workin
 
 ## Required tools & skills
 
+**Four mandatory, always-use skills** (see `CLAUDE.md → Required skills — ALWAYS use` for the canonical list): **`ui-ux-pro-max`**, **`impeccable`**, **`superpowers`** (the `obra` collection), and **`context7`**. Invoke the relevant one *before* acting, every session. `ui-ux-pro-max` + `impeccable` are committed under `.claude/skills/`; `context7` is project-scoped in `.mcp.json`; superpowers is global.
+
 Always reach for these before writing code:
 
-- **Superpowers skills** — invoke the relevant skill *before* acting (not after). Key ones:
+- **Superpowers skills** (`obra`) — invoke the relevant skill *before* acting (not after). Key ones:
   - `superpowers:brainstorming` — before any feature/creative work or entering plan mode.
   - `superpowers:test-driven-development` — before writing implementation code.
   - `superpowers:systematic-debugging` — before proposing any bug fix.
@@ -20,6 +22,7 @@ Always reach for these before writing code:
   - `superpowers:writing-plans` / `superpowers:executing-plans` — for multi-step work.
   - If there's even a 1% chance a skill applies, invoke it. Process skills first, then implementation skills.
 - **`ui-ux-pro-max` skill** — for any UI/UX work (planning, building, reviewing screens, components, color, typography, layout, animation). Use it together with the Jobdun design system files above.
+- **`impeccable` skill** — design-quality / anti-AI-slop pass on every screen: `/impeccable shape` (plan UX), `/impeccable craft` (design-then-build), `/impeccable critique` + `/impeccable audit` (review), then `/impeccable typeset | layout | colorize | animate | polish | distill | clarify | harden`. Pair with `ui-ux-pro-max` (they complement). ⚠️ Flutter caveat: the `npx impeccable detect` CLI/Chrome detector parse web frameworks (TSX/Astro/CSS), not Dart — use the design-thinking commands, not the detector.
 - **Context7** — use the Context7 MCP to pull up-to-date, version-accurate docs for Flutter, Dart, Supabase, Riverpod, GoRouter, and any package in CLAUDE.md's "Key packages" list before relying on API details. Prefer Context7-verified APIs over memory.
 - **Claude Code skills** generally — check the available-skills list each session and use the matching skill rather than improvising (e.g. `simplify`, `review`, `security-review`, `update-config`).
 

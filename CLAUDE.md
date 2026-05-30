@@ -12,6 +12,17 @@ Jobdun is a mobile-first job matching and workforce platform for the constructio
 - **Navigation**: GoRouter
 - **Architecture**: Feature-first Clean Architecture (see *Engineering Standards (STRICT)* below — non-negotiable)
 
+## Required skills — ALWAYS use (mandatory every session)
+
+These four are non-negotiable on Jobdun. Invoke the relevant one **before** acting, not after. Process skills (superpowers) outrank implementation skills. All four are wired to travel with the repo: `ui-ux-pro-max` + `impeccable` live in `.claude/skills/` (committed), `context7` is project-scoped in `.mcp.json`, superpowers is global.
+
+1. **`ui-ux-pro-max`** (`.claude/skills/ui-ux-pro-max/`) — any UI/UX work: planning, building, reviewing, color, type, layout, motion, spacing. Always pair with `design-system/jobdun/MASTER.md` then the `pages/<page>.md` override (see Design System below).
+2. **`impeccable`** (`.claude/skills/impeccable/`) — design-quality / anti-AI-slop pass on every screen. Commands: `/impeccable shape` (plan UX before code), `/impeccable craft` (design-then-build), `/impeccable critique` + `/impeccable audit` (review), then refine with `/impeccable typeset | layout | colorize | animate | polish | distill | clarify | harden`. ⚠️ Flutter caveat: the `npx impeccable detect` CLI + Chrome detector parse web frameworks (TSX/Astro/CSS) and **won't parse Dart** — use the design-thinking commands, not the detector. Use it *together with* `ui-ux-pro-max` (Jobdun design-system knowledge) — they complement, not replace, each other.
+3. **`superpowers`** (the `obra/superpowers-marketplace` plugin) — process discipline: `superpowers:brainstorming` before any feature/screen, `:test-driven-development` before code, `:systematic-debugging` before any fix, `:writing-plans` / `:executing-plans` for multi-step work, `:dispatching-parallel-agents` / `:subagent-driven-development` for orchestration, `:verification-before-completion` before claiming done / committing / opening a PR.
+4. **`context7`** (MCP, `mcp__context7__*`) — pull version-accurate docs for Flutter, Dart, Supabase, Riverpod, GoRouter, and any package in *Key packages* below **before** relying on API details. Prefer Context7-verified APIs over memory.
+
+Full inventory + plain-English usage: `docs/CLAUDE_SKILLS.md`.
+
 ## Design System
 
 **Skill installed:** `ui-ux-pro-max` (in `.claude/skills/ui-ux-pro-max/` — also globally in `~/.claude/skills/`)
