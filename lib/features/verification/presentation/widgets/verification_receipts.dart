@@ -139,6 +139,7 @@ class VerificationReceipts extends ConsumerWidget {
         label: label,
         sub: verifiedSub,
         isVerified: true,
+        cta: isOwner ? _reverifyCta(context, docType) : null,
       );
     }
     final approved = _findDoc(
@@ -253,23 +254,52 @@ class VerificationReceipts extends ConsumerWidget {
 
   static String _abnSubtitle(Verification v) {
     final entity = v.abnEntityName?.trim();
-    final checked = v.verifiedAt != null
-        ? _relative(v.verifiedAt!)
-        : 'recently';
     final prefix = entity?.isNotEmpty == true ? '$entity · ' : '';
-    return '${prefix}Checked against the Australian Business Register · $checked';
+    final gst = v.gstRegistered == true ? ' · GST registered' : '';
+    return '${prefix}Australian Business Register$gst${_asAt(v)}';
   }
 
   static String _licenceSubtitle(Verification v) {
     final state = v.licenceState ?? '';
     final reg = state.isNotEmpty ? '$state Fair Trading' : 'state regulator';
-    final checked = v.verifiedAt != null
-        ? _relative(v.verifiedAt!)
-        : 'recently';
     final expires = v.expiresAt != null
         ? ' · expires ${DateFormat('d MMM yyyy').format(v.expiresAt!)}'
         : '';
-    return 'Checked against $reg\'s public register · $checked$expires';
+    return 'Checked against $reg\'s public register${_asAt(v)}$expires';
+  }
+
+  // Snapshot freshness: a verification is true only "as at" the moment it was
+  // captured — a business can be cancelled the day after. Always render the
+  // as-at date next to a verified row; never a bare "Verified". Falls back to
+  // verifiedAt for rows captured before detail_captured_at existed.
+  static String _asAt(Verification v) {
+    final at = v.detailCapturedAt ?? v.verifiedAt;
+    return at == null ? '' : ' · as at ${DateFormat('d MMM yyyy').format(at)}';
+  }
+
+  // Owner-only re-verify affordance on an already-verified row. ABN re-runs the
+  // ABR wizard; licence re-opens the manual upload sheet.
+  static Widget _reverifyCta(BuildContext context, docs.DocType docType) {
+    final isLicence = docType == docs.DocType.tradeLicence;
+    return InkWell(
+      onTap: () => isLicence
+          ? showManualUploadSheet(
+              context: context,
+              kind: ManualDocKind.tradeLicence,
+            )
+          : context.push('/verification/wizard'),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 6.h),
+        child: Text(
+          'Re-verify →',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+            color: context.c.text3,
+          ),
+        ),
+      ),
+    );
   }
 
   static String _relative(DateTime t) {

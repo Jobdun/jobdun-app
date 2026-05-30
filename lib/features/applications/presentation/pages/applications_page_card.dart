@@ -195,6 +195,13 @@ class _AppCard extends StatelessWidget {
                     ],
                   ],
                 ),
+                // Counterparty trust signal: a trade viewing a builder sees the
+                // builder's "Verified business" badge (minimized public
+                // projection). Renders nothing when the builder isn't verified.
+                if (!isBuilder) ...[
+                  Gap(4.h),
+                  BuilderVerifiedBadge(userId: app.builderId),
+                ],
                 Gap(4.h),
                 // ── Location
                 Row(

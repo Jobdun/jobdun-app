@@ -15,6 +15,7 @@ import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../verification/presentation/widgets/builder_verified_badge.dart';
 import '../../../verification/presentation/widgets/unverified_consent_dialog.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
