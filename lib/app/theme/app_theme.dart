@@ -56,6 +56,9 @@ class AppTheme {
       surfaceContainerHighest: c.surfaceRaised,
       outline: c.borderStrong, // 3.63:1 — interactive edges
       outlineVariant: c.border, // subtle divider
+      // Pin the inverse pair (SnackBars) so an SDK bump can't recolour it.
+      inverseSurface: c.text1,
+      onInverseSurface: c.background,
       surfaceTint: Colors.transparent, // kill M3 elevation tint
     );
   }

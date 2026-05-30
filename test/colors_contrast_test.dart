@@ -1,17 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Jobdun — color contrast guard (dark theme = the shipping theme).
+// Jobdun — color contrast guard. Runs in CI via `flutter test`.
 //
-// Asserts every meaningful foreground/background pair in JColors.dark clears its
-// WCAG 2.2 bar. Runs in CI via `flutter test`. If someone nudges a hex and breaks
-// AA, this fails loudly instead of shipping an unreadable control.
+// Asserts every meaningful foreground/background pair clears its WCAG 2.2 bar,
+// for BOTH themes, so a future hex tweak can't silently ship an unreadable
+// control. Three layers are guarded:
+//   1. JColors token pairs (what widgets use via context.c).
+//   2. The pinned ColorScheme on-pairs (what stock Material widgets use).
+//   3. A coverage meta-test: every JColors token must appear in a pair or be
+//      explicitly exempt — so a NEW token can't ship unguarded.
 //
 // Bars: normal text 4.5:1 · large text / UI components (borders, icons, dots) 3:1.
 //
-// Light theme is intentionally NOT guarded here: the app ships dark-only and the
-// light JColors is gated debt (see DESIGN_SYSTEM_SUGGESTIONS S14). Its text pairs
-// all pass, but the brand orange/amber can't clear 3:1 as standalone marks on a
-// white surface — a structural light-mode limit, not a fixable token. Wire +
-// verify light before adding it to this guard.
+// `action`/`primary` as a standalone UI mark on `surface` is NOT asserted: the
+// brand orange is 2.80:1 on white by design (filled buttons are label-carried).
+// So that one pair is dark-only.
 //
 // Color API: Flutter 3.27+ exposes .r/.g/.b as 0.0–1.0 doubles (sRGB-encoded).
 // We use those directly — no /255, no deprecated .red/.green/.blue.
@@ -36,129 +38,157 @@ double _contrast(Color a, Color b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-class _Pair {
-  const _Pair(this.name, this.fg, this.bg, this.min);
-  final String name;
-  final Color fg, bg;
-  final double min; // 4.5 = text · 3.0 = large text / UI component
-}
+// Token pairs by NAME (resolved per theme via JColors.toMap()).
+const _textPairs = <(String, String)>[
+  ('onAction', 'action'),
+  ('onAction', 'actionPressed'),
+  ('text1', 'surface'),
+  ('text2', 'surface'),
+  ('text3', 'surface'),
+  ('text1', 'background'),
+  ('text2', 'background'),
+  ('text3', 'background'),
+  // surfaceRaised carries text1 ONLY (MASTER rule) — text2/text3 fall below
+  // 4.5 on raised, so the only raised text pairing we assert is text1.
+  ('text1', 'surfaceRaised'),
+  ('actionTx', 'actionBg'),
+  ('verifiedTx', 'verifiedBg'),
+  ('urgentTx', 'urgentBg'),
+  ('availableTx', 'availableBg'),
+  ('warningTx', 'warningBg'),
+];
+
+const _uiPairs = <(String, String)>[
+  ('borderStrong', 'surface'),
+  ('borderStrong', 'background'),
+  ('star', 'surface'),
+  ('warning', 'surface'),
+  ('verified', 'surface'),
+  ('urgent', 'surface'),
+  ('available', 'surface'),
+];
+
+// Orange as a standalone UI mark on the dark canvas — passes on slate (6.37),
+// fails on white (2.80) by design, so dark-only.
+const _darkOnlyUiPairs = <(String, String)>[('action', 'background')];
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  const c = JColors.dark;
-  final surface = c.surface;
-  final bg = c.background;
-  final raised = c.surfaceRaised;
-
-  final textPairs = <_Pair>[
-    // Primary CTA — the most-tapped control. Dark-on-orange, not white-on-orange.
-    _Pair('onAction / action', c.onAction, c.action, 4.5),
-    _Pair('onAction / actionPressed', c.onAction, c.actionPressed, 4.5),
-
-    // Body / label text on every legitimate surface.
-    _Pair('text1 / surface', c.text1, surface, 4.5),
-    _Pair('text2 / surface', c.text2, surface, 4.5),
-    _Pair('text3 / surface', c.text3, surface, 4.5),
-    _Pair('text1 / background', c.text1, bg, 4.5),
-    _Pair('text2 / background', c.text2, bg, 4.5),
-    _Pair('text3 / background', c.text3, bg, 4.5),
-
-    // surfaceRaised carries text1 ONLY (MASTER rule). text2/text3 fall below
-    // 4.5 on raised, so we assert the supported pairing and forbid the rest.
-    _Pair('text1 / surfaceRaised', c.text1, raised, 4.5),
-
-    // Status-chip text on its tinted background.
-    _Pair('actionTx / actionBg', c.actionTx, c.actionBg, 4.5),
-    _Pair('verifiedTx / verifiedBg', c.verifiedTx, c.verifiedBg, 4.5),
-    _Pair('urgentTx / urgentBg', c.urgentTx, c.urgentBg, 4.5),
-    _Pair('availableTx / availableBg', c.availableTx, c.availableBg, 4.5),
-    _Pair('warningTx / warningBg', c.warningTx, c.warningBg, 4.5),
+  final themes = <({String name, JColors c, bool isDark})>[
+    (name: 'dark', c: JColors.dark, isDark: true),
+    (name: 'light', c: JColors.light, isDark: false),
   ];
 
-  final uiPairs = <_Pair>[
-    // Interactive boundaries — inputs sit on both surface and background.
-    _Pair('borderStrong / surface', c.borderStrong, surface, 3.0),
-    _Pair('borderStrong / background', c.borderStrong, bg, 3.0),
-    // Accent + status marks (icons, dots, fills) as large/UI elements.
-    _Pair('action / background', c.action, bg, 3.0),
-    _Pair('star / surface', c.star, surface, 3.0),
-    _Pair('warning / surface', c.warning, surface, 3.0),
-    _Pair('verified / surface', c.verified, surface, 3.0),
-    _Pair('urgent / surface', c.urgent, surface, 3.0),
-    _Pair('available / surface', c.available, surface, 3.0),
-  ];
+  for (final t in themes) {
+    final m = t.c.toMap();
+    Color col(String n) => m[n]!;
 
-  group('WCAG 2.2 — text contrast (4.5:1)', () {
-    for (final p in textPairs) {
-      test(p.name, () {
-        final r = _contrast(p.fg, p.bg);
-        expect(
-          r,
-          greaterThanOrEqualTo(p.min),
-          reason: '${p.name} = ${r.toStringAsFixed(2)}:1, needs ${p.min}:1',
-        );
-      });
-    }
-  });
+    group('WCAG text 4.5:1 (${t.name})', () {
+      for (final (fg, bg) in _textPairs) {
+        test('$fg / $bg', () {
+          final r = _contrast(col(fg), col(bg));
+          expect(
+            r,
+            greaterThanOrEqualTo(4.5),
+            reason: '${t.name} · $fg/$bg = ${r.toStringAsFixed(2)}:1',
+          );
+        });
+      }
+    });
 
-  group('WCAG 2.2 — UI / large-element contrast (3:1)', () {
-    for (final p in uiPairs) {
-      test(p.name, () {
-        final r = _contrast(p.fg, p.bg);
-        expect(
-          r,
-          greaterThanOrEqualTo(p.min),
-          reason: '${p.name} = ${r.toStringAsFixed(2)}:1, needs ${p.min}:1',
-        );
-      });
-    }
-  });
+    group('WCAG UI/large 3:1 (${t.name})', () {
+      final pairs = [..._uiPairs, if (t.isDark) ..._darkOnlyUiPairs];
+      for (final (fg, bg) in pairs) {
+        test('$fg / $bg', () {
+          final r = _contrast(col(fg), col(bg));
+          expect(
+            r,
+            greaterThanOrEqualTo(3.0),
+            reason: '${t.name} · $fg/$bg = ${r.toStringAsFixed(2)}:1',
+          );
+        });
+      }
+    });
 
-  // The pinned ColorScheme drives every STOCK Material widget (FilledButton,
-  // TextField, SnackBar, AppBar, Chip, Switch...). Guard its on-pairs too, on
-  // the dark scheme that ships. `surface` as a UI mark on light is the same
-  // orange-on-white limit documented above, so only dark is asserted.
-  group('WCAG 2.2 — ColorScheme on-pairs (stock M3 widgets, dark)', () {
+    // `border` is a decorative same-tone divider, exempt from WCAG 1.4.11. It
+    // MUST stay subtle — interactive edges use `borderStrong`, not `border`.
+    test('border stays subtle, intentionally < 3:1 (${t.name})', () {
+      expect(_contrast(col('border'), col('surface')), lessThan(3.0));
+    });
+  }
+
+  // The pinned ColorScheme drives every STOCK Material widget. Guard its
+  // on-pairs on the dark scheme that ships.
+  group('WCAG ColorScheme on-pairs (stock M3 widgets, dark)', () {
     final s = AppTheme.colorScheme(Brightness.dark);
-    final schemePairs = <_Pair>[
-      _Pair('onPrimary / primary', s.onPrimary, s.primary, 4.5),
-      _Pair(
+    final pairs = <(String, Color, Color, double)>[
+      ('onPrimary / primary', s.onPrimary, s.primary, 4.5),
+      (
         'onPrimaryContainer / primaryContainer',
         s.onPrimaryContainer,
         s.primaryContainer,
         4.5,
       ),
-      _Pair('onSecondary / secondary', s.onSecondary, s.secondary, 4.5),
-      _Pair('onTertiary / tertiary', s.onTertiary, s.tertiary, 4.5),
-      _Pair('onError / error', s.onError, s.error, 4.5),
-      _Pair(
+      ('onSecondary / secondary', s.onSecondary, s.secondary, 4.5),
+      ('onTertiary / tertiary', s.onTertiary, s.tertiary, 4.5),
+      ('onError / error', s.onError, s.error, 4.5),
+      (
         'onErrorContainer / errorContainer',
         s.onErrorContainer,
         s.errorContainer,
         4.5,
       ),
-      _Pair('onSurface / surface', s.onSurface, s.surface, 4.5),
-      _Pair('onSurfaceVariant / surface', s.onSurfaceVariant, s.surface, 4.5),
-      _Pair('outline / surface', s.outline, s.surface, 3.0),
+      ('onSurface / surface', s.onSurface, s.surface, 4.5),
+      ('onSurfaceVariant / surface', s.onSurfaceVariant, s.surface, 4.5),
+      (
+        'onInverseSurface / inverseSurface',
+        s.onInverseSurface,
+        s.inverseSurface,
+        4.5,
+      ),
+      ('outline / surface', s.outline, s.surface, 3.0),
     ];
-    for (final p in schemePairs) {
-      test(p.name, () {
-        final r = _contrast(p.fg, p.bg);
+    for (final (label, fg, bg, min) in pairs) {
+      test(label, () {
+        final r = _contrast(fg, bg);
         expect(
           r,
-          greaterThanOrEqualTo(p.min),
-          reason: '${p.name} = ${r.toStringAsFixed(2)}:1, needs ${p.min}:1',
+          greaterThanOrEqualTo(min),
+          reason: '$label = ${r.toStringAsFixed(2)}:1, needs $min:1',
         );
       });
     }
   });
 
-  // `border` (#334155) is a decorative same-tone divider, exempt from WCAG
-  // 1.4.11 (which covers only controls/meaningful graphics). It MUST stay
-  // subtle: interactive edges use `borderStrong`, not `border`. Lock that
-  // intent so nobody "fixes" the divider into a hard line.
-  test('border stays subtle (decorative divider, intentionally < 3:1)', () {
-    expect(_contrast(c.border, surface), lessThan(3.0));
+  // Coverage: every JColors token must be guarded above or explicitly exempt,
+  // so a newly-added token can't slip through unverified.
+  test('every JColors token is covered by a contrast pair (none unguarded)', () {
+    final guarded = <String>{
+      for (final (a, b) in [
+        ..._textPairs,
+        ..._uiPairs,
+        ..._darkOnlyUiPairs,
+      ]) ...[a, b],
+      'border', // asserted by the "border stays subtle" test
+    };
+    // Exempt: `card` is an alias of `surface` (same value, no separate pair).
+    const exempt = <String>{'card'};
+
+    final all = JColors.dark.toMap().keys.toSet();
+    expect(
+      all.difference(guarded).difference(exempt),
+      isEmpty,
+      reason: 'Unguarded token(s) — add a contrast pair or mark exempt.',
+    );
+    // Reverse checks: guard/exempt must reference real tokens (catch renames).
+    expect(
+      guarded.difference(all),
+      isEmpty,
+      reason: 'Guard references unknown token(s).',
+    );
+    expect(
+      exempt.difference(all),
+      isEmpty,
+      reason: 'Exempt references unknown token(s).',
+    );
   });
 }

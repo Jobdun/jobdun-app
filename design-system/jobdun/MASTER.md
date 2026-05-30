@@ -55,7 +55,23 @@ This is a platform for people who work with their hands. The UI should feel like
 - **Caution ≠ error.** Pending / awaiting / in-review / expiring states use **Warning amber `#F59E0B`** (`c.warning` + `c.warningBg`/`c.warningTx`), NOT Error red (`c.urgent`) and NOT the brand orange (`c.action`).
 - **`surfaceRaised` (`#334155`) carries primary text (`text1`) only.** Secondary/tertiary text (`text2`/`text3`) and interactive borders (`borderStrong`) fall below WCAG AA on it (4.04 / 3.54 / 2.57). Put muted text and input controls on `background` or `surface`.
 - Foreground on the orange CTA is **dark** (`onAction` `#0F172A`, 6.37:1) — white-on-orange is 2.80:1 and fails. Likewise dark-on-orange for any filled orange tile/icon.
+- **Status chips / tags use the semantic `*Bg`/`*Tx` pairs** (`warningBg`/`warningTx`, etc.; neutral terminal states = `surfaceRaised` + `text1`). NEVER `colour.withValues(alpha: …)` + same-colour text — it lands below AA (grey chips ≈ 2:1).
+- **Feature/admin widgets read colour via `context.c`** (the JColors tokens), never `Theme.of(context).colorScheme` directly. The `ColorScheme` themes stock Material widgets; your code uses the tokens. (Enforced by `validate.sh`.)
+- The Material `ColorScheme` is **single-accent**: `secondary`/`tertiary` map to the brand orange. Don't repurpose them for a distinct colour — add a token instead.
 - No gradients. No blurs on backgrounds. No frosted glass. Flat.
+
+---
+
+## Accessibility (non-negotiable)
+
+WCAG 2.2 AA is a hard requirement, enforced by `test/colors_contrast_test.dart` (both themes). When this doc and the code disagree, code wins (see *Sources of Truth*).
+
+- **Contrast:** body/label text ≥ 4.5:1; large text (≥ 24px, or ≥ 18.66px bold) and UI components / icons / borders ≥ 3:1. Placeholders are content — 4.5:1 too.
+- **Never colour alone** to convey state — pair every status colour with an icon or text (the application card backs its chip with a coloured status strip).
+- **Touch targets ≥ 48dp** — floored globally in `AppTheme` (`MaterialTapTargetSize.padded` + `minimumSize: 48×48` on every button theme).
+- **Dynamic Type:** honour the OS text scale, clamped 0.9–1.3 in `MaterialApp.builder`; fixed heights must grow with text.
+- **Reduced motion:** every entrance/animation needs a `MediaQuery.disableAnimations` branch (the house `JStaggeredList` already does).
+- **New colour token?** Add it to `JColors` + `toMap()`, then give it a guard pair — the coverage test fails if a token ships unguarded.
 
 ---
 
@@ -65,23 +81,41 @@ This is a platform for people who work with their hands. The UI should feel like
 **Body / UI text:** Open Sans — clean, readable, professional
 **Configure in `AppTheme` only — never call `GoogleFonts.*` per-widget.**
 
-| Role | Font | Weight | Size | Letter Spacing | Usage |
-|------|------|--------|------|----------------|-------|
-| Display | Oswald | 700 | 40sp+ | 1.2 | Hero headlines, splash, brand name |
-| Heading 1 | Oswald | 700 | 32sp | 0.8 | Screen titles |
-| Heading 2 | Oswald | 600 | 24sp | 0.5 | Section headers |
-| Heading 3 | Oswald | 600 | 20sp | 0.3 | Sub-section headers |
-| Title | Oswald | 600 | 16sp | 0 | Card headers |
-| Body | Open Sans | 400–600 | 13–15sp | 0 | Body text, descriptions |
-| Button | Oswald | 700 | 14sp | 1.5 | ALL CAPS button text |
-| Label | Open Sans | 600 | 12sp | 0.5 | Tags, badges, chips |
-| Caption | Open Sans | 500 | 11sp | 0 | Timestamps, secondary metadata |
+Scale ≈ 1.2 ("minor third"); body anchored at **16** (platform baseline). Distinct sizes
+**40 / 32 / 26 / 22 / 18 / 16 / 14 / 12 / 11** — the old 15/14/13 1-px cluster is gone.
+Sizes are **fixed logical px** — never `.sp` on `fontSize` (`.sp` scales by screen width and
+ignores the OS text-size setting). The OS scaler is clamped to 0.9–1.3 in `MaterialApp.builder`.
+
+| Role (M3) | Font | Weight | Size | Letter Spacing | Line-height | Usage |
+|-----------|------|--------|------|----------------|-------------|-------|
+| displayLarge   | Oswald    | 700 | 40 | 0    | 1.10 | Hero / splash |
+| headlineLarge  | Oswald    | 700 | 32 | 0    | 1.15 | Screen titles |
+| headlineMedium | Oswald    | 600 | 26 | 0.15 | 1.20 | Section titles |
+| headlineSmall  | Oswald    | 600 | 22 | 0.15 | 1.25 | Sub-sections |
+| titleLarge     | Oswald    | 600 | 18 | 0.15 | 1.30 | Card / section headers |
+| titleMedium    | Open Sans | 600 | 16 | 0    | 1.50 | Emphasised body |
+| titleSmall     | Open Sans | 600 | 14 | 0    | 1.40 | Small emphasised |
+| bodyLarge      | Open Sans | 400 | 16 | 0    | 1.50 | Primary body |
+| bodyMedium     | Open Sans | 400 | 14 | 0    | 1.50 | Secondary body (most-used) |
+| bodySmall      | Open Sans | 500 | 12 | 0.1  | 1.40 | Caption / metadata (floor) |
+| labelLarge     | Oswald    | 700 | 14 | 1.2  | 1.10 | Buttons — ALL CAPS |
+| labelMedium    | Open Sans | 600 | 12 | 0.4  | 1.20 | Tags / chips |
+| labelSmall     | Open Sans | 600 | 11 | 0.6  | 1.20 | Eyebrows |
+
+Wordmark only (NOT a scale role): Oswald 700 · 40 · tracking **3.0** · `AppTypography.brandDisplay()`.
 
 **Typography Rules:**
-- Headings use Oswald Bold — condensed weight does the visual work, no italic needed.
-- Button text is Oswald w700 uppercase — heavy and directional.
-- Body text is Open Sans — readable contrast to the condensed headings.
-- No thin fonts anywhere. Minimum weight 400 for any visible text.
+- Headings use Oswald (condensed weight does the visual work, no italic needed); body is Open Sans.
+- Button text is Oswald w700 uppercase — apply CAPS via a widget transform, not by typing caps into strings.
+- Tracking is neutral on display/headings, positive only on small caps/labels; the wordmark's wide 3.0 is deliberate brand.
+- Pay rates, counts, ratings use `AppTypography.numeric()` (tabular figures) so digits don't jitter.
+- No thin fonts anywhere. Minimum weight 400 for any visible text. Type floor is 11 (labels) / 12 (caption body).
+
+> **Scale decision (2026-05-31):** supersedes the older 40/32/24/20/16 + 13–15 body ramp.
+> Preserves the just-landed legibility floors (bodySmall 12, labelSmall 11) and the pending
+> CTA-contrast fix (`onAction` → #0F172A). Proven on `/design-preview`; global theme migration
+> (`app_theme.dart` `textTheme`) follows sign-off. Font **bundling** (kill runtime `google_fonts`)
+> is a separate tracked migration — does not block the visual scale.
 
 ---
 
@@ -92,12 +126,19 @@ Use `flutter_screenutil` extensions (`.w`, `.h`, `.sp`, `.r`) — never raw pixe
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4 | Icon internal gaps |
-| sm | 8 | Tight inline spacing |
-| md | 16 | Standard padding |
-| lg | 24 | Section padding |
-| xl | 32 | Large section gaps |
-| 2xl | 48 | Screen-level margins |
+| xs  | 4  | Icon internal gaps, tight visual links |
+| sm  | 8  | Tight inline spacing between related items |
+| md  | 12 | Compact padding (chips, dense rows, inline groups) |
+| lg  | 16 | Standard padding / card inset / list-row inset |
+| xl  | 24 | Section padding, screen horizontal margins |
+| 2xl | 32 | Large section gaps, hero-to-content spacing |
+| 3xl | 48 | Screen-level margins, top-of-page rhythm |
+
+> **Scale decision (2026-05-31):** moved to a denser 4 / 8 / **12** / 16 / 24 / 32 / 48
+> rhythm. `12` is new (was absent); `md`→12 and `lg`→16 shift the workhorse paddings
+> one step tighter to match Jobdun's "heavy, dense, no softness" character. This is the
+> rulebook decision — the global `AppSpacing` migration (324 call sites) lands after the
+> `/design-preview` sign-off; until then the new values are exercised in the preview only.
 
 ---
 

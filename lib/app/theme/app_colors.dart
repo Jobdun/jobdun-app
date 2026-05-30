@@ -239,7 +239,7 @@ class JColors extends ThemeExtension<JColors> {
     warning: _Palette.amber600,
     warningBg: _Palette.amber100,
     warningTx: _Palette.amber800,
-    star: _Palette.amber500,
+    star: _Palette.amber600,
   );
 
   @override
@@ -334,6 +334,39 @@ class JColors extends ThemeExtension<JColors> {
       star: Color.lerp(star, other.star, t)!,
     );
   }
+
+  /// Every semantic token keyed by name. The single enumeration the contrast
+  /// guard (test/colors_contrast_test.dart) drives token-coverage off, so a new
+  /// token can't ship unguarded. MUST list every field declared above.
+  Map<String, Color> toMap() => {
+    'background': background,
+    'surface': surface,
+    'card': card,
+    'surfaceRaised': surfaceRaised,
+    'border': border,
+    'borderStrong': borderStrong,
+    'text1': text1,
+    'text2': text2,
+    'text3': text3,
+    'action': action,
+    'actionPressed': actionPressed,
+    'actionBg': actionBg,
+    'actionTx': actionTx,
+    'onAction': onAction,
+    'verified': verified,
+    'verifiedBg': verifiedBg,
+    'verifiedTx': verifiedTx,
+    'urgent': urgent,
+    'urgentBg': urgentBg,
+    'urgentTx': urgentTx,
+    'available': available,
+    'availableBg': availableBg,
+    'availableTx': availableTx,
+    'warning': warning,
+    'warningBg': warningBg,
+    'warningTx': warningTx,
+    'star': star,
+  };
 }
 
 /// Shorthand: `context.c.background`, `context.c.action`, etc.

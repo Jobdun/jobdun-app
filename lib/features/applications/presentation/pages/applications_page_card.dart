@@ -93,6 +93,7 @@ class _AppCard extends StatelessWidget {
     Color statusColor,
     String statusLabel,
   ) {
+    final (chipBg, chipTx) = _statusChip(status, c);
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
@@ -132,7 +133,7 @@ class _AppCard extends StatelessWidget {
                           vertical: 3.h,
                         ),
                         decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.15),
+                          color: chipBg,
                           borderRadius: BorderRadius.circular(AppRadius.chip.r),
                         ),
                         child: Text(
@@ -141,7 +142,7 @@ class _AppCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: tt.labelSmall!.copyWith(
                             letterSpacing: 0.5,
-                            color: statusColor,
+                            color: chipTx,
                           ),
                         ),
                       ),
@@ -342,6 +343,20 @@ class _AppCard extends StatelessWidget {
     ApplicationStatus.withdrawn => c.text3,
     ApplicationStatus.declinedByTrade => c.text3,
   };
+
+  // Chip (bg, text) pairs — high-contrast tinted pairs, never the
+  // `colour@15% + same-colour text` pattern (lands below AA, grey chips ~2:1).
+  // Neutral terminal states use surfaceRaised + text1 (the only AA-safe text
+  // on raised). All pairs verified by test/colors_contrast_test.dart.
+  static (Color, Color) _statusChip(ApplicationStatus s, JColors c) =>
+      switch (s) {
+        ApplicationStatus.pending => (c.warningBg, c.warningTx),
+        ApplicationStatus.shortlisted => (c.availableBg, c.availableTx),
+        ApplicationStatus.hired => (c.verifiedBg, c.verifiedTx),
+        ApplicationStatus.rejected => (c.urgentBg, c.urgentTx),
+        ApplicationStatus.withdrawn => (c.surfaceRaised, c.text1),
+        ApplicationStatus.declinedByTrade => (c.surfaceRaised, c.text1),
+      };
 
   static String _relDate(DateTime d) {
     final diff = DateTime.now().difference(d);

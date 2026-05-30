@@ -50,10 +50,11 @@ echo -e "\n${BOLD}=== Jobdun validate.sh ===${RESET}\n"
 # ── Section 1: Design system checks ───────────────────────────────────────────
 echo -e "${BOLD}[1/3] Design system${RESET}"
 
-# No GoogleFonts.* outside app_theme.dart
-grep_check "No GoogleFonts.* outside app_theme.dart" \
+# No GoogleFonts.* outside the central theme config (app_theme + app_typography)
+grep_check "No GoogleFonts.* outside theme config" \
   "$(grep -rn --include="*.dart" "GoogleFonts\." lib/ \
-     | grep -v "lib/app/theme/app_theme.dart" || true)"
+     | grep -v "lib/app/theme/app_theme.dart" \
+     | grep -v "lib/app/theme/app_typography.dart" || true)"
 
 # No Colors.white without // intentional in lib/features/
 grep_check "No Colors.white (use AppColors / tokens)" \
@@ -77,6 +78,11 @@ grep_check "No inline gradient in lib/features/" \
 # No AppColors.* static references in lib/features/
 grep_check "No AppColors.* in lib/features/" \
   "$(grep -rn --include="*.dart" "AppColors\." lib/features/ || true)"
+
+# No direct ColorScheme reads in lib/features/ — use context.c tokens. The
+# ColorScheme themes stock Material widgets; feature code uses JColors.
+grep_check "No Theme.colorScheme in lib/features/ (use context.c)" \
+  "$(grep -rn --include="*.dart" "colorScheme\." lib/features/ || true)"
 
 echo ""
 

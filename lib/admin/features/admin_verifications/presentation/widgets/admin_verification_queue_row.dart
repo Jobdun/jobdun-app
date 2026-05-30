@@ -133,18 +133,25 @@ class _KindBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final (label, color) = switch (kind) {
-      AdminVerificationKind.tradeLicence => ('TRADE LICENCE', c.action),
-      AdminVerificationKind.builderAbn => ('BUILDER ABN', c.verified),
-      AdminVerificationKind.other => ('OTHER', c.text3),
+    final (label, bg, tx) = switch (kind) {
+      AdminVerificationKind.tradeLicence => (
+        'TRADE LICENCE',
+        c.actionBg,
+        c.actionTx,
+      ),
+      AdminVerificationKind.builderAbn => (
+        'BUILDER ABN',
+        c.verifiedBg,
+        c.verifiedTx,
+      ),
+      AdminVerificationKind.other => ('OTHER', c.surfaceRaised, c.text1),
     };
     final text = state != null ? '$label · $state' : label;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: bg,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         text,
@@ -152,7 +159,7 @@ class _KindBadge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
-          color: color,
+          color: tx,
         ),
       ),
     );
