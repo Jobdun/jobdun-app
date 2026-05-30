@@ -240,16 +240,20 @@ class AdminVerificationsController
     required String status,
     String? notes,
   }) async {
-    await _client
-        .from('verification_documents')
-        .update({
-          'status': status,
-          'reviewed_at': DateTime.now().toUtc().toIso8601String(),
-          'reviewed_by': _client.auth.currentUser?.id,
-          if (notes != null && notes.trim().isNotEmpty)
-            'review_notes': notes.trim(),
-        })
-        .eq('id', id);
+    // Atomic review via SECURITY DEFINER RPC: updates the document AND, on
+    // approval of a licence/abn doc, upserts the verified `verifications` row
+    // (verifications is service-role-write-only, so a direct admin UPDATE can't
+    // reach it). The RPC also writes an admin_actions audit row. See
+    // 20260530000003_review_verification_document.sql.
+    final trimmed = notes?.trim();
+    await _client.rpc(
+      'review_verification_document',
+      params: {
+        'p_document_id': id,
+        'p_status': status,
+        'p_notes': (trimmed != null && trimmed.isNotEmpty) ? trimmed : null,
+      },
+    );
     await refresh();
   }
 
