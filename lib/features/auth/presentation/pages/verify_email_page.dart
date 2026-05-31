@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
@@ -11,6 +10,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../providers/auth_provider.dart';
 
@@ -93,11 +93,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.asset(
-                      'lib/core/assets/mark-jobdun.svg',
-                      width: 24.r,
-                      height: 24.r,
-                    ),
+                    JobdunLogo(variant: LogoVariant.mark, height: 24.r),
                     Gap(8.w),
                     Text(
                       'JOBDUN',
@@ -124,7 +120,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                   child: Icon(
                     AppIcons.emailNotification,
                     size: AppIconSize.feature.r,
-                    color: c.action,
+                    color: c.actionInk,
                   ),
                 ),
               ),
@@ -155,7 +151,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                       text: email,
                       style: tt.bodyLarge!.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: c.action,
+                        color: c.actionInk,
                         fontSize: 14.sp,
                       ),
                     ),

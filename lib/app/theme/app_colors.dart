@@ -48,6 +48,7 @@ class JColors extends ThemeExtension<JColors> {
     required this.actionPressed,
     required this.actionBg,
     required this.actionTx,
+    required this.actionInk,
     required this.onAction,
     required this.verified,
     required this.verifiedBg,
@@ -124,6 +125,16 @@ class JColors extends ThemeExtension<JColors> {
   /// Tinted orange text for c.actionBg backgrounds. Internal pair helper.
   final Color actionTx;
 
+  /// Orange **ink** — orange used as TEXT or an ICON directly on the page
+  /// (`background`/`surface`): inline links ("Create account"), legal links,
+  /// eyebrow glyphs. Splits the brand orange's two jobs: `action` stays the
+  /// FILL (button/CTA backgrounds, carried by `onAction`), while `actionInk`
+  /// is the readable foreground. On dark it's the bright orange (6.37:1 on
+  /// slate); on light it darkens to orange-700 (~4.95:1 on white) so it clears
+  /// WCAG text — the bright orange is only 2.80:1 on white. NEVER use `action`
+  /// for bare orange text/icons on a light surface; use this.
+  final Color actionInk;
+
   /// Foreground when bg is c.action. Dark slate (#0F172A) — white on the
   /// safety-orange is only 2.80:1 and fails WCAG; dark-on-orange is 6.37:1.
   /// MUST be used as the text/icon color on primary CTAs and orange tiles.
@@ -195,6 +206,7 @@ class JColors extends ThemeExtension<JColors> {
     actionPressed: _Palette.orange550,
     actionBg: _Palette.orange950,
     actionTx: _Palette.orange200,
+    actionInk: _Palette.orange500,
     onAction: _Palette.slate900,
     verified: _Palette.green500,
     verifiedBg: _Palette.green950,
@@ -226,6 +238,7 @@ class JColors extends ThemeExtension<JColors> {
     actionPressed: _Palette.orange550,
     actionBg: _Palette.orange100,
     actionTx: _Palette.orange800,
+    actionInk: _Palette.orange700,
     onAction: _Palette.slate900,
     verified: _Palette.green600,
     verifiedBg: _Palette.green100,
@@ -257,6 +270,7 @@ class JColors extends ThemeExtension<JColors> {
     Color? actionPressed,
     Color? actionBg,
     Color? actionTx,
+    Color? actionInk,
     Color? onAction,
     Color? verified,
     Color? verifiedBg,
@@ -285,6 +299,7 @@ class JColors extends ThemeExtension<JColors> {
     actionPressed: actionPressed ?? this.actionPressed,
     actionBg: actionBg ?? this.actionBg,
     actionTx: actionTx ?? this.actionTx,
+    actionInk: actionInk ?? this.actionInk,
     onAction: onAction ?? this.onAction,
     verified: verified ?? this.verified,
     verifiedBg: verifiedBg ?? this.verifiedBg,
@@ -318,6 +333,7 @@ class JColors extends ThemeExtension<JColors> {
       actionPressed: Color.lerp(actionPressed, other.actionPressed, t)!,
       actionBg: Color.lerp(actionBg, other.actionBg, t)!,
       actionTx: Color.lerp(actionTx, other.actionTx, t)!,
+      actionInk: Color.lerp(actionInk, other.actionInk, t)!,
       onAction: Color.lerp(onAction, other.onAction, t)!,
       verified: Color.lerp(verified, other.verified, t)!,
       verifiedBg: Color.lerp(verifiedBg, other.verifiedBg, t)!,
@@ -352,6 +368,7 @@ class JColors extends ThemeExtension<JColors> {
     'actionPressed': actionPressed,
     'actionBg': actionBg,
     'actionTx': actionTx,
+    'actionInk': actionInk,
     'onAction': onAction,
     'verified': verified,
     'verifiedBg': verifiedBg,

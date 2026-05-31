@@ -41,11 +41,7 @@ class _RoleStep extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SvgPicture.asset(
-                'lib/core/assets/mark-jobdun.svg',
-                width: 32.r,
-                height: 32.r,
-              ),
+              JobdunLogo(variant: LogoVariant.mark, height: 32.r),
               Gap(10.w),
               ShaderMask(
                 shaderCallback: (bounds) =>
@@ -142,7 +138,7 @@ class _RoleStep extends StatelessWidget {
                     TextSpan(
                       text: 'LOG IN',
                       style: tt.bodySmall!.copyWith(
-                        color: c.action,
+                        color: c.actionInk,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),

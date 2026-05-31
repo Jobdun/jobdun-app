@@ -188,7 +188,7 @@ class _FormStep extends StatelessWidget {
                     TextSpan(
                       text: 'LOG IN',
                       style: tt.bodySmall!.copyWith(
-                        color: c.action,
+                        color: c.actionInk,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
@@ -248,7 +248,7 @@ class _RoleChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: AppIconSize.micro.r, color: c.action),
+                Icon(icon, size: AppIconSize.micro.r, color: c.actionInk),
                 Gap(8.w),
                 Text(
                   label,
@@ -264,7 +264,7 @@ class _RoleChip extends StatelessWidget {
                 Text(
                   'CHANGE',
                   style: tt.labelSmall!.copyWith(
-                    color: c.action,
+                    color: c.actionInk,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),

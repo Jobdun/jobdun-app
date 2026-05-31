@@ -11,6 +11,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_link_text.dart';
@@ -103,175 +104,179 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         behavior: HitTestBehavior.opaque,
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
-        child: AnimatedOpacity(
-          opacity: _ready ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 150),
-          // LayoutBuilder + ConstrainedBox(minHeight) lets the inner Column
-          // grow to fill the viewport on tall devices (so spaceBetween pins
-          // the legal footer to the bottom edge) and gracefully falls back
-          // to natural scroll on short ones (so nothing clips on 360×640).
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Fixed hero zone — gives the mark predictable
-                        // breathing room (~22% of a 640dp viewport) so it
-                        // brands the moment without competing with the form.
-                        // Centering inside a fixed-height box lands the mark
-                        // in the upper third regardless of viewport size,
-                        // matching the "Top 40% — logo zone" rule in
-                        // design-system/jobdun/pages/auth-onboarding.md.
-                        SizedBox(
-                          height: 140.h,
-                          child: Center(
-                            child: SvgPicture.asset(
-                              'lib/core/assets/mark-jobdun.svg',
-                              width: 56.r,
-                              height: 56.r,
+          child: AnimatedOpacity(
+            opacity: _ready ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 150),
+            // LayoutBuilder + ConstrainedBox(minHeight) lets the inner Column
+            // grow to fill the viewport on tall devices (so spaceBetween pins
+            // the legal footer to the bottom edge) and gracefully falls back
+            // to natural scroll on short ones (so nothing clips on 360×640).
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Fixed hero zone — gives the mark predictable
+                          // breathing room (~22% of a 640dp viewport) so it
+                          // brands the moment without competing with the form.
+                          // Centering inside a fixed-height box lands the mark
+                          // in the upper third regardless of viewport size,
+                          // matching the "Top 40% — logo zone" rule in
+                          // design-system/jobdun/pages/auth-onboarding.md.
+                          SizedBox(
+                            height: 140.h,
+                            child: Center(
+                              child: JobdunLogo(
+                                variant: LogoVariant.mark,
+                                height: 56.r,
+                              ),
                             ),
                           ),
-                        ),
 
-                        Gap(AppSpacing.lg.h),
+                          Gap(AppSpacing.lg.h),
 
-                        // AutofillGroup binds email + password into a single
-                        // credential pair so iOS Keychain / Android Autofill
-                        // can offer "Save password?" atomically after a
-                        // successful first login.
-                        AutofillGroup(
-                          child: FormBuilder(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                JTextField(
-                                  name: 'email',
-                                  label: 'Email',
-                                  hint: 'you@example.com',
-                                  prefixIcon: AppIcons.email,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  autofillHints: const [AutofillHints.email],
-                                  focusNode: _emailFocus,
-                                  autocorrect: false,
-                                  enableSuggestions: false,
-                                  keyboardAppearance: Brightness.dark,
-                                  onSubmitted: (_) => _passwordFocus.requestFocus(),
-                                  validator: FormBuilderValidators.compose([
-                                    FormBuilderValidators.required(
-                                      errorText: 'Email is required.',
-                                    ),
-                                    FormBuilderValidators.email(
-                                      errorText: 'Enter a valid email.',
-                                    ),
-                                  ]),
-                                ),
-                                JTextField(
-                                  name: 'password',
-                                  label: 'Password',
-                                  hint: 'Enter your password',
-                                  prefixIcon: AppIcons.lock,
-                                  obscureText: true,
-                                  textInputAction: TextInputAction.done,
-                                  autofillHints: const [AutofillHints.password],
-                                  focusNode: _passwordFocus,
-                                  autocorrect: false,
-                                  enableSuggestions: false,
-                                  keyboardAppearance: Brightness.dark,
-                                  onSubmitted: (_) => _submit(),
-                                  validator: FormBuilderValidators.required(
-                                    errorText: 'Password is required.',
+                          // AutofillGroup binds email + password into a single
+                          // credential pair so iOS Keychain / Android Autofill
+                          // can offer "Save password?" atomically after a
+                          // successful first login.
+                          AutofillGroup(
+                            child: FormBuilder(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  JTextField(
+                                    name: 'email',
+                                    label: 'Email',
+                                    hint: 'you@example.com',
+                                    prefixIcon: AppIcons.email,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [AutofillHints.email],
+                                    focusNode: _emailFocus,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    keyboardAppearance: Brightness.dark,
+                                    onSubmitted: (_) =>
+                                        _passwordFocus.requestFocus(),
+                                    validator: FormBuilderValidators.compose([
+                                      FormBuilderValidators.required(
+                                        errorText: 'Email is required.',
+                                      ),
+                                      FormBuilderValidators.email(
+                                        errorText: 'Enter a valid email.',
+                                      ),
+                                    ]),
                                   ),
-                                  labelTrailing: _ForgotPasswordLink(
-                                    onTap: _onForgotPassword,
+                                  JTextField(
+                                    name: 'password',
+                                    label: 'Password',
+                                    hint: 'Enter your password',
+                                    prefixIcon: AppIcons.lock,
+                                    obscureText: true,
+                                    textInputAction: TextInputAction.done,
+                                    autofillHints: const [
+                                      AutofillHints.password,
+                                    ],
+                                    focusNode: _passwordFocus,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    keyboardAppearance: Brightness.dark,
+                                    onSubmitted: (_) => _submit(),
+                                    validator: FormBuilderValidators.required(
+                                      errorText: 'Password is required.',
+                                    ),
+                                    labelTrailing: _ForgotPasswordLink(
+                                      onTap: _onForgotPassword,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
 
-                        if (authState.errorMessage != null) ...[
-                          Gap(AppSpacing.sm.h),
-                          StatusBanner(
-                            message: authState.errorMessage!,
-                            isError: true,
-                          ),
-                        ],
-                        if (authState.infoMessage != null) ...[
-                          Gap(AppSpacing.sm.h),
-                          StatusBanner(
-                            message: authState.infoMessage!,
-                            isError: false,
-                          ),
-                        ],
-
-                        Gap(AppSpacing.sm.h),
-
-                        _CreateAccountInlineLink(
-                          key: const Key('login.create_account_link'),
-                          onTap: _onCreateAccount,
-                        ),
-
-                        Gap(AppSpacing.sm.h),
-
-                        JButton(
-                          label: isBusy ? 'LOGGING IN...' : 'LOG IN',
-                          isLoading: isBusy,
-                          onPressed: isBusy ? null : _submit,
-                        ),
-
-                        Gap(AppSpacing.lg.h),
-
-                        _OrContinueWith(),
-
-                        Gap(AppSpacing.md.h),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _BrandSsoTile(
-                              key: const Key('login.sso.google'),
-                              provider: _SsoProvider.google,
-                              onTap: _onGoogle,
-                              isLoading: isBusy,
-                            ),
-                            _BrandSsoTile(
-                              key: const Key('login.sso.apple'),
-                              provider: _SsoProvider.apple,
-                              onTap: _onApple,
-                              isLoading: isBusy,
-                            ),
-                            _BrandSsoTile(
-                              key: const Key('login.sso.phone'),
-                              provider: _SsoProvider.phone,
-                              onTap: _onPhone,
-                              isLoading: isBusy,
+                          if (authState.errorMessage != null) ...[
+                            Gap(AppSpacing.sm.h),
+                            StatusBanner(
+                              message: authState.errorMessage!,
+                              isError: true,
                             ),
                           ],
-                        ),
+                          if (authState.infoMessage != null) ...[
+                            Gap(AppSpacing.sm.h),
+                            StatusBanner(
+                              message: authState.infoMessage!,
+                              isError: false,
+                            ),
+                          ],
 
-                        const Spacer(),
-                        Gap(AppSpacing.lg.h),
+                          Gap(AppSpacing.sm.h),
 
-                        const LegalLinkText(minimal: true),
+                          _CreateAccountInlineLink(
+                            key: const Key('login.create_account_link'),
+                            onTap: _onCreateAccount,
+                          ),
 
-                        Gap(AppSpacing.lg.h),
-                      ],
+                          Gap(AppSpacing.sm.h),
+
+                          JButton(
+                            label: isBusy ? 'LOGGING IN...' : 'LOG IN',
+                            isLoading: isBusy,
+                            onPressed: isBusy ? null : _submit,
+                          ),
+
+                          Gap(AppSpacing.lg.h),
+
+                          _OrContinueWith(),
+
+                          Gap(AppSpacing.md.h),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _BrandSsoTile(
+                                key: const Key('login.sso.google'),
+                                provider: _SsoProvider.google,
+                                onTap: _onGoogle,
+                                isLoading: isBusy,
+                              ),
+                              _BrandSsoTile(
+                                key: const Key('login.sso.apple'),
+                                provider: _SsoProvider.apple,
+                                onTap: _onApple,
+                                isLoading: isBusy,
+                              ),
+                              _BrandSsoTile(
+                                key: const Key('login.sso.phone'),
+                                provider: _SsoProvider.phone,
+                                onTap: _onPhone,
+                                isLoading: isBusy,
+                              ),
+                            ],
+                          ),
+
+                          const Spacer(),
+                          Gap(AppSpacing.lg.h),
+
+                          const LegalLinkText(minimal: true),
+
+                          Gap(AppSpacing.lg.h),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -334,7 +339,7 @@ class _CreateAccountInlineLink extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final base = tt.bodyMedium!.copyWith(color: c.text2);
     final link = tt.bodyMedium!.copyWith(
-      color: c.action,
+      color: c.actionInk,
       fontWeight: FontWeight.w700,
     );
 
@@ -384,7 +389,9 @@ class _BrandSsoTile extends StatelessWidget {
   static const double _tileSize = 56;
   static const double _iconSize = 26;
 
-  ({Color bg, Color fg, Color border, String label}) _spec(BuildContext context) {
+  ({Color bg, Color fg, Color border, String label}) _spec(
+    BuildContext context,
+  ) {
     final c = context.c;
     return switch (provider) {
       _SsoProvider.google => (

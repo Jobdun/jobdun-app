@@ -47,10 +47,10 @@ class _LegalLinkTextState extends State<LegalLinkText> {
         : tt.bodySmall!.copyWith(color: c.text2, height: 1.4);
 
     final linkStyle = baseStyle.copyWith(
-      color: c.action,
+      color: c.actionInk,
       fontWeight: FontWeight.w600,
       decoration: TextDecoration.underline,
-      decorationColor: c.action,
+      decorationColor: c.actionInk,
     );
 
     return Semantics(

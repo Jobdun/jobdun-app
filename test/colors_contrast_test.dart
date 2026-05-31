@@ -51,6 +51,12 @@ const _textPairs = <(String, String)>[
   // surfaceRaised carries text1 ONLY (MASTER rule) — text2/text3 fall below
   // 4.5 on raised, so the only raised text pairing we assert is text1.
   ('text1', 'surfaceRaised'),
+  // Orange INK (text/icon) on the canvas — the readable foreground that splits
+  // off the brand orange's fill job. Dark: orange500 on slate (6.37/5.22).
+  // Light: orange700 darkens to clear 4.5 on white/slate50 (~5.1/4.95) where
+  // the bright orange (action) only manages 2.80 — that's why this token exists.
+  ('actionInk', 'background'),
+  ('actionInk', 'surface'),
   ('actionTx', 'actionBg'),
   ('verifiedTx', 'verifiedBg'),
   ('urgentTx', 'urgentBg'),

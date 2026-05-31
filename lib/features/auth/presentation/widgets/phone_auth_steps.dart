@@ -302,7 +302,7 @@ class PhoneAuthOtpStep extends StatelessWidget {
                         ? 'Resend in ${resendCountdown}s'
                         : 'Resend code',
                     style: tt.bodyMedium!.copyWith(
-                      color: c.action,
+                      color: c.actionInk,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
