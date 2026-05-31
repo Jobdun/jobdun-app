@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,13 +11,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
-import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
+import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
-import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
@@ -37,7 +39,15 @@ part 'home_map_widgets.dart';
 part 'home_sample_data.dart';
 
 class HomePage extends ConsumerStatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, this.fixedPreview = false});
+
+  /// Debug A/B mode. When true this is a faithful copy of the live home page
+  /// rendered through [PreviewTheme.fixed] (the accessibility-corrected token
+  /// set) with text scaling clamped, a back-arrow AppBar, and the one-shot
+  /// role-sheet / welcome-toast side effects suppressed. Reached via the
+  /// "HOME · FIXED TOKENS" button (kDebugMode). Nothing about the real /home
+  /// changes — this just re-renders the same widget under a different theme.
+  final bool fixedPreview;
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -48,6 +58,10 @@ enum _ViewMode { list, map }
 class _HomePageState extends ConsumerState<HomePage> {
   _ViewMode _viewMode = _ViewMode.list;
   bool _roleSheetShown = false;
+
+  // A/B preview only — which corrected theme the copy renders under. Toggled
+  // by the sun/moon action in the preview AppBar. Ignored on the live page.
+  Brightness _previewBrightness = Brightness.dark;
 
   // Once-per-device flag — welcome toast fires on the first home visit after
   // email verification, then never again. Backed by FtueService /
@@ -76,8 +90,11 @@ class _HomePageState extends ConsumerState<HomePage> {
             .loadMyApplications(userId);
       }
       // Catches the case where state was already settled before mount.
-      _maybeShowRoleSheet(ref.read(authControllerProvider));
-      _maybeShowWelcomeToast();
+      // Skipped in the A/B copy so the role sheet / welcome toast don't re-fire.
+      if (!widget.fixedPreview) {
+        _maybeShowRoleSheet(ref.read(authControllerProvider));
+        _maybeShowWelcomeToast();
+      }
     });
   }
 
@@ -177,19 +194,22 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Reactive: if role-load completes after HomePage mounts (typical for the
     // email-verify deep-link flow), this fires the sheet AND the first-home
     // toast then — not earlier. _maybeShowWelcomeToast is idempotent at
-    // both the in-process and per-device layers.
-    ref.listen<AuthState>(authControllerProvider, (_, next) {
-      _maybeShowRoleSheet(next);
-      _maybeShowWelcomeToast();
-    });
-    // Profile load is async + can resolve AFTER the initState postFrame ran
-    // the gate. Re-run when profile state changes so a populated display_name
-    // suppresses the sheet on the next pass.
-    ref.listen<ProfileState>(profileControllerProvider, (_, _) {
-      _maybeShowRoleSheet(ref.read(authControllerProvider));
-    });
+    // both the in-process and per-device layers. Suppressed in the A/B copy.
+    if (!widget.fixedPreview) {
+      ref.listen<AuthState>(authControllerProvider, (_, next) {
+        _maybeShowRoleSheet(next);
+        _maybeShowWelcomeToast();
+      });
+      // Profile load is async + can resolve AFTER the initState postFrame ran
+      // the gate. Re-run when profile state changes so a populated display_name
+      // suppresses the sheet on the next pass.
+      ref.listen<ProfileState>(profileControllerProvider, (_, _) {
+        _maybeShowRoleSheet(ref.read(authControllerProvider));
+      });
+    }
 
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
     final jobsState = ref.watch(jobsControllerProvider);
@@ -209,8 +229,32 @@ class _HomePageState extends ConsumerState<HomePage> {
         .where((j) => j.hasLocation)
         .toList();
 
-    return Scaffold(
-      backgroundColor: c.background,
+    final isLightPreview = _previewBrightness == Brightness.light;
+
+    final scaffold = Scaffold(
+      // In preview, let the scaffold inherit the toggled theme's background so
+      // light mode shows its own (near-white) ground instead of the dark one.
+      backgroundColor: widget.fixedPreview ? null : c.background,
+      appBar: widget.fixedPreview
+          ? AppBar(
+              title: Text(
+                isLightPreview ? 'HOME · FIXED (LIGHT)' : 'HOME · FIXED (DARK)',
+              ),
+              actions: [
+                IconButton(
+                  tooltip: isLightPreview
+                      ? 'Switch to dark'
+                      : 'Switch to light',
+                  icon: Icon(isLightPreview ? AppIcons.moon : AppIcons.sun),
+                  onPressed: () => setState(
+                    () => _previewBrightness = isLightPreview
+                        ? Brightness.dark
+                        : Brightness.light,
+                  ),
+                ),
+              ],
+            )
+          : null,
       floatingActionButton: showMapToggle
           ? FloatingActionButton(
               backgroundColor: c.action,
@@ -221,8 +265,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               child: Icon(
                 _viewMode == _ViewMode.list ? AppIcons.map : AppIcons.gridView,
-                color: Colors.white, // intentional: white-on-action
-                size: 22.r,
+                color:
+                    c.background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
+                size: AppIconSize.nav.r,
               ),
             )
           : null,
@@ -238,10 +283,70 @@ class _HomePageState extends ConsumerState<HomePage> {
           : SafeArea(
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: _Header(isBuilder: isBuilder, location: location),
+                  // LinkedIn-style floating utility bar: scrolls away on
+                  // scroll-down, snaps back on scroll-up. Avatar → profile,
+                  // search → the jobs list (which owns search), bell →
+                  // notifications. `primary` is false in the debug A/B copy so
+                  // it doesn't double the status-bar inset under the debug AppBar.
+                  SliverAppBar(
+                    floating: true,
+                    snap: true,
+                    pinned: false,
+                    primary: !widget.fixedPreview,
+                    automaticallyImplyLeading: false,
+                    backgroundColor: c.card,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    titleSpacing: 0,
+                    toolbarHeight: 64.h,
+                    title: Padding(
+                      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
+                      child: JTopBar(
+                        initials: _initials(profileState.profile?.displayName),
+                        searchHint: isBuilder
+                            ? 'Search your listings'
+                            : 'Search jobs near you',
+                        onSearchTap: () => context.go('/jobs'),
+                        onAvatarTap: () => context.go('/profile'),
+                        onNotificationsTap: () =>
+                            context.push('/notifications'),
+                      ),
+                    ),
                   ),
                   const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
+                  // Debug-only A/B entry points (compiled out of release, and
+                  // hidden inside the preview copy itself). "HOME · FIXED" opens
+                  // a real copy of this page under the corrected token theme;
+                  // "TOKENS" opens the annotated what-changed cheat-sheet.
+                  if (kDebugMode && !widget.fixedPreview)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: JButton(
+                                label: 'HOME · FIXED',
+                                variant: JButtonVariant.primary,
+                                size: JButtonSize.compact,
+                                onPressed: () => context.push('/home-preview'),
+                              ),
+                            ),
+                            Gap(8.w),
+                            Expanded(
+                              child: JButton(
+                                label: 'TOKENS',
+                                variant: JButtonVariant.secondary,
+                                size: JButtonSize.compact,
+                                onPressed: () =>
+                                    context.push('/design-preview'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   SliverToBoxAdapter(child: Gap(20.h)),
                   SliverToBoxAdapter(
                     child: _StatsRow(
@@ -260,11 +365,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: _PrimaryActionCard(isBuilder: isBuilder),
                   ),
                   SliverToBoxAdapter(child: Gap(24.h)),
+                  // Section title — sentence-case, distinct from the page
+                  // title above (was an all-caps eyebrow that just repeated
+                  // "JOBS NEARBY"). titleLarge = section-header role.
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                      child: FieldLabel(
-                        isBuilder ? 'AVAILABLE TRADIES' : 'JOBS NEARBY',
+                      child: Text(
+                        isBuilder ? 'Available now' : 'Latest jobs',
+                        style: tt.titleLarge!.copyWith(color: c.text1),
                       ),
                     ),
                   ),
@@ -343,6 +452,42 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ),
     );
+
+    // Live page renders as-is; the A/B copy re-renders the same scaffold under
+    // the corrected token theme (dark or light, per the toggle) with text
+    // scaling clamped (S0/S1/S2/S3/S5).
+    if (!widget.fixedPreview) return scaffold;
+    return Theme(
+      // Dark path = the proposed NEW type scale on real home content
+      // (designV2). Spacing here still uses the global AppSpacing (old) — only
+      // /design-preview shows the new 12/16/24 rhythm. Light stays fixedLight
+      // (the live app is dark-only; the toggle is for inspection).
+      data: isLightPreview
+          ? PreviewTheme.fixedLight()
+          : PreviewTheme.designV2Dark(),
+      child: MediaQuery.withClampedTextScaling(
+        minScaleFactor: 0.9,
+        maxScaleFactor: 1.3,
+        child: scaffold,
+      ),
+    );
+  }
+
+  // First letters of the first two name words, e.g. "Ken Garcia" → "KG".
+  // Falls back to a single brand letter for not-yet-named accounts (the
+  // onboarding sheet collects the name, so this is rarely shown).
+  static String _initials(String? name) {
+    final parts = (name ?? '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'J';
+    var out = '';
+    for (final p in parts) {
+      if (out.length < 2) out += p[0];
+    }
+    return out.toUpperCase();
   }
 
   static String _fmtDate(DateTime d) {

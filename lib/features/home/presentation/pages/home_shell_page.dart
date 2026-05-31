@@ -179,7 +179,7 @@ class _OfflineBanner extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            Icon(AppIcons.wifi, size: 14.r, color: c.urgentTx),
+            Icon(AppIcons.wifi, size: AppIconSize.micro.r, color: c.urgentTx),
             Gap(8.w),
             Text(
               'No internet connection',

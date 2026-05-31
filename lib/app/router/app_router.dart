@@ -16,6 +16,7 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/ftue/presentation/pages/dev_ftue_reset_page.dart';
 import '../../features/ftue/presentation/pages/ftue_page.dart';
 import '../../features/ftue/presentation/providers/ftue_gate_provider.dart';
+import '../../features/home/presentation/pages/design_preview_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
 import '../../features/jobs/presentation/pages/job_create_page.dart';
@@ -164,6 +165,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         GoRoute(
           path: '/dev/reset-ftue',
           builder: (_, _) => const DevFtueResetPage(),
+        ),
+        GoRoute(
+          path: '/design-preview',
+          builder: (_, _) => const DesignPreviewPage(),
+        ),
+        GoRoute(
+          path: '/home-preview',
+          builder: (_, _) => const HomePage(fixedPreview: true),
         ),
       ],
 

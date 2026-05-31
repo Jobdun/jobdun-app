@@ -45,6 +45,7 @@ class _FtueHeroPhotoState extends State<FtueHeroPhoto>
   late final Animation<double> _scale;
   late final Animation<double> _opacity;
   bool _loadFailureReported = false;
+  bool _entranceStarted = false;
 
   @override
   void initState() {
@@ -61,7 +62,21 @@ class _FtueHeroPhotoState extends State<FtueHeroPhoto>
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-    _controller.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_entranceStarted) return;
+    _entranceStarted = true;
+    // Honor the OS "reduce motion" setting — jump straight to the final state
+    // instead of running the 600ms scale/fade entrance. (MediaQuery isn't
+    // available in initState, so the decision lives here.)
+    if (MediaQuery.of(context).disableAnimations) {
+      _controller.value = 1.0;
+    } else {
+      _controller.forward();
+    }
   }
 
   @override

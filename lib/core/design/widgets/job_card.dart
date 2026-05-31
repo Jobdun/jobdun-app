@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_typography.dart';
 import '../../../features/verification/presentation/widgets/job_card_poster_badge.dart';
 import 'status_badge.dart';
 
@@ -71,11 +72,13 @@ class JobCard extends StatelessWidget {
                               title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: tt.headlineSmall!.copyWith(
+                              // titleLarge = MASTER "card header" role (Oswald
+                              // 600). Was headlineSmall (a sub-section size) —
+                              // too loud for a feed row and it crowded the meta.
+                              style: tt.titleLarge!.copyWith(
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
                                 color: c.text1,
-                                height: 1.1,
+                                height: 1.2,
                               ),
                             ),
                             Gap(4.h),
@@ -109,12 +112,12 @@ class JobCard extends StatelessWidget {
                                   AppRadius.btn.r,
                                 ),
                               ),
+                              // Buttons stay ALL CAPS — that's the brand
+                              // (MASTER). labelLarge is the canonical button
+                              // role (Oswald 700); no off-scale .sp override.
                               child: Text(
                                 'APPLY NOW',
-                                style: tt.labelSmall!.copyWith(
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
+                                style: tt.labelLarge!.copyWith(
                                   color: c.onAction,
                                 ),
                               ),
@@ -129,16 +132,17 @@ class JobCard extends StatelessWidget {
                   Gap(12.h),
                   Row(
                     children: [
-                      _MetaCol(label: 'RATE', value: rate, c: c, tt: tt),
+                      _MetaCol(label: 'Rate', value: rate, c: c, tt: tt),
                       Gap(AppSpacing.md.w),
-                      _MetaCol(label: 'START', value: startDate, c: c, tt: tt),
+                      _MetaCol(label: 'Start', value: startDate, c: c, tt: tt),
                       const Spacer(),
+                      // Distance is metadata, not a CTA — neutral text, not
+                      // orange (MASTER §54: orange is CTA/critical only).
                       _MetaCol(
-                        label: 'DISTANCE',
+                        label: 'Distance',
                         value: '${distanceKm.toStringAsFixed(1)} km',
                         c: c,
                         tt: tt,
-                        valueColor: c.action,
                         align: CrossAxisAlignment.end,
                       ),
                     ],
@@ -164,7 +168,6 @@ class _MetaCol extends StatelessWidget {
     required this.value,
     required this.c,
     required this.tt,
-    this.valueColor,
     this.align = CrossAxisAlignment.start,
   });
 
@@ -172,7 +175,6 @@ class _MetaCol extends StatelessWidget {
   final String value;
   final JColors c;
   final TextTheme tt;
-  final Color? valueColor;
   final CrossAxisAlignment align;
 
   @override
@@ -184,18 +186,19 @@ class _MetaCol extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: tt.labelSmall!.copyWith(color: c.text3),
+          style: tt.labelMedium!.copyWith(color: c.text3),
         ),
         Gap(2.h),
+        // titleMedium (emphasised body, Open Sans 600) + tabular figures so
+        // rates/dates/distances align and don't jitter. The Oswald title above
+        // carries the hierarchy through font contrast, not raw size.
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: tt.headlineSmall!.copyWith(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? c.text1,
-          ),
+          style: AppTypography.numeric(
+            tt.titleMedium!,
+          ).copyWith(fontWeight: FontWeight.w700, color: c.text1),
         ),
       ],
     );

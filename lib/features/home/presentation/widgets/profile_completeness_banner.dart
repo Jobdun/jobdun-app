@@ -79,8 +79,9 @@ class ProfileCompletenessBanner extends ConsumerWidget {
               ),
               child: Icon(
                 AppIcons.userEdit,
-                size: 18.r,
-                color: Colors.white, // intentional: white-on-action
+                size: AppIconSize.md.r,
+                color:
+                    c.background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
               ),
             ),
             Gap(12.w),
@@ -149,7 +150,11 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                     .read(_completenessBannerDismissedProvider.notifier)
                     .dismiss();
               },
-              icon: Icon(AppIcons.closeBox, size: 18.r, color: c.text3),
+              icon: Icon(
+                AppIcons.closeBox,
+                size: AppIconSize.md.r,
+                color: c.text3,
+              ),
               padding: EdgeInsets.zero,
               constraints: BoxConstraints(minWidth: 32.r, minHeight: 32.r),
               tooltip: 'Dismiss',

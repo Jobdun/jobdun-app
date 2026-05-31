@@ -21,6 +21,7 @@
 library;
 
 export 'package:jobdun/app/theme/app_colors.dart' show JColors, JColorsX;
+export 'package:jobdun/app/theme/app_icon_size.dart' show AppIconSize;
 export 'package:jobdun/app/theme/app_motion.dart' show AppMotion;
 export 'package:jobdun/app/theme/app_radii.dart' show AppRadius;
 export 'package:jobdun/app/theme/app_spacing.dart' show AppSpacing;

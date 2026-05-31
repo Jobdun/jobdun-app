@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_typography.dart';
 import 'avatar_block.dart';
 
 class TradieCard extends StatelessWidget {
@@ -82,12 +83,14 @@ class TradieCard extends StatelessWidget {
                               children: [
                                 Text(
                                   rating.toStringAsFixed(1),
-                                  style: tt.headlineSmall!.copyWith(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: c.text1,
-                                    height: 1,
-                                  ),
+                                  // titleLarge (Oswald) + tabular figures — an
+                                  // on-scale role, not an 18.sp override.
+                                  style: AppTypography.numeric(tt.titleLarge!)
+                                      .copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: c.text1,
+                                        height: 1,
+                                      ),
                                 ),
                                 Text(
                                   '/5',
@@ -148,13 +151,13 @@ class TradieCard extends StatelessWidget {
                   ],
                   if (!isOffline) ...[
                     const Spacer(),
+                    // Distance is metadata, not a CTA — neutral text, not
+                    // orange (MASTER §54). titleSmall + tabular figures.
                     Text(
                       '${distanceKm.toStringAsFixed(1)} km',
-                      style: tt.headlineSmall!.copyWith(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: c.action,
-                      ),
+                      style: AppTypography.numeric(
+                        tt.titleSmall!,
+                      ).copyWith(fontWeight: FontWeight.w700, color: c.text2),
                     ),
                   ],
                 ],

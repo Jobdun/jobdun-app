@@ -2,78 +2,8 @@ part of 'home_page.dart';
 
 // GENERATED-SPLIT: part of home_page.dart (file-size budget). No behaviour change.
 
-// ── Header ─────────────────────────────────────────────────────────────────────
-
-class _Header extends StatelessWidget {
-  const _Header({required this.isBuilder, required this.location});
-
-  final bool isBuilder;
-  final String location;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      color: c.card,
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PageHeader(
-                  // Same `tab` size (24sp Oswald w600) as Jobs / Applications
-                  // / Messages so the four bottom-nav landings render with
-                  // identical chrome. The previous `hero` (32sp) was a
-                  // landing-page emphasis the bottom nav already provides,
-                  // and made the title visibly inconsistent when swiping
-                  // between tabs.
-                  title: isBuilder ? 'Find a tradie' : 'Jobs nearby',
-                ),
-                Gap(4.h),
-                Row(
-                  children: [
-                    Icon(AppIcons.location, size: 12.r, color: c.text2),
-                    Gap(4.w),
-                    Expanded(
-                      child: Text(
-                        location,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodySmall!.copyWith(
-                          letterSpacing: 0.02 * 11,
-                          color: c.text2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Gap(12.w),
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 34.r,
-              height: 34.r,
-              decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                border: Border.all(color: c.border),
-              ),
-              child: Icon(AppIcons.notification, size: 18.r, color: c.text2),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// The page header is now the floating JTopBar SliverAppBar wired directly in
+// home_page.dart (LinkedIn-style avatar + search + notifications).
 
 // ── Stats Row ──────────────────────────────────────────────────────────────────
 
@@ -157,11 +87,9 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: tt.headlineSmall!.copyWith(
-              fontSize: 28.sp,
-              color: c.text1,
-              height: 1.0,
-            ),
+            // headlineMedium (24sp) — an on-scale step, not the off-scale 28sp
+            // override it used to carry.
+            style: tt.headlineMedium!.copyWith(color: c.text1, height: 1.0),
           ),
           Gap(2.h),
           Text(
@@ -211,8 +139,9 @@ class _PrimaryActionCard extends StatelessWidget {
                 ),
                 child: Icon(
                   isBuilder ? AppIcons.addSquare : AppIcons.search,
-                  size: 22.r,
-                  color: Colors.white, // intentional: white-on-action
+                  size: AppIconSize.nav.r,
+                  color: c
+                      .background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
                 ),
               ),
               Gap(AppSpacing.md.w),
@@ -237,7 +166,11 @@ class _PrimaryActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(AppIcons.chevronRight, size: 20.r, color: c.text3),
+              Icon(
+                AppIcons.chevronRight,
+                size: AppIconSize.md.r,
+                color: c.text3,
+              ),
             ],
           ),
         ),

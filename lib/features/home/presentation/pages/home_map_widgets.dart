@@ -32,7 +32,7 @@ class _RadiusChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.location, size: 16.r, color: c.action),
+          Icon(AppIcons.location, size: AppIconSize.inline.r, color: c.action),
           Gap(6.w),
           Text(
             'NEAR $shortPlace',
@@ -83,7 +83,11 @@ class _MapStyleButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIcons.mapLayer, size: 16.r, color: c.action),
+              Icon(
+                AppIcons.mapLayer,
+                size: AppIconSize.inline.r,
+                color: c.action,
+              ),
               Gap(6.w),
               Text(
                 current.label,
@@ -198,7 +202,7 @@ class _MapStyleRow extends StatelessWidget {
               ),
               child: Icon(
                 AppIcons.mapLayer,
-                size: 16.r,
+                size: AppIconSize.inline.r,
                 color: selected
                     ? Colors
                           .white // intentional: white-on-action
@@ -227,7 +231,11 @@ class _MapStyleRow extends StatelessWidget {
               ),
             ),
             if (selected)
-              Icon(AppIcons.successCircleFilled, size: 18.r, color: c.action),
+              Icon(
+                AppIcons.successCircleFilled,
+                size: AppIconSize.md.r,
+                color: c.action,
+              ),
           ],
         ),
       ),
@@ -276,7 +284,7 @@ class _RecenterButton extends StatelessWidget {
                 )
               : Icon(
                   hasLocation ? AppIcons.gpsFilled : AppIcons.gps,
-                  size: 18.r,
+                  size: AppIconSize.md.r,
                   color: c.action,
                 ),
         ),
@@ -342,7 +350,11 @@ class _LocationStatusBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(AppIcons.locationUnavailable, size: 18.r, color: c.action),
+          Icon(
+            AppIcons.locationUnavailable,
+            size: AppIconSize.md.r,
+            color: c.action,
+          ),
           Gap(12.w),
           Expanded(
             child: Column(
