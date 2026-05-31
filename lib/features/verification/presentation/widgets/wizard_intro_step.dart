@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';

@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
-import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';

@@ -3,7 +3,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
