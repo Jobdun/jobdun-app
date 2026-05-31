@@ -86,3 +86,6 @@ firebase-debug.log*
 .vercel/
 .parcel-cache/
 *.orig
+
+# Flutter golden-test failure artifacts (regenerated on every mismatch)
+test/**/failures/

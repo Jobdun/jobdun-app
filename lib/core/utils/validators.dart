@@ -41,9 +41,7 @@ abstract final class Validators {
   // ABR checksum: subtract 1 from the first digit, multiply each digit by its
   // weight, sum, then check sum % 89 == 0. Reference:
   // https://abr.business.gov.au/Help/AbnFormat
-  static const List<int> _abnWeights = [
-    10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19,
-  ];
+  static const List<int> _abnWeights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
 
   static bool _isValidAbnChecksum(String elevenDigits) {
     final digits = elevenDigits.split('').map(int.parse).toList();

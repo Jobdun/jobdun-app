@@ -25,8 +25,7 @@ void main() {
       role: 'trade',
       createdAt: DateTime(2026, 1, 1),
     );
-    when(() => repo.getUserDetail('u1'))
-        .thenAnswer((_) async => Right(detail));
+    when(() => repo.getUserDetail('u1')).thenAnswer((_) async => Right(detail));
 
     final result = await useCase('u1');
 
@@ -35,9 +34,9 @@ void main() {
   });
 
   test('propagates failures', () async {
-    when(() => repo.getUserDetail(any())).thenAnswer(
-      (_) async => const Left(ServerFailure('boom')),
-    );
+    when(
+      () => repo.getUserDetail(any()),
+    ).thenAnswer((_) async => const Left(ServerFailure('boom')));
     final result = await useCase('u1');
     expect(result.isLeft(), isTrue);
   });

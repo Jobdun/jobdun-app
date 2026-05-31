@@ -5,8 +5,9 @@
 // register. Routes through LicenceAdapter implementations — one per state.
 //
 // Guards: JWT, rate limits, circuit breaker per regulator, audit trail.
-// Pre-req: caller must already have a verified kind='abn' row. Otherwise
-// returns 412 — Step 1 must succeed before Step 2.
+// Verification is optional and per-kind (v2): there is NO ABN prerequisite —
+// a tradie can verify ABN, licence, both, or neither, in any order. This
+// endpoint never returns 412.
 
 import { jsonResponse, preflight } from "../_shared/cors.ts";
 import { clientIp, getUserFromRequest, serviceClient } from "../_shared/supabase-client.ts";

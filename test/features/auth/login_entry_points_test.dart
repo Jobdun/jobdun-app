@@ -210,7 +210,9 @@ void main() {
   // ───────────────────────────────────────────────────────────────────────────
   // Forgot password? → /forgot-password
   // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('Forgot password? link routes to /forgot-password', (tester) async {
+  testWidgets('Forgot password? link routes to /forgot-password', (
+    tester,
+  ) async {
     final router = buildRouter();
     await tester.pumpWidget(wrap(router));
     await tester.pumpAndSettle();
