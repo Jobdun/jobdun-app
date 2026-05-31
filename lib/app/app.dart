@@ -25,6 +25,14 @@ class JobdunApp extends ConsumerWidget {
         themeMode: themeMode,
         routerConfig: router,
         debugShowCheckedModeBanner: false,
+        // Honor the OS text-size setting but clamp it so fixed-height controls
+        // (buttons, nav, badges) don't break at extreme Dynamic Type. 0.9–1.3
+        // is the band vetted on the home preview.
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: 0.9,
+          maxScaleFactor: 1.3,
+          child: child!,
+        ),
       ),
     );
   }

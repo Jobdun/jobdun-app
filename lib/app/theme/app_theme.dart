@@ -319,7 +319,11 @@ class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: c.border, thickness: 1, space: 1),
-      iconTheme: IconThemeData(color: c.text3),
+      // Best-practice icon default: 24dp (MASTER §210 nav) + the legible `text2`
+      // for icons that don't set their own size/colour. Was `text3`, which can
+      // dip below the 3:1 icon-contrast floor on raised surfaces. Matches the
+      // vetted PreviewTheme default.
+      iconTheme: IconThemeData(size: AppIconTheme.defaultSize, color: c.text2),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: c.background,
       ),

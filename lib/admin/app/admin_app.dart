@@ -23,6 +23,13 @@ class AdminApp extends ConsumerWidget {
         theme: AppTheme.dark(),
         debugShowCheckedModeBanner: false,
         routerConfig: router,
+        // Clamp Dynamic Type (0.9–1.3) so the shared fixed-height primitives
+        // behave at extreme OS font sizes — same band as the mobile app root.
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: 0.9,
+          maxScaleFactor: 1.3,
+          child: child!,
+        ),
       ),
     );
   }
