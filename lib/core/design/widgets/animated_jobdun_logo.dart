@@ -16,8 +16,8 @@ import 'jobdun_logo_path.dart';
 /// - [strike] — the mark drops in from above with an overshoot bounce + an
 ///              impact spark. Also wraps [JobdunLogo] (theme-aware).
 /// - [draw]   — the vector outline "draws itself" (PathMetrics trace) then the
-///              orange fill fades in. Renders the parsed path in `c.action`, so
-///              it's intended for the dark demo stage only.
+///              fill fades in. Theme-aware like the others: orange J on
+///              transparent in dark; white J on an orange badge in light.
 enum JLogoAnim { forge, strike, draw }
 
 /// One-shot animated presentation of the hammer-J brand mark. Plays once on
@@ -77,13 +77,19 @@ class _AnimatedJobdunLogoState extends State<AnimatedJobdunLogo>
     return switch (widget.variant) {
       JLogoAnim.forge => _ForgeVariant(controller: _c, height: widget.height),
       JLogoAnim.strike => _StrikeVariant(controller: _c, height: widget.height),
-      JLogoAnim.draw => _DrawVariant(
-        controller: _c,
-        height: widget.height,
-        color: context.c.action,
-      ),
+      JLogoAnim.draw => _DrawVariant(controller: _c, height: widget.height),
     };
   }
+}
+
+/// Spark/accent colour that stays visible on whatever the logo sits on: the
+/// brand orange on the dark canvas, dark slate (`onAction`) on the light badge
+/// + page — an orange spark would vanish on the orange light-mode badge.
+Color _sparkColor(BuildContext context) {
+  final c = context.c;
+  return Theme.of(context).brightness == Brightness.dark
+      ? c.action
+      : c.onAction;
 }
 
 // ── forge ──────────────────────────────────────────────────────────────────────
@@ -96,7 +102,7 @@ class _ForgeVariant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final action = context.c.action;
+    final sparkColor = _sparkColor(context);
     return AnimatedBuilder(
       animation: controller,
       // The logo is built once and reused across frames.
@@ -146,7 +152,7 @@ class _ForgeVariant extends StatelessWidget {
                       child: CustomPaint(
                         painter: _SparkPainter(
                           progress: spark,
-                          color: action,
+                          color: sparkColor,
                           focal: const Alignment(0.28, -0.34),
                         ),
                       ),
@@ -171,7 +177,7 @@ class _StrikeVariant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final action = context.c.action;
+    final sparkColor = _sparkColor(context);
     return AnimatedBuilder(
       animation: controller,
       child: JobdunLogo(variant: LogoVariant.mark, height: height),
@@ -197,7 +203,7 @@ class _StrikeVariant extends StatelessWidget {
                       child: CustomPaint(
                         painter: _SparkPainter(
                           progress: spark,
-                          color: action,
+                          color: sparkColor,
                           focal: const Alignment(0.28, -0.34),
                         ),
                       ),
@@ -215,18 +221,19 @@ class _StrikeVariant extends StatelessWidget {
 // ── draw / trace ─────────────────────────────────────────────────────────────
 
 class _DrawVariant extends StatelessWidget {
-  const _DrawVariant({
-    required this.controller,
-    required this.height,
-    required this.color,
-  });
+  const _DrawVariant({required this.controller, required this.height});
 
   final AnimationController controller;
   final double height;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Mirror the static mark: dark = orange J on transparent; light = white J
+    // on an orange rounded-square badge.
+    final ink = isDark ? c.action : Colors.white;
+    final badge = isDark ? null : c.action;
     return SizedBox(
       width: height,
       height: height,
@@ -234,7 +241,11 @@ class _DrawVariant extends StatelessWidget {
         animation: controller,
         builder: (context, _) => CustomPaint(
           size: Size(height, height),
-          painter: _DrawTracePainter(progress: controller.value, color: color),
+          painter: _DrawTracePainter(
+            progress: controller.value,
+            ink: ink,
+            badge: badge,
+          ),
         ),
       ),
     );
@@ -244,12 +255,15 @@ class _DrawVariant extends StatelessWidget {
 // ── painters ─────────────────────────────────────────────────────────────────
 
 /// Traces the hammer-J outline (PathMetrics) for `progress` 0→0.75, then fades
-/// the orange fill in for 0.75→1.0.
+/// the fill in for 0.75→1.0. Theme-aware: in light mode it draws an orange
+/// rounded-square [badge] behind a white [ink] J (mirroring mark-jobdun-light);
+/// in dark mode [badge] is null and [ink] is the brand orange on transparent.
 class _DrawTracePainter extends CustomPainter {
-  _DrawTracePainter({required this.progress, required this.color});
+  _DrawTracePainter({required this.progress, required this.ink, this.badge});
 
   final double progress;
-  final Color color;
+  final Color ink;
+  final Color? badge;
 
   // Parsed once. even-odd matches the SVG's fill-rule so the negative-space
   // cuts render correctly.
@@ -258,6 +272,22 @@ class _DrawTracePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Light-mode badge — orange rounded square behind the white J, fading in
+    // fast; 18.75% corner radius matches the static light mark.
+    final badgeColor = badge;
+    if (badgeColor != null) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Offset.zero & size,
+          Radius.circular(size.width * 0.1875),
+        ),
+        Paint()
+          ..color = badgeColor.withValues(
+            alpha: (progress / 0.2).clamp(0.0, 1.0),
+          ),
+      );
+    }
+
     final s = size.width / kHammerJViewBox.width;
     final drawP = (progress / 0.75).clamp(0.0, 1.0);
     final fillP = ((progress - 0.75) / 0.25).clamp(0.0, 1.0);
@@ -279,7 +309,7 @@ class _DrawTracePainter extends CustomPainter {
               s // ~7 logical px at any render size
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
-          ..color = color,
+          ..color = ink,
       );
     }
 
@@ -288,7 +318,7 @@ class _DrawTracePainter extends CustomPainter {
         _base,
         Paint()
           ..style = PaintingStyle.fill
-          ..color = color.withValues(alpha: fillP),
+          ..color = ink.withValues(alpha: fillP),
       );
     }
 
@@ -297,7 +327,7 @@ class _DrawTracePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DrawTracePainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.ink != ink || old.badge != badge;
 }
 
 /// A spark burst — an expanding ring + radiating rays at [focal], fading as it
