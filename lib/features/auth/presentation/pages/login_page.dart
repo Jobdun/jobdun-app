@@ -396,7 +396,7 @@ class _BrandSsoTile extends StatelessWidget {
     return switch (provider) {
       _SsoProvider.google => (
         bg: Colors.white, // intentional: Google brand requires white tile
-        fg: Colors.white, // unused for Google (multi-colour SVG)
+        fg: Colors.white, // intentional: tile fg, unused for Google's multi-colour SVG
         border: c.border,
         label: 'Sign in with Google',
       ),

@@ -17,16 +17,11 @@ import '../widgets/country_picker_sheet.dart';
 import '../widgets/phone_auth_steps.dart';
 
 // Two callers:
-//   PhoneAuthMode.signIn      — public route /phone-auth, creates a session
-//                               from a phone OTP (alternative to email auth)
-//   PhoneAuthMode.addToAccount — gated route /profile/verify-phone, attaches
-//                               a verified phone to the already-authed user
-//                               so the T1 banner's phone slot can hit 100%.
-//                               Short-circuits to a success state when the
-//                               profile already has phone_verified_at set —
-//                               re-entering the page after a prior verify
-//                               would otherwise loop the user through fresh
-//                               OTP attempts that surface as otp_expired.
+//   signIn       — public /phone-auth; mints a session from a phone OTP.
+//   addToAccount — gated /profile/verify-phone; attaches a verified phone
+//                  so the T1 banner phone slot can reach 100%. Short-circuits to
+//                  success when phone_verified_at is already set (re-entry would
+//                  otherwise loop fresh OTPs that surface as otp_expired).
 enum PhoneAuthMode { signIn, addToAccount }
 
 class PhoneAuthPage extends ConsumerStatefulWidget {
@@ -58,7 +53,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
 
   // Briefly rendered after a successful verify so the user sees confirmation
   // before the page pops back to /profile/edit. Without this, the previous
-  // implementation popped silently — easy to mistake for "nothing happened".
+  // implementation popped silently â easy to mistake for "nothing happened".
   bool _justVerified = false;
 
   // Local override for authState.errorMessage when the raw Supabase auth
@@ -95,7 +90,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   }
 
   Future<void> _checkAlreadyVerified() async {
-    // Force a fresh read — the cached state may pre-date a verify that
+    // Force a fresh read â the cached state may pre-date a verify that
     // happened in another session.
     await ref.read(profileControllerProvider.notifier).loadProfile();
     if (!mounted) return;
@@ -270,7 +265,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
           'Tap Resend code to get a fresh one.';
     }
     if (lower.contains('rate') || lower.contains('too many')) {
-      return 'Too many attempts — wait a minute, then resend.';
+      return 'Too many attempts â wait a minute, then resend.';
     }
     return raw.isEmpty ? null : raw;
   }
@@ -373,7 +368,7 @@ enum _RestoreChoice { continueIt, cancelAndStartOver }
 /// Shown on `/profile/verify-phone` when the profile already carries a
 /// non-null `phone_verified_at`. Replaces the previous behaviour where the
 /// page would route the user back into a fresh OTP flow for a phone they
-/// had already confirmed — that path surfaced `otp_expired` errors that
+/// had already confirmed â that path surfaced `otp_expired` errors that
 /// read like real failures.
 class _AlreadyVerifiedView extends StatelessWidget {
   const _AlreadyVerifiedView({required this.phone, required this.onDone});
@@ -424,7 +419,7 @@ class _AlreadyVerifiedView extends StatelessWidget {
           ),
           Gap(AppSpacing.md.h),
           Text(
-            'To change your phone number, contact support — for now this is '
+            'To change your phone number, contact support â for now this is '
             'locked to the number you verified.',
             textAlign: TextAlign.center,
             style: tt.bodySmall!.copyWith(color: c.text3, height: 1.45),
@@ -447,7 +442,7 @@ class _AlreadyVerifiedView extends StatelessWidget {
     final digits = raw.replaceAll(RegExp(r'[^\d+]'), '');
     if (digits.length <= 4) return digits;
     final visible = digits.substring(digits.length - 4);
-    final hidden = '•' * (digits.length - 4);
+    final hidden = 'â¢' * (digits.length - 4);
     return '$hidden$visible';
   }
 }
@@ -492,7 +487,7 @@ class _JustVerifiedOverlay extends StatelessWidget {
           ),
           Gap(8.h),
           Text(
-            'Taking you back…',
+            'Taking you backâ¦',
             style: tt.bodyMedium!.copyWith(color: c.text2),
           ),
         ],

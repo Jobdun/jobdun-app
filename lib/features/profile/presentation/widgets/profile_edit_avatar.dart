@@ -105,8 +105,7 @@ class ProfileEditAvatarHeader extends StatelessWidget {
                         ),
                         alignment: Alignment.center,
                         child: const CircularProgressIndicator(
-                          // intentional: white-on-dark-overlay
-                          color: Colors.white,
+                          color: Colors.white, // intentional: white-on-dark-overlay
                           strokeWidth: 2,
                         ),
                       ),
