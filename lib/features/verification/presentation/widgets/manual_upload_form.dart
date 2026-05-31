@@ -100,6 +100,7 @@ class ManualUploadActiveBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -152,8 +153,7 @@ class ManualUploadActiveBody extends StatelessWidget {
               Gap(8.h),
               Text(
                 'Issuer: ${issuerFor(kind, kind.requiresState ? state : null)}',
-                style: TextStyle(
-                  fontSize: 12.sp,
+                style: tt.bodySmall!.copyWith(
                   color: c.text3,
                   fontStyle: FontStyle.italic,
                 ),
@@ -199,9 +199,7 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(
-        fontSize: 11.sp,
-        color: context.c.text3,
+      style: Theme.of(context).textTheme.labelSmall!.copyWith(
         letterSpacing: 0.6,
         fontWeight: FontWeight.w700,
       ),
@@ -222,6 +220,7 @@ class _ChoiceDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       decoration: BoxDecoration(
@@ -234,7 +233,7 @@ class _ChoiceDropdown extends StatelessWidget {
           isExpanded: true,
           value: value,
           dropdownColor: c.surface,
-          style: TextStyle(fontSize: 14.sp, color: c.text1),
+          style: tt.titleSmall!.copyWith(color: c.text1),
           items: items
               .map((s) => DropdownMenuItem(value: s, child: Text(s)))
               .toList(),
@@ -253,6 +252,7 @@ class _ExpiryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final label = expiry == null
         ? 'Pick a date'
         : DateFormat('d MMM yyyy').format(expiry!);
@@ -272,8 +272,7 @@ class _ExpiryRow extends StatelessWidget {
             Gap(10.w),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14.sp,
+              style: tt.titleSmall!.copyWith(
                 color: expiry == null ? c.text3 : c.text1,
               ),
             ),
@@ -404,6 +403,7 @@ class _AttestationCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return InkWell(
       onTap: enabled ? () => onChanged(!attested) : null,
       borderRadius: BorderRadius.circular(8.r),
@@ -435,10 +435,7 @@ class _AttestationCheckbox extends StatelessWidget {
             ),
             Gap(10.w),
             Expanded(
-              child: Text(
-                _claim,
-                style: TextStyle(fontSize: 12.sp, color: c.text2, height: 1.45),
-              ),
+              child: Text(_claim, style: tt.bodySmall!.copyWith(height: 1.45)),
             ),
           ],
         ),

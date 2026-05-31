@@ -137,11 +137,12 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    if (_pending != null) return _buildConfirm(c);
-    return _buildEntry(c);
+    if (_pending != null) return _buildConfirm(context, c);
+    return _buildEntry(context, c);
   }
 
-  Widget _buildConfirm(JColors c) {
+  Widget _buildConfirm(BuildContext context, JColors c) {
+    final tt = Theme.of(context).textTheme;
     final pending = _pending!;
     if (pending is VerifyFailed && pending.reason == 'phone_required') {
       return LicencePhoneRequired(
@@ -167,17 +168,10 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
       children: [
         Text(
           'We couldn\'t verify this licence',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(12.h),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-        ),
+        Text(detail, style: tt.bodyMedium),
         const Spacer(),
         if (allowUpload) ...[
           SizedBox(
@@ -220,15 +214,14 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
     );
   }
 
-  Widget _buildEntry(JColors c) {
+  Widget _buildEntry(BuildContext context, JColors c) {
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.stepLabel,
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: c.text3,
+          style: tt.labelSmall!.copyWith(
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
           ),
@@ -236,11 +229,7 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
         Gap(8.h),
         Text(
           'Your licence',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(16.h),
         LicenceDropdownRow(

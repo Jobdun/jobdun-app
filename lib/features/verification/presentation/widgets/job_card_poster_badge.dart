@@ -21,6 +21,7 @@ class JobCardPosterBadge extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final verified =
         status == PosterVerificationStatus.verified ||
         status == PosterVerificationStatus.partial;
@@ -34,12 +35,7 @@ class JobCardPosterBadge extends StatelessWidget {
         Gap(4.w),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w600,
-            color: fg,
-            letterSpacing: 0.4,
-          ),
+          style: tt.labelSmall!.copyWith(color: fg, letterSpacing: 0.4),
         ),
       ],
     );

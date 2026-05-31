@@ -145,16 +145,13 @@ class _VerifiedOnlyToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Row(
       children: [
         Expanded(
           child: Text(
             'Verified workers only',
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-              color: c.text2,
-            ),
+            style: tt.bodyMedium!.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Switch(value: value, onChanged: onChanged, activeThumbColor: c.action),

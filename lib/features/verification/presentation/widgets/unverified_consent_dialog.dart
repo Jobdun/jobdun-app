@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
-import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../providers/verifications_provider.dart';
@@ -37,7 +36,7 @@ class _SheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 24.h),
       child: Column(
@@ -46,11 +45,7 @@ class _SheetBody extends StatelessWidget {
         children: [
           Text(
             'You\'re including unverified workers',
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
+            style: tt.headlineSmall!.copyWith(fontWeight: FontWeight.w700),
           ),
           Gap(12.h),
           Text(
@@ -58,7 +53,7 @@ class _SheetBody extends StatelessWidget {
             'government register. We don\'t know if their licence is '
             'current or even real.\n\nHiring them is your call — and '
             'your risk.',
-            style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
+            style: tt.bodyMedium,
           ),
           Gap(20.h),
           Row(

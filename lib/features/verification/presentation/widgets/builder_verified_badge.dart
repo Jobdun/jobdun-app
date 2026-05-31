@@ -38,6 +38,7 @@ class BuilderVerifiedBadge extends ConsumerWidget {
     if (abn == null) return const SizedBox.shrink();
 
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final gst = abn.gstRegistered == true ? ' · GST registered' : '';
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -49,8 +50,7 @@ class BuilderVerifiedBadge extends ConsumerWidget {
             'Verified business$gst',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10.sp,
+            style: tt.labelSmall!.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
               color: c.verified,

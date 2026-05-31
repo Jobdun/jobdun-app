@@ -53,14 +53,13 @@ class WizardIntroStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'HOW WOULD YOU LIKE TO VERIFY?',
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: c.text3,
+          style: tt.labelSmall!.copyWith(
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
           ),
@@ -68,17 +67,10 @@ class WizardIntroStep extends StatelessWidget {
         Gap(8.h),
         Text(
           _title,
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(8.h),
-        Text(
-          _body,
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-        ),
+        Text(_body, style: tt.bodyMedium),
         Gap(24.h),
         _ChoiceCard(
           icon: AppIcons.shield,
@@ -101,7 +93,7 @@ class WizardIntroStep extends StatelessWidget {
         Text(
           'Verification is optional. You can apply, post, and message '
           'either way.',
-          style: TextStyle(fontSize: 12.sp, color: c.text3, height: 1.45),
+          style: tt.bodySmall!.copyWith(color: c.text3, height: 1.45),
         ),
       ],
     );
@@ -128,6 +120,7 @@ class _ChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final accent = isPrimary ? c.action : c.text2;
     final bg = isPrimary ? c.actionBg : c.surface;
     final border = isPrimary ? c.action : c.border;
@@ -165,22 +158,10 @@ class _ChoiceCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: c.text1,
-                      ),
+                      style: tt.labelLarge!.copyWith(letterSpacing: 0.6),
                     ),
                     Gap(4.h),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        color: c.text2,
-                        height: 1.4,
-                      ),
-                    ),
+                    Text(subtitle, style: tt.bodyMedium),
                     Gap(6.h),
                     Container(
                       padding: EdgeInsets.symmetric(
@@ -195,10 +176,8 @@ class _ChoiceCard extends StatelessWidget {
                       ),
                       child: Text(
                         eta.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10.sp,
+                        style: tt.labelSmall!.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
                           color: accent,
                         ),
                       ),

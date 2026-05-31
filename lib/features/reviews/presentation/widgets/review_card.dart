@@ -24,6 +24,7 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(14.r),
@@ -40,13 +41,13 @@ class ReviewCard extends StatelessWidget {
           if (review.comment?.isNotEmpty == true) ...[
             Text(
               review.comment!,
-              style: TextStyle(fontSize: 14.sp, color: c.text1, height: 1.45),
+              style: tt.bodyLarge!.copyWith(color: c.text1),
             ),
             Gap(8.h),
           ],
           Text(
             DateFormat('d MMM yyyy').format(review.createdAt),
-            style: TextStyle(fontSize: 11.sp, color: c.text3),
+            style: tt.bodySmall!.copyWith(color: c.text3),
           ),
           if (review.verificationSnapshot != null) ...[
             Gap(8.h),
@@ -88,6 +89,7 @@ class _SnapshotSubtitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final positive = snapshot.hadAny;
     return Row(
       children: [
@@ -100,8 +102,7 @@ class _SnapshotSubtitle extends StatelessWidget {
         Expanded(
           child: Text(
             _copy(),
-            style: TextStyle(
-              fontSize: 11.sp,
+            style: tt.bodySmall!.copyWith(
               color: positive ? c.verifiedTx : c.text3,
               fontStyle: FontStyle.italic,
             ),

@@ -210,6 +210,7 @@ class _OnboardingCompletionSheetState
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
       canPop: false,
@@ -276,7 +277,7 @@ class _OnboardingCompletionSheetState
                 Gap(AppSpacing.sm.h),
                 Text(
                   _errorMessage!,
-                  style: TextStyle(fontSize: 12.sp, color: c.urgent),
+                  style: tt.bodySmall!.copyWith(color: c.urgent),
                   textAlign: TextAlign.center,
                 ),
               ],

@@ -195,6 +195,7 @@ class VerificationReceipts extends ConsumerWidget {
     // (a human reviews uploads, usually within 24 h). Show one honest CTA
     // that opens the sheet directly. Builders keep the wizard CTA because
     // their ABR auto-path IS live and IS roughly a minute.
+    final tt = Theme.of(context).textTheme;
     if (docType == docs.DocType.tradeLicence) {
       return InkWell(
         onTap: () => showManualUploadSheet(context: context, kind: manualKind),
@@ -202,8 +203,7 @@ class VerificationReceipts extends ConsumerWidget {
           padding: EdgeInsets.symmetric(vertical: 6.h),
           child: Text(
             'Upload your licence →',
-            style: TextStyle(
-              fontSize: 13.sp,
+            style: tt.bodyMedium!.copyWith(
               fontWeight: FontWeight.w600,
               color: context.c.action,
             ),
@@ -222,9 +222,7 @@ class VerificationReceipts extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 4.h),
             child: Text(
               'Or upload a document →',
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w500,
+              style: tt.bodySmall!.copyWith(
                 color: context.c.text3,
                 decoration: TextDecoration.underline,
                 decorationColor: context.c.text3,
@@ -289,6 +287,7 @@ class VerificationReceipts extends ConsumerWidget {
   // ABN CTA used to dead-end on a "you're already verified" snackbar.
   static Widget _reverifyCta(BuildContext context, docs.DocType docType) {
     final isLicence = docType == docs.DocType.tradeLicence;
+    final tt = Theme.of(context).textTheme;
     return InkWell(
       onTap: () => isLicence
           ? showManualUploadSheet(
@@ -300,8 +299,7 @@ class VerificationReceipts extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 6.h),
         child: Text(
           'Re-verify →',
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: tt.bodySmall!.copyWith(
             fontWeight: FontWeight.w600,
             color: context.c.text3,
           ),
@@ -320,14 +318,14 @@ class VerificationReceipts extends ConsumerWidget {
   }
 
   static Widget _wizardCta(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     return InkWell(
       onTap: () => context.push('/verification/wizard'),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 6.h),
         child: Text(
           'Verify in about a minute →',
-          style: TextStyle(
-            fontSize: 13.sp,
+          style: tt.bodyMedium!.copyWith(
             fontWeight: FontWeight.w600,
             color: context.c.action,
           ),
@@ -355,6 +353,7 @@ class _ReceiptRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       child: Row(
@@ -372,17 +371,13 @@ class _ReceiptRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 14.sp,
+                  style: tt.titleSmall!.copyWith(
                     fontWeight: FontWeight.w600,
                     color: c.text1,
                   ),
                 ),
                 Gap(2.h),
-                Text(
-                  sub,
-                  style: TextStyle(fontSize: 12.sp, color: c.text2),
-                ),
+                Text(sub, style: tt.bodySmall),
                 ?cta,
               ],
             ),

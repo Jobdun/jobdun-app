@@ -42,17 +42,14 @@ class _ConfirmYourBusinessState extends State<ConfirmYourBusiness> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final entity = widget.entityName?.toUpperCase() ?? 'Active business';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Is this your business?',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(20.h),
         Container(
@@ -68,17 +65,10 @@ class _ConfirmYourBusinessState extends State<ConfirmYourBusiness> {
             children: [
               Text(
                 entity,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: c.text1,
-                ),
+                style: tt.titleLarge!.copyWith(fontWeight: FontWeight.w700),
               ),
               Gap(8.h),
-              Text(
-                'ABN ${widget.abn}',
-                style: TextStyle(fontSize: 13.sp, color: c.text2),
-              ),
+              Text('ABN ${widget.abn}', style: tt.bodyMedium),
             ],
           ),
         ),
@@ -129,11 +119,7 @@ class _ConfirmYourBusinessState extends State<ConfirmYourBusiness> {
                         ),
                       ],
                     ),
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: c.text2,
-                      height: 1.45,
-                    ),
+                    style: tt.bodySmall!.copyWith(height: 1.45),
                   ),
                 ),
               ],
@@ -187,23 +173,16 @@ class ConfirmPhoneRequired extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Verify your phone first',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(12.h),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-        ),
+        Text(detail, style: tt.bodyMedium),
         const Spacer(),
         SizedBox(
           width: double.infinity,
@@ -245,23 +224,16 @@ class ConfirmAbnFailed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'We couldn\'t verify this ABN',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(12.h),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 14.sp, color: c.text2),
-        ),
+        Text(detail, style: tt.bodyMedium),
         const Spacer(),
         if (onUpload != null) ...[
           SizedBox(
@@ -303,24 +275,20 @@ class ConfirmAbnManualReview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'We\'ll finish this manually',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(12.h),
         Text(
           'We couldn\'t reach the Australian Business Register right now. '
           'Upload a copy of your ABN certificate and a reviewer will '
           'confirm it within 24 hours.',
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
+          style: tt.bodyMedium,
         ),
         const Spacer(),
         SizedBox(

@@ -34,6 +34,7 @@ class LicenceSupportedForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -48,10 +49,7 @@ class LicenceSupportedForm extends StatelessWidget {
         ),
         if (errorMessage != null) ...[
           Gap(8.h),
-          Text(
-            errorMessage!,
-            style: TextStyle(fontSize: 13.sp, color: c.urgent),
-          ),
+          Text(errorMessage!, style: tt.bodyMedium!.copyWith(color: c.urgent)),
         ],
         Gap(16.h),
         if (calling)
@@ -68,7 +66,7 @@ class LicenceSupportedForm extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Checking with $state Fair Trading\'s public register…',
-                    style: TextStyle(fontSize: 13.sp, color: c.text2),
+                    style: tt.bodyMedium,
                   ),
                 ),
               ],
@@ -115,6 +113,7 @@ class LicenceUnsupportedHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
@@ -131,8 +130,7 @@ class LicenceUnsupportedHint extends StatelessWidget {
               Gap(8.w),
               Text(
                 'No automated check for $state yet',
-                style: TextStyle(
-                  fontSize: 13.sp,
+                style: tt.bodyMedium!.copyWith(
                   fontWeight: FontWeight.w700,
                   color: c.text1,
                   letterSpacing: 0.4,
@@ -144,7 +142,7 @@ class LicenceUnsupportedHint extends StatelessWidget {
           Text(
             'Upload a clear photo of your licence and a reviewer will '
             'confirm it within 24 hours. Or pick a different state above.',
-            style: TextStyle(fontSize: 13.sp, color: c.text2, height: 1.45),
+            style: tt.bodyMedium,
           ),
           Gap(14.h),
           Row(
@@ -186,23 +184,16 @@ class LicencePhoneRequired extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Verify your phone first',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(12.h),
-        Text(
-          detail,
-          style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-        ),
+        Text(detail, style: tt.bodyMedium),
         const Spacer(),
         SizedBox(
           width: double.infinity,
@@ -245,14 +236,13 @@ class LicenceDropdownRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: c.text3,
+          style: tt.labelSmall!.copyWith(
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
           ),
@@ -270,7 +260,7 @@ class LicenceDropdownRow extends StatelessWidget {
               isExpanded: true,
               value: value,
               dropdownColor: c.surface,
-              style: TextStyle(fontSize: 14.sp, color: c.text1),
+              style: tt.titleSmall!.copyWith(color: c.text1),
               items: items
                   .map((i) => DropdownMenuItem(value: i, child: Text(i)))
                   .toList(),

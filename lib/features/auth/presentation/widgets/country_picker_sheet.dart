@@ -107,6 +107,9 @@ class _CountryPickerSheet extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
+                          // Emoji flag glyph — decorative sizing only, not
+                          // type-scale text (font family/weight/spacing don't
+                          // apply to emoji). Left raw by design.
                           Text(country.flag, style: TextStyle(fontSize: 22.sp)),
                           Gap(12.w),
                           Expanded(

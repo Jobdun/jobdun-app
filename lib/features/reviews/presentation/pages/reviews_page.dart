@@ -77,23 +77,19 @@ Review _placeholderReview() => Review(
 class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'No reviews yet',
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
+            style: tt.titleLarge!.copyWith(fontWeight: FontWeight.w700),
           ),
           Gap(6.h),
           Text(
             'Reviews from completed jobs will appear here.',
-            style: TextStyle(fontSize: 13.sp, color: c.text2),
+            style: tt.bodyMedium,
             textAlign: TextAlign.center,
           ),
         ],

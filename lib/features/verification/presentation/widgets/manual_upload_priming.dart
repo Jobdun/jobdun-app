@@ -18,6 +18,7 @@ class ManualUploadPrimingBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
@@ -34,8 +35,7 @@ class ManualUploadPrimingBlock extends StatelessWidget {
               Gap(8.w),
               Text(
                 'BEFORE YOU UPLOAD',
-                style: TextStyle(
-                  fontSize: 11.sp,
+                style: tt.labelSmall!.copyWith(
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
                   color: c.text1,
@@ -63,6 +63,7 @@ class _PrimingBullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: EdgeInsets.only(bottom: 4.h),
       child: Row(
@@ -81,10 +82,7 @@ class _PrimingBullet extends StatelessWidget {
           ),
           Gap(10.w),
           Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 12.sp, color: c.text2, height: 1.45),
-            ),
+            child: Text(text, style: tt.bodySmall!.copyWith(height: 1.45)),
           ),
         ],
       ),

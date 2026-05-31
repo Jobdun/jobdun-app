@@ -102,14 +102,13 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
   }
 
   Widget _buildEntry(BuildContext context, JColors c) {
+    final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           widget.stepLabel,
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: c.text3,
+          style: tt.labelSmall!.copyWith(
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
           ),
@@ -117,11 +116,7 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
         Gap(8.h),
         Text(
           'Your business',
-          style: TextStyle(
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         Gap(16.h),
         FormBuilder(
@@ -138,10 +133,7 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
         ),
         if (_errorMessage != null) ...[
           Gap(8.h),
-          Text(
-            _errorMessage!,
-            style: TextStyle(fontSize: 13.sp, color: c.urgent),
-          ),
+          Text(_errorMessage!, style: tt.bodyMedium!.copyWith(color: c.urgent)),
         ],
         const Spacer(),
         if (_calling)
@@ -158,7 +150,7 @@ class _WizardAbnStepState extends ConsumerState<WizardAbnStep> {
                 Expanded(
                   child: Text(
                     'Checking with the Australian Business Register…',
-                    style: TextStyle(fontSize: 13.sp, color: c.text2),
+                    style: tt.bodyMedium,
                   ),
                 ),
               ],

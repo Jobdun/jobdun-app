@@ -237,6 +237,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
     // SingleChildScrollView is load-bearing: the sheet contains a form, an
     // attestation block, picker buttons, optional 180px preview, and the
@@ -266,11 +267,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
             Gap(16.h),
             Text(
               _done ? 'Sent for review' : widget.kind.sheetTitle,
-              style: TextStyle(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
-                color: c.text1,
-              ),
+              style: tt.headlineSmall!.copyWith(fontWeight: FontWeight.w700),
             ),
             Gap(8.h),
             Text(
@@ -278,7 +275,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                   ? 'A reviewer will check this within 24 hours. We\'ll '
                         'update your profile receipts when it\'s approved.'
                   : 'A real person reviews uploads — usually within 24 hours.',
-              style: TextStyle(fontSize: 13.sp, color: c.text2, height: 1.45),
+              style: tt.bodyMedium,
             ),
             Gap(16.h),
             if (_done)
@@ -309,10 +306,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
             ],
             if (_error != null) ...[
               Gap(12.h),
-              Text(
-                _error!,
-                style: TextStyle(fontSize: 12.sp, color: c.urgent),
-              ),
+              Text(_error!, style: tt.bodySmall!.copyWith(color: c.urgent)),
               if (_phoneRequired) ...[
                 Gap(12.h),
                 _PhoneRequiredCta(onVerifyPhone: _goVerifyPhone),

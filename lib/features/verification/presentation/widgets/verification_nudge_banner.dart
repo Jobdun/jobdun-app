@@ -58,6 +58,7 @@ class _Banner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     // Trade copy avoids the "about a minute" auto-path promise — for trades
     // we now route straight to manual upload + a person reviews within ~24 h.
     final copy = role == UserRole.trade
@@ -80,8 +81,7 @@ class _Banner extends ConsumerWidget {
           Expanded(
             child: Text(
               copy,
-              style: TextStyle(
-                fontSize: 13.sp,
+              style: tt.bodyMedium!.copyWith(
                 color: c.text1,
                 fontWeight: FontWeight.w500,
               ),
@@ -92,8 +92,7 @@ class _Banner extends ConsumerWidget {
             onTap: () => context.push('/verification/wizard'),
             child: Text(
               'Get verified →',
-              style: TextStyle(
-                fontSize: 13.sp,
+              style: tt.bodyMedium!.copyWith(
                 fontWeight: FontWeight.w700,
                 color: c.action,
               ),

@@ -89,6 +89,8 @@ class PhoneAuthPhoneStep extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
+                      // Emoji flag glyph — decorative sizing only, not
+                      // type-scale text. Left raw by design.
                       Text(country.flag, style: TextStyle(fontSize: 20.sp)),
                       Gap(8.w),
                       Text(

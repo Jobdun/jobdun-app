@@ -49,6 +49,7 @@ class WizardResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final (icon, iconColor, title, subtitle) = _headerCopy(c);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,18 +58,11 @@ class WizardResultScreen extends StatelessWidget {
         Gap(12.h),
         Text(
           title,
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: tt.headlineMedium!.copyWith(fontWeight: FontWeight.w700),
         ),
         if (subtitle != null) ...[
           Gap(6.h),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 14.sp, color: c.text2, height: 1.45),
-          ),
+          Text(subtitle, style: tt.bodyMedium),
         ],
         Gap(20.h),
         Expanded(child: _buildBody(c)),
@@ -157,6 +151,7 @@ class _ResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     if (result is VerifyVerified) {
       final v = result as VerifyVerified;
       final regulator = v.regulatorDisplayName ?? regulatorFallback;
@@ -165,6 +160,7 @@ class _ResultRow extends StatelessWidget {
           : '';
       return _row(
         c,
+        tt,
         icon: AppIcons.verified,
         title: label,
         sub: 'Checked against $regulator$expires',
@@ -175,6 +171,7 @@ class _ResultRow extends StatelessWidget {
       final f = result as VerifyFailed;
       return _row(
         c,
+        tt,
         icon: AppIcons.closeCircle,
         title: label,
         sub: f.detail.isNotEmpty ? f.detail : 'Verification failed.',
@@ -184,6 +181,7 @@ class _ResultRow extends StatelessWidget {
     if (result is VerifyManualReview) {
       return _row(
         c,
+        tt,
         icon: AppIcons.shield,
         title: label,
         sub: 'We\'re checking this manually — usually under 24 hours.',
@@ -194,7 +192,8 @@ class _ResultRow extends StatelessWidget {
   }
 
   Widget _row(
-    JColors c, {
+    JColors c,
+    TextTheme tt, {
     required IconData icon,
     required String title,
     required String sub,
@@ -222,8 +221,7 @@ class _ResultRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontSize: 14.sp,
+                  style: tt.titleSmall!.copyWith(
                     fontWeight: FontWeight.w700,
                     color: c.text1,
                   ),
@@ -231,8 +229,7 @@ class _ResultRow extends StatelessWidget {
                 Gap(4.h),
                 Text(
                   sub,
-                  style: TextStyle(
-                    fontSize: 12.sp,
+                  style: tt.bodySmall!.copyWith(
                     color: positive ? c.verifiedTx : c.text2,
                   ),
                 ),
