@@ -11,7 +11,10 @@ Future<ThemeMode> loadSavedTheme() async {
   final saved = prefs.getString(_kThemeKey);
   if (saved == 'dark') return ThemeMode.dark;
   if (saved == 'light') return ThemeMode.light;
-  return ThemeMode.light; // default for new installs
+  // Default for new installs: follow the OS setting. The brand is dark-first,
+  // so dark-mode devices land on the intended #0F172A look; users can still
+  // pin an explicit light/dark choice in Settings (which persists above).
+  return ThemeMode.system;
 }
 
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
@@ -19,7 +22,7 @@ final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
 );
 
 class ThemeNotifier extends Notifier<ThemeMode> {
-  ThemeNotifier({ThemeMode initial = ThemeMode.light}) : _initial = initial;
+  ThemeNotifier({ThemeMode initial = ThemeMode.system}) : _initial = initial;
 
   final ThemeMode _initial;
 
@@ -27,13 +30,23 @@ class ThemeNotifier extends Notifier<ThemeMode> {
   ThemeMode build() => _initial;
 
   Future<void> toggle() async {
-    state = state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    // Flip relative to what's actually rendering now — important when the
+    // current mode is `system`, where "is it dark?" depends on the OS setting.
+    final next = isDark ? ThemeMode.light : ThemeMode.dark;
+    state = next;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _kThemeKey,
-      state == ThemeMode.dark ? 'dark' : 'light',
+      next == ThemeMode.dark ? 'dark' : 'light',
     );
   }
 
-  bool get isDark => state == ThemeMode.dark;
+  bool get _systemIsDark =>
+      WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+      Brightness.dark;
+
+  /// Whether the app is *currently rendering* dark — resolves `system` against
+  /// the live OS brightness so the Settings toggle reflects what's on screen.
+  bool get isDark =>
+      state == ThemeMode.dark || (state == ThemeMode.system && _systemIsDark);
 }
