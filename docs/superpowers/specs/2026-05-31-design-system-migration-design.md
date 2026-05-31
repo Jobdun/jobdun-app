@@ -144,3 +144,47 @@ A phase is "done" only when:
 No new design tokens, no new widgets, no layout/IA redesign, no copy changes. This is a
 fidelity migration to an **existing** system, not a redesign. The gated light theme
 (`JColors.light`) stays untouched (app is dark-only).
+
+---
+
+## Execution status (2026-05-31)
+
+### ✅ Shipped (committed per-phase, build green, 158 tests pass)
+- **Phase 0** `df614f7` — home DS checkpoint (icon scale, a11y contrast, type floor, 13 goldens).
+- **Phase 1** `88064c8` — global enablers: `MediaQuery.withClampedTextScaling(0.9–1.3)` in both
+  app roots; live `iconTheme` default → 24dp + `text2`.
+- **Phase 2** `f505ebc` — shared widgets: `JButton` icon→inline, `JStatBadge` icon→md + stat
+  number→headlineMedium(24), field affordances→md, `StatusBanner` icon→inline; 3 goldens regen.
+- **Phase 3** `391d034` — **all 100 feature Icon sizes** across 45 files → `AppIconSize` tokens,
+  via an Icon-aware balanced-paren transform (0 missed; non-icon sizes untouched).
+- **Phase 4** `7d8f9e9` — a11y white-on-orange → `c.onAction` (send button, unread badges,
+  onboarding role tile, avatar chip).
+- **Phase 5 (partial)** `8278f8e` — typography: 1 of the TextStyle files migrated (applications).
+- Cleanup `0f1a26e` — removed redundant `app_icon_size` imports.
+
+**Icon-size migration is 100% complete** (home + shared widgets + every feature).
+
+### ⬜ Remaining (deliberately deferred — see note)
+Deferred because each site needs reliable per-file inspection to map correctly, and they touch
+the critical verification flow; the session's file-reading tooling degraded mid-run, so finishing
+them blind risked silent visual regressions the compiler can't catch. Neither is enforced by
+`validate.sh`, and both are visually invisible.
+
+**Typography — route detached `TextStyle(` through `Theme.of(context).textTheme` (~19 files left):**
+Scale reference (from `app_theme.dart`): 40 displayLarge · 32 displayMedium · 28 headlineLarge ·
+24 headlineMedium · 20 headlineSmall · 18 titleLarge · 16 titleMedium/bodyLarge · 15 labelLarge ·
+14 titleSmall/bodyMedium · 12 bodySmall/labelMedium · 11 labelSmall. Per site: ensure `tt` (or
+`Theme.of(context).textTheme`) is in scope, then `tt.<style>!.copyWith(<non-size props>)`.
+Files: `auth/.../country_picker_sheet`, `onboarding_completion_sheet`, `phone_auth_steps`;
+`reviews/.../reviews_page`, `review_card`; `verification/.../builder_verified_badge`,
+`job_card_poster_badge`, `manual_upload_form`, `manual_upload_priming`, `manual_upload_sheet`,
+`unverified_consent_dialog`, `verification_nudge_banner`, `verification_receipts`,
+`wizard_abn_step`, `wizard_abn_step_widgets`, `wizard_intro_step`, `wizard_licence_step`,
+`wizard_licence_step_widgets`, `wizard_result_screen` (+ recheck `applications_page_widgets`).
+
+**Reduced-motion — guard `flutter_animate` entrances (18 sites):** wrap with
+`if (MediaQuery.of(context).disableAnimations)` short-circuit (FtueHeroPhoto precedent), or skip
+the `.animate()` entrance when reduced motion is on. P2 in the handoff.
+
+**Other handoff P2 items still open:** white-on-success / white-on-error snackbar text (<4.5:1) —
+left intentional this pass; `text2`-on-`surfaceRaised` 4.04:1; `MASTER.md` spec sync.
