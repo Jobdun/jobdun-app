@@ -91,7 +91,7 @@ class _CurrentLocationTile extends StatelessWidget {
               height: 20.r,
               child: loading
                   ? const CircularProgressIndicator(strokeWidth: 2)
-                  : Icon(AppIcons.gps, size: 18.r, color: c.action),
+                  : Icon(AppIcons.gps, size: AppIconSize.md.r, color: c.action),
             ),
             Gap(12.w),
             Expanded(
@@ -149,7 +149,7 @@ class _SuggestionRow extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         child: Row(
           children: [
-            Icon(AppIcons.location, size: 18.r, color: c.text3),
+            Icon(AppIcons.location, size: AppIconSize.md.r, color: c.text3),
             Gap(12.w),
             Expanded(
               child: Column(
@@ -189,7 +189,7 @@ class _LoadingRows extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           child: Row(
             children: [
-              Icon(AppIcons.location, size: 18.r, color: c.text3),
+              Icon(AppIcons.location, size: AppIconSize.md.r, color: c.text3),
               Gap(12.w),
               Expanded(
                 child: Column(

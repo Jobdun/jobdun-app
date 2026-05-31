@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_icon_size.dart';
 
 /// Variant of [JButton] — picks the background/foreground role.
 ///
@@ -76,7 +77,10 @@ class JButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[Icon(icon, size: 18.r), Gap(8.w)],
+              if (icon != null) ...[
+                Icon(icon, size: AppIconSize.inline.r),
+                Gap(8.w),
+              ],
               // Flexible + ellipsis: when a parent gives the button a tight
               // width (e.g. JButton inside a Row with sibling actions), the
               // label shrinks gracefully instead of overflowing — every

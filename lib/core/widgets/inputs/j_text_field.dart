@@ -121,7 +121,7 @@ class _JTextFieldState extends State<JTextField> {
               onPressed: _togglePassword,
               icon: Icon(
                 _obscured ? AppIcons.eyeClosed : AppIcons.eyeOpen,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: c.text3,
               ),
             ),
@@ -189,7 +189,7 @@ class _JTextFieldState extends State<JTextField> {
               hintText: widget.hint,
               prefixText: widget.prefixText,
               prefixIcon: widget.prefixIcon != null
-                  ? Icon(widget.prefixIcon, size: 18.r)
+                  ? Icon(widget.prefixIcon, size: AppIconSize.md.r)
                   : null,
               suffixIcon: effectiveSuffix,
               // Reserve helper/error space so layout doesn't jump on validation.

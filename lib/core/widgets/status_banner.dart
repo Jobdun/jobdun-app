@@ -31,7 +31,7 @@ class StatusBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16.r, color: color),
+          Icon(icon, size: AppIconSize.inline.r, color: color),
           Gap(8.w),
           Expanded(
             child: Text(

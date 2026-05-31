@@ -339,7 +339,11 @@ class _JPlaceInputBox extends StatelessWidget {
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
-                icon: Icon(AppIcons.close, size: 18.r, color: c.text3),
+                icon: Icon(
+                  AppIcons.close,
+                  size: AppIconSize.md.r,
+                  color: c.text3,
+                ),
                 onPressed: onClear,
                 tooltip: 'Clear',
               ),

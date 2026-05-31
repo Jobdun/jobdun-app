@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_icon_size.dart';
 import 'field_label.dart';
 
 /// Generic chrome card — eyebrow-titled, bordered surface that hosts a list
@@ -93,12 +94,13 @@ class JStatBadge extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 18.r, color: iconColor),
+            Icon(icon, size: AppIconSize.md.r, color: iconColor),
             Gap(6.h),
             Text(
               value,
-              style: tt.headlineSmall!.copyWith(
-                fontSize: 22.sp,
+              // On-scale stat number — headlineMedium (24sp), matching the home
+              // stat cards (was an off-scale 22sp override on headlineSmall).
+              style: tt.headlineMedium!.copyWith(
                 fontWeight: FontWeight.w900,
                 color: c.text1,
               ),
