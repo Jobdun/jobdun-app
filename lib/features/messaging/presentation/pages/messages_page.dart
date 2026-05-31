@@ -74,7 +74,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                         '$totalUnread unread',
                         style: tt.bodySmall!.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Colors.white, // intentional: white-on-action
+                          color: c.onAction, // dark-on-orange — 6.37:1
                         ),
                       ),
                     ),
@@ -330,8 +330,7 @@ class _ConvoRow extends StatelessWidget {
                             unreadCount > 9 ? '9+' : '$unreadCount',
                             style: tt.labelSmall!.copyWith(
                               fontWeight: FontWeight.w700,
-                              color:
-                                  Colors.white, // intentional: white-on-action
+                              color: c.onAction, // dark-on-orange — 6.37:1
                             ),
                           ),
                         ),

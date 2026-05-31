@@ -114,8 +114,8 @@ class _RoleCard extends StatelessWidget {
               child: Icon(
                 icon,
                 size: AppIconSize.md.r,
-                // intentional: white-on-action when selected
-                color: selected ? Colors.white : c.text2,
+                // dark-on-orange when selected — 6.37:1
+                color: selected ? c.onAction : c.text2,
               ),
             ),
             Gap(AppSpacing.md.w),

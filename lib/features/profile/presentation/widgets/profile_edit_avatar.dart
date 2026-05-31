@@ -92,8 +92,8 @@ class ProfileEditAvatarHeader extends StatelessWidget {
                       child: Icon(
                         hasError ? AppIcons.warning : AppIcons.camera,
                         size: AppIconSize.micro.r,
-                        // intentional: white reads on both orange + red chips
-                        color: Colors.white,
+                        // dark glyph reads on both orange + red chips (6.37 / 4.76:1)
+                        color: c.onAction,
                       ),
                     ),
                   ),
