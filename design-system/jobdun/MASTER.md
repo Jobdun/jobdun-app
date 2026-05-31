@@ -7,7 +7,7 @@
 ---
 
 **Project:** Jobdun
-**Updated:** 2026-05-12
+**Updated:** 2026-05-31 — app-wide *home-parity* migration shipped (icon-size scale, typography-through-theme, dark `onAction`, Dynamic-Type clamp).
 **Audience:** Construction/trades workers and builders — not a SaaS startup, not a consumer lifestyle app.
 **Design Character:** Aggressive. Every UI decision asserts authority. Nothing apologizes for itself.
 
@@ -81,41 +81,46 @@ WCAG 2.2 AA is a hard requirement, enforced by `test/colors_contrast_test.dart` 
 **Body / UI text:** Open Sans — clean, readable, professional
 **Configure in `AppTheme` only — never call `GoogleFonts.*` per-widget.**
 
-Scale ≈ 1.2 ("minor third"); body anchored at **16** (platform baseline). Distinct sizes
-**40 / 32 / 26 / 22 / 18 / 16 / 14 / 12 / 11** — the old 15/14/13 1-px cluster is gone.
-Sizes are **fixed logical px** — never `.sp` on `fontSize` (`.sp` scales by screen width and
-ignores the OS text-size setting). The OS scaler is clamped to 0.9–1.3 in `MaterialApp.builder`.
+Distinct sizes **40 / 32 / 24 / 20 / 16 / 15 / 14 / 13 / 12 / 11**. Sizes are **fixed logical
+px** in `AppTheme` — never `.sp` on `fontSize` (`.sp` scales by screen width and ignores the OS
+text-size setting). Read every role via `Theme.of(context).textTheme.<role>` (with `.copyWith(...)`
+for colour/weight overrides) — **never a detached `TextStyle(fontSize: …)`** in feature code. The
+OS scaler is clamped to 0.9–1.3 in `MaterialApp.builder`.
 
 | Role (M3) | Font | Weight | Size | Letter Spacing | Line-height | Usage |
 |-----------|------|--------|------|----------------|-------------|-------|
-| displayLarge   | Oswald    | 700 | 40 | 0    | 1.10 | Hero / splash |
-| headlineLarge  | Oswald    | 700 | 32 | 0    | 1.15 | Screen titles |
-| headlineMedium | Oswald    | 600 | 26 | 0.15 | 1.20 | Section titles |
-| headlineSmall  | Oswald    | 600 | 22 | 0.15 | 1.25 | Sub-sections |
-| titleLarge     | Oswald    | 600 | 18 | 0.15 | 1.30 | Card / section headers |
-| titleMedium    | Open Sans | 600 | 16 | 0    | 1.50 | Emphasised body |
-| titleSmall     | Open Sans | 600 | 14 | 0    | 1.40 | Small emphasised |
-| bodyLarge      | Open Sans | 400 | 16 | 0    | 1.50 | Primary body |
-| bodyMedium     | Open Sans | 400 | 14 | 0    | 1.50 | Secondary body (most-used) |
-| bodySmall      | Open Sans | 500 | 12 | 0.1  | 1.40 | Caption / metadata (floor) |
-| labelLarge     | Oswald    | 700 | 14 | 1.2  | 1.10 | Buttons — ALL CAPS |
-| labelMedium    | Open Sans | 600 | 12 | 0.4  | 1.20 | Tags / chips |
-| labelSmall     | Open Sans | 600 | 11 | 0.6  | 1.20 | Eyebrows |
+| displayLarge   | Oswald    | 700 | 40 | 1.2 | —    | Hero / splash |
+| displaySmall   | Oswald    | 700 | 40 | 1.0 | —    | Hero alt (gradient wordmark) |
+| headlineLarge  | Oswald    | 700 | 32 | 0.8 | —    | Screen titles |
+| headlineMedium | Oswald    | 600 | 24 | 0.5 | —    | Section / wizard-screen titles |
+| headlineSmall  | Oswald    | 600 | 20 | 0.3 | —    | Sub-sections / sheet & dialog titles |
+| titleLarge     | Oswald    | 600 | 16 | 0   | —    | Card / section headers |
+| titleMedium    | Open Sans | 600 | 15 | 0   | 1.6  | Emphasised body |
+| titleSmall     | Open Sans | 500 | 14 | 0   | —    | Small emphasised — row labels, form values |
+| bodyLarge      | Open Sans | 400 | 15 | 0   | 1.6  | Primary body |
+| bodyMedium     | Open Sans | 400 | 13 | 0   | 1.45 | Secondary body (most-used) |
+| bodySmall      | Open Sans | 500 | 12 | 0   | —    | Caption / metadata (floor) |
+| labelLarge     | Oswald    | 700 | 14 | 1.5 | —    | Buttons — ALL CAPS |
+| labelMedium    | Open Sans | 600 | 12 | 0.5 | —    | Tags / chips |
+| labelSmall     | Open Sans | 600 | 11 | 0.8 | —    | Eyebrows (`FieldLabel`) |
 
 Wordmark only (NOT a scale role): Oswald 700 · 40 · tracking **3.0** · `AppTypography.brandDisplay()`.
 
 **Typography Rules:**
 - Headings use Oswald (condensed weight does the visual work, no italic needed); body is Open Sans.
+- **Route through the theme.** `tt.<role>!.copyWith(colour/weight)` — keep `fontSize` overrides out of feature code so off-scale sizes can't creep back. Off-scale values snap to the nearest step.
 - Button text is Oswald w700 uppercase — apply CAPS via a widget transform, not by typing caps into strings.
 - Tracking is neutral on display/headings, positive only on small caps/labels; the wordmark's wide 3.0 is deliberate brand.
 - Pay rates, counts, ratings use `AppTypography.numeric()` (tabular figures) so digits don't jitter.
 - No thin fonts anywhere. Minimum weight 400 for any visible text. Type floor is 11 (labels) / 12 (caption body).
 
-> **Scale decision (2026-05-31):** supersedes the older 40/32/24/20/16 + 13–15 body ramp.
-> Preserves the just-landed legibility floors (bodySmall 12, labelSmall 11) and the pending
-> CTA-contrast fix (`onAction` → #0F172A). Proven on `/design-preview`; global theme migration
-> (`app_theme.dart` `textTheme`) follows sign-off. Font **bundling** (kill runtime `google_fonts`)
-> is a separate tracked migration — does not block the visual scale.
+> **Scale decision (2026-05-31, shipped):** the live `app_theme.dart` `textTheme` is the source
+> of truth — a 40/32/24/20/16/15/13 ramp with hard legibility floors (bodySmall 12, labelSmall 11)
+> and dark `onAction` (#0F172A) on the orange CTA. The earlier 26/22/18 `/design-preview` proposal
+> was **not** adopted; the app-wide home-parity migration snapped every feature to these real roles.
+> Detached `TextStyle(` in feature widgets is now gone except two emoji-flag glyphs + one inline-bold
+> `TextSpan` (documented in-code). Full role/size rationale: `docs/DESIGN_SYSTEM_TYPOGRAPHY_AUDIT.md`.
+> Font **bundling** (kill runtime `google_fonts`) is a separate tracked migration.
 
 ---
 
@@ -144,6 +149,12 @@ Use `flutter_screenutil` extensions (`.w`, `.h`, `.sp`, `.r`) — never raw pixe
 
 ## Component Specs (Flutter)
 
+> These snippets describe the *visual* spec only. The real, enforced components live in
+> `lib/core/design/widgets/` — `JButton`, `JCard`, `JTextField`, `showJSheet`, `JStatBadge`,
+> `JSkeletonList`, `JStaggeredList`. **Build with those, not raw `ElevatedButton`/`TextFormField`.**
+> Where a snippet still shows a raw `fontSize`/`Colors.white`, the component is the source of truth
+> (text routes through `textTheme`; orange foregrounds are dark `onAction`).
+
 ### Buttons
 
 **Rule: No ghost buttons. No outline-only buttons. Every button is filled.**
@@ -153,7 +164,7 @@ Use `flutter_screenutil` extensions (`.w`, `.h`, `.sp`, `.r`) — never raw pixe
 ElevatedButton(
   style: ElevatedButton.styleFrom(
     backgroundColor: Color(0xFFF97316),
-    foregroundColor: Colors.white,
+    foregroundColor: Color(0xFF0F172A), // onAction — dark-on-orange (6.37:1), never white
     minimumSize: Size(double.infinity, 56.h),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.r)),
     elevation: 0,
@@ -253,8 +264,21 @@ Use `modal_bottom_sheet` (not Flutter's built-in). Background is `#1E293B`, hand
 ## Icons
 
 Use `AppIcons.*` from `lib/core/theme/app_icons.dart` (backed by `phosphor_flutter`). Bold weight = default/outline/inactive; Fill weight = active/selected and critical alerts. Nav pairs are records with `.outline` + `.filled` members. Feature code must NOT import `phosphor_flutter` or reference `PhosphorIconsBold.*` / `PhosphorIconsFill.*` directly — the catalogue is the single point of contact. Fall back to `Icons.*` only when no AppIcons entry exists (and add the entry next time you reach for it).
-Icon color: `#94A3B8` default, `#F97316` for active/selected, `#F1F5F9` for primary actions.
-Icon size: 20–24dp for navigation, 16–20dp for inline, 32–40dp for feature icons.
+
+Icon colour: `c.text2` default, `c.action` active/selected, `c.text1` for primary affordances, `c.onAction` (dark) on filled/orange surfaces — **never white-on-orange**.
+
+**Icon size — use the `AppIconSize` scale** (`lib/app/theme/app_icon_size.dart`), never a raw number, always with `.r`:
+
+| Token | px | Use |
+|-------|---:|-----|
+| `micro`   | 14 | caption-adjacent micro-glyphs, trust badges |
+| `inline`  | 16 | inside buttons / chips / labels |
+| `md`      | 20 | list-row leading, chevrons, field affordances |
+| `nav`     | 24 | nav items, app-bar actions (the theme `iconTheme` default) |
+| `feature` | 32 | section / primary-action tiles |
+| `hero`    | 40 | empty-state / hero glyphs |
+
+`Icon(AppIcons.bell, size: AppIconSize.nav.r, color: c.text2)`. Off-scale sizes snap to the nearest step; map-marker / `photo_view` / canvas glyphs are the only documented raw exceptions.
 
 ---
 
@@ -304,12 +328,14 @@ Selected icon: `#F97316`. Unselected: `#64748B`. No labels on nav items.
 Before delivering any UI code, verify:
 
 - [ ] Background is `#0F172A`, never white
-- [ ] All buttons are filled (no ghost buttons)
+- [ ] All buttons are filled (no ghost buttons); orange foregrounds are dark `onAction`, never white
 - [ ] Button text is uppercase + bold (FontWeight.w700+)
 - [ ] All text uses Oswald / Open Sans via AppTheme (no per-widget GoogleFonts calls)
+- [ ] Text routes through `Theme.of(context).textTheme.<role>` — no detached `TextStyle(fontSize:)` in features
 - [ ] Gap(n) used for all spacing, never SizedBox
 - [ ] All sizes use .w / .h / .sp / .r from flutter_screenutil
 - [ ] Icons from `AppIcons.*` (no direct `phosphor_flutter` imports; `Icons.*` fallback only)
+- [ ] Icon sizes use the `AppIconSize.*` scale with `.r` — no raw `size:` numbers
 - [ ] Empty states have Lottie + headline + CTA
 - [ ] Loading uses `JSkeletonList` on dark surface (never raw `skeletonizer` or `CircularProgressIndicator` in list/page-body contexts)
 - [ ] No gradients, no blur effects, no heavy shadows
