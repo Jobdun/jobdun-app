@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/design/widgets/j_button.dart';
 import '../../data/state_licence_registers.dart';
 import '../../data/verification_kind.dart';
 import '../providers/admin_verifications_provider.dart';
@@ -12,6 +13,7 @@ import 'admin_captured_details_card.dart';
 import 'admin_confirm_fields.dart';
 import 'admin_official_register_link.dart';
 import 'admin_revoke_action.dart';
+import 'admin_verification_doc_viewer.dart';
 
 /// Document review dialog. Renders the image via a 60s signed URL, the
 /// claim metadata (state/issuer/number/dates), and exposes Approve / Reject
@@ -36,8 +38,13 @@ class _AdminVerificationReviewSheetState
   // blindly (audit A2/A3).
   final _confirmedNumberController = TextEditingController();
   final _tradeClassController = TextEditingController();
-  bool _saving = false;
+  // Which decision is in flight ('approved' / 'rejected'), or null when idle.
+  // Drives the per-button spinner so the reviewer sees exactly which action
+  // is running instead of a single shared flag.
+  String? _decidingStatus;
   String? _error;
+
+  bool get _busy => _decidingStatus != null;
 
   bool get _isTradeLicence => widget.item.docType == 'trade_licence';
 
@@ -62,7 +69,7 @@ class _AdminVerificationReviewSheetState
 
   Future<void> _decide(String status) async {
     setState(() {
-      _saving = true;
+      _decidingStatus = status;
       _error = null;
     });
     try {
@@ -80,7 +87,7 @@ class _AdminVerificationReviewSheetState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _saving = false;
+        _decidingStatus = null;
         _error = e.toString();
       });
     }
@@ -109,22 +116,16 @@ class _AdminVerificationReviewSheetState
                       children: [
                         Text(
                           _prettyDocType(i.docType),
-                          style: GoogleFonts.oswald(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
-                          ),
+                          style: AdminText.dialogTitle(c.text1),
                         ),
                         const Gap(4),
                         Row(
                           children: [
                             Text(
                               i.displayName,
-                              style: GoogleFonts.openSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: c.text1,
-                              ),
+                              style: AdminText.bodyStrong(
+                                c.text1,
+                              ).copyWith(fontWeight: FontWeight.w700),
                             ),
                             const Gap(8),
                             Container(
@@ -138,12 +139,9 @@ class _AdminVerificationReviewSheetState
                               ),
                               child: Text(
                                 'ROLE: ${i.roleLabel}',
-                                style: GoogleFonts.openSans(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
-                                  color: c.text3,
-                                ),
+                                style: AdminText.eyebrow(
+                                  c.text3,
+                                ).copyWith(letterSpacing: 0.8),
                               ),
                             ),
                           ],
@@ -160,7 +158,7 @@ class _AdminVerificationReviewSheetState
               const Gap(4),
               Text(
                 'user ${i.tradeId} · submitted ${_fmt(i.submittedAt)}',
-                style: GoogleFonts.openSans(fontSize: 12, color: c.text2),
+                style: AdminText.meta(c.text2),
               ),
               const Gap(16),
               Expanded(
@@ -168,7 +166,7 @@ class _AdminVerificationReviewSheetState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _ImageBlock(filePath: i.filePath),
+                      AdminVerificationDocViewer(filePath: i.filePath),
                       const Gap(16),
                       _MetaTable(item: i),
                       // Trade licence: one-click link to the correct state
@@ -203,11 +201,9 @@ class _AdminVerificationReviewSheetState
                       TextField(
                         controller: _notesController,
                         maxLines: 3,
-                        decoration: InputDecoration(
+                        style: AdminText.value(c.text1),
+                        decoration: const InputDecoration(
                           labelText: 'Review notes (optional)',
-                          border: const OutlineInputBorder(),
-                          filled: true,
-                          fillColor: c.background,
                         ),
                       ),
                       if (canRevokeVerification(
@@ -228,44 +224,37 @@ class _AdminVerificationReviewSheetState
               ),
               if (_error != null) ...[
                 const Gap(8),
-                Text(
-                  _error!,
-                  style: GoogleFonts.openSans(fontSize: 12, color: c.urgent),
-                ),
+                Text(_error!, style: AdminText.meta(c.urgent)),
               ],
               const Gap(12),
               Row(
                 children: [
                   if (!pending)
-                    Text(
-                      'Already ${i.status} — changes will overwrite.',
-                      style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
-                    ),
-                  const Spacer(),
-                  OutlinedButton(
-                    onPressed: _saving ? null : () => _decide('rejected'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: c.urgent,
-                      side: BorderSide(color: c.urgent),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                    Expanded(
+                      child: Text(
+                        'Already ${i.status} — changes will overwrite.',
+                        style: AdminText.meta(c.text3),
                       ),
-                      child: Text('REJECT'),
+                    ),
+                  if (pending) const Spacer(),
+                  SizedBox(
+                    width: 132,
+                    child: JButton(
+                      label: 'REJECT',
+                      variant: JButtonVariant.danger,
+                      size: JButtonSize.compact,
+                      isLoading: _decidingStatus == 'rejected',
+                      onPressed: _busy ? null : () => _decide('rejected'),
                     ),
                   ),
                   const Gap(12),
-                  FilledButton(
-                    onPressed: _saving ? null : () => _decide('approved'),
-                    style: FilledButton.styleFrom(backgroundColor: c.action),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Text('APPROVE'),
+                  SizedBox(
+                    width: 132,
+                    child: JButton(
+                      label: 'APPROVE',
+                      size: JButtonSize.compact,
+                      isLoading: _decidingStatus == 'approved',
+                      onPressed: _busy ? null : () => _decide('approved'),
                     ),
                   ),
                 ],
@@ -288,67 +277,6 @@ class _AdminVerificationReviewSheetState
   };
 
   static String _fmt(DateTime t) => DateFormat('d MMM yyyy · HH:mm').format(t);
-}
-
-class _ImageBlock extends ConsumerWidget {
-  const _ImageBlock({required this.filePath});
-  final String filePath;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
-    return FutureBuilder<String>(
-      future: ref.read(adminVerificationsProvider.notifier).signedUrl(filePath),
-      builder: (context, snap) {
-        if (!snap.hasData && !snap.hasError) {
-          return Container(
-            height: 280,
-            decoration: BoxDecoration(
-              color: c.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (snap.hasError) {
-          return Container(
-            height: 120,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: c.background,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                'Couldn\'t load file:\n${snap.error}',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.openSans(fontSize: 12, color: c.urgent),
-              ),
-            ),
-          );
-        }
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            snap.data!,
-            height: 320,
-            width: double.infinity,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) => Container(
-              height: 120,
-              alignment: Alignment.center,
-              color: c.background,
-              child: Text(
-                'File is not a viewable image. Open the URL directly:\n${snap.data}',
-                style: GoogleFonts.openSans(fontSize: 11, color: c.text2),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 class _RegulatorFailureBlock extends StatelessWidget {
@@ -376,41 +304,29 @@ class _RegulatorFailureBlock extends StatelessWidget {
               const Gap(6),
               Text(
                 'WHAT THE REGULATOR SAID',
-                style: GoogleFonts.openSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: c.urgent,
-                ),
+                style: AdminText.caption(
+                  c.urgent,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8),
               ),
               if (status != null) ...[
                 const Gap(8),
                 Text(
                   '· ${status!.toUpperCase()}',
-                  style: GoogleFonts.openSans(fontSize: 11, color: c.text3),
+                  style: AdminText.caption(c.text3),
                 ),
               ],
             ],
           ),
           const Gap(6),
-          Text(
-            detail,
-            style: GoogleFonts.openSans(
-              fontSize: 13,
-              color: c.text1,
-              height: 1.4,
-            ),
-          ),
+          Text(detail, style: AdminText.value(c.text1).copyWith(height: 1.4)),
           const Gap(4),
           Text(
             'The user fell back to manual upload after this regulator '
             'response. Approve only if the document independently confirms '
             'the claim.',
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-              color: c.text3,
-            ),
+            style: AdminText.caption(
+              c.text3,
+            ).copyWith(fontStyle: FontStyle.italic),
           ),
         ],
       ),
@@ -461,20 +377,10 @@ class _MetaTable extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 140,
-                    child: Text(
-                      r.key,
-                      style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
-                    ),
+                    child: Text(r.key, style: AdminText.meta(c.text3)),
                   ),
                   Expanded(
-                    child: Text(
-                      r.value!,
-                      style: GoogleFonts.openSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: c.text1,
-                      ),
-                    ),
+                    child: Text(r.value!, style: AdminText.bodyStrong(c.text1)),
                   ),
                 ],
               ),

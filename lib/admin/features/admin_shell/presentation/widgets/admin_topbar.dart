@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 
 class AdminTopbar extends StatelessWidget {
   const AdminTopbar({super.key, required this.title, this.trailing});
@@ -27,12 +27,7 @@ class AdminTopbar extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.oswald(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-                color: c.text1,
-              ),
+              style: AdminText.pageTitle(c.text1),
             ),
           ),
           if (trailing != null) ...[const Gap(16), ...trailing!],

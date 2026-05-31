@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../domain/entities/admin_audit_event.dart';
 
 class AdminAuditEventRow extends StatelessWidget {
@@ -39,21 +39,16 @@ class AdminAuditEventRow extends StatelessWidget {
               children: [
                 Text(
                   event.eventType.toUpperCase(),
-                  style: GoogleFonts.openSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: c.text1,
-                  ),
+                  style: AdminText.caption(
+                    c.text1,
+                  ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.2),
                 ),
                 const Gap(2),
                 Text(
                   'actor $actor · target $target',
-                  style: GoogleFonts.openSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: c.text2,
-                  ),
+                  style: AdminText.caption(
+                    c.text2,
+                  ).copyWith(fontWeight: FontWeight.w500),
                 ),
                 if (event.payloadPreview != null) ...[
                   const Gap(2),
@@ -61,11 +56,9 @@ class AdminAuditEventRow extends StatelessWidget {
                     event.payloadPreview!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.openSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: c.text3,
-                    ),
+                    style: AdminText.caption(
+                      c.text3,
+                    ).copyWith(fontWeight: FontWeight.w500),
                   ),
                 ],
               ],
@@ -74,11 +67,9 @@ class AdminAuditEventRow extends StatelessWidget {
           const Gap(12),
           Text(
             fmt.format(sydney),
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: c.text2,
-            ),
+            style: AdminText.caption(
+              c.text2,
+            ).copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -106,12 +97,7 @@ class _SourcePill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.openSans(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: color,
-        ),
+        style: AdminText.eyebrow(color).copyWith(letterSpacing: 1.2),
       ),
     );
   }

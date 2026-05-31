@@ -3,9 +3,9 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/widgets/j_button.dart';
 import '../../../../../core/widgets/inputs/j_text_field.dart';
 import '../../domain/entities/admin_session.dart';
@@ -147,12 +147,9 @@ class _AdminLoginCard extends StatelessWidget {
             Text(
               'Admin role required. Unauthorised sign-ins are signed out automatically.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.openSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                height: 1.5,
-                color: c.text3,
-              ),
+              style: AdminText.caption(
+                c.text3,
+              ).copyWith(fontWeight: FontWeight.w500, height: 1.5),
             ),
           ],
         ),
@@ -170,12 +167,7 @@ class _BrandBlock extends StatelessWidget {
         Text(
           'JOBDUN',
           textAlign: TextAlign.center,
-          style: GoogleFonts.oswald(
-            fontSize: 40,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 4,
-            color: c.text1,
-          ),
+          style: AdminText.display(c.text1).copyWith(letterSpacing: 4),
         ),
         const Gap(8),
         Container(
@@ -186,24 +178,16 @@ class _BrandBlock extends StatelessWidget {
           ),
           child: Text(
             'ADMIN CONSOLE',
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
-              color: c.actionTx,
-            ),
+            style: AdminText.caption(
+              c.actionTx,
+            ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.5),
           ),
         ),
         const Gap(20),
         Text(
           'RESTRICTED ACCESS.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.oswald(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            color: c.text1,
-          ),
+          style: AdminText.pageTitle(c.text1),
         ),
       ],
     );
@@ -231,11 +215,7 @@ class _ErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: GoogleFonts.openSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: c.urgentTx,
-              ),
+              style: AdminText.labelMd(c.urgentTx).copyWith(letterSpacing: 0),
             ),
           ),
         ],

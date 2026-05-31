@@ -12,7 +12,10 @@ import '../../../app/theme/app_colors.dart';
 ///               a pair (CANCEL beside CONFIRM, RESEND beside CONTINUE).
 /// - [text]      no background, orange fg. Use sparingly — typically inline
 ///               affordances (e.g. "Skip" on FTUE pages).
-enum JButtonVariant { primary, secondary, text }
+/// - [danger]    filled urgent-red, dark fg. Use for the dominant destructive
+///               action (REJECT a verification, REVOKE, DELETE) — pairs beside
+///               a [primary] / [secondary] cancel.
+enum JButtonVariant { primary, secondary, text, danger }
 
 /// Size of [JButton] — picks the minimum height.
 ///
@@ -138,6 +141,22 @@ class JButton extends StatelessWidget {
         ).copyWith(overlayColor: _overlay(c.action)),
         child: content,
       ),
+      JButtonVariant.danger => FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: c.urgent,
+          foregroundColor: c.onAction,
+          disabledBackgroundColor: c.urgent.withValues(alpha: 0.35),
+          disabledForegroundColor: c.onAction.withValues(alpha: 0.5),
+          minimumSize: Size.fromHeight(_minHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ).copyWith(overlayColor: _overlay(_primaryOverlayBase)),
+        child: content,
+      ),
     };
   }
 
@@ -158,11 +177,13 @@ class JButton extends StatelessWidget {
     JButtonVariant.primary => c.onAction,
     JButtonVariant.secondary => c.text1,
     JButtonVariant.text => c.action,
+    JButtonVariant.danger => c.onAction,
   };
 
   Color _loaderColor(JColors c) => switch (variant) {
     JButtonVariant.primary => c.onAction,
     JButtonVariant.secondary => c.text1,
     JButtonVariant.text => c.action,
+    JButtonVariant.danger => c.onAction,
   };
 }

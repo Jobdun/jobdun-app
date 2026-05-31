@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_auth/presentation/providers/admin_session_provider.dart';
@@ -112,12 +112,7 @@ class AdminSidebar extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.clip,
                         softWrap: false,
-                        style: GoogleFonts.openSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: c.text3,
-                        ),
+                        style: AdminText.eyebrow(c.text3),
                       ),
                       const Gap(4),
                       Text(
@@ -125,11 +120,9 @@ class AdminSidebar extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         softWrap: false,
-                        style: GoogleFonts.openSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: c.text2,
-                        ),
+                        style: AdminText.labelMd(
+                          c.text2,
+                        ).copyWith(letterSpacing: 0),
                       ),
                     ],
                   ),
@@ -239,12 +232,7 @@ class _Header extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.clip,
                       softWrap: false,
-                      style: GoogleFonts.oswald(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3,
-                        color: c.text1,
-                      ),
+                      style: AdminText.wordmark(c.text1),
                     ),
                     const Gap(2),
                     Text(
@@ -252,12 +240,9 @@ class _Header extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.clip,
                       softWrap: false,
-                      style: GoogleFonts.openSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                        color: c.action,
-                      ),
+                      style: AdminText.eyebrow(
+                        c.action,
+                      ).copyWith(letterSpacing: 1.5),
                     ),
                   ],
                 ),
@@ -292,12 +277,9 @@ class _BrandMark extends StatelessWidget {
             child: Center(
               child: Text(
                 'J',
-                style: GoogleFonts.oswald(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: c.background,
-                  height: 1,
-                ),
+                style: AdminText.pageTitle(
+                  c.background,
+                ).copyWith(fontWeight: FontWeight.w700, height: 1),
               ),
             ),
           ),
@@ -355,12 +337,7 @@ class _NavItem extends StatelessWidget {
                     label,
                     overflow: TextOverflow.clip,
                     softWrap: false,
-                    style: GoogleFonts.openSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: isActive ? c.text1 : c.text2,
-                    ),
+                    style: AdminText.label(isActive ? c.text1 : c.text2),
                   ),
                 ),
               ],
@@ -436,12 +413,7 @@ class _SignOutButton extends StatelessWidget {
                         'SIGN OUT',
                         overflow: TextOverflow.clip,
                         softWrap: false,
-                        style: GoogleFonts.openSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: c.text1,
-                        ),
+                        style: AdminText.label(c.text1),
                       ),
                     ),
                   ],

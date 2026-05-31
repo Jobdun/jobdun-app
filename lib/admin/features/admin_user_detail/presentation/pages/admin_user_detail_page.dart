@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../app/widgets/admin_error_state.dart';
+import '../../../../app/widgets/admin_list_skeleton.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../../domain/entities/admin_user_detail.dart';
@@ -27,8 +30,9 @@ class AdminUserDetailPage extends ConsumerWidget {
       title: 'USER DETAIL',
       activeRoute: AdminRoutes.users,
       child: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => _ErrorCard(
+        loading: () => const AdminListSkeleton(rows: 5),
+        error: (err, _) => AdminErrorState(
+          title: "COULDN'T LOAD USER",
           message: err.toString(),
           onRetry: () => ref.invalidate(adminUserDetailProvider(userId)),
         ),
@@ -58,6 +62,8 @@ class _DetailBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const _BackToUsers(),
+          const Gap(16),
           AdminUserDetailHeader(detail: detail),
           const Gap(24),
           AdminUserProfileCard(detail: detail),
@@ -78,44 +84,31 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
+class _BackToUsers extends StatelessWidget {
+  const _BackToUsers();
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 480),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: c.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "COULDN'T LOAD USER",
-              style: GoogleFonts.oswald(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: c.text1,
-              ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => context.go(AdminRoutes.users),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_back, size: 16, color: c.text2),
+                const Gap(8),
+                Text('BACK TO USERS', style: AdminText.label(c.text2)),
+              ],
             ),
-            const Gap(8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.openSans(fontSize: 12, color: c.text2),
-            ),
-            const Gap(16),
-            TextButton(onPressed: onRetry, child: const Text('RETRY')),
-          ],
+          ),
         ),
       ),
     );

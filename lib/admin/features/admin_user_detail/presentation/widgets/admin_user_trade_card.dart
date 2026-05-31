@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../../domain/entities/admin_trade_profile.dart';
 import 'admin_user_kv_row.dart';
@@ -22,27 +22,16 @@ class AdminUserTradeCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                'TRADE PROFILE',
-                style: GoogleFonts.oswald(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                  color: c.text3,
-                ),
-              ),
+              Text('TRADE PROFILE', style: AdminText.cardLabel(c.text3)),
               if (profile.isVerified) ...[
                 const Gap(8),
                 Icon(AppIcons.verified, size: 14, color: c.verified),
                 const Gap(4),
                 Text(
                   'VERIFIED',
-                  style: GoogleFonts.openSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: c.verifiedTx,
-                  ),
+                  style: AdminText.eyebrow(
+                    c.verifiedTx,
+                  ).copyWith(letterSpacing: 1.1),
                 ),
               ],
             ],

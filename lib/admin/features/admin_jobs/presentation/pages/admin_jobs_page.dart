@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../app/widgets/admin_empty_state.dart';
+import '../../../../app/widgets/admin_error_state.dart';
+import '../../../../app/widgets/admin_list_skeleton.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../../domain/entities/admin_job_filter.dart';
@@ -38,7 +41,7 @@ class AdminJobsPage extends ConsumerWidget {
                   itemBuilder: (context, row, index) =>
                       AdminJobListRow(row: row),
                   firstPageProgressIndicatorBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
+                      const AdminListSkeleton(),
                   newPageProgressIndicatorBuilder: (_) => Padding(
                     padding: const EdgeInsets.all(16),
                     child: Center(
@@ -52,21 +55,15 @@ class AdminJobsPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  firstPageErrorIndicatorBuilder: (_) => _ErrorBlock(
+                  firstPageErrorIndicatorBuilder: (_) => AdminErrorState(
+                    title: "COULDN'T LOAD JOBS",
                     message: controller.error?.toString() ?? 'Try again.',
                     onRetry: () => controller.refresh(),
                   ),
-                  noItemsFoundIndicatorBuilder: (_) => Padding(
-                    padding: const EdgeInsets.all(40),
-                    child: Center(
-                      child: Text(
-                        'No jobs match.',
-                        style: GoogleFonts.openSans(
-                          fontSize: 13,
-                          color: c.text2,
-                        ),
-                      ),
-                    ),
+                  noItemsFoundIndicatorBuilder: (_) => const AdminEmptyState(
+                    icon: Icons.work_outline,
+                    label: 'No jobs match.',
+                    hint: 'Try a different status filter.',
                   ),
                 ),
               ),
@@ -130,48 +127,9 @@ class _Chip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
             label,
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: isActive ? c.background : c.text1,
-            ),
+            style: AdminText.label(isActive ? c.onAction : c.text1),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text(
-            "COULDN'T LOAD JOBS",
-            style: GoogleFonts.oswald(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
-          ),
-          const Gap(8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.openSans(fontSize: 12, color: c.text2),
-          ),
-          const Gap(16),
-          TextButton(onPressed: onRetry, child: const Text('RETRY')),
-        ],
       ),
     );
   }

@@ -2,10 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/design/widgets/j_button.dart';
 import '../providers/admin_verifications_provider.dart';
 
 /// Admin "Captured details" card — the curated verification projection the
@@ -55,29 +56,19 @@ class AdminCapturedDetailsCard extends ConsumerWidget {
             children: [
               Text(
                 'CAPTURED DETAILS',
-                style: GoogleFonts.openSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                  color: c.text3,
-                ),
+                style: AdminText.caption(
+                  c.text3,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8),
               ),
               const Spacer(),
               if (item.verificationId != null)
-                TextButton(
-                  onPressed: () => _showRaw(context, ref),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 32),
-                  ),
-                  child: Text(
-                    'VIEW RAW',
-                    style: GoogleFonts.openSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: c.action,
-                    ),
+                SizedBox(
+                  width: 116,
+                  child: JButton(
+                    label: 'VIEW RAW',
+                    variant: JButtonVariant.text,
+                    size: JButtonSize.compact,
+                    onPressed: () => _showRaw(context, ref),
                   ),
                 ),
             ],
@@ -86,7 +77,7 @@ class AdminCapturedDetailsCard extends ConsumerWidget {
           if (rows.isEmpty)
             Text(
               'No structured details captured yet.',
-              style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
+              style: AdminText.meta(c.text3),
             )
           else
             ...rows.map((r) => _DetailRow(label: r.key, value: r.value!)),
@@ -103,11 +94,7 @@ class AdminCapturedDetailsCard extends ConsumerWidget {
         backgroundColor: c.surface,
         title: Text(
           'Raw regulator payload',
-          style: GoogleFonts.oswald(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: AdminText.dialogTitle(c.text1).copyWith(fontSize: 18),
         ),
         content: SizedBox(
           width: 560,
@@ -124,26 +111,28 @@ class AdminCapturedDetailsCard extends ConsumerWidget {
               }
               if (snap.hasError) {
                 return Text(
-                  'Couldn\'t load raw payload:\n${snap.error}',
-                  style: GoogleFonts.openSans(fontSize: 12, color: c.urgent),
+                  "Couldn't load raw payload:\n${snap.error}",
+                  style: AdminText.meta(c.urgent),
                 );
               }
               final json = const JsonEncoder.withIndent(
                 '  ',
               ).convert(snap.data ?? <String, dynamic>{});
               return SingleChildScrollView(
-                child: SelectableText(
-                  json,
-                  style: GoogleFonts.robotoMono(fontSize: 11, color: c.text2),
-                ),
+                child: SelectableText(json, style: AdminText.mono(c.text2)),
               );
             },
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('CLOSE'),
+          SizedBox(
+            width: 110,
+            child: JButton(
+              label: 'CLOSE',
+              variant: JButtonVariant.secondary,
+              size: JButtonSize.compact,
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
           ),
         ],
       ),
@@ -167,21 +156,9 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              label,
-              style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
-            ),
+            child: Text(label, style: AdminText.meta(c.text3)),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: GoogleFonts.openSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: c.text1,
-              ),
-            ),
-          ),
+          Expanded(child: Text(value, style: AdminText.bodyStrong(c.text1))),
         ],
       ),
     );

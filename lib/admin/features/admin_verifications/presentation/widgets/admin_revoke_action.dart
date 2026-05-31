@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/design/widgets/j_button.dart';
 import '../../data/verification_kind.dart';
 import '../providers/admin_verifications_provider.dart';
 
@@ -69,11 +70,7 @@ class _AdminRevokeActionState extends ConsumerState<AdminRevokeAction> {
             backgroundColor: c.surface,
             title: Text(
               'Revoke verification?',
-              style: GoogleFonts.oswald(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: c.text1,
-              ),
+              style: AdminText.dialogTitle(c.text1).copyWith(fontSize: 18),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -84,41 +81,44 @@ class _AdminRevokeActionState extends ConsumerState<AdminRevokeAction> {
                   'identity. They will appear unverified across the app '
                   'until they re-verify. Enter a reason — it is recorded in '
                   'the audit log.',
-                  style: GoogleFonts.openSans(
-                    fontSize: 13,
-                    color: c.text2,
-                    height: 1.4,
-                  ),
+                  style: AdminText.value(c.text2).copyWith(height: 1.4),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
                   autofocus: true,
                   maxLines: 2,
+                  style: AdminText.input(c.text1),
                   onChanged: (v) =>
                       setLocal(() => canSubmit = v.trim().isNotEmpty),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Reason for revoking',
-                    border: const OutlineInputBorder(),
-                    filled: true,
-                    fillColor: c.background,
                   ),
                 ),
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('CANCEL'),
+              SizedBox(
+                width: 110,
+                child: JButton(
+                  label: 'CANCEL',
+                  variant: JButtonVariant.secondary,
+                  size: JButtonSize.compact,
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
               ),
-              FilledButton(
-                onPressed: canSubmit
-                    ? () => Navigator.of(
-                        dialogContext,
-                      ).pop(controller.text.trim())
-                    : null,
-                style: FilledButton.styleFrom(backgroundColor: c.urgent),
-                child: const Text('REVOKE'),
+              SizedBox(
+                width: 120,
+                child: JButton(
+                  label: 'REVOKE',
+                  variant: JButtonVariant.danger,
+                  size: JButtonSize.compact,
+                  onPressed: canSubmit
+                      ? () => Navigator.of(
+                          dialogContext,
+                        ).pop(controller.text.trim())
+                      : null,
+                ),
               ),
             ],
           ),
@@ -134,34 +134,22 @@ class _AdminRevokeActionState extends ConsumerState<AdminRevokeAction> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_error != null) ...[
-          Text(
-            _error!,
-            style: GoogleFonts.openSans(fontSize: 12, color: c.urgent),
-          ),
+          Text(_error!, style: AdminText.meta(c.urgent)),
           const SizedBox(height: 8),
         ],
-        OutlinedButton.icon(
+        JButton(
+          label: 'REVOKE VERIFICATION',
+          variant: JButtonVariant.danger,
+          size: JButtonSize.compact,
+          icon: Icons.gpp_bad_outlined,
+          isLoading: _busy,
           onPressed: _busy ? null : _revoke,
-          icon: Icon(Icons.gpp_bad_outlined, size: 18, color: c.urgent),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: c.urgent,
-            side: BorderSide(color: c.urgent.withValues(alpha: 0.6)),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-          label: Text(
-            'REVOKE VERIFICATION',
-            style: GoogleFonts.oswald(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-            ),
-          ),
         ),
         const SizedBox(height: 4),
         Text(
           'User currently holds a verified ${docTypeToVerificationKind(widget.item.docType) ?? ''} '
           'row. Revoking undoes it across the app.',
-          style: GoogleFonts.openSans(fontSize: 11, color: c.text3),
+          style: AdminText.caption(c.text3),
         ),
       ],
     );

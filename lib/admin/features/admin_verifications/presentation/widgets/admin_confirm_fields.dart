@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 
 /// Admin-confirmed identity fields on the review sheet. The "Confirmed number"
 /// is what the reviewer reads off the document image (pre-filled from the
@@ -29,35 +29,28 @@ class AdminConfirmFields extends StatelessWidget {
       children: [
         Text(
           'CONFIRM WHAT YOU SAW ON THE DOCUMENT',
-          style: GoogleFonts.openSans(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: c.text3,
-          ),
+          style: AdminText.caption(
+            c.text3,
+          ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8),
         ),
         const Gap(8),
         TextField(
           controller: numberController,
-          decoration: InputDecoration(
+          style: AdminText.input(c.text1),
+          decoration: const InputDecoration(
             labelText: 'Confirmed number',
             helperText: 'Edit if it differs from what the user typed.',
-            border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: c.background,
           ),
         ),
         if (showTradeClass) ...[
           const Gap(12),
           TextField(
             controller: tradeClassController,
-            decoration: InputDecoration(
+            style: AdminText.input(c.text1),
+            decoration: const InputDecoration(
               labelText: 'Confirmed trade class',
               helperText:
                   'e.g. Carpentry, Electrical — as shown on the licence.',
-              border: const OutlineInputBorder(),
-              filled: true,
-              fillColor: c.background,
             ),
           ),
         ],

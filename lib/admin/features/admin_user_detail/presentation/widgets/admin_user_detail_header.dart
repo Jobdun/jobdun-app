@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../../domain/entities/admin_user_detail.dart';
 
@@ -33,11 +33,7 @@ class AdminUserDetailHeader extends StatelessWidget {
                       detail.displayName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.oswald(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: c.text1,
-                      ),
+                      style: AdminText.dialogTitle(c.text1),
                     ),
                   ),
                   if (detail.trade?.isVerified == true) ...[
@@ -67,19 +63,15 @@ class AdminUserDetailHeader extends StatelessWidget {
               const Gap(6),
               Text(
                 'ID: ${detail.id}',
-                style: GoogleFonts.openSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: c.text3,
-                ),
+                style: AdminText.eyebrow(
+                  c.text3,
+                ).copyWith(fontWeight: FontWeight.w500, letterSpacing: 0),
               ),
               Text(
                 'Joined ${DateFormat('d MMM y').format(detail.createdAt)}',
-                style: GoogleFonts.openSans(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: c.text3,
-                ),
+                style: AdminText.eyebrow(
+                  c.text3,
+                ).copyWith(fontWeight: FontWeight.w500, letterSpacing: 0),
               ),
             ],
           ),
@@ -119,11 +111,9 @@ class _Avatar extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       letter,
-      style: GoogleFonts.oswald(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: colors.text2,
-      ),
+      style: AdminText.dialogTitle(
+        colors.text2,
+      ).copyWith(fontSize: 28, letterSpacing: 0),
     ),
   );
 }
@@ -144,12 +134,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.openSans(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.1,
-          color: tx,
-        ),
+        style: AdminText.eyebrow(tx).copyWith(letterSpacing: 1.1),
       ),
     );
   }

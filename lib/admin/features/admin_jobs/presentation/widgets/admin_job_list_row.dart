@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../domain/entities/admin_job_row.dart';
 
 class AdminJobListRow extends StatelessWidget {
@@ -30,22 +30,18 @@ class AdminJobListRow extends StatelessWidget {
                   row.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.openSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: c.text1,
-                  ),
+                  style: AdminText.body(
+                    c.text1,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
                 const Gap(2),
                 Text(
                   '${row.builderDisplayName} · ${row.applicationCount} $applicants',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.openSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: c.text2,
-                  ),
+                  style: AdminText.caption(
+                    c.text2,
+                  ).copyWith(fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -55,11 +51,9 @@ class AdminJobListRow extends StatelessWidget {
           const Gap(12),
           Text(
             DateFormat('d MMM y').format(row.createdAt),
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: c.text2,
-            ),
+            style: AdminText.caption(
+              c.text2,
+            ).copyWith(fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -85,12 +79,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         status.toUpperCase(),
-        style: GoogleFonts.openSans(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: fg,
-        ),
+        style: AdminText.eyebrow(fg).copyWith(letterSpacing: 1.2),
       ),
     );
   }

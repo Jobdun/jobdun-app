@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../data/state_licence_registers.dart';
 
 /// One-click deep link to the correct state/territory building-licence register,
@@ -48,18 +48,15 @@ class AdminOfficialRegisterLink extends StatelessWidget {
                 children: [
                   Text(
                     'CHECK ON ${reg.regulator.toUpperCase()}',
-                    style: GoogleFonts.openSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: c.action,
-                    ),
+                    style: AdminText.labelMd(
+                      c.action,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${reg.state} official register · search by ${reg.searchBy}'
                     '${number != null && number.isNotEmpty ? ' · $number' : ''}',
-                    style: GoogleFonts.openSans(fontSize: 11, color: c.text3),
+                    style: AdminText.caption(c.text3),
                   ),
                 ],
               ),

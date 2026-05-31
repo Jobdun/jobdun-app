@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../app/widgets/admin_empty_state.dart';
+import '../../../../app/widgets/admin_error_state.dart';
+import '../../../../app/widgets/admin_list_skeleton.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../../domain/entities/admin_user_filter.dart';
@@ -46,7 +49,7 @@ class AdminUsersPage extends ConsumerWidget {
                     ),
                   ),
                   firstPageProgressIndicatorBuilder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
+                      const AdminListSkeleton(),
                   newPageProgressIndicatorBuilder: (_) => Padding(
                     padding: const EdgeInsets.all(16),
                     child: Center(
@@ -60,11 +63,16 @@ class AdminUsersPage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  firstPageErrorIndicatorBuilder: (_) => _ErrorBlock(
+                  firstPageErrorIndicatorBuilder: (_) => AdminErrorState(
+                    title: "COULDN'T LOAD USERS",
                     message: controller.error?.toString() ?? 'Failed to load.',
                     onRetry: () => controller.refresh(),
                   ),
-                  noItemsFoundIndicatorBuilder: (_) => const _EmptyBlock(),
+                  noItemsFoundIndicatorBuilder: (_) => const AdminEmptyState(
+                    icon: Icons.person_search_outlined,
+                    label: 'No users match.',
+                    hint: 'Try a different filter or search term.',
+                  ),
                 ),
               ),
             ),
@@ -126,12 +134,7 @@ class _Chip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Text(
             label,
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: isActive ? c.background : c.text1,
-            ),
+            style: AdminText.label(isActive ? c.onAction : c.text1),
           ),
         ),
       ),
@@ -165,84 +168,19 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    // Decoration (fill, resting `borderStrong` edge, 2px orange focus border)
+    // comes from the app's themed `inputDecorationTheme` — only the hint +
+    // search icon are page-specific, so the field matches every other input.
     return TextField(
       controller: _ctrl,
       onSubmitted: (v) =>
           ref.read(adminUsersProvider.notifier).setQuery(v.trim()),
-      style: GoogleFonts.openSans(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: c.text1,
-      ),
-      decoration: InputDecoration(
+      textInputAction: TextInputAction.search,
+      style: AdminText.input(c.text1),
+      decoration: const InputDecoration(
         hintText: 'Search display name…',
-        hintStyle: GoogleFonts.openSans(fontSize: 13, color: c.text3),
-        filled: true,
-        fillColor: c.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c.border),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text(
-            "COULDN'T LOAD USERS",
-            style: GoogleFonts.oswald(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
-          ),
-          const Gap(8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.openSans(fontSize: 12, color: c.text2),
-          ),
-          const Gap(16),
-          TextButton(onPressed: onRetry, child: const Text('RETRY')),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyBlock extends StatelessWidget {
-  const _EmptyBlock();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.all(40),
-      child: Center(
-        child: Text(
-          'No users match.',
-          style: GoogleFonts.openSans(fontSize: 13, color: c.text2),
-        ),
+        prefixIcon: Icon(Icons.search),
+        isDense: true,
       ),
     );
   }

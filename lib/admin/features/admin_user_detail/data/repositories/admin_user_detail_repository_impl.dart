@@ -27,13 +27,7 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
       final builderF = _fetchBuilder(userId);
       final tradeF = _fetchTrade(userId);
       final verifsF = _fetchVerifications(userId);
-      await Future.wait<Object?>([
-        profileF,
-        roleF,
-        builderF,
-        tradeF,
-        verifsF,
-      ]);
+      await Future.wait<Object?>([profileF, roleF, builderF, tradeF, verifsF]);
 
       final profile = await profileF;
       if (profile == null) {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../domain/entities/admin_verification_summary.dart';
 
 /// Lists the latest verification record per kind.
@@ -26,21 +26,10 @@ class AdminUserVerificationsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'VERIFICATIONS',
-            style: GoogleFonts.oswald(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
-              color: c.text3,
-            ),
-          ),
+          Text('VERIFICATIONS', style: AdminText.cardLabel(c.text3)),
           const Gap(12),
           if (verifications.isEmpty)
-            Text(
-              'No verifications on record.',
-              style: GoogleFonts.openSans(fontSize: 13, color: c.text3),
-            )
+            Text('No verifications on record.', style: AdminText.value(c.text3))
           else
             ...verifications.map((v) => _VerificationRow(summary: v)),
         ],
@@ -67,12 +56,9 @@ class _VerificationRow extends StatelessWidget {
             children: [
               Text(
                 summary.kind.toUpperCase(),
-                style: GoogleFonts.openSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: c.text1,
-                ),
+                style: AdminText.labelMd(
+                  c.text1,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.1),
               ),
               const Gap(10),
               Container(
@@ -83,32 +69,22 @@ class _VerificationRow extends StatelessWidget {
                 ),
                 child: Text(
                   summary.status.toUpperCase(),
-                  style: GoogleFonts.openSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: tx,
-                  ),
+                  style: AdminText.eyebrow(tx).copyWith(letterSpacing: 1.1),
                 ),
               ),
             ],
           ),
           if (summary.failureReason != null) ...[
             const Gap(3),
-            Text(
-              summary.failureReason!,
-              style: GoogleFonts.openSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: c.urgentTx,
-              ),
-            ),
+            Text(summary.failureReason!, style: AdminText.meta(c.urgentTx)),
           ],
           if (summary.updatedAt != null) ...[
             const Gap(2),
             Text(
               'Updated ${fmt.format(summary.updatedAt!)}',
-              style: GoogleFonts.openSans(fontSize: 10, color: c.text3),
+              style: AdminText.eyebrow(
+                c.text3,
+              ).copyWith(fontWeight: FontWeight.w400, letterSpacing: 0),
             ),
           ],
         ],

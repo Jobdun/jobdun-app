@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../providers/admin_verifications_provider.dart';
 
 /// Compact row for the admin verification queue. Extracted to keep the page
@@ -52,29 +52,18 @@ class AdminVerificationQueueRow extends StatelessWidget {
                       const Gap(6),
                       Text(
                         item.displayName,
-                        style: GoogleFonts.openSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: c.text1,
-                        ),
+                        style: AdminText.body(
+                          c.text1,
+                        ).copyWith(fontWeight: FontWeight.w700),
                       ),
                       if (claim != null) ...[
                         const Gap(2),
-                        Text(
-                          claim,
-                          style: GoogleFonts.openSans(
-                            fontSize: 12,
-                            color: c.text2,
-                          ),
-                        ),
+                        Text(claim, style: AdminText.meta(c.text2)),
                       ],
                       const Gap(2),
                       Text(
                         'submitted ${_fmt(item.submittedAt)}',
-                        style: GoogleFonts.openSans(
-                          fontSize: 11,
-                          color: c.text3,
-                        ),
+                        style: AdminText.caption(c.text3),
                       ),
                       if (apiFailure != null) ...[
                         const Gap(6),
@@ -85,12 +74,9 @@ class AdminVerificationQueueRow extends StatelessWidget {
                 ),
                 Text(
                   item.status.toUpperCase(),
-                  style: GoogleFonts.openSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    color: _statusColor(context, item.status),
-                  ),
+                  style: AdminText.caption(
+                    _statusColor(context, item.status),
+                  ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.2),
                 ),
                 const Gap(12),
                 Icon(Icons.chevron_right, color: c.text3),
@@ -155,12 +141,7 @@ class _KindBadge extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: GoogleFonts.openSans(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: tx,
-        ),
+        style: AdminText.eyebrow(tx).copyWith(letterSpacing: 0.8),
       ),
     );
   }
@@ -181,12 +162,7 @@ class _RoleTag extends StatelessWidget {
       ),
       child: Text(
         'ROLE: $role',
-        style: GoogleFonts.openSans(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-          color: c.text3,
-        ),
+        style: AdminText.eyebrow(c.text3).copyWith(letterSpacing: 0.8),
       ),
     );
   }
@@ -213,11 +189,7 @@ class _ApiFailureLine extends StatelessWidget {
           Expanded(
             child: Text(
               'API attempt failed: $detail',
-              style: GoogleFonts.openSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: c.urgent,
-              ),
+              style: AdminText.caption(c.urgent),
             ),
           ),
         ],

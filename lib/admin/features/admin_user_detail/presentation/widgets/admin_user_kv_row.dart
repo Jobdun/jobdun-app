@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 
 /// A single key/value display row used inside detail cards.
 /// KEY is rendered as an uppercase letter-spaced caption.
@@ -32,23 +32,10 @@ class AdminUserKvRow extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.openSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: c.text3,
-            ),
+            style: AdminText.eyebrow(c.text3).copyWith(letterSpacing: 1.2),
           ),
           const SizedBox(height: 2),
-          valueWidget ??
-              Text(
-                value!,
-                style: GoogleFonts.openSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: c.text1,
-                ),
-              ),
+          valueWidget ?? Text(value!, style: AdminText.input(c.text1)),
         ],
       ),
     );

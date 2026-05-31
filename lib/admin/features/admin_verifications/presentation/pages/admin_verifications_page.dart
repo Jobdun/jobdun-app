@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
+import '../../../../app/widgets/admin_empty_state.dart';
+import '../../../../app/widgets/admin_error_state.dart';
+import '../../../../app/widgets/admin_list_skeleton.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../providers/admin_verifications_provider.dart';
@@ -32,8 +35,13 @@ class AdminVerificationsPage extends ConsumerWidget {
         ),
       ],
       child: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorBlock(error: e.toString()),
+        loading: () => const AdminListSkeleton(),
+        error: (e, _) => AdminErrorState(
+          title: "COULDN'T LOAD THE QUEUE",
+          message: e.toString(),
+          onRetry: () =>
+              ref.read(adminVerificationsProvider.notifier).refresh(),
+        ),
         data: (s) => _Body(state: s),
       ),
     );
@@ -61,9 +69,13 @@ class _Body extends ConsumerWidget {
         const Gap(16),
         Expanded(
           child: state.items.isEmpty
-              ? const _EmptyBlock(label: 'No verification documents yet.')
+              ? const AdminEmptyState(
+                  icon: Icons.inbox_outlined,
+                  label: 'No verification documents yet.',
+                )
               : items.isEmpty
-              ? const _EmptyBlock(
+              ? const AdminEmptyState(
+                  icon: Icons.inbox_outlined,
                   label: 'Nothing in this category right now.',
                   hint: 'Try a different filter chip above.',
                 )
@@ -169,29 +181,24 @@ class _Chip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.openSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                  color: selected ? Colors.white : c.text1,
-                ),
+                style: AdminText.labelMd(
+                  selected ? c.onAction : c.text1,
+                ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.4),
               ),
               const Gap(6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.25)
+                      ? c.onAction.withValues(alpha: 0.18)
                       : c.background,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.openSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: selected ? Colors.white : c.text2,
-                  ),
+                  style: AdminText.eyebrow(
+                    selected ? c.onAction : c.text2,
+                  ).copyWith(letterSpacing: 0),
                 ),
               ),
             ],
@@ -218,15 +225,7 @@ class _SectionHeader extends StatelessWidget {
     final c = context.c;
     return Row(
       children: [
-        Text(
-          title,
-          style: GoogleFonts.oswald(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.5,
-            color: c.text1,
-          ),
-        ),
+        Text(title, style: AdminText.sectionTitle(c.text1)),
         const Gap(8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -236,62 +235,12 @@ class _SectionHeader extends StatelessWidget {
           ),
           child: Text(
             count.toString(),
-            style: GoogleFonts.openSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: accent,
-            ),
+            style: AdminText.caption(
+              accent,
+            ).copyWith(fontWeight: FontWeight.w700),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _EmptyBlock extends StatelessWidget {
-  const _EmptyBlock({required this.label, this.hint});
-  final String label;
-  final String? hint;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_outlined, size: 48, color: c.text3),
-          const Gap(12),
-          Text(
-            label,
-            style: GoogleFonts.openSans(fontSize: 14, color: c.text2),
-          ),
-          if (hint != null) ...[
-            const Gap(4),
-            Text(
-              hint!,
-              style: GoogleFonts.openSans(fontSize: 12, color: c.text3),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorBlock extends StatelessWidget {
-  const _ErrorBlock({required this.error});
-  final String error;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Center(
-      child: Text(
-        'Couldn\'t load the queue.\n$error',
-        textAlign: TextAlign.center,
-        style: GoogleFonts.openSans(fontSize: 13, color: c.urgent),
-      ),
     );
   }
 }

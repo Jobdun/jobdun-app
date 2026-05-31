@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../app/theme/app_colors.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../domain/entities/admin_builder_profile.dart';
 import 'admin_user_kv_row.dart';
 
@@ -20,15 +20,7 @@ class AdminUserBuilderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'BUILDER PROFILE',
-            style: GoogleFonts.oswald(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
-              color: c.text3,
-            ),
-          ),
+          Text('BUILDER PROFILE', style: AdminText.cardLabel(c.text3)),
           const Gap(12),
           if (profile.companyName != null)
             AdminUserKvRow(label: 'Company', value: profile.companyName!),
@@ -57,10 +49,7 @@ class AdminUserBuilderCard extends StatelessWidget {
                   profile.website!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.openSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: c.action,
+                  style: AdminText.input(c.action).copyWith(
                     decoration: TextDecoration.underline,
                     decorationColor: c.action,
                   ),
