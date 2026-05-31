@@ -143,6 +143,7 @@ dev_dependencies:
   json_serializable: ^6.9.4
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -159,6 +160,15 @@ flutter_launcher_icons:
   image_path: "assets/icon/jobdun-icon.png"
   remove_alpha_ios: true
   min_sdk_android: 21
+
+# Cold-start splash — dark brand background so there's no white flash before the
+# Flutter app boots (the Flutter splash_page then renders the hammer-J mark). On
+# Android 12+ the system shows the launcher icon on this background automatically.
+# Regenerate with: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#0F172A"
+  android_12:
+    color: "#0F172A"
 
 flutter:
 
