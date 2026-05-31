@@ -164,27 +164,30 @@ fidelity migration to an **existing** system, not a redesign. The gated light th
 
 **Icon-size migration is 100% complete** (home + shared widgets + every feature).
 
-### ⬜ Remaining (deliberately deferred — see note)
-Deferred because each site needs reliable per-file inspection to map correctly, and they touch
-the critical verification flow; the session's file-reading tooling degraded mid-run, so finishing
-them blind risked silent visual regressions the compiler can't catch. Neither is enforced by
-`validate.sh`, and both are visually invisible.
+### ✅ Close-out (2026-05-31, second session)
+- **Phase 5 (typography) — COMPLETE** `7f3f6ca`. Every detached `TextStyle(` across the 20
+  remaining files (applications, auth, reviews, full verification flow) now routes through
+  `Theme.of(context).textTheme.<role>!.copyWith(...)`. Real scale used (from the *shipped*
+  `app_theme.dart`, which differs from the abandoned 26/22/18 preview): 40 displayLarge/Small ·
+  32 headlineLarge · 24 headlineMedium · 20 headlineSmall · 16 titleLarge · 15 titleMedium/bodyLarge ·
+  14 titleSmall/labelLarge · 13 bodyMedium · 12 bodySmall/labelMedium · 11 labelSmall. Mapping
+  decisions: 22→headlineMedium (wizard-title consistency), 14→titleSmall (exact role), 10→labelSmall
+  (floor). Threaded `tt`/`BuildContext` into the static + `JColors`-only helpers that lacked it.
+  Left raw (documented in-code): 2 emoji-flag glyphs + 1 inline-bold `TextSpan`. 0 analyze errors,
+  214 tests pass, no golden churn (feature widgets carry no golden coverage).
+- **`MASTER.md` sync — COMPLETE** `846342a`. Typography table → real shipped ramp; Icons → the
+  `AppIconSize` scale table; button snippet white→dark `onAction`; pre-delivery checklist gained the
+  textTheme / AppIconSize / on-orange items.
+- **Reduced-motion — NO WORK NEEDED (verified).** The "18 sites" estimate was a miscount: the only
+  `flutter_animate`-style site is `ftue_hero_photo.dart`, and its two `.animate(...)` calls are
+  `Animation.animate(CurvedAnimation)` (Tween API, not the `flutter_animate` widget extension). Its
+  entrance is already guarded — `didChangeDependencies` jumps `_controller.value = 1.0` when
+  `MediaQuery.disableAnimations` is on. `JStaggeredList` covers list entrances. No unguarded entrances
+  remain in `lib/`.
 
-**Typography — route detached `TextStyle(` through `Theme.of(context).textTheme` (~19 files left):**
-Scale reference (from `app_theme.dart`): 40 displayLarge · 32 displayMedium · 28 headlineLarge ·
-24 headlineMedium · 20 headlineSmall · 18 titleLarge · 16 titleMedium/bodyLarge · 15 labelLarge ·
-14 titleSmall/bodyMedium · 12 bodySmall/labelMedium · 11 labelSmall. Per site: ensure `tt` (or
-`Theme.of(context).textTheme`) is in scope, then `tt.<style>!.copyWith(<non-size props>)`.
-Files: `auth/.../country_picker_sheet`, `onboarding_completion_sheet`, `phone_auth_steps`;
-`reviews/.../reviews_page`, `review_card`; `verification/.../builder_verified_badge`,
-`job_card_poster_badge`, `manual_upload_form`, `manual_upload_priming`, `manual_upload_sheet`,
-`unverified_consent_dialog`, `verification_nudge_banner`, `verification_receipts`,
-`wizard_abn_step`, `wizard_abn_step_widgets`, `wizard_intro_step`, `wizard_licence_step`,
-`wizard_licence_step_widgets`, `wizard_result_screen` (+ recheck `applications_page_widgets`).
+**Migration is fully closed out.** Icon-size + typography + a11y-contrast + Dynamic-Type are at
+home-parity across every feature; the global `MASTER.md` matches shipped code.
 
-**Reduced-motion — guard `flutter_animate` entrances (18 sites):** wrap with
-`if (MediaQuery.of(context).disableAnimations)` short-circuit (FtueHeroPhoto precedent), or skip
-the `.animate()` entrance when reduced motion is on. P2 in the handoff.
-
-**Other handoff P2 items still open:** white-on-success / white-on-error snackbar text (<4.5:1) —
-left intentional this pass; `text2`-on-`surfaceRaised` 4.04:1; `MASTER.md` spec sync.
+### ⬜ Still open (separate theme-level pass, out of this migration's scope)
+Handoff P2 items, only touch when the owning surface is next worked: white-on-success /
+white-on-error snackbar text (<4.5:1, left intentional); `text2`-on-`surfaceRaised` 4.04:1.
