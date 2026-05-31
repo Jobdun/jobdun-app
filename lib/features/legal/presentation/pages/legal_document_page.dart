@@ -27,7 +27,7 @@ class LegalDocumentPage extends ConsumerWidget {
         backgroundColor: c.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(AppIcons.back, color: c.text1, size: 20.r),
+          icon: Icon(AppIcons.back, color: c.text1, size: AppIconSize.md.r),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -54,7 +54,11 @@ class LegalDocumentPage extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.warning, color: c.urgent, size: 40.r),
+                Icon(
+                  AppIcons.warning,
+                  color: c.urgent,
+                  size: AppIconSize.hero.r,
+                ),
                 Gap(AppSpacing.md.h),
                 Text(
                   'Could not load document.',

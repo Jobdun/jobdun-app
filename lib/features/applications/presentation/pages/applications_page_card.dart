@@ -173,7 +173,7 @@ class _AppCard extends StatelessWidget {
                   children: [
                     Icon(
                       isBuilder ? AppIcons.licence : AppIcons.building,
-                      size: 13.r,
+                      size: AppIconSize.micro.r,
                       color: c.text3,
                     ),
                     Gap(6.w),
@@ -192,7 +192,11 @@ class _AppCard extends StatelessWidget {
                     ),
                     if (isBuilder && app.tradeIsVerified == true) ...[
                       Gap(6.w),
-                      Icon(AppIcons.verified, size: 13.r, color: c.verified),
+                      Icon(
+                        AppIcons.verified,
+                        size: AppIconSize.micro.r,
+                        color: c.verified,
+                      ),
                     ],
                   ],
                 ),
@@ -207,7 +211,11 @@ class _AppCard extends StatelessWidget {
                 // ── Location
                 Row(
                   children: [
-                    Icon(AppIcons.location, size: 13.r, color: c.text3),
+                    Icon(
+                      AppIcons.location,
+                      size: AppIconSize.micro.r,
+                      color: c.text3,
+                    ),
                     Gap(6.w),
                     Expanded(
                       child: Text(

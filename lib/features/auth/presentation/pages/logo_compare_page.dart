@@ -81,7 +81,11 @@ class LogoComparePage extends StatelessWidget {
         backgroundColor: c.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(AppIcons.arrowLeft, color: c.text1, size: 20.r),
+          icon: Icon(
+            AppIcons.arrowLeft,
+            color: c.text1,
+            size: AppIconSize.md.r,
+          ),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/login'),
         ),
@@ -313,7 +317,11 @@ class _ConceptCard extends StatelessWidget {
                 Gap(4.h),
                 Row(
                   children: [
-                    Icon(AppIcons.quote, size: 14.r, color: c.action),
+                    Icon(
+                      AppIcons.quote,
+                      size: AppIconSize.micro.r,
+                      color: c.action,
+                    ),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -361,7 +369,11 @@ class _ConceptCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(AppIcons.info, size: 12.r, color: c.text3),
+                    Icon(
+                      AppIcons.info,
+                      size: AppIconSize.micro.r,
+                      color: c.text3,
+                    ),
                     Gap(6.w),
                     Expanded(
                       child: Text(
@@ -403,7 +415,11 @@ class _Footer extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.lightningFilled, size: 16.r, color: c.action),
+              Icon(
+                AppIcons.lightningFilled,
+                size: AppIconSize.inline.r,
+                color: c.action,
+              ),
               Gap(8.w),
               Text(
                 'CURRENT ACTIVE LOGO',

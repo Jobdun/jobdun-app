@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -72,7 +73,7 @@ class _Stars extends StatelessWidget {
           padding: EdgeInsets.only(right: 2.w),
           child: Icon(
             AppIcons.star,
-            size: 16.r,
+            size: AppIconSize.inline.r,
             color: filled ? c.star : c.text3,
           ),
         );
@@ -93,7 +94,7 @@ class _SnapshotSubtitle extends StatelessWidget {
       children: [
         Icon(
           positive ? AppIcons.verified : AppIcons.closeCircle,
-          size: 12.r,
+          size: AppIconSize.micro.r,
           color: positive ? c.verified : c.text3,
         ),
         Gap(6.w),

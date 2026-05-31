@@ -69,7 +69,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
           children: [
             Icon(
               AppIcons.successCircle,
-              size: 18.r,
+              size: AppIconSize.md.r,
               color: Colors.white, // intentional: white-on-success
             ),
             Gap(10.w),
@@ -110,7 +110,7 @@ class _JobCreatePageState extends State<JobCreatePage> {
                       onPressed: () => context.pop(),
                       icon: Icon(
                         AppIcons.closeCircle,
-                        size: 22.r,
+                        size: AppIconSize.md.r,
                         color: c.text1,
                       ),
                     ),
@@ -420,7 +420,7 @@ class _UrgentToggle extends StatelessWidget {
             children: [
               Icon(
                 AppIcons.lightning,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: isUrgent ? c.action : c.text3,
               ),
               Gap(12.w),

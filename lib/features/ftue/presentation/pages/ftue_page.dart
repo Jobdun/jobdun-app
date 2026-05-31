@@ -231,7 +231,11 @@ class _TopBar extends StatelessWidget {
                       horizontal: 8.w,
                       vertical: 10.h,
                     ),
-                    child: Icon(AppIcons.arrowLeft, size: 22.r, color: c.text2),
+                    child: Icon(
+                      AppIcons.arrowLeft,
+                      size: AppIconSize.md.r,
+                      color: c.text2,
+                    ),
                   ),
                 ),
               ),

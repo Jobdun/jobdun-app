@@ -51,7 +51,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         backgroundColor: c.background,
         leading: IconButton(
           onPressed: () => context.go('/login'),
-          icon: Icon(AppIcons.back, size: 22.r, color: c.text2),
+          icon: Icon(AppIcons.back, size: AppIconSize.md.r, color: c.text2),
         ),
       ),
       body: SafeArea(

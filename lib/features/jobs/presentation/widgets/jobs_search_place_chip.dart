@@ -130,7 +130,11 @@ class _JobsSearchPlaceChipState extends ConsumerState<JobsSearchPlaceChip> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(AppIcons.location, size: 14.r, color: c.action),
+                  Icon(
+                    AppIcons.location,
+                    size: AppIconSize.micro.r,
+                    color: c.action,
+                  ),
                   Gap(8.w),
                   Text(
                     'SUBURB: $upperSuburb$stateChip',

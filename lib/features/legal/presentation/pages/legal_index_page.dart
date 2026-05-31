@@ -25,7 +25,7 @@ class LegalIndexPage extends ConsumerWidget {
         backgroundColor: c.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(AppIcons.back, color: c.text1, size: 20.r),
+          icon: Icon(AppIcons.back, color: c.text1, size: AppIconSize.md.r),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -166,7 +166,7 @@ class _DocTile extends StatelessWidget {
             ? AppIcons.document
             : AppIcons.policy,
         color: c.text2,
-        size: 20.r,
+        size: AppIconSize.md.r,
       ),
       title: Text(
         type.displayTitle,
@@ -184,7 +184,11 @@ class _DocTile extends StatelessWidget {
           fontSize: 11.sp,
         ),
       ),
-      trailing: Icon(AppIcons.chevronRight, color: c.text3, size: 16.r),
+      trailing: Icon(
+        AppIcons.chevronRight,
+        color: c.text3,
+        size: AppIconSize.inline.r,
+      ),
     );
   }
 }

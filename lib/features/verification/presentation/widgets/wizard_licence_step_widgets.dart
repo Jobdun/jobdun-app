@@ -3,6 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
@@ -127,7 +128,7 @@ class LicenceUnsupportedHint extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.info, size: 18.r, color: c.action),
+              Icon(AppIcons.info, size: AppIconSize.md.r, color: c.action),
               Gap(8.w),
               Text(
                 'No automated check for $state yet',

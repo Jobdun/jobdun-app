@@ -112,7 +112,7 @@ class _EnvChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(AppIcons.info, size: 14.r, color: c.text3),
+          Icon(AppIcons.info, size: AppIconSize.micro.r, color: c.text3),
           Gap(6.w),
           Flexible(
             child: Text(

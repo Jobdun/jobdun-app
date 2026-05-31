@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -156,7 +157,7 @@ class _ChoiceCard extends StatelessWidget {
                       : c.background,
                   borderRadius: BorderRadius.circular(10.r),
                 ),
-                child: Icon(icon, color: accent, size: 22.r),
+                child: Icon(icon, color: accent, size: AppIconSize.md.r),
               ),
               Gap(14.w),
               Expanded(
@@ -207,7 +208,11 @@ class _ChoiceCard extends StatelessWidget {
                 ),
               ),
               Gap(8.w),
-              Icon(AppIcons.chevronRight, color: accent, size: 18.r),
+              Icon(
+                AppIcons.chevronRight,
+                color: accent,
+                size: AppIconSize.md.r,
+              ),
             ],
           ),
         ),

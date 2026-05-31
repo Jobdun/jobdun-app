@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
@@ -53,7 +54,7 @@ class WizardResultScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 56.r, color: iconColor),
+        Icon(icon, size: AppIconSize.hero.r, color: iconColor),
         Gap(12.h),
         Text(
           title,
@@ -210,7 +211,11 @@ class _ResultRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: positive ? c.verified : c.text3, size: 22.r),
+          Icon(
+            icon,
+            color: positive ? c.verified : c.text3,
+            size: AppIconSize.md.r,
+          ),
           Gap(12.w),
           Expanded(
             child: Column(

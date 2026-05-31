@@ -6,6 +6,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
@@ -268,7 +269,7 @@ class _ExpiryRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(AppIcons.calendar, size: 18.r, color: c.text3),
+            Icon(AppIcons.calendar, size: AppIconSize.md.r, color: c.text3),
             Gap(10.w),
             Text(
               label,
@@ -457,7 +458,7 @@ class ManualUploadDoneBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(AppIcons.verified, size: 32.r, color: c.verified),
+        Icon(AppIcons.verified, size: AppIconSize.feature.r, color: c.verified),
         Gap(12.h),
         SizedBox(
           width: double.infinity,

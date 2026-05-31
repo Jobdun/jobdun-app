@@ -139,7 +139,11 @@ class _SuburbChips extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.locationFilled, size: 14.r, color: c.action),
+                Icon(
+                  AppIcons.locationFilled,
+                  size: AppIconSize.micro.r,
+                  color: c.action,
+                ),
                 Gap(6.w),
                 Text(
                   s,

@@ -74,7 +74,11 @@ class _CountryPickerSheet extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(AppIcons.closeBox, size: 20.r, color: c.text3),
+                    icon: Icon(
+                      AppIcons.closeBox,
+                      size: AppIconSize.md.r,
+                      color: c.text3,
+                    ),
                     tooltip: 'Close',
                   ),
                 ],
@@ -124,7 +128,7 @@ class _CountryPickerSheet extends StatelessWidget {
                             Gap(10.w),
                             Icon(
                               AppIcons.successCircle,
-                              size: 18.r,
+                              size: AppIconSize.md.r,
                               color: c.action,
                             ),
                           ],

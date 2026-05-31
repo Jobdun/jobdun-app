@@ -100,7 +100,11 @@ class _ProfileHeader extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(AppIcons.edit, size: 16.r, color: c.text1),
+                            Icon(
+                              AppIcons.edit,
+                              size: AppIconSize.inline.r,
+                              color: c.text1,
+                            ),
                             Gap(6.w),
                             Text(
                               'EDIT',
@@ -368,7 +372,7 @@ class _TradeProfile extends ConsumerWidget {
               children: [
                 Icon(
                   isVerified ? AppIcons.verified : AppIcons.successCircle,
-                  size: 18.r,
+                  size: AppIconSize.md.r,
                   color: isVerified ? c.verified : c.text3,
                 ),
                 Gap(10.w),

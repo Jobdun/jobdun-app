@@ -48,7 +48,11 @@ class _PageError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.warning, size: 32.r, color: c.urgent),
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
             Gap(AppSpacing.md.h),
             Text(
               message,
@@ -104,7 +108,7 @@ class _SavedJobsList extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIcons.star, size: 48.r, color: c.text3),
+              Icon(AppIcons.star, size: AppIconSize.hero.r, color: c.text3),
               Gap(AppSpacing.md.h),
               Text(
                 'NO SAVED JOBS.',
@@ -232,7 +236,7 @@ class _EmptyState extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.search, size: 48.r, color: c.text3),
+            Icon(AppIcons.search, size: AppIconSize.hero.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
               headline,

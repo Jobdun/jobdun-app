@@ -122,7 +122,11 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(AppIcons.back, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      AppIcons.back,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
                   ),
                   // Avatar
                   Container(
@@ -169,7 +173,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       ],
                     ),
                   ),
-                  Icon(AppIcons.more, size: 20.r, color: c.text3),
+                  Icon(AppIcons.more, size: AppIconSize.md.r, color: c.text3),
                 ],
               ),
             ),
@@ -326,7 +330,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       alignment: Alignment.center,
                       child: Icon(
                         AppIcons.send,
-                        size: 18.r,
+                        size: AppIconSize.md.r,
                         color: Colors.white, // intentional
                       ),
                     ),

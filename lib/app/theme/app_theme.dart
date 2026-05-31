@@ -323,7 +323,7 @@ class AppTheme {
       // for icons that don't set their own size/colour. Was `text3`, which can
       // dip below the 3:1 icon-contrast floor on raised surfaces. Matches the
       // vetted PreviewTheme default.
-      iconTheme: IconThemeData(size: AppIconTheme.defaultSize, color: c.text2),
+      iconTheme: IconThemeData(size: AppIconSize.nav, color: c.text2),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: c.background,
       ),

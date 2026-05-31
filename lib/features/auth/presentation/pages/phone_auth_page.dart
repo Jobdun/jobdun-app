@@ -398,7 +398,11 @@ class _AlreadyVerifiedView extends StatelessWidget {
               color: c.verifiedBg,
               shape: BoxShape.circle,
             ),
-            child: Icon(AppIcons.verified, size: 44.r, color: c.verified),
+            child: Icon(
+              AppIcons.verified,
+              size: AppIconSize.hero.r,
+              color: c.verified,
+            ),
           ),
           Gap(AppSpacing.lg.h),
           Text(
@@ -470,7 +474,11 @@ class _JustVerifiedOverlay extends StatelessWidget {
               color: c.verifiedBg,
               shape: BoxShape.circle,
             ),
-            child: Icon(AppIcons.verified, size: 48.r, color: c.verified),
+            child: Icon(
+              AppIcons.verified,
+              size: AppIconSize.hero.r,
+              color: c.verified,
+            ),
           ),
           Gap(AppSpacing.lg.h),
           Text(

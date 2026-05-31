@@ -258,7 +258,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             children: [
               Icon(
                 AppIcons.successCircle,
-                size: 18.r,
+                size: AppIconSize.md.r,
                 color: Colors.white, // intentional: white-on-success
               ),
               Gap(10.w),
@@ -331,7 +331,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(AppIcons.back, size: 22.r, color: c.text1),
+                    icon: Icon(
+                      AppIcons.back,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
                   ),
                   const Expanded(
                     child: PageHeader(
@@ -370,7 +374,11 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(AppIcons.urgent, size: 32.r, color: c.urgent),
+                        Icon(
+                          AppIcons.urgent,
+                          size: AppIconSize.feature.r,
+                          color: c.urgent,
+                        ),
                         Gap(AppSpacing.sm.h),
                         Text(
                           "Couldn't load your profile",

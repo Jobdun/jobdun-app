@@ -55,7 +55,11 @@ class _SheetHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onClose,
-            icon: Icon(AppIcons.closeBox, size: 20.r, color: c.text3),
+            icon: Icon(
+              AppIcons.closeBox,
+              size: AppIconSize.md.r,
+              color: c.text3,
+            ),
             tooltip: 'Close',
           ),
         ],
@@ -98,7 +102,11 @@ class _SearchField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Search trades…',
             hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
-            prefixIcon: Icon(AppIcons.search, size: 18.r, color: c.text3),
+            prefixIcon: Icon(
+              AppIcons.search,
+              size: AppIconSize.md.r,
+              color: c.text3,
+            ),
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,
@@ -197,7 +205,11 @@ class _TradeRow extends StatelessWidget {
                 ),
               ),
               if (selected)
-                Icon(AppIcons.successCircle, size: 20.r, color: c.action),
+                Icon(
+                  AppIcons.successCircle,
+                  size: AppIconSize.md.r,
+                  color: c.action,
+                ),
             ],
           ),
         ),
@@ -240,7 +252,11 @@ class _OtherSection extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Row(
               children: [
-                Icon(AppIcons.addCircle, size: 18.r, color: c.text2),
+                Icon(
+                  AppIcons.addCircle,
+                  size: AppIconSize.md.r,
+                  color: c.text2,
+                ),
                 Gap(10.w),
                 Expanded(
                   child: Text(
@@ -250,7 +266,7 @@ class _OtherSection extends StatelessWidget {
                 ),
                 Icon(
                   isOpen ? AppIcons.chevronUp : AppIcons.chevronDown,
-                  size: 16.r,
+                  size: AppIconSize.inline.r,
                   color: c.text3,
                 ),
               ],

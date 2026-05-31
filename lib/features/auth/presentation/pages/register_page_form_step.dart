@@ -248,7 +248,7 @@ class _RoleChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 14.r, color: c.action),
+                Icon(icon, size: AppIconSize.micro.r, color: c.action),
                 Gap(8.w),
                 Text(
                   label,

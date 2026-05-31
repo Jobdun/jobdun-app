@@ -123,7 +123,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                   ),
                   child: Icon(
                     AppIcons.emailNotification,
-                    size: 36.r,
+                    size: AppIconSize.feature.r,
                     color: c.action,
                   ),
                 ),
@@ -177,7 +177,11 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(AppIcons.info, size: 16.r, color: c.text3),
+                    Icon(
+                      AppIcons.info,
+                      size: AppIconSize.inline.r,
+                      color: c.text3,
+                    ),
                     Gap(10.w),
                     Expanded(
                       child: Text(

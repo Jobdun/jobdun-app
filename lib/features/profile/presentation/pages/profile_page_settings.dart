@@ -114,7 +114,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 16.r, color: c.text3),
+          Icon(icon, size: AppIconSize.inline.r, color: c.text3),
           Gap(12.w),
           Text(label, style: tt.bodyMedium!.copyWith(color: c.text2)),
           Gap(12.w),
@@ -138,12 +138,20 @@ class _InfoRow extends StatelessWidget {
               message: verified && label == 'Phone'
                   ? 'Phone number verified via SMS'
                   : 'Checked against the Australian Business Register',
-              child: Icon(AppIcons.verified, size: 16.r, color: c.verified),
+              child: Icon(
+                AppIcons.verified,
+                size: AppIconSize.inline.r,
+                color: c.verified,
+              ),
             ),
           ],
           if (isAddCta) ...[
             Gap(6.w),
-            Icon(AppIcons.chevronRight, size: 16.r, color: c.action),
+            Icon(
+              AppIcons.chevronRight,
+              size: AppIconSize.inline.r,
+              color: c.action,
+            ),
           ],
         ],
       ),
@@ -271,7 +279,7 @@ class _ActionRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18.r, color: c.text2),
+            Icon(icon, size: AppIconSize.md.r, color: c.text2),
             Gap(12.w),
             Expanded(
               child: Text(
@@ -282,7 +290,11 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(AppIcons.chevronRight, size: 16.r, color: c.text3),
+            Icon(
+              AppIcons.chevronRight,
+              size: AppIconSize.inline.r,
+              color: c.text3,
+            ),
           ],
         ),
       ),
@@ -315,7 +327,7 @@ class _ToggleRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18.r, color: c.text2),
+          Icon(icon, size: AppIconSize.md.r, color: c.text2),
           Gap(12.w),
           Expanded(
             child: Text(

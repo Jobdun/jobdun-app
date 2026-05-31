@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -30,7 +31,7 @@ class JobCardPosterBadge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12.r, color: fg),
+        Icon(icon, size: AppIconSize.micro.r, color: fg),
         Gap(4.w),
         Text(
           label,

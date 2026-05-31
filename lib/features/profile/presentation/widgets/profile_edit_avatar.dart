@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
@@ -90,7 +91,7 @@ class ProfileEditAvatarHeader extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Icon(
                         hasError ? AppIcons.warning : AppIcons.camera,
-                        size: 14.r,
+                        size: AppIconSize.micro.r,
                         // intentional: white reads on both orange + red chips
                         color: Colors.white,
                       ),
@@ -250,7 +251,7 @@ class _SheetAction extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 14.h),
         child: Row(
           children: [
-            Icon(icon, size: 22.r, color: color),
+            Icon(icon, size: AppIconSize.md.r, color: color),
             Gap(14.w),
             Text(
               label,

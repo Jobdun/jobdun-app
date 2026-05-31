@@ -191,7 +191,11 @@ class _PortfolioTile extends StatelessWidget {
                 placeholder: (_, _) => Container(color: c.surfaceRaised),
                 errorWidget: (_, _, _) => Container(
                   color: c.surfaceRaised,
-                  child: Icon(AppIcons.imageEmpty, color: c.text3, size: 20.r),
+                  child: Icon(
+                    AppIcons.imageEmpty,
+                    color: c.text3,
+                    size: AppIconSize.md.r,
+                  ),
                 ),
               ),
             ),
@@ -262,7 +266,11 @@ class _PortfolioGalleryPageState extends State<_PortfolioGalleryPage> {
           minScale: PhotoViewComputedScale.contained,
           maxScale: PhotoViewComputedScale.covered * 3,
           errorBuilder: (_, _, _) => Center(
-            child: Icon(AppIcons.imageEmpty, color: c.text3, size: 48.r),
+            child: Icon(
+              AppIcons.imageEmpty,
+              color: c.text3,
+              size: AppIconSize.hero.r,
+            ),
           ),
         ),
         loadingBuilder: (_, _) => Center(
@@ -315,7 +323,11 @@ class _AddTile extends StatelessWidget {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(AppIcons.add, size: 24.r, color: c.action),
+                    Icon(
+                      AppIcons.add,
+                      size: AppIconSize.nav.r,
+                      color: c.action,
+                    ),
                     Gap(2.h),
                     Text(
                       'ADD',

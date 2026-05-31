@@ -24,7 +24,7 @@ class _SaveErrorBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(AppIcons.urgent, size: 16.r, color: c.urgent),
+          Icon(AppIcons.urgent, size: AppIconSize.inline.r, color: c.urgent),
           Gap(10.w),
           Expanded(
             child: Text(
@@ -39,7 +39,11 @@ class _SaveErrorBanner extends StatelessWidget {
             tooltip: 'Dismiss',
             onPressed: onDismiss,
             visualDensity: VisualDensity.compact,
-            icon: Icon(AppIcons.close, size: 16.r, color: c.urgentTx),
+            icon: Icon(
+              AppIcons.close,
+              size: AppIconSize.inline.r,
+              color: c.urgentTx,
+            ),
           ),
         ],
       ),
@@ -111,7 +115,11 @@ class _TradePickerTile extends ConsumerWidget {
                   ),
                 ),
               ),
-              Icon(AppIcons.chevronDown, size: 16.r, color: c.text3),
+              Icon(
+                AppIcons.chevronDown,
+                size: AppIconSize.inline.r,
+                color: c.text3,
+              ),
             ],
           ),
         ),
@@ -202,7 +210,11 @@ class _StatusRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18.r, color: done ? c.verified : c.text3),
+          Icon(
+            icon,
+            size: AppIconSize.md.r,
+            color: done ? c.verified : c.text3,
+          ),
           Gap(12.w),
           Expanded(
             child: Text(label, style: tt.bodyMedium!.copyWith(color: c.text1)),
@@ -211,7 +223,11 @@ class _StatusRow extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(AppIcons.successCircle, size: 16.r, color: c.verified),
+                Icon(
+                  AppIcons.successCircle,
+                  size: AppIconSize.inline.r,
+                  color: c.verified,
+                ),
                 Gap(6.w),
                 Text(
                   'VERIFIED',
@@ -298,7 +314,11 @@ class _VerifiedLockedField extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(AppIcons.verified, size: 11.r, color: c.verified),
+                    Icon(
+                      AppIcons.verified,
+                      size: AppIconSize.micro.r,
+                      color: c.verified,
+                    ),
                     Gap(4.w),
                     Text(
                       'VERIFIED',

@@ -53,7 +53,7 @@ class RoleIntentCta extends StatelessWidget {
                     color: c.surface,
                     borderRadius: BorderRadius.circular(AppRadius.avatar.r),
                   ),
-                  child: Icon(icon, size: 18.r, color: c.action),
+                  child: Icon(icon, size: AppIconSize.md.r, color: c.action),
                 ),
                 Gap(AppSpacing.md.w),
                 Expanded(
@@ -80,7 +80,11 @@ class RoleIntentCta extends StatelessWidget {
                   ),
                 ),
                 Gap(AppSpacing.sm.w),
-                Icon(AppIcons.chevronRight, size: 18.r, color: c.text3),
+                Icon(
+                  AppIcons.chevronRight,
+                  size: AppIconSize.md.r,
+                  color: c.text3,
+                ),
               ],
             ),
           ),

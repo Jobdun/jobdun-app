@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -30,7 +31,7 @@ class ManualUploadPrimingBlock extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(AppIcons.info, size: 16.r, color: c.action),
+              Icon(AppIcons.info, size: AppIconSize.inline.r, color: c.action),
               Gap(8.w),
               Text(
                 'BEFORE YOU UPLOAD',

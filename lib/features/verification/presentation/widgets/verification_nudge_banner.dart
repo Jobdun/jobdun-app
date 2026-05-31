@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -75,7 +76,7 @@ class _Banner extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(AppIcons.shield, color: c.action, size: 20.r),
+          Icon(AppIcons.shield, color: c.action, size: AppIconSize.md.r),
           Gap(12.w),
           Expanded(
             child: Text(
@@ -101,7 +102,7 @@ class _Banner extends ConsumerWidget {
           ),
           Gap(8.w),
           IconButton(
-            icon: Icon(Icons.close, size: 18.r, color: c.text3),
+            icon: Icon(Icons.close, size: AppIconSize.md.r, color: c.text3),
             onPressed: () => ref
                 .read(verificationBannerDismissedProvider.notifier)
                 .dismiss(),

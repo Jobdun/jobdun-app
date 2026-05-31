@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_card.dart';
@@ -360,7 +361,11 @@ class _ReceiptRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18.r, color: isVerified ? c.verified : c.text3),
+          Icon(
+            icon,
+            size: AppIconSize.md.r,
+            color: isVerified ? c.verified : c.text3,
+          ),
           Gap(12.w),
           Expanded(
             child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/theme/app_icon_size.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -42,7 +43,7 @@ class BuilderVerifiedBadge extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(AppIcons.verified, size: 13.r, color: c.verified),
+        Icon(AppIcons.verified, size: AppIconSize.micro.r, color: c.verified),
         Gap(4.w),
         Flexible(
           child: Text(

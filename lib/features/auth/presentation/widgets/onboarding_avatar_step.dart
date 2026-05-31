@@ -48,7 +48,11 @@ class OnboardingAvatarStep extends StatelessWidget {
               onTap: submitting ? null : onBack,
               child: Padding(
                 padding: EdgeInsets.all(4.r),
-                child: Icon(AppIcons.back, size: 18.r, color: c.text2),
+                child: Icon(
+                  AppIcons.back,
+                  size: AppIconSize.md.r,
+                  color: c.text2,
+                ),
               ),
             ),
             Gap(8.w),

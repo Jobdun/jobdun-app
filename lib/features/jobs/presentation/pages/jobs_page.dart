@@ -153,7 +153,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       hintText: 'Search trades, skills, suburbs…',
                       prefixIcon: Icon(
                         AppIcons.search,
-                        size: 16.r,
+                        size: AppIconSize.inline.r,
                         color: c.text3,
                       ),
                       suffixIcon: _searchCtrl.text.isEmpty
@@ -161,7 +161,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           : IconButton(
                               icon: Icon(
                                 AppIcons.closeCircle,
-                                size: 16.r,
+                                size: AppIconSize.inline.r,
                                 color: c.text3,
                               ),
                               tooltip: 'Clear search',
@@ -235,7 +235,11 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
                 child: Row(
                   children: [
-                    Icon(AppIcons.warning, size: 16.r, color: c.urgentTx),
+                    Icon(
+                      AppIcons.warning,
+                      size: AppIconSize.inline.r,
+                      color: c.urgentTx,
+                    ),
                     Gap(8.w),
                     Expanded(
                       child: Text(

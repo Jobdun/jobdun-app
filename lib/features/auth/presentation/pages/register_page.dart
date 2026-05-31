@@ -145,7 +145,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           context.go('/login');
                         }
                       },
-                      icon: Icon(AppIcons.back, color: c.text1, size: 20.r),
+                      icon: Icon(
+                        AppIcons.back,
+                        color: c.text1,
+                        size: AppIconSize.md.r,
+                      ),
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
                         minWidth: 40.r,

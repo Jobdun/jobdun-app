@@ -61,7 +61,7 @@ class FtueMapHero extends StatelessWidget {
                   alignment: pin,
                   child: Icon(
                     AppIcons.locationFilled,
-                    size: 18.r,
+                    size: AppIconSize.md.r,
                     color: c.text2,
                   ),
                 ),
@@ -70,7 +70,7 @@ class FtueMapHero extends StatelessWidget {
               Center(
                 child: Icon(
                   AppIcons.locationFilled,
-                  size: 36.r,
+                  size: AppIconSize.feature.r,
                   color: c.action,
                 ),
               ),
