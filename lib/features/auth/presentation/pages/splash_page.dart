@@ -7,7 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
-import '../../../../app/constants/app_constants.dart';
+import '../../../../app/constants/app_constants.dart' hide AppIconSize;
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';

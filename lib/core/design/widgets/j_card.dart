@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_icon_size.dart';
 import 'field_label.dart';
 
 /// Generic chrome card — eyebrow-titled, bordered surface that hosts a list
