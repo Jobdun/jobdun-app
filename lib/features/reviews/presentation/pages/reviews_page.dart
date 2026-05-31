@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/design/widgets/animated_empty_glyph.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/review.dart';
@@ -82,6 +84,12 @@ class _Empty extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          AnimatedEmptyGlyph(
+            icon: AppIcons.star,
+            motion: EmptyGlyphMotion.twinkle,
+            size: AppIconSize.hero.r,
+          ),
+          Gap(AppSpacing.md.h),
           Text(
             'No reviews yet',
             style: tt.titleLarge!.copyWith(fontWeight: FontWeight.w700),

@@ -9,6 +9,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_theme.dart';
+import '../../../../core/design/widgets/animated_empty_glyph.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/status_banner.dart';
@@ -117,8 +118,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     borderRadius: BorderRadius.circular(AppRadius.card.r),
                     border: Border.all(color: c.border),
                   ),
-                  child: Icon(
-                    AppIcons.emailNotification,
+                  child: AnimatedEmptyGlyph(
+                    icon: AppIcons.emailNotification,
+                    motion: EmptyGlyphMotion.float,
                     size: AppIconSize.feature.r,
                     color: c.actionInk,
                   ),

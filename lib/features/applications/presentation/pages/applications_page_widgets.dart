@@ -32,7 +32,12 @@ class _EmptyTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.document, size: AppIconSize.hero.r, color: c.text3),
+            AnimatedEmptyGlyph(
+              icon: AppIcons.document,
+              motion: EmptyGlyphMotion.bounce,
+              size: AppIconSize.hero.r,
+              color: c.text3,
+            ),
             Gap(AppSpacing.md.h),
             Text(
               message,
