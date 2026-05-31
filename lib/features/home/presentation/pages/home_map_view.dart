@@ -257,29 +257,25 @@ class _MapViewState extends State<_MapView> {
   List<Job> get _effectiveJobs =>
       widget.jobs.isNotEmpty ? widget.jobs : _sampleJobsAround(_radiusCenter);
 
-  List<Marker> _buildMarkers(Color pinColor, Color pinBorder) {
+  List<Marker> _buildMarkers(Color pinColor) {
     return [
       for (final job in _effectiveJobs)
         if (job.latitude != null && job.longitude != null)
           Marker(
             point: LatLng(job.latitude!, job.longitude!),
-            width: 40,
-            height: 40,
-            alignment: Alignment.topCenter,
+            // Aspect matches the pin glyph's cropped viewBox (900×1140 ≈ 0.79)
+            // so the brand pin isn't squashed. bottomCenter anchors the tip
+            // on the exact coordinate.
+            width: 44,
+            height: 56,
+            alignment: Alignment.bottomCenter,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => widget.onJobTap(job),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: pinColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: pinBorder, width: 2),
-                ),
-                child: const Icon(
-                  AppIcons.locationFilled,
-                  size: 20,
-                  color: Colors.white, // intentional: white-on-action
-                ),
+              child: SvgPicture.asset(
+                'lib/core/assets/map-pin-jobdun.svg',
+                width: 44,
+                height: 56,
               ),
             ),
           ),
@@ -362,7 +358,7 @@ class _MapViewState extends State<_MapView> {
                 ),
               ],
             ),
-            MarkerLayer(markers: _buildMarkers(c.action, c.surface)),
+            MarkerLayer(markers: _buildMarkers(c.action)),
             RichAttributionWidget(
               alignment: AttributionAlignment.bottomLeft,
               attributions: _attributionsFor(_style),
