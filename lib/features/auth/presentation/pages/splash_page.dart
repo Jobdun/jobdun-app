@@ -11,7 +11,7 @@ import '../../../../app/constants/app_constants.dart' hide AppIconSize;
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/config/env.dart';
-import '../../../../core/design/widgets/jobdun_logo.dart';
+import '../../../../core/design/widgets/animated_jobdun_logo.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -54,7 +54,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
           child: Column(
             children: [
               const Spacer(),
-              JobdunLogo(variant: LogoVariant.mark, height: 64.r),
+              AnimatedJobdunLogo(variant: JLogoAnim.forge, height: 64.r),
               Gap(20.h),
               ShaderMask(
                 shaderCallback: (bounds) =>

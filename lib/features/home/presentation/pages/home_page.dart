@@ -321,33 +321,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   // a real copy of this page under the corrected token theme;
                   // "TOKENS" opens the annotated what-changed cheat-sheet.
                   if (kDebugMode && !widget.fixedPreview)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: JButton(
-                                label: 'HOME · FIXED',
-                                variant: JButtonVariant.primary,
-                                size: JButtonSize.compact,
-                                onPressed: () => context.push('/home-preview'),
-                              ),
-                            ),
-                            Gap(8.w),
-                            Expanded(
-                              child: JButton(
-                                label: 'TOKENS',
-                                variant: JButtonVariant.secondary,
-                                size: JButtonSize.compact,
-                                onPressed: () =>
-                                    context.push('/design-preview'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const SliverToBoxAdapter(child: _DebugToolsBar()),
                   SliverToBoxAdapter(child: Gap(20.h)),
                   SliverToBoxAdapter(
                     child: _StatsRow(

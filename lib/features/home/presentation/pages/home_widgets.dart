@@ -178,3 +178,48 @@ class _PrimaryActionCard extends StatelessWidget {
     );
   }
 }
+
+// Dev-only quick-links to the preview/showcase screens (kDebugMode). Lives in
+// this part so home_page.dart stays under the file-size budget.
+class _DebugToolsBar extends StatelessWidget {
+  const _DebugToolsBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: JButton(
+                  label: 'HOME · FIXED',
+                  variant: JButtonVariant.primary,
+                  size: JButtonSize.compact,
+                  onPressed: () => context.push('/home-preview'),
+                ),
+              ),
+              Gap(8.w),
+              Expanded(
+                child: JButton(
+                  label: 'TOKENS',
+                  variant: JButtonVariant.secondary,
+                  size: JButtonSize.compact,
+                  onPressed: () => context.push('/design-preview'),
+                ),
+              ),
+            ],
+          ),
+          Gap(8.h),
+          JButton(
+            label: 'LOGO ANIMATION',
+            variant: JButtonVariant.secondary,
+            size: JButtonSize.compact,
+            onPressed: () => context.push('/logo-animation'),
+          ),
+        ],
+      ),
+    );
+  }
+}
