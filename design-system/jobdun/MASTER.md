@@ -7,7 +7,7 @@
 ---
 
 **Project:** Jobdun
-**Updated:** 2026-05-31 — app-wide *home-parity* migration shipped (icon-size scale, typography-through-theme, dark `onAction`, Dynamic-Type clamp).
+**Updated:** 2026-06-01 — adopted the larger Material-aligned type ramp (body 16/14, titleLarge 18, headline 26/22) so body copy meets Google's 16px mobile floor; removed `.sp` from `fontSize` app-wide. Supersedes the 2026-05-31 home-parity scale.
 **Audience:** Construction/trades workers and builders — not a SaaS startup, not a consumer lifestyle app.
 **Design Character:** Aggressive. Every UI decision asserts authority. Nothing apologizes for itself.
 
@@ -82,28 +82,29 @@ WCAG 2.2 AA is a hard requirement, enforced by `test/colors_contrast_test.dart` 
 **Body / UI text:** Open Sans — clean, readable, professional
 **Configure in `AppTheme` only — never call `GoogleFonts.*` per-widget.**
 
-Distinct sizes **40 / 32 / 24 / 20 / 16 / 15 / 14 / 13 / 12 / 11**. Sizes are **fixed logical
-px** in `AppTheme` — never `.sp` on `fontSize` (`.sp` scales by screen width and ignores the OS
+Distinct sizes **40 / 36 / 32 / 26 / 22 / 18 / 16 / 14 / 12 / 11**. Sizes are **fixed logical
+px** in `AppTypography` — never `.sp` on `fontSize` (`.sp` scales by screen width and ignores the OS
 text-size setting). Read every role via `Theme.of(context).textTheme.<role>` (with `.copyWith(...)`
 for colour/weight overrides) — **never a detached `TextStyle(fontSize: …)`** in feature code. The
 OS scaler is clamped to 0.9–1.3 in `MaterialApp.builder`.
 
 | Role (M3) | Font | Weight | Size | Letter Spacing | Line-height | Usage |
 |-----------|------|--------|------|----------------|-------------|-------|
-| displayLarge   | Oswald    | 700 | 40 | 1.2 | —    | Hero / splash |
-| displaySmall   | Oswald    | 700 | 40 | 1.0 | —    | Hero alt (gradient wordmark) |
-| headlineLarge  | Oswald    | 700 | 32 | 0.8 | —    | Screen titles |
-| headlineMedium | Oswald    | 600 | 24 | 0.5 | —    | Section / wizard-screen titles |
-| headlineSmall  | Oswald    | 600 | 20 | 0.3 | —    | Sub-sections / sheet & dialog titles |
-| titleLarge     | Oswald    | 600 | 16 | 0   | —    | Card / section headers |
-| titleMedium    | Open Sans | 600 | 15 | 0   | 1.6  | Emphasised body |
-| titleSmall     | Open Sans | 500 | 14 | 0   | —    | Small emphasised — row labels, form values |
-| bodyLarge      | Open Sans | 400 | 15 | 0   | 1.6  | Primary body |
-| bodyMedium     | Open Sans | 400 | 13 | 0   | 1.45 | Secondary body (most-used) |
-| bodySmall      | Open Sans | 500 | 12 | 0   | —    | Caption / metadata (floor) |
-| labelLarge     | Oswald    | 700 | 14 | 1.5 | —    | Buttons — ALL CAPS |
-| labelMedium    | Open Sans | 600 | 12 | 0.5 | —    | Tags / chips |
-| labelSmall     | Open Sans | 600 | 11 | 0.8 | —    | Eyebrows (`FieldLabel`) |
+| displayLarge   | Oswald    | 700 | 40 | 0    | 1.10 | Hero / splash |
+| displayMedium  | Oswald    | 700 | 36 | 0    | 1.10 | Hero (rare) |
+| displaySmall   | Oswald    | 700 | 32 | 0    | 1.12 | Hero alt (rare) |
+| headlineLarge  | Oswald    | 700 | 32 | 0    | 1.15 | Screen titles |
+| headlineMedium | Oswald    | 600 | 26 | 0.15 | 1.20 | Section / wizard-screen titles |
+| headlineSmall  | Oswald    | 600 | 22 | 0.15 | 1.25 | Sub-sections / sheet & dialog titles |
+| titleLarge     | Oswald    | 600 | 18 | 0.15 | 1.30 | Card / section headers |
+| titleMedium    | Open Sans | 600 | 16 | 0    | 1.50 | Emphasised body |
+| titleSmall     | Open Sans | 600 | 14 | 0    | 1.40 | Small emphasised — row labels, form values |
+| bodyLarge      | Open Sans | 400 | 16 | 0    | 1.50 | Primary body (Google 16px floor) |
+| bodyMedium     | Open Sans | 400 | 14 | 0    | 1.50 | Secondary body (most-used) |
+| bodySmall      | Open Sans | 500 | 12 | 0.1  | 1.40 | Caption / metadata (floor) |
+| labelLarge     | Oswald    | 700 | 14 | 1.2  | 1.10 | Buttons — ALL CAPS |
+| labelMedium    | Open Sans | 600 | 12 | 0.4  | 1.20 | Tags / chips |
+| labelSmall     | Open Sans | 600 | 11 | 0.6  | 1.20 | Eyebrows (`FieldLabel`) |
 
 Wordmark only (NOT a scale role): Oswald 700 · 40 · tracking **3.0** · `AppTypography.brandDisplay()`.
 
@@ -115,12 +116,21 @@ Wordmark only (NOT a scale role): Oswald 700 · 40 · tracking **3.0** · `AppTy
 - Pay rates, counts, ratings use `AppTypography.numeric()` (tabular figures) so digits don't jitter.
 - No thin fonts anywhere. Minimum weight 400 for any visible text. Type floor is 11 (labels) / 12 (caption body).
 
-> **Scale decision (2026-05-31, shipped):** the live `app_theme.dart` `textTheme` is the source
-> of truth — a 40/32/24/20/16/15/13 ramp with hard legibility floors (bodySmall 12, labelSmall 11)
-> and dark `onAction` (#0F172A) on the orange CTA. The earlier 26/22/18 `/design-preview` proposal
-> was **not** adopted; the app-wide home-parity migration snapped every feature to these real roles.
-> Detached `TextStyle(` in feature widgets is now gone except two emoji-flag glyphs + one inline-bold
-> `TextSpan` (documented in-code). Full role/size rationale: `docs/DESIGN_SYSTEM_TYPOGRAPHY_AUDIT.md`.
+> **Scale decision (2026-06-01, shipped):** adopted the larger Material-aligned ramp —
+> `AppTypography.textTheme` is now the source of truth, wired into `app_theme.dart`. Body roles
+> meet Google's **16px mobile floor** (bodyLarge 16 / bodyMedium 14), titleLarge 18, headline 26/22,
+> with explicit line-heights on every role. Legibility floors unchanged (bodySmall 12, labelSmall 11);
+> dark `onAction` (#0F172A) on the orange CTA unchanged. This **supersedes** the 2026-05-31
+> 40/32/24/20/16/15/13 decision (which had explicitly rejected this ramp) — the trade-off, slightly
+> looser density for legibility, was taken deliberately after a "text too small" review against
+> Material/Google guidance. Full prior rationale: `docs/DESIGN_SYSTEM_TYPOGRAPHY_AUDIT.md`.
+>
+> **`.sp` removed from `fontSize` (2026-06-01):** 71 sites across 28 feature files converted to fixed
+> logical px so text honours the OS text-size setting instead of width-scaling. Detached / `copyWith`
+> `fontSize` overrides still exist in a handful of auth, legal, and onboarding widgets (some pin sizes
+> *below* the new roles — e.g. onboarding titles at 22) — tracked for follow-up; route them through
+> theme roles so the scale isn't re-defeated. (The earlier "detached `TextStyle` is gone except 3
+> spots" claim was stale.) A user-facing **S/M/L text-size control** is the next tracked task (Plan B).
 > Font **bundling** (kill runtime `google_fonts`) is a separate tracked migration.
 
 ---
@@ -272,12 +282,16 @@ Icon colour: `c.text2` default, `c.action` active/selected, `c.text1` for primar
 
 | Token | px | Use |
 |-------|---:|-----|
-| `micro`   | 14 | caption-adjacent micro-glyphs, trust badges |
-| `inline`  | 16 | inside buttons / chips / labels |
-| `md`      | 20 | list-row leading, chevrons, field affordances |
+| `micro`   | 16 | caption-adjacent micro-glyphs, trust badges |
+| `inline`  | 18 | inside buttons / chips / labels (Material button/chip icon) |
+| `md`      | 24 | list-row leading, chevrons, field affordances (Material default) |
 | `nav`     | 24 | nav items, app-bar actions (the theme `iconTheme` default) |
 | `feature` | 32 | section / primary-action tiles |
 | `hero`    | 40 | empty-state / hero glyphs |
+
+> **Icon scale (2026-06-01):** stepped up to the Material grid — default UI/list icon **24** (was 20),
+> button/chip **18** (was 16), dense metadata **16** (was 14) — so glyphs hold their weight next to the
+> larger 16px type scale. Nav / feature / hero (24 / 32 / 40) were already Material-aligned.
 
 `Icon(AppIcons.bell, size: AppIconSize.nav.r, color: c.text2)`. Off-scale sizes snap to the nearest step; map-marker / `photo_view` / canvas glyphs are the only documented raw exceptions.
 

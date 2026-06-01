@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 class AppTheme {
   const AppTheme._();
@@ -109,88 +110,16 @@ class AppTheme {
 
     final colorScheme = _scheme(c, brightness);
 
-    final openSansBase = GoogleFonts.openSansTextTheme(
-      ThemeData(brightness: brightness).textTheme,
-    );
-
-    final textTheme = openSansBase.copyWith(
-      displayLarge: GoogleFonts.oswald(
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: c.text1,
-      ),
-      displaySmall: GoogleFonts.oswald(
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.0,
-        color: c.text1,
-      ),
-      headlineLarge: GoogleFonts.oswald(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
-        color: c.text1,
-      ),
-      headlineMedium: GoogleFonts.oswald(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-        color: c.text1,
-      ),
-      headlineSmall: GoogleFonts.oswald(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.3,
-        color: c.text1,
-      ),
-      titleLarge: GoogleFonts.oswald(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: c.text1,
-      ),
-      titleMedium: GoogleFonts.openSans(
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        height: 1.6,
-        color: c.text1,
-      ),
-      bodyLarge: GoogleFonts.openSans(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        height: 1.6,
-        color: c.text1,
-      ),
-      bodyMedium: GoogleFonts.openSans(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        height: 1.45, // comfortable leading on the most-used secondary body
-        color: c.text2,
-      ),
-      bodySmall: GoogleFonts.openSans(
-        fontSize: 12, // floor raised from 11 — 12 is the readable minimum
-        fontWeight: FontWeight.w500,
-        color: c.text2,
-      ),
-      labelLarge: GoogleFonts.oswald(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.5,
-        color: c.text1,
-      ),
-      labelMedium: GoogleFonts.openSans(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-        color: c.text2,
-      ),
-      labelSmall: GoogleFonts.openSans(
-        fontSize:
-            11, // floor raised from 10 — eyebrows/FieldLabel were too small
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.8,
-        color: c.text3,
-      ),
+    // Type scale lives in AppTypography — the single source of truth and the
+    // only other file the design lint allows `GoogleFonts.*` in. 2026-06-01:
+    // adopted the larger Material-aligned ramp (body 16/14, titleLarge 18,
+    // headline 26/22) so body copy meets Google's 16px mobile floor. This
+    // supersedes the 2026-05-31 40/32/24/20/16/15/13 decision — full role
+    // table + rationale in MASTER.md → Typography.
+    final textTheme = AppTypography.textTheme(
+      text1: c.text1,
+      text2: c.text2,
+      text3: c.text3,
     );
 
     // Touch-target floor — 48dp on every tappable surface so WCAG 2.5.5

@@ -62,7 +62,7 @@ class OnboardingNameStep extends StatelessWidget {
         Gap(8.h),
         Text(
           'What should we call you?',
-          style: tt.headlineMedium!.copyWith(color: c.text1, fontSize: 22.sp),
+          style: tt.headlineSmall!.copyWith(color: c.text1),
         ),
         Gap(6.h),
         Text(_explanation, style: tt.bodyMedium!.copyWith(color: c.text2)),

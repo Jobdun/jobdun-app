@@ -36,7 +36,7 @@ class AvatarBlock extends StatelessWidget {
         child: Text(
           initials,
           style: tt.labelLarge!.copyWith(
-            fontSize: fs.sp,
+            fontSize: fs,
             letterSpacing: 0.04 * fs,
             color: c.text1,
           ),

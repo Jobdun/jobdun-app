@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../app/theme/app_theme.dart';
 
 // Single-slide template for the FTUE carousel. Photo (or custom visual) at
 // the top, two-line Oswald headline below, two-line body paragraph under
@@ -46,32 +45,28 @@ class FtueSlide extends StatelessWidget {
           if (visual != null) ...[visual!, Gap(AppSpacing.lg.h)],
           Text(
             headlineLine1,
-            style: AppTheme.brandDisplay(
-              c.text1,
-            ).copyWith(fontSize: 32.sp, height: 1.05, letterSpacing: 2.0),
+            style: tt.displaySmall!.copyWith(
+              color: c.text1,
+              height: 1.05,
+              letterSpacing: 2.0,
+            ),
           ),
           Text(
             headlineLine2,
-            style: AppTheme.brandDisplay(
-              c.action,
-            ).copyWith(fontSize: 32.sp, height: 1.05, letterSpacing: 2.0),
+            style: tt.displaySmall!.copyWith(
+              color: c.action,
+              height: 1.05,
+              letterSpacing: 2.0,
+            ),
           ),
           Gap(AppSpacing.md.h),
           Text(
             bodyLine1,
-            style: tt.bodyMedium!.copyWith(
-              color: c.text2,
-              height: 1.45,
-              fontSize: 14.sp,
-            ),
+            style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.45),
           ),
           Text(
             bodyLine2,
-            style: tt.bodyMedium!.copyWith(
-              color: c.text2,
-              height: 1.45,
-              fontSize: 14.sp,
-            ),
+            style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.45),
           ),
           if (footer != null) ...[Gap(AppSpacing.lg.h), footer!],
           Gap(AppSpacing.lg.h),

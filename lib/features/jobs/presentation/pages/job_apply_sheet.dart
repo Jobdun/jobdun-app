@@ -68,22 +68,13 @@ class _JobApplySheetState extends State<JobApplySheet> {
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 2.h),
             child: Row(
               children: [
-                Text(
-                  '\$',
-                  style: tt.headlineSmall!.copyWith(
-                    fontSize: 20.sp,
-                    color: c.text3,
-                  ),
-                ),
+                Text('\$', style: tt.headlineSmall!.copyWith(color: c.text3)),
                 Gap(4.w),
                 Expanded(
                   child: TextField(
                     controller: _rateCtrl,
                     keyboardType: TextInputType.number,
-                    style: tt.headlineSmall!.copyWith(
-                      fontSize: 20.sp,
-                      color: c.action,
-                    ),
+                    style: tt.headlineSmall!.copyWith(color: c.action),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,

@@ -36,7 +36,6 @@ class LegalDocumentPage extends ConsumerWidget {
             color: c.text1,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
-            fontSize: 15.sp,
           ),
         ),
         bottom: PreferredSize(
@@ -81,7 +80,7 @@ class LegalDocumentPage extends ConsumerWidget {
               ),
               child: Text(
                 'Version ${doc.version}  •  Effective [PLACEHOLDER — Ken to fill]',
-                style: tt.labelSmall!.copyWith(color: c.text3, fontSize: 11.sp),
+                style: tt.labelSmall!.copyWith(color: c.text3),
               ),
             ),
             Divider(height: 1, color: c.border),

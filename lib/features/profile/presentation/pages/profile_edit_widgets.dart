@@ -323,7 +323,6 @@ class _VerifiedLockedField extends StatelessWidget {
                     Text(
                       'VERIFIED',
                       style: tt.labelSmall!.copyWith(
-                        fontSize: 9.sp,
                         letterSpacing: 0.8,
                         fontWeight: FontWeight.w700,
                         color: c.verified,
@@ -351,7 +350,6 @@ class _VerifiedLockedField extends StatelessWidget {
           Text(
             'Locked after ABR verification. Contact support to change.',
             style: tt.bodySmall!.copyWith(
-              fontSize: 11.sp,
               color: c.text3,
               fontStyle: FontStyle.italic,
             ),

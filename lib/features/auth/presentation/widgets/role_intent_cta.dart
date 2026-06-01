@@ -71,10 +71,7 @@ class RoleIntentCta extends StatelessWidget {
                       Gap(2.h),
                       Text(
                         subtitle,
-                        style: tt.bodySmall!.copyWith(
-                          color: c.text3,
-                          fontSize: 12.sp,
-                        ),
+                        style: tt.bodySmall!.copyWith(color: c.text3),
                       ),
                     ],
                   ),

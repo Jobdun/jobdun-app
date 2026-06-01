@@ -253,8 +253,7 @@ class _ConvoRow extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 initials,
-                style: tt.headlineSmall!.copyWith(
-                  fontSize: 16.sp,
+                style: tt.titleMedium!.copyWith(
                   fontWeight: FontWeight.w700,
                   color: c.text2,
                 ),
@@ -370,7 +369,6 @@ class _EmptyState extends StatelessWidget {
             Text(
               'NO MESSAGES YET.',
               style: tt.headlineSmall!.copyWith(
-                fontSize: 22.sp,
                 fontWeight: FontWeight.w700,
                 color: c.text1,
               ),

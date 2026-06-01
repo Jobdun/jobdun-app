@@ -57,10 +57,7 @@ class _LogoutSheet extends StatelessWidget {
           Gap(AppSpacing.lg.h),
           Text(
             'SIGN OUT?',
-            style: tt.headlineSmall!.copyWith(
-              fontSize: 20.sp,
-              letterSpacing: 1.5,
-            ),
+            style: tt.headlineSmall!.copyWith(letterSpacing: 1.5),
           ),
           Gap(8.h),
           Text(

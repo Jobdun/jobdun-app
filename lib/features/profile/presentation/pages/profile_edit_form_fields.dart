@@ -164,7 +164,7 @@ class _TradeFields extends StatelessWidget {
           Gap(4.h),
           Text(
             'Pick a trade to continue.',
-            style: tt.bodySmall!.copyWith(color: c.urgent, fontSize: 12.sp),
+            style: tt.bodySmall!.copyWith(color: c.urgent),
           ),
         ],
         Gap(AppSpacing.md.h),

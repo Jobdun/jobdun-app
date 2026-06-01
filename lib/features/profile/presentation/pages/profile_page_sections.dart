@@ -81,8 +81,7 @@ class _ProfileHeader extends StatelessWidget {
                     Expanded(
                       child: Text(
                         displayName,
-                        style: tt.titleMedium!.copyWith(
-                          fontSize: 18.sp,
+                        style: tt.titleLarge!.copyWith(
                           fontWeight: FontWeight.w700,
                           color: c.text1,
                         ),

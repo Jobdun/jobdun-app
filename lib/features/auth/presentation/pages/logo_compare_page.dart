@@ -110,7 +110,7 @@ class LogoComparePage extends StatelessWidget {
                 'PICK THE WINNER',
                 style: tt.displaySmall!.copyWith(
                   color: c.text1,
-                  fontSize: 30.sp,
+                  fontSize: 30,
                   letterSpacing: 2.0,
                   height: 1.05,
                   fontWeight: FontWeight.w900,
@@ -124,7 +124,7 @@ class LogoComparePage extends StatelessWidget {
                 'pass the favicon / hard-hat / no-clipart tests.',
                 style: tt.bodyMedium!.copyWith(
                   color: c.text2,
-                  fontSize: 13.sp,
+                  fontSize: 13,
                   height: 1.5,
                 ),
               ),
@@ -205,7 +205,7 @@ class _SectionHeader extends StatelessWidget {
                   color: c.text1,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w900,
-                  fontSize: 14.sp,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -218,7 +218,7 @@ class _SectionHeader extends StatelessWidget {
             description,
             style: tt.bodySmall!.copyWith(
               color: c.text2,
-              fontSize: 12.sp,
+              fontSize: 12,
               height: 1.5,
             ),
           ),
@@ -299,7 +299,7 @@ class _ConceptCard extends StatelessWidget {
                     style: tt.labelSmall!.copyWith(
                       color: c.text2,
                       letterSpacing: 1.2,
-                      fontSize: 10.sp,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -311,7 +311,7 @@ class _ConceptCard extends StatelessWidget {
                     color: c.text1,
                     letterSpacing: 1.5,
                     fontWeight: FontWeight.w900,
-                    fontSize: 22.sp,
+                    fontSize: 22,
                   ),
                 ),
                 Gap(4.h),
@@ -328,7 +328,7 @@ class _ConceptCard extends StatelessWidget {
                         concept.tagline,
                         style: tt.bodyLarge!.copyWith(
                           color: c.action,
-                          fontSize: 15.sp,
+                          fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -340,7 +340,7 @@ class _ConceptCard extends StatelessWidget {
                   concept.story,
                   style: tt.bodyMedium!.copyWith(
                     color: c.text2,
-                    fontSize: 13.sp,
+                    fontSize: 13,
                     height: 1.55,
                   ),
                 ),
@@ -360,7 +360,7 @@ class _ConceptCard extends StatelessWidget {
                     style: tt.labelSmall!.copyWith(
                       color: c.actionTx,
                       letterSpacing: 1.5,
-                      fontSize: 10.sp,
+                      fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -380,7 +380,7 @@ class _ConceptCard extends StatelessWidget {
                         concept.precedent,
                         style: tt.labelSmall!.copyWith(
                           color: c.text3,
-                          fontSize: 11.sp,
+                          fontSize: 11,
                           height: 1.4,
                           fontStyle: FontStyle.italic,
                         ),
@@ -427,7 +427,7 @@ class _Footer extends StatelessWidget {
                   color: c.text1,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w800,
-                  fontSize: 12.sp,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -442,7 +442,7 @@ class _Footer extends StatelessWidget {
             'more hammer-J variations.',
             style: tt.bodyMedium!.copyWith(
               color: c.text2,
-              fontSize: 13.sp,
+              fontSize: 13,
               height: 1.55,
             ),
           ),

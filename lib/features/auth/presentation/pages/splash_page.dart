@@ -61,8 +61,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                     AppGradients.brandFlame.createShader(bounds),
                 child: Text(
                   'JOBDUN',
-                  style: tt.displaySmall!.copyWith(
-                    fontSize: 48.sp,
+                  style: tt.displayLarge!.copyWith(
                     letterSpacing: 4.0,
                     height: 1.0,
                     color: Colors

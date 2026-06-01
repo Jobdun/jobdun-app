@@ -69,7 +69,7 @@ class OnboardingAvatarStep extends StatelessWidget {
         Gap(8.h),
         Text(
           'Add a profile photo?',
-          style: tt.headlineMedium!.copyWith(color: c.text1, fontSize: 22.sp),
+          style: tt.headlineSmall!.copyWith(color: c.text1),
         ),
         Gap(6.h),
         Text(

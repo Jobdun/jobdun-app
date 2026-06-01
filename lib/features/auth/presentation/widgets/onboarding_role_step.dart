@@ -38,7 +38,7 @@ class OnboardingRoleStep extends StatelessWidget {
         Gap(8.h),
         Text(
           'Which side are you on?',
-          style: tt.headlineMedium!.copyWith(color: c.text1, fontSize: 22.sp),
+          style: tt.headlineSmall!.copyWith(color: c.text1),
         ),
         Gap(6.h),
         Text(
@@ -134,10 +134,7 @@ class _RoleCard extends StatelessWidget {
                   Gap(4.h),
                   Text(
                     description,
-                    style: tt.bodySmall!.copyWith(
-                      color: c.text2,
-                      fontSize: 12.sp,
-                    ),
+                    style: tt.bodySmall!.copyWith(color: c.text2),
                   ),
                 ],
               ),

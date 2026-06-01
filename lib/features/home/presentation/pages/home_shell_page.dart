@@ -256,7 +256,6 @@ class _BottomNav extends StatelessWidget {
                         Text(
                           tab.shortLabel,
                           style: tt.labelSmall!.copyWith(
-                            fontSize: 11.sp,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.2,
                             color: tintColor,

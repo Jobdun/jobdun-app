@@ -1,6 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design/colors.dart';
@@ -43,7 +42,7 @@ class _LegalLinkTextState extends State<LegalLinkText> {
     final tt = Theme.of(context).textTheme;
 
     final baseStyle = widget.minimal
-        ? tt.bodySmall!.copyWith(color: c.text3, fontSize: 11.sp)
+        ? tt.bodySmall!.copyWith(color: c.text3)
         : tt.bodySmall!.copyWith(color: c.text2, height: 1.4);
 
     final linkStyle = baseStyle.copyWith(

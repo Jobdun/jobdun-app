@@ -48,9 +48,11 @@ class _RoleStep extends StatelessWidget {
                     AppGradients.brandFlame.createShader(bounds),
                 child: Text(
                   'JOBDUN',
-                  style: AppTheme.brandDisplay(
-                    Colors.white, // intentional: ShaderMask requires white
-                  ).copyWith(fontSize: 32.sp),
+                  style: tt.displaySmall!.copyWith(
+                    color:
+                        Colors.white, // intentional: ShaderMask requires white
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
             ],
@@ -230,10 +232,7 @@ class _RoleCard extends StatelessWidget {
                     Gap(4.h),
                     Text(
                       description,
-                      style: tt.bodySmall!.copyWith(
-                        color: c.text2,
-                        fontSize: 12.sp,
-                      ),
+                      style: tt.bodySmall!.copyWith(color: c.text2),
                     ),
                   ],
                 ),

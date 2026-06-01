@@ -121,7 +121,7 @@ class SocialAuthButton extends StatelessWidget {
         Gap(AppSpacing.xs.h),
         Text(
           caption!,
-          style: tt.bodySmall!.copyWith(color: c.text2, fontSize: 11.sp),
+          style: tt.bodySmall!.copyWith(color: c.text2),
           semanticsLabel: semanticsLabel,
         ),
       ],

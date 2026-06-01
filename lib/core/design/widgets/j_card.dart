@@ -108,7 +108,6 @@ class JStatBadge extends StatelessWidget {
             Text(
               label.toUpperCase(),
               style: tt.labelSmall!.copyWith(
-                fontSize: 11.sp,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
                 color: c.text2,

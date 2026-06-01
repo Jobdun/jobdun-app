@@ -23,42 +23,26 @@ class LegalDocumentView extends StatelessWidget {
         vertical: AppSpacing.md.h,
       ),
       styleSheet: MarkdownStyleSheet(
-        h1: tt.headlineMedium!.copyWith(
+        h1: tt.headlineSmall!.copyWith(
           color: c.text1,
           fontWeight: FontWeight.w700,
-          fontSize: 22.sp,
           letterSpacing: 0.3,
         ),
         h2: tt.titleLarge!.copyWith(
           color: c.text1,
           fontWeight: FontWeight.w700,
-          fontSize: 17.sp,
         ),
-        h3: tt.titleMedium!.copyWith(
-          color: c.text1,
-          fontWeight: FontWeight.w600,
-          fontSize: 15.sp,
-        ),
-        p: tt.bodyMedium!.copyWith(
-          color: c.text2,
-          fontSize: 14.sp,
-          height: 1.6,
-        ),
-        strong: tt.bodyMedium!.copyWith(
+        h3: tt.titleMedium!.copyWith(color: c.text1),
+        p: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
+        strong: tt.bodyLarge!.copyWith(
           color: c.text1,
           fontWeight: FontWeight.w700,
-          fontSize: 14.sp,
         ),
-        em: tt.bodyMedium!.copyWith(
-          color: c.text2,
-          fontStyle: FontStyle.italic,
-          fontSize: 14.sp,
-        ),
-        listBullet: tt.bodyMedium!.copyWith(color: c.action, fontSize: 14.sp),
-        blockquote: tt.bodySmall!.copyWith(
+        em: tt.bodyLarge!.copyWith(color: c.text2, fontStyle: FontStyle.italic),
+        listBullet: tt.bodyLarge!.copyWith(color: c.action),
+        blockquote: tt.bodyMedium!.copyWith(
           color: c.text3,
           fontStyle: FontStyle.italic,
-          fontSize: 12.sp,
         ),
         blockquoteDecoration: BoxDecoration(
           border: Border(left: BorderSide(color: c.action, width: 3)),
@@ -68,19 +52,17 @@ class LegalDocumentView extends StatelessWidget {
         horizontalRuleDecoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: c.border, width: 1)),
         ),
-        tableHead: tt.labelSmall!.copyWith(
+        tableHead: tt.labelMedium!.copyWith(
           color: c.text1,
           fontWeight: FontWeight.w700,
-          fontSize: 12.sp,
         ),
-        tableBody: tt.bodySmall!.copyWith(color: c.text2, fontSize: 12.sp),
+        tableBody: tt.bodySmall!.copyWith(color: c.text2),
         tableHeadAlign: TextAlign.left,
         tableBorder: TableBorder.all(color: c.border, width: 1),
         tableCellsPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
         code: tt.bodySmall!.copyWith(
           color: c.action,
           backgroundColor: c.surface,
-          fontSize: 12.sp,
           fontFamily: 'monospace',
         ),
         codeblockDecoration: BoxDecoration(
@@ -88,11 +70,10 @@ class LegalDocumentView extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(color: c.border),
         ),
-        a: tt.bodyMedium!.copyWith(
+        a: tt.bodyLarge!.copyWith(
           color: c.action,
           decoration: TextDecoration.underline,
           decorationColor: c.action,
-          fontSize: 14.sp,
         ),
       ),
       onTapLink: (text, href, title) async {

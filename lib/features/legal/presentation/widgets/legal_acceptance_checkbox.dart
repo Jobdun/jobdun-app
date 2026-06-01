@@ -123,7 +123,7 @@ class _LegalAcceptanceCheckboxState extends State<LegalAcceptanceCheckbox> {
             padding: EdgeInsets.only(left: 32.w, top: 2.h),
             child: Text(
               widget.errorText!,
-              style: tt.bodySmall!.copyWith(color: c.urgent, fontSize: 12.sp),
+              style: tt.bodySmall!.copyWith(color: c.urgent),
             ),
           ),
         ],

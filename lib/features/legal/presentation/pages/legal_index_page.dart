@@ -34,7 +34,6 @@ class LegalIndexPage extends ConsumerWidget {
             color: c.text1,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
-            fontSize: 15.sp,
           ),
         ),
         bottom: PreferredSize(
@@ -56,7 +55,7 @@ class LegalIndexPage extends ConsumerWidget {
           Center(
             child: Text(
               'Jobdun Pty Ltd — ABN [PLACEHOLDER]\nAll rights reserved.',
-              style: tt.labelSmall!.copyWith(color: c.text3, fontSize: 11.sp),
+              style: tt.labelSmall!.copyWith(color: c.text3),
               textAlign: TextAlign.center,
             ),
           ),
@@ -179,10 +178,7 @@ class _DocTile extends StatelessWidget {
         accepted
             ? 'Version $currentVersion — Accepted'
             : 'Version $currentVersion${acceptedVersion != null ? ' — Update pending' : ''}',
-        style: tt.labelSmall!.copyWith(
-          color: accepted ? c.verified : c.text3,
-          fontSize: 11.sp,
-        ),
+        style: tt.labelSmall!.copyWith(color: accepted ? c.verified : c.text3),
       ),
       trailing: Icon(
         AppIcons.chevronRight,

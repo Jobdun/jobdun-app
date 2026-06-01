@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../app/theme/app_theme.dart';
 import '../../../../core/design/widgets/animated_empty_glyph.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
@@ -98,9 +97,11 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                     Gap(8.w),
                     Text(
                       'JOBDUN',
-                      style: AppTheme.brandDisplay(
-                        c.text1,
-                      ).copyWith(fontSize: 18.sp, letterSpacing: 1.5),
+                      style: tt.titleLarge!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                        color: c.text1,
+                      ),
                     ),
                   ],
                 ),
@@ -132,8 +133,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               // ── Heading ───────────────────────────────────────────────────
               Text(
                 'CHECK YOUR\nEMAIL.',
-                style: tt.displaySmall!.copyWith(
-                  fontSize: 40.sp,
+                style: tt.displayLarge!.copyWith(
                   letterSpacing: 0.8,
                   color: c.text1,
                   height: 1.05,
@@ -142,19 +142,14 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               Gap(12.h),
               Text.rich(
                 TextSpan(
-                  style: tt.bodyLarge!.copyWith(
-                    color: c.text2,
-                    fontSize: 14.sp,
-                    height: 1.7,
-                  ),
+                  style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.7),
                   children: [
                     const TextSpan(text: 'Verification link sent to '),
                     TextSpan(
                       text: email,
-                      style: tt.bodyLarge!.copyWith(
+                      style: tt.bodyMedium!.copyWith(
                         fontWeight: FontWeight.w600,
                         color: c.actionInk,
-                        fontSize: 14.sp,
                       ),
                     ),
                     const TextSpan(text: '. Tap it to activate your account.'),

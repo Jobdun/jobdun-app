@@ -404,7 +404,6 @@ class _AlreadyVerifiedView extends StatelessWidget {
             'PHONE VERIFIED',
             textAlign: TextAlign.center,
             style: tt.headlineMedium!.copyWith(
-              fontSize: 24.sp,
               letterSpacing: 2,
               color: c.text1,
             ),
@@ -480,7 +479,6 @@ class _JustVerifiedOverlay extends StatelessWidget {
             'PHONE VERIFIED',
             textAlign: TextAlign.center,
             style: tt.headlineMedium!.copyWith(
-              fontSize: 24.sp,
               letterSpacing: 2,
               color: c.text1,
             ),

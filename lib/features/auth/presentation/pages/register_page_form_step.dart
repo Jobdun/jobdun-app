@@ -349,10 +349,7 @@ class _PasswordStrengthBar extends StatelessWidget {
           );
         }),
         Gap(8.w),
-        Text(
-          label,
-          style: tt.labelSmall!.copyWith(color: color, fontSize: 11.sp),
-        ),
+        Text(label, style: tt.labelSmall!.copyWith(color: color)),
       ],
     );
   }

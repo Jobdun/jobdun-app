@@ -161,11 +161,7 @@ class _AppCard extends StatelessWidget {
                   app.jobTitle ?? '—',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: tt.headlineSmall!.copyWith(
-                    fontSize: 18.sp,
-                    color: c.text1,
-                    height: 1.1,
-                  ),
+                  style: tt.titleLarge!.copyWith(color: c.text1, height: 1.1),
                 ),
                 Gap(4.h),
                 // ── Company / trade name
@@ -232,10 +228,7 @@ class _AppCard extends StatelessWidget {
                       Gap(8.w),
                       Text(
                         '\$${app.proposedRate!.toStringAsFixed(0)}${app.proposedRateType != null ? '/${app.proposedRateType}' : ''}',
-                        style: tt.headlineSmall!.copyWith(
-                          fontSize: 15.sp,
-                          color: c.action,
-                        ),
+                        style: tt.titleMedium!.copyWith(color: c.action),
                       ),
                     ],
                   ],

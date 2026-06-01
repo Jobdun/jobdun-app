@@ -51,10 +51,7 @@ class PhoneAuthPhoneStep extends StatelessWidget {
           Text(
             'PHONE SIGN IN',
             textAlign: TextAlign.center,
-            style: tt.headlineMedium!.copyWith(
-              fontSize: 26.sp,
-              letterSpacing: 2,
-            ),
+            style: tt.headlineMedium!.copyWith(letterSpacing: 2),
           ),
           Gap(8.h),
           Text(
@@ -91,7 +88,7 @@ class PhoneAuthPhoneStep extends StatelessWidget {
                     children: [
                       // Emoji flag glyph — decorative sizing only, not
                       // type-scale text. Left raw by design.
-                      Text(country.flag, style: TextStyle(fontSize: 20.sp)),
+                      Text(country.flag, style: TextStyle(fontSize: 20)),
                       Gap(8.w),
                       Text(
                         '+${country.dialCode}',
@@ -243,10 +240,7 @@ class PhoneAuthOtpStep extends StatelessWidget {
           Text(
             'ENTER CODE',
             textAlign: TextAlign.center,
-            style: tt.headlineMedium!.copyWith(
-              fontSize: 26.sp,
-              letterSpacing: 2,
-            ),
+            style: tt.headlineMedium!.copyWith(letterSpacing: 2),
           ),
           Gap(8.h),
           Text(

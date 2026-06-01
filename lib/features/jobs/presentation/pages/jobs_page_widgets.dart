@@ -112,10 +112,7 @@ class _SavedJobsList extends StatelessWidget {
               Gap(AppSpacing.md.h),
               Text(
                 'NO SAVED JOBS.',
-                style: tt.headlineSmall!.copyWith(
-                  fontSize: 22.sp,
-                  color: c.text1,
-                ),
+                style: tt.headlineSmall!.copyWith(color: c.text1),
               ),
               Gap(AppSpacing.sm.h),
               Text(
@@ -240,10 +237,7 @@ class _EmptyState extends ConsumerWidget {
             Gap(AppSpacing.md.h),
             Text(
               headline,
-              style: tt.headlineSmall!.copyWith(
-                fontSize: 22.sp,
-                color: c.text1,
-              ),
+              style: tt.headlineSmall!.copyWith(color: c.text1),
               textAlign: TextAlign.center,
             ),
             Gap(AppSpacing.sm.h),

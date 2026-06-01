@@ -74,8 +74,8 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                       Gap(8.w),
                       Text(
                         'JOBDUN',
-                        style: tt.displaySmall!.copyWith(
-                          fontSize: 18.sp,
+                        style: tt.titleLarge!.copyWith(
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 1.5,
                           height: 1.0,
                           color: c.text1,
@@ -90,8 +90,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 // ── Page heading ──────────────────────────────────────────────
                 Text(
                   'RESET YOUR\nPASSWORD.',
-                  style: tt.displaySmall!.copyWith(
-                    fontSize: 40.sp,
+                  style: tt.displayLarge!.copyWith(
                     letterSpacing: 0.8,
                     color: c.text1,
                     height: 1.05,
@@ -100,10 +99,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                 Gap(10.h),
                 Text(
                   "Enter your email and we'll send a reset link.",
-                  style: tt.bodyLarge!.copyWith(
-                    color: c.text2,
-                    fontSize: 14.sp,
-                  ),
+                  style: tt.bodyMedium!.copyWith(color: c.text2),
                 ),
 
                 Gap(AppSpacing.xl.h),
