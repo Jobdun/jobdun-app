@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobdun — Design Tokens · Color System</title>
+<link rel="icon" type="image/svg+xml" href="../../logo/logo1.svg" />
+<!--
+  Jobdun design-system style guide. Pacebeats-format color system in Jobdun's skin.
+  Source of truth:
+    lib/app/theme/  (app_palette.dart → app_colors.dart [JColors.dark + JColors.light],
+                     app_typography.dart, app_spacing.dart, app_radii.dart,
+                     app_motion.dart, app_icon_size.dart, app_theme.dart)
+    lib/core/theme/app_icon_theme.dart · logo/logo1.svg
+  Ramps are raw Tailwind v3 (what _Palette is built on); 4 hand-tuned steps are
+  flagged off-ramp. Dark is the shipping theme; light is GATED (shown for reference).
+  Every contrast ratio is computed live. Hand-maintained — re-sync on token change.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ── Theme grounds (mirror JColors.dark / JColors.light) ── */
+  html[data-theme="dark"]{
+    --bg:#0F172A; --surface:#1E293B; --raised:#334155; --border:#334155; --borderStrong:#708096;
+    --text1:#F1F5F9; --text2:#94A3B8; --text3:#8B98AB;
+    --action:#F97316; --actionInk:#F97316; --onAction:#0F172A; --actionBg:#431407; --actionTx:#FED7AA;
+  }
+  html[data-theme="light"]{
+    --bg:#F8FAFC; --surface:#FFFFFF; --raised:#F1F5F9; --border:#CBD5E1; --borderStrong:#708096;
+    --text1:#0F172A; --text2:#475569; --text3:#64748B;
+    --action:#F97316; --actionInk:#C2410C; --onAction:#0F172A; --actionBg:#FFEDD5; --actionTx:#9A3412;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text1);
+    font-family: 'Open Sans', system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; transition: background .25s ease, color .25s ease;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: 'Roboto Mono', monospace; }
+  code { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--actionTx); background: var(--actionBg); padding: 2px 6px; border-radius: 4px; }
+
+  /* ── Top bar ── */
+  header.bar { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .bar .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+  .bar .mark { width: 34px; height: 34px; display: block; }
+  .bar .title { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; font-size: 16px; color: var(--text1); }
+  .bar .title span { color: var(--actionInk); }
+  .gated { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 10px; font-weight: 700; color: var(--onAction); background: var(--action); padding: 3px 8px; border-radius: 4px; display: none; }
+  html[data-theme="light"] .gated { display: inline-block; }
+  .toggle { margin-left: auto; background: var(--surface); color: var(--text1); border: 1px solid var(--borderStrong); border-radius: 999px; padding: 8px 16px; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background .15s ease; }
+  .toggle:hover { background: var(--raised); }
+  nav.toc { display: flex; gap: 2px; flex-wrap: wrap; }
+  nav.toc a { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1.2px; font-size: 12px; font-weight: 600; color: var(--text2); text-decoration: none; padding: 6px 9px; border-radius: 6px; transition: color .15s ease, background .15s ease; }
+  nav.toc a:hover { color: var(--text1); background: var(--surface); }
+
+  /* ── Hero ── */
+  .hero { padding: 52px 0 36px; }
+  .eyebrow { font-family: 'Open Sans', sans-serif; text-transform: uppercase; letter-spacing: 1.4px; font-size: 11px; font-weight: 700; color: var(--actionInk); margin: 0 0 12px; }
+  h1.display { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 40px; line-height: 1.1; margin: 0 0 12px; }
+  h1.display span { color: var(--actionInk); }
+  .hero p { color: var(--text2); max-width: 70ch; margin: 0; font-size: 15px; }
+  .rule { height: 3px; width: 120px; background: var(--action); border-radius: 2px; margin: 18px 0 0; }
+
+  /* ── Cards / sections ── */
+  section { padding: 40px 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 20px; }
+  h2 { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: 700; font-size: 20px; letter-spacing: 0.5px; margin: 0 0 4px; border-left: 3px solid var(--action); padding-left: 11px; }
+  .desc { font-size: 13px; color: var(--text2); margin: 0 0 18px; padding-left: 14px; line-height: 1.5; }
+  .src { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); padding-left: 14px; display: block; margin: -10px 0 16px; }
+
+  /* ── Ramp grid ── */
+  .ramp { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; }
+  .sw { border-radius: 6px; height: 60px; border: 1px solid rgba(128,128,128,.18); }
+  .lab { margin-top: 5px; font-size: 10px; line-height: 1.35; }
+  .lab .step { font-weight: 700; color: var(--text1); }
+  .lab .hex { font-family: 'Roboto Mono', monospace; color: var(--text3); font-size: 9.5px; }
+  .lab .role { color: var(--actionInk); font-weight: 600; font-size: 9.5px; margin-top: 1px; }
+  .ratio { font-size: 11px; color: var(--text2); margin: 8px 0 0; padding-left: 0; }
+  .ratio b { color: var(--text1); font-weight: 600; }
+  .ok { color: #22C55E; font-weight: 600; } .warnc { color: #F59E0B; font-weight: 600; } .fail { color: #EF4444; font-weight: 600; }
+
+  /* ── Custom off-ramp ── */
+  .customrow { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+  .custom { width: 200px; }
+  .custom .b { height: 56px; border-radius: 6px; border: 1px solid rgba(128,128,128,.18); }
+  .custom .star { color: var(--actionInk); font-weight: 700; }
+
+  /* ── Surfaces ── */
+  .surfaces { display: flex; gap: 16px; flex-wrap: wrap; }
+  .surfbox { width: 150px; }
+  .surfbox .b { height: 76px; border-radius: 8px; border: 1px solid var(--border); }
+
+  /* ── Chips / in use ── */
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 6px; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.8px; font-size: 12px; font-weight: 600; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .chip .r { opacity: .75; font-weight: 500; letter-spacing: 0; }
+  .cta { margin-left: auto; background: var(--action); color: var(--onAction); border: none; border-radius: 6px; padding: 13px 22px; font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: 700; font-size: 13px; letter-spacing: 1.2px; cursor: pointer; }
+
+  /* ── Logo ── */
+  .logo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .logo-tile { border-radius: 8px; border: 1px solid var(--border); padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .logo-tile .cap { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; }
+  .brand-sizes { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-top: 6px; }
+  .size-cell { text-align: center; }
+  .size-cell .nm { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.8px; font-size: 12px; font-weight: 600; margin-top: 10px; color: var(--text1); }
+  .size-cell .px { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* ── Standards ── */
+  .std-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+  .std-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+  .std-card .big { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 30px; color: var(--actionInk); line-height: 1; }
+  .std-card .nm { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-size: 13px; color: var(--text1); margin: 9px 0 5px; }
+  .std-card .d { font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .std-card .ref { font-family: 'Roboto Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 7px; }
+  table.map { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.map th, table.map td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  table.map th { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 11px; color: var(--text2); font-weight: 600; }
+  table.map td.role { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--text1); }
+  table.map td.tok { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--actionInk); }
+  table.map .dot { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border); }
+  table.map td.note { color: var(--text2); font-size: 12px; }
+
+  /* ── Type ── */
+  .type-row { display: grid; grid-template-columns: 200px 1fr; gap: 22px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); line-height: 1.6; }
+  .type-meta b { color: var(--text2); font-family: 'Open Sans', sans-serif; font-weight: 600; display: block; font-size: 12px; }
+  .specimen { color: var(--text1); }
+
+  /* ── Icons ── */
+  .icons { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-end; }
+  .icon-cell { text-align: center; }
+  .icon-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; width: 68px; height: 68px; color: var(--text1); }
+  .icon-cell .nm { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.8px; font-size: 12px; font-weight: 600; margin-top: 9px; color: var(--text1); }
+  .icon-cell .dp { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); }
+  .icon-cell .use { font-size: 11px; color: var(--text2); max-width: 110px; margin: 5px auto 0; line-height: 1.35; }
+
+  /* ── Spacing / radius / motion ── */
+  .scale-list { display: flex; flex-direction: column; gap: 11px; }
+  .scale-row { display: grid; grid-template-columns: 130px 70px 1fr; align-items: center; gap: 14px; }
+  .scale-row .nm { font-family: 'Roboto Mono', monospace; font-size: 13px; color: var(--text1); }
+  .scale-row .val { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--text3); }
+  .bar-fill { height: 16px; background: var(--action); border-radius: 2px; }
+  .radii { display: flex; gap: 18px; flex-wrap: wrap; }
+  .radius-cell { text-align: center; }
+  .radius-demo { width: 80px; height: 80px; background: var(--raised); border: 1px solid var(--borderStrong); }
+  .radius-cell .nm { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--text1); margin-top: 8px; }
+  .radius-cell .val { font-family: 'Roboto Mono', monospace; font-size: 11px; color: var(--text3); }
+  .motion-row { display: flex; gap: 28px; flex-wrap: wrap; }
+  .motion-cell { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; min-width: 220px; }
+  .motion-cell .nm { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-size: 14px; color: var(--text1); }
+  .motion-cell .val { font-family: 'Roboto Mono', monospace; font-size: 12px; color: var(--text3); margin: 4px 0 12px; }
+  .track { height: 10px; background: var(--raised); border-radius: 5px; position: relative; overflow: hidden; cursor: pointer; }
+  .dot { position: absolute; top: 0; left: 0; width: 10px; height: 10px; border-radius: 5px; background: var(--action); }
+  .motion-cell .hint { font-size: 11px; color: var(--text2); margin-top: 8px; }
+
+  .note { background: var(--bg); border-left: 3px solid var(--action); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 16px 0 0; font-size: 13px; color: var(--text2); }
+  .note b { color: var(--text1); }
+  footer { padding: 32px 0 56px; color: var(--text3); font-size: 11px; font-family: 'Roboto Mono', monospace; line-height: 1.7; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ── Brand mark symbol (logo/logo1.svg) ── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="jdmark" viewBox="0 0 1920 1920">
+    <rect width="1920" height="1920" rx="960" fill="#F97316"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M931.173 533.127C894.653 536.622 861.558 547.404 830.74 565.845C774.867 599.279 733.242 654.742 713.881 721.553C710.391 733.592 706.227 755.729 706.227 762.234V766.727H735.37L738.59 761.147C751.482 738.81 772.704 714.85 793.151 699.545C813.992 683.947 842 671.02 865.392 666.203C879.786 663.238 905.827 663.145 916.489 666.021C934.767 670.951 951.669 683.051 960.788 697.734C970.384 713.186 972.894 722.699 973.882 747.345L974.635 766.14H1144.55L1146.72 759.979C1151.64 746.001 1161.92 732.737 1174.55 724.071C1187.53 715.166 1211.79 711.408 1229.26 715.597C1246.24 719.669 1256.06 726.898 1274.76 749.105C1281.15 756.698 1287.24 763.769 1288.29 764.819C1289.97 766.498 1294.52 766.723 1326.23 766.699C1346.05 766.683 1364.3 766.199 1366.79 765.623C1371.77 764.466 1375.55 761.436 1380.64 754.511L1384 749.929V649.614C1384 565.313 1383.73 548.794 1382.33 546.128C1380.41 542.466 1372.86 535.033 1369.1 533.11C1367.36 532.22 1353.86 531.797 1327.12 531.797H1287.7L1287.09 643.976L1284.42 629.293C1282.95 621.217 1279.64 602.188 1277.07 587.005C1274.51 571.823 1272.09 557.913 1271.71 556.095L1271.01 552.788L1263.1 560.793C1248.12 575.95 1232.02 582.886 1211.91 582.852C1202.8 582.837 1198.24 582.208 1191.59 580.051C1170.98 573.377 1155.02 558.539 1146.61 538.234L1143.94 531.797L1042.84 531.955C987.239 532.042 936.987 532.57 931.173 533.127ZM974.047 987.93C974.047 1199.66 974.178 1194.89 967.634 1222.05C960.68 1250.9 943.375 1284.63 924.316 1306.48C888.666 1347.34 843.405 1371.98 791.389 1378.84C785.575 1379.61 780.081 1380.62 779.181 1381.09C778.234 1381.58 781.95 1382.73 787.991 1383.81C829.347 1391.2 880.739 1389.14 918.839 1378.56C959.645 1367.24 992.843 1350.91 1026.91 1325.43C1039.49 1316.02 1067.52 1288.65 1078.2 1275.35C1114.58 1230.03 1135.79 1178.18 1142.58 1117.95C1144.09 1104.54 1144.37 1078.15 1144.37 947.329L1144.37 792.569H974.047V987.93ZM536.267 1092.85C535.069 1095.97 538.111 1125.64 541.19 1140.85C546.885 1169 553.15 1187.17 567.105 1216.03C591.99 1267.49 631.983 1308.33 680.97 1332.33C701.288 1342.28 711.574 1345.88 732.061 1350.22C744.929 1352.94 749.45 1353.33 768.484 1353.33C791.837 1353.32 804.357 1351.47 823.692 1345.15C837.003 1340.79 862.073 1327.75 873.773 1319.09C911.429 1291.21 937.31 1248.88 945.187 1202.29C947.406 1189.17 948.703 1168.9 947.377 1168.08C946.794 1167.72 943.307 1170.79 939.629 1174.9C912.284 1205.48 867.987 1222.48 827.7 1217.86C788.086 1213.32 755.861 1195.65 733.944 1166.45C725.108 1154.68 719.349 1143.52 714.608 1128.99C711.378 1119.09 707.402 1099.6 707.402 1093.66V1090.93H622.203C544.453 1090.93 536.939 1091.1 536.267 1092.85Z"/>
+  </symbol>
+</svg>
+
+<!-- ── Top bar ── -->
+<header class="bar">
+  <div class="wrap">
+    <svg class="mark"><use href="#jdmark"/></svg>
+    <span class="title">JOBDUN <span>TOKENS</span></span>
+    <span class="gated">Light · Gated</span>
+    <button class="toggle" onclick="toggleTheme()">◐ <span id="tg-label">Light</span></button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- ── Hero ── -->
+  <div class="hero">
+    <p class="eyebrow">Jobdun Design System</p>
+    <h1 class="display">COLOR <span>SYSTEM</span> &amp; TOKENS</h1>
+    <p>Primitive → semantic, both themes. Tailwind v3 ramps (what <code>_Palette</code> is built on) with the promoted
+    step tagged to its token; 4 hand-tuned steps flagged off-ramp. Brand icon, Material&nbsp;3 global standards,
+    typography, icon sizes, spacing, radii &amp; motion — every value from <code>lib/app/theme/</code>. Dark is the
+    shipping theme; <b>light is gated</b>. Contrast is computed live (WCAG&nbsp;2.x).</p>
+    <div class="rule"></div>
+    <nav class="toc" style="margin-top:22px">
+      <a href="#brand">Brand</a><a href="#color">Color</a><a href="#standards">Standards</a>
+      <a href="#type">Type</a><a href="#icons">Icons</a><a href="#spacing">Spacing</a>
+      <a href="#radius">Radius</a><a href="#motion">Motion</a>
+    </nav>
+  </div>
+
+  <!-- ── Brand icon ── -->
+  <section id="brand">
+    <div class="card">
+      <h2>Brand Icon</h2>
+      <span class="src">logo/logo1.svg</span>
+      <p class="desc">The Jobdun mark — a circular safety-orange disc with the white <b>J·D</b> monogram. Single-file
+      vector; scales crisply to launcher, splash, avatar, favicon. Use the mark alone.</p>
+      <div class="logo-grid">
+        <div class="logo-tile" style="background:#0F172A"><svg width="110" height="110"><use href="#jdmark"/></svg><span class="cap">On #0F172A · app bg</span></div>
+        <div class="logo-tile" style="background:#F8FAFC"><svg width="110" height="110"><use href="#jdmark"/></svg><span class="cap" style="color:#64748B">On #F8FAFC · light</span></div>
+        <div class="logo-tile" style="background:var(--surface)"><svg width="110" height="110"><use href="#jdmark"/></svg><span class="cap">On surface · card</span></div>
+      </div>
+      <div class="brand-sizes" id="brand-sizes"></div>
+      <div class="note"><b>Vector, single fill.</b> Disc = <code>#F97316</code>, monogram = white — the one place white-on-orange is allowed, because it's a logo mark, not UI text. Square contexts: <code>assets/icon/jobdun-icon.svg</code>.</div>
+    </div>
+  </section>
+
+  <!-- ── Color system ── -->
+  <section id="color">
+    <div id="color-body"></div>
+  </section>
+
+  <!-- ── Global standards ── -->
+  <section id="standards">
+    <div class="card">
+      <h2>Global Standards — Material 3</h2>
+      <span class="src">lib/app/theme/app_theme.dart (AppTheme._build · useMaterial3) — dark scheme shown</span>
+      <p class="desc">The global theme is Material 3 tuned to Google's accessibility floors: 16px body, 48dp targets,
+      24dp icons, 4.5:1 text contrast. Stock Material widgets inherit all of it — app-wide defaults, not per-widget.</p>
+      <div class="std-grid">
+        <div class="std-card"><div class="big">16<span style="font-size:15px">px</span></div><div class="nm">Body floor</div><div class="d">Google's mobile minimum. <code>bodyLarge</code> 16 · <code>bodyMedium</code> 14.</div><div class="ref">app_typography.dart</div></div>
+        <div class="std-card"><div class="big">48<span style="font-size:15px">dp</span></div><div class="nm">Tap target</div><div class="d">WCAG 2.5.5. Every button pins <code>minimumSize 48×48</code> + padded.</div><div class="ref">app_theme.dart → minTap</div></div>
+        <div class="std-card"><div class="big">24<span style="font-size:15px">dp</span></div><div class="nm">Default icon</div><div class="d">Material UI/nav size. <code>iconTheme.size = nav</code>, color <code>text2</code>.</div><div class="ref">app_theme.dart</div></div>
+        <div class="std-card"><div class="big">4.5<span style="font-size:15px">:1</span></div><div class="nm">Contrast floor</div><div class="d">4.5:1 text · 3:1 large/UI. Every pair guarded.</div><div class="ref">colors_contrast_test.dart</div></div>
+        <div class="std-card"><div class="big">0<span style="font-size:15px">dp</span></div><div class="nm">Elevation — flat</div><div class="d">All elevation 0; <code>surfaceTint: transparent</code> kills the M3 tint.</div><div class="ref">app_theme.dart</div></div>
+        <div class="std-card"><div class="big">56<span style="font-size:15px">px</span></div><div class="nm">Pinput cell</div><div class="d">OTP 56×56, focus border action 2px. Inputs fill surface, radius 6.</div><div class="ref">app_theme.dart → pinputTheme</div></div>
+      </div>
+      <h2 style="margin-top:28px">M3 ColorScheme — pinned roles</h2>
+      <p class="desc"><code>ColorScheme.fromSeed(seedColor: action)</code>, then brand-critical roles pinned to exact,
+      contrast-verified hex. Single-accent: secondary &amp; tertiary reuse the orange.</p>
+      <table class="map" id="scheme-map"></table>
+    </div>
+  </section>
+
+  <!-- ── Typography ── -->
+  <section id="type">
+    <div class="card">
+      <h2>Typography — Oswald + Open Sans</h2>
+      <span class="src">lib/app/theme/app_typography.dart (AppTypography.textTheme)</span>
+      <p class="desc"><b>Oswald</b> — display, headings, all-caps labels/buttons. <b>Open Sans</b> — titles, body, captions.
+      ~1.2 minor-third ramp anchored at 16 (Google floor). Fixed logical px (never <code>.sp</code>). Role names are the M3 <code>TextTheme</code> roles.</p>
+      <div id="type-list"></div>
+    </div>
+  </section>
+
+  <!-- ── Icons ── -->
+  <section id="icons">
+    <div class="card">
+      <h2>Icon Sizes</h2>
+      <span class="src">lib/app/theme/app_icon_size.dart · lib/core/theme/app_icon_theme.dart</span>
+      <p class="desc">Material-aligned steps at true pixel size. Glyphs come from <b>Phosphor</b> via <code>AppIcons.*</code>
+      — Bold = outline/inactive, Fill = active. Default &amp; nav = 24dp.</p>
+      <div class="icons" id="icon-list"></div>
+    </div>
+  </section>
+
+  <!-- ── Spacing ── -->
+  <section id="spacing">
+    <div class="card">
+      <h2>Spacing — 4dp grid</h2>
+      <span class="src">lib/app/theme/app_spacing.dart (AppSpacing)</span>
+      <p class="desc">Six tokens cover the app. Need 12dp? Use <code>md</code> (16). Applied via <code>Gap(AppSpacing.md.h)</code> — never raw <code>SizedBox</code>.</p>
+      <div class="scale-list" id="spacing-list"></div>
+    </div>
+  </section>
+
+  <!-- ── Radius ── -->
+  <section id="radius">
+    <div class="card">
+      <h2>Radius — sharp 4–8 band</h2>
+      <span class="src">lib/app/theme/app_radii.dart (AppRadius)</span>
+      <p class="desc">Aggressive-flat: nothing rounds past 8 (radius &gt; 12 is a MASTER §238 anti-pattern). Buttons &amp; inputs share 6.</p>
+      <div class="radii" id="radius-list"></div>
+    </div>
+  </section>
+
+  <!-- ── Motion ── -->
+  <section id="motion">
+    <div class="card">
+      <h2>Motion</h2>
+      <span class="src">lib/app/theme/app_motion.dart (AppMotion)</span>
+      <p class="desc">150–200ms, ease-out. No spring/bounce, no <code>slow</code> token — past 200ms reads as a SaaS loader. Tap a track to replay.</p>
+      <div class="motion-row" id="motion-list"></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ── WCAG contrast (computed live) ── */
+function s2l(c){c/=255;return c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);}
+function lum(h){h=h.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return 0.2126*s2l(r)+0.7152*s2l(g)+0.0722*s2l(b);}
+function cr(f,b){const a=lum(f),c=lum(b);const hi=Math.max(a,c),lo=Math.min(a,c);return (hi+0.05)/(lo+0.05);}
+function tag(r){const v=r.toFixed(2);if(r>=4.5)return `<span class="ok">${v}:1 ✓AA</span>`;if(r>=3)return `<span class="warnc">${v}:1 ✓UI</span>`;return `<span class="fail">${v}:1 ✗</span>`;}
+
+/* ── Tailwind v3 ramps (what _Palette is built on) ── */
+const SLATE ={50:'#F8FAFC',100:'#F1F5F9',200:'#E2E8F0',300:'#CBD5E1',400:'#94A3B8',500:'#64748B',600:'#475569',700:'#334155',800:'#1E293B',900:'#0F172A',950:'#020617'};
+const ORANGE={50:'#FFF7ED',100:'#FFEDD5',200:'#FED7AA',300:'#FDBA74',400:'#FB923C',500:'#F97316',600:'#EA580C',700:'#C2410C',800:'#9A3412',900:'#7C2D12',950:'#431407'};
+const GREEN ={50:'#F0FDF4',100:'#DCFCE7',200:'#BBF7D0',300:'#86EFAC',400:'#4ADE80',500:'#22C55E',600:'#16A34A',700:'#15803D',800:'#166534',900:'#14532D',950:'#052E16'};
+const RED   ={50:'#FEF2F2',100:'#FEE2E2',200:'#FECACA',300:'#FCA5A5',400:'#F87171',500:'#EF4444',600:'#DC2626',700:'#B91C1C',800:'#991B1B',900:'#7F1D1D',950:'#450A0A'};
+const BLUE  ={50:'#EFF6FF',100:'#DBEAFE',200:'#BFDBFE',300:'#93C5FD',400:'#60A5FA',500:'#3B82F6',600:'#2563EB',700:'#1D4ED8',800:'#1E40AF',900:'#1E3A8A',950:'#172554'};
+const AMBER ={50:'#FFFBEB',100:'#FEF3C7',200:'#FDE68A',300:'#FCD34D',400:'#FBBF24',500:'#F59E0B',600:'#D97706',700:'#B45309',800:'#92400E',900:'#78350F',950:'#451A03'};
+const STEPS=[50,100,200,300,400,500,600,700,800,900,950];
+
+/* ── Promoted-step role maps (per theme) ── */
+const ROLES = {
+  dark: {
+    slate:{100:'text1',400:'text2',700:'raised · border',800:'surface · card',900:'background · onAction'},
+    orange:{200:'actionTx',500:'action · actionInk',950:'actionBg'},
+    green:{300:'verifiedTx',500:'verified',950:'verifiedBg'},
+    red:{300:'urgentTx',500:'urgent',950:'urgentBg'},
+    blue:{300:'availableTx',500:'available'},
+    amber:{300:'warningTx',500:'warning · star',950:'warningBg'},
+  },
+  light: {
+    slate:{50:'background',100:'raised',300:'border',500:'text3',600:'text2',900:'text1 · onAction'},
+    orange:{100:'actionBg',500:'action',700:'actionInk',800:'actionTx'},
+    green:{100:'verifiedBg',600:'verified',800:'verifiedTx'},
+    red:{100:'urgentBg',600:'urgent',800:'urgentTx'},
+    blue:{100:'availableBg',600:'available',700:'availableTx'},
+    amber:{100:'warningBg',600:'warning · star',800:'warningTx'},
+  },
+};
+
+/* ── Hand-tuned, off-ramp steps ── */
+const CUSTOM = [
+  ['slate450','#8B98AB','text3 (dark) — gap-fill, 5.0:1'],
+  ['slate550','#708096','borderStrong (both) — 3.63:1'],
+  ['orange550','#EA6C0A','actionPressed (both) — ~12% darker'],
+  ['navy900','#1E3A5F','availableBg (dark) — desaturated info'],
+];
+
+/* ── Theme grounds (JColors) ── */
+const T = {
+  dark:{bg:'#0F172A',surface:'#1E293B',raised:'#334155',border:'#334155',borderStrong:'#708096',text1:'#F1F5F9',text2:'#94A3B8',text3:'#8B98AB',action:'#F97316',actionInk:'#F97316'},
+  light:{bg:'#F8FAFC',surface:'#FFFFFF',raised:'#F1F5F9',border:'#CBD5E1',borderStrong:'#708096',text1:'#0F172A',text2:'#475569',text3:'#64748B',action:'#F97316',actionInk:'#C2410C'},
+};
+/* ── Tinted chip pairs (bg + text) per theme ── */
+const PAIRS = {
+  dark:{verified:['#052E16','#86EFAC'],pending:['#431407','#FED7AA'],available:['#1E3A5F','#93C5FD'],urgent:['#450A0A','#FCA5A5']},
+  light:{verified:['#DCFCE7','#166534'],pending:['#FFEDD5','#9A3412'],available:['#DBEAFE','#1D4ED8'],urgent:['#FEE2E2','#991B1B']},
+};
+
+function rampHTML(data,roles){
+  return `<div class="ramp">`+STEPS.map(s=>{
+    const role=roles&&roles[s]?`<div class="role">${roles[s]}</div>`:'';
+    return `<div><div class="sw" style="background:${data[s]}"></div><div class="lab"><span class="step">${s}</span> <span class="hex">${data[s]}</span>${role}</div></div>`;
+  }).join('')+`</div>`;
+}
+function chip(label,dot,bg,tx){
+  return `<span class="chip" style="background:${bg};color:${tx}"><span class="dot" style="background:${dot}"></span>${label}<span class="r">${cr(tx,bg).toFixed(1)}:1</span></span>`;
+}
+
+function renderColor(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const k=dark?'dark':'light', t=T[k], R=ROLES[k], P=PAIRS[k];
+  const accent=dark?ORANGE[500]:ORANGE[600];          // CTA fill this theme
+  const G=t.surface;                                   // "on surface" ground
+
+  document.getElementById('color-body').innerHTML=`
+  <div class="card">
+    <h2>Primary &amp; Accent — Safety Orange</h2>
+    <span class="src">lib/app/theme/app_palette.dart → JColors.action / actionInk / actionPressed</span>
+    <p class="desc">The ONE brand color. Both themes fill with <b>500</b> (#F97316). As <em>text/icon</em> on a page,
+    dark uses 500 (bright) and light uses <b>700</b> (actionInk) — bright orange text on white is only 2.80:1. Pressed = <b>550</b> (off-ramp). Never decorative.</p>
+    ${rampHTML(ORANGE,R.orange)}
+    <p class="ratio">CTA — onAction <b>#0F172A</b> on action ${dark?'500':'500'}: ${tag(cr('#0F172A',ORANGE[500]))} &nbsp;·&nbsp; white on action: ${tag(cr('#FFFFFF',ORANGE[500]))} ← why CTA text is dark &nbsp;·&nbsp; actionInk text (${dark?'500':'700'}) on surface: ${tag(cr(dark?ORANGE[500]:ORANGE[700],G))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Neutral — Slate</h2>
+    <span class="src">JColors.background / surface / surfaceRaised / border / text1–3</span>
+    <p class="desc">One tinted-neutral ramp carries every surface + text token — reads as "one slate," not six greys. Light end = sky surfaces; dark end = ink.</p>
+    ${rampHTML(SLATE,R.slate)}
+    <p class="ratio">text1 on background: ${tag(cr(t.text1,t.bg))} &nbsp;·&nbsp; text2 on surface: ${tag(cr(t.text2,G))} &nbsp;·&nbsp; text3 on surface: ${tag(cr(t.text3,G))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Surfaces &amp; Borders <span style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--text3);font-weight:400">— ${dark?'DARK (shipping)':'LIGHT (gated)'}</span></h2>
+    <p class="desc">Hairline borders over heavy elevation. Decorative dividers use <code>border</code>; interactive control edges use <code>borderStrong</code> (the audit fix — clears the 3:1 non-text floor).</p>
+    <div class="surfaces">
+      <div class="surfbox"><div class="b" style="background:${t.bg}"></div><div class="lab"><span class="step">background</span> <span class="hex">${t.bg}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${t.surface}"></div><div class="lab"><span class="step">surface · card</span> <span class="hex">${t.surface}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${t.raised}"></div><div class="lab"><span class="step">surfaceRaised</span> <span class="hex">${t.raised}</span></div></div>
+      <div class="surfbox"><div class="b" style="background:${G};border:2px solid ${t.border}"></div><div class="lab"><span class="step">border (divider)</span> <span class="hex">${t.border}</span><div class="ratio">${tag(cr(t.border,G))} decorative</div></div></div>
+      <div class="surfbox"><div class="b" style="background:${G};border:2px solid ${t.borderStrong}"></div><div class="lab"><span class="step">borderStrong</span> <span class="hex">${t.borderStrong}</span><div class="ratio">${tag(cr(t.borderStrong,G))} interactive</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Semantic / Functional</h2>
+    <span class="src">JColors.verified / urgent / available / warning / star (+ tinted bg·tx pairs)</span>
+    <p class="desc">Tailwind families. Solids for fills/icons; chips use a tinted bg + text pair that inverts per theme so every pair clears AA. Status only — never restyle the orange as "info." Blue is status, never a CTA.</p>
+    ${rampHTML(GREEN,R.green)}
+    <p class="ratio" style="margin:4px 0 14px">verified — solid ${dark?'500':'600'} on surface ${tag(cr(dark?GREEN[500]:GREEN[600],G))}</p>
+    ${rampHTML(AMBER,R.amber)}
+    <p class="ratio" style="margin:4px 0 14px">warning/star — solid ${dark?'500':'600'} on surface ${tag(cr(dark?AMBER[500]:AMBER[600],G))}</p>
+    ${rampHTML(RED,R.red)}
+    <p class="ratio" style="margin:4px 0 14px">urgent — solid ${dark?'500':'600'} on surface ${tag(cr(dark?RED[500]:RED[600],G))}</p>
+    ${rampHTML(BLUE,R.blue)}
+    <p class="ratio" style="margin:4px 0 0">available — solid ${dark?'500':'600'} on surface ${tag(cr(dark?BLUE[500]:BLUE[600],G))}</p>
+  </div>
+
+  <div class="card">
+    <h2>Custom — off-ramp steps</h2>
+    <p class="desc">Four hand-tuned steps that fill gaps the Tailwind ramp skips. <span class="custom"><span class="star">✱</span></span> not standard Tailwind — declared once in <code>_Palette</code>.</p>
+    <div class="customrow">
+      ${CUSTOM.map(([nm,hex,role])=>`<div class="custom"><div class="b" style="background:${hex}"></div><div class="lab"><span class="step"><span class="star">✱</span> ${nm}</span> <span class="hex">${hex}</span><div class="role">${role}</div></div></div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>In use — every pair clears AA</h2>
+    <p class="desc">Chips invert vs theme (dark fill + light text on dark; the reverse on light). The CTA uses action with <code>onAction</code> — dark text on orange, not white.</p>
+    <div class="chips">
+      ${chip('VERIFIED','#22C55E',P.verified[0],P.verified[1])}
+      ${chip('PENDING','#F97316',P.pending[0],P.pending[1])}
+      ${chip('AVAILABLE','#3B82F6',P.available[0],P.available[1])}
+      ${chip('URGENT','#EF4444',P.urgent[0],P.urgent[1])}
+      <button class="cta">POST A JOB</button>
+    </div>
+  </div>`;
+}
+
+/* ── Static sections (rendered once) ── */
+function renderStatic(){
+  /* brand sizes */
+  const BS=[[96,'Launcher'],[64,'Splash'],[48,'Avatar'],[32,'Inline'],[24,'Favicon']];
+  document.getElementById('brand-sizes').innerHTML=BS.map(([px,nm])=>`<div class="size-cell"><svg width="${px}" height="${px}"><use href="#jdmark"/></svg><div class="nm">${nm}</div><div class="px">${px}px</div></div>`).join('');
+
+  /* M3 scheme map (dark) */
+  const SCHEME=[['primary','action','#F97316','Brand seed'],['onPrimary','onAction','#0F172A','6.37:1'],['primaryContainer','actionBg','#431407','Tonal surface'],['onPrimaryContainer','actionTx','#FED7AA','11.56:1'],['error','urgent','#EF4444','Errors'],['onError','onAction','#0F172A','4.74:1'],['surface','surface','#1E293B','Cards'],['onSurface','text1','#F1F5F9','13.35:1'],['onSurfaceVariant','text2','#94A3B8','5.71:1'],['outline','borderStrong','#708096','3.63:1'],['outlineVariant','border','#334155','Dividers'],['surfaceTint','transparent','transparent','Kills M3 tint']];
+  document.getElementById('scheme-map').innerHTML=`<thead><tr><th colspan="2">M3 role</th><th>Token</th><th>Hex</th><th>Note</th></tr></thead><tbody>`+SCHEME.map(([role,tok,hex,note])=>{const dot=hex==='transparent'?`<div class="dot" style="background:repeating-linear-gradient(45deg,#334155,#334155 4px,#1E293B 4px,#1E293B 8px)"></div>`:`<div class="dot" style="background:${hex}"></div>`;return `<tr><td style="width:28px">${dot}</td><td class="role">${role}</td><td class="tok">${tok}</td><td class="role" style="color:var(--text3)">${hex.toUpperCase()}</td><td class="note">${note}</td></tr>`;}).join('')+`</tbody>`;
+
+  /* type */
+  const OSW="'Oswald',sans-serif",SANS="'Open Sans',sans-serif";
+  const TYPE=[['brandDisplay',OSW,40,700,3.0,1.0,'JOBDUN','Wordmark only — brand tracking'],['displayLarge',OSW,40,700,0,1.10,'Find your next job','Hero / display'],['displaySmall',OSW,32,700,0,1.12,'Big moment','Rare display'],['headlineLarge',OSW,32,700,0,1.15,'Page headline','Screen titles'],['headlineMedium',OSW,26,600,0.15,1.20,'Section headline','Section heads'],['headlineSmall',OSW,22,600,0.15,1.25,'Subsection title','Card / sheet titles'],['titleLarge',OSW,18,600,0.15,1.30,'Job card title','List item titles'],['titleMedium',SANS,16,600,0,1.50,'Emphasised body title','Dense titles'],['titleSmall',SANS,14,600,0,1.40,'Small strong title','Field group titles'],['bodyLarge',SANS,16,400,0,1.50,'Primary body text — the default reading size for descriptions and content.','Default body'],['bodyMedium',SANS,14,400,0,1.50,'Secondary body text for supporting copy and metadata.','Secondary (text2)'],['bodySmall',SANS,12,500,0.1,1.40,'Caption and fine print','Captions (text2)'],['labelLarge',OSW,14,700,1.2,1.10,'APPLY NOW','Buttons — CAPS'],['labelMedium',SANS,12,600,0.4,1.20,'Filter label','Chips / labels (text2)'],['labelSmall',SANS,11,600,0.6,1.20,'EYEBROW','Eyebrows (text3)']];
+  document.getElementById('type-list').innerHTML=TYPE.map(([name,fam,size,wt,ls,lh,sample,use])=>{const f=fam.includes('Oswald')?'Oswald':'Open Sans';return `<div class="type-row"><div class="type-meta"><b>${name}</b>${f} · ${wt}<br>${size}px / lh ${lh} · tracking ${ls}<br><span style="color:var(--text2)">${use}</span></div><div class="specimen" style="font-family:${fam};font-size:${size}px;font-weight:${wt};letter-spacing:${ls}px;line-height:${lh}">${sample}</div></div>`;}).join('');
+
+  /* icons */
+  const WR=s=>`<svg width="${s}" height="${s}" viewBox="0 0 256 256" fill="currentColor"><path d="M226.76,69a8,8,0,0,0-12.84-2.88l-40.3,37.19-17.23-3.7-3.7-17.23,37.19-40.3A8,8,0,0,0,184,29.24,72,72,0,0,0,88,96.59l-56,56a40,40,0,0,0,56.57,56.57l56-56A72,72,0,0,0,226.76,69ZM188.9,151.34a56.39,56.39,0,0,1-51.21,3.6,8,8,0,0,0-9.43,2.49L72.55,213.06a24,24,0,0,1-33.94-33.94L94.13,123a8,8,0,0,0,2.49-9.43A56.39,56.39,0,0,1,100.66,67,56,56,0,0,1,164,46.65L131.69,81.65a8,8,0,0,0-2,7.13l5.93,27.65a8,8,0,0,0,6.16,6.16l27.65,5.93a8,8,0,0,0,7.13-2L209.35,92A56,56,0,0,1,188.9,151.34Z"/></svg>`;
+  const IC=[['micro',16,'Dense metadata'],['inline',18,'Buttons, chips, labels'],['md',24,'Default UI / list row'],['nav',24,'Bottom nav / app-bar'],['feature',32,'Feature & section'],['hero',40,'Empty-state / hero']];
+  document.getElementById('icon-list').innerHTML=IC.map(([nm,px,use])=>`<div class="icon-cell"><div class="icon-box">${WR(px)}</div><div class="nm">${nm}</div><div class="dp">${px}dp</div><div class="use">${use}</div></div>`).join('');
+
+  /* spacing */
+  const SP=[['xs',4],['sm',8],['md',16],['lg',24],['xl',32],['xxl',48]];
+  document.getElementById('spacing-list').innerHTML=SP.map(([nm,v])=>`<div class="scale-row"><span class="nm">AppSpacing.${nm}</span><span class="val">${v}dp</span><div class="bar-fill" style="width:${(v/48)*100}%"></div></div>`).join('');
+
+  /* radii */
+  const RA=[['badge',4],['chip',6],['btn',6],['card',8],['input',6],['avatar',8]];
+  document.getElementById('radius-list').innerHTML=RA.map(([nm,v])=>`<div class="radius-cell"><div class="radius-demo" style="border-radius:${v}px"></div><div class="nm">.${nm}</div><div class="val">${v}dp</div></div>`).join('');
+
+  /* motion */
+  const MO=[['fast',150,'Taps, micro-interactions'],['medium',200,'Transitions, sheets, snackbars']];
+  document.getElementById('motion-list').innerHTML=MO.map(([nm,ms,use])=>`<div class="motion-cell"><div class="nm">AppMotion.${nm}</div><div class="val">${ms}ms · easeOutCubic</div><div class="track" data-ms="${ms}"><div class="dot"></div></div><div class="hint">${use}</div></div>`).join('');
+
+  document.getElementById('foot').innerHTML=`source of truth: lib/app/theme/ + lib/core/theme/ + logo/logo1.svg · primitive→semantic · dark = shipping, light = gated · onAction = #0F172A both themes · ratios computed live (WCAG 2.x) · hand-maintained, re-sync on token change`;
+}
+
+function playTracks(){
+  document.querySelectorAll('.track').forEach(t=>{
+    const dot=t.querySelector('.dot'),ms=+t.dataset.ms,span=t.clientWidth-10;
+    dot.style.transition='none';dot.style.transform='translateX(0)';void dot.offsetWidth;
+    dot.style.transition=`transform ${ms}ms cubic-bezier(0.215,0.61,0.355,1)`;dot.style.transform=`translateX(${span}px)`;
+    t.onclick=()=>playTracks();
+  });
+}
+function toggleTheme(){
+  const h=document.documentElement;
+  const next=h.getAttribute('data-theme')==='dark'?'light':'dark';
+  h.setAttribute('data-theme',next);
+  document.getElementById('tg-label').textContent=next==='dark'?'Light':'Dark';
+  renderColor();
+}
+renderStatic();
+renderColor();
+playTracks();
+</script>
+</body>
+</html>
