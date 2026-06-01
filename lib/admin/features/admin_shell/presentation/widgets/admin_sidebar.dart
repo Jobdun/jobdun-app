@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/placeholders/placeholder_models.dart';
 import '../../../../app/router/admin_routes.dart';
+import '../../../../app/widgets/admin_brand.dart';
 import '../../../admin_auth/presentation/providers/admin_session_provider.dart';
 
 const double _expandedWidth = 240;
@@ -97,6 +100,39 @@ class AdminSidebar extends ConsumerWidget {
               isActive: activeRoute == AdminRoutes.audit,
               collapsed: collapsed,
               onTap: () => context.go(AdminRoutes.audit),
+            ),
+            // Roadmap surfaces — navigable placeholder pages, marked with a
+            // lock + Stage-1 milestone so the client sees what's coming.
+            _NavItem(
+              icon: AppIcons.warning,
+              iconActive: AppIcons.warning,
+              label: 'REPORTS',
+              isActive: activeRoute == AdminRoutes.reports,
+              collapsed: collapsed,
+              comingSoon: true,
+              tooltip: 'Reports queue — ${AdminPhase.reports}',
+              onTap: () => context.go(AdminRoutes.reports),
+            ),
+            _NavItem(
+              icon: AppIcons.budget,
+              iconActive: AppIcons.budget,
+              label: 'PAYMENTS',
+              isActive: activeRoute == AdminRoutes.payments,
+              collapsed: collapsed,
+              comingSoon: true,
+              tooltip: 'Payments & payouts — ${AdminPhase.payments}',
+              onTap: () => context.go(AdminRoutes.payments),
+            ),
+            // No page yet (Phase 3, read-only tier visibility) → stays locked.
+            _NavItem(
+              icon: AppIcons.card,
+              iconActive: AppIcons.card,
+              label: 'BILLING',
+              isActive: false,
+              collapsed: collapsed,
+              comingSoon: true,
+              tooltip:
+                  'Billing — ${AdminPhase.billing} · read-only tier visibility',
             ),
             const Spacer(),
             if (session != null) ...[
@@ -222,30 +258,9 @@ class _Header extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(4),
               onTap: () => GoRouter.of(context).go(AdminRoutes.dashboard),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'JOBDUN',
-                      maxLines: 1,
-                      overflow: TextOverflow.clip,
-                      softWrap: false,
-                      style: AdminText.wordmark(c.text1),
-                    ),
-                    const Gap(2),
-                    Text(
-                      'ADMIN',
-                      maxLines: 1,
-                      overflow: TextOverflow.clip,
-                      softWrap: false,
-                      style: AdminText.eyebrow(
-                        c.action,
-                      ).copyWith(letterSpacing: 1.5),
-                    ),
-                  ],
-                ),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 2),
+                child: AdminBrandLockup(badgeSize: 26),
               ),
             ),
           ),
@@ -262,25 +277,20 @@ class _BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    // The universal badge is its own orange circle, so no tile behind it.
     return Tooltip(
       message: 'Dashboard',
       child: Material(
-        color: c.action,
-        borderRadius: BorderRadius.circular(6),
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(6),
           onTap: onTap,
-          child: SizedBox(
+          child: const SizedBox(
             width: 36,
             height: 36,
             child: Center(
-              child: Text(
-                'J',
-                style: AdminText.pageTitle(
-                  c.background,
-                ).copyWith(fontWeight: FontWeight.w700, height: 1),
-              ),
+              child: JobdunLogo(variant: LogoVariant.badge, height: 36),
             ),
           ),
         ),
@@ -296,7 +306,9 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.isActive,
     required this.collapsed,
-    required this.onTap,
+    this.onTap,
+    this.comingSoon = false,
+    this.tooltip,
   });
 
   final IconData icon;
@@ -304,15 +316,28 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isActive;
   final bool collapsed;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+
+  /// Roadmap item: shows a trailing lock + phase [tooltip]. Still navigable
+  /// when [onTap] is supplied (opens a placeholder page) and highlights when
+  /// active; a null [onTap] leaves it locked / non-tappable.
+  final bool comingSoon;
+
+  /// Hover copy for [comingSoon] items, e.g. 'Reports queue — Phase 2'.
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final active = isActive;
+    // A coming-soon item still carries the lock + phase tooltip, but it IS
+    // navigable to its placeholder page and highlights when active. Only the
+    // muted (inactive) colour marks it as roadmap-not-live.
+    final muted = comingSoon && !active;
     final iconWidget = Icon(
-      isActive ? iconActive : icon,
+      active ? iconActive : icon,
       size: 18,
-      color: isActive ? c.action : c.text2,
+      color: muted ? c.text3 : (active ? c.action : c.text2),
     );
 
     Widget body;
@@ -337,9 +362,12 @@ class _NavItem extends StatelessWidget {
                     label,
                     overflow: TextOverflow.clip,
                     softWrap: false,
-                    style: AdminText.label(isActive ? c.text1 : c.text2),
+                    style: AdminText.label(
+                      muted ? c.text3 : (active ? c.text1 : c.text2),
+                    ),
                   ),
                 ),
+                if (comingSoon) Icon(AppIcons.lock, size: 14, color: c.text3),
               ],
             ),
           ),
@@ -348,7 +376,7 @@ class _NavItem extends StatelessWidget {
     }
 
     final material = Material(
-      color: isActive ? c.surfaceRaised : Colors.transparent,
+      color: active ? c.surfaceRaised : Colors.transparent,
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
@@ -363,7 +391,7 @@ class _NavItem extends StatelessWidget {
       child: Stack(
         children: [
           material,
-          if (isActive)
+          if (active)
             Positioned(
               left: 0,
               top: 0,
@@ -375,9 +403,11 @@ class _NavItem extends StatelessWidget {
       ),
     );
 
+    final showTooltip = collapsed || comingSoon;
+    final tipMessage = comingSoon ? (tooltip ?? label) : label;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _outerH, vertical: 2),
-      child: collapsed ? Tooltip(message: label, child: pill) : pill,
+      child: showTooltip ? Tooltip(message: tipMessage, child: pill) : pill,
     );
   }
 }

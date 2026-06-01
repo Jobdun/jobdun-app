@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/placeholders/admin_status_tag.dart';
+import '../../../../app/placeholders/placeholder_models.dart';
 import '../../domain/entities/admin_user_row.dart';
 
 class AdminUserListRow extends StatelessWidget {
@@ -54,6 +56,26 @@ class AdminUserListRow extends StatelessWidget {
                   style: AdminText.eyebrow(
                     c.text3,
                   ).copyWith(letterSpacing: 1.2),
+                ),
+                const Gap(6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    AdminStatusTag(
+                      label: SubscriptionTier.placeholderDefault.label,
+                      tooltip: 'Subscription tier — ${AdminPhase.billing}',
+                    ),
+                    AdminStatusTag(
+                      label: UserModerationStatus.placeholderDefault.label,
+                      tooltip: 'Moderation status — ${AdminPhase.moderation}',
+                    ),
+                    AdminStatusTag(
+                      label: '—',
+                      icon: AppIcons.warning,
+                      tooltip: 'Open reports — ${AdminPhase.moderation}',
+                    ),
+                  ],
                 ),
               ],
             ),

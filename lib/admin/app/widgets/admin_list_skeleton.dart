@@ -22,50 +22,67 @@ class AdminListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
+    // A Column, NOT a ListView. infinite_scroll_pagination drops the first-page
+    // indicator into a `SliverFillRemaining(hasScrollBody: false)`, which sizes
+    // its child by `getMaxIntrinsicHeight`. A ListView (a viewport) can't report
+    // an intrinsic height, so layout threw — the list only appeared after a
+    // manual refresh, once real rows replaced the crashing skeleton. A Column
+    // sums its children's heights, so it measures cleanly.
     return JSkeletonList(
       enabled: true,
-      child: ListView.builder(
-        // Skeletons never scroll — disable so the shimmer reads as one block.
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: rows,
-        itemBuilder: (context, _) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: c.border)),
-          ),
-          child: Row(
-            children: [
-              if (showLeading) ...[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: c.surfaceRaised,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                const Gap(12),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Placeholder display name',
-                      style: AdminText.bodyStrong(c.text1),
-                    ),
-                    const Gap(6),
-                    Text(
-                      'placeholder secondary metadata line',
-                      style: AdminText.meta(c.text2),
-                    ),
-                  ],
-                ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < rows; i++) _SkeletonRow(showLeading: showLeading),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonRow extends StatelessWidget {
+  const _SkeletonRow({required this.showLeading});
+
+  final bool showLeading;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: c.border)),
+      ),
+      child: Row(
+        children: [
+          if (showLeading) ...[
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: c.surfaceRaised,
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
+            ),
+            const Gap(12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Placeholder display name',
+                  style: AdminText.bodyStrong(c.text1),
+                ),
+                const Gap(6),
+                Text(
+                  'placeholder secondary metadata line',
+                  style: AdminText.meta(c.text2),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

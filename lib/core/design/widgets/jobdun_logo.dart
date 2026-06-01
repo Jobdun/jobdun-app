@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-enum LogoVariant { full, mark }
+/// - [full]  horizontal lockup (mark + JOBDUN wordmark), brightness-adaptive.
+/// - [mark]  the bare glyph on a transparent ground, brightness-adaptive.
+/// - [badge] the universal app-icon badge — orange circle, white mark.
+///           Self-contained colour; reads on any background. Leave [color] null.
+enum LogoVariant { full, mark, badge }
 
 class JobdunLogo extends StatelessWidget {
   const JobdunLogo({
@@ -25,16 +29,24 @@ class JobdunLogo extends StatelessWidget {
   static const _markLight = 'lib/core/assets/mark-jobdun-light.svg';
   static const _fullDark = 'lib/core/assets/logo-jobdun.svg';
   static const _fullLight = 'lib/core/assets/logo-jobdun-light.svg';
+  static const _badge = 'lib/core/assets/badge-jobdun.svg';
 
   @override
   Widget build(BuildContext context) {
-    final isFull = variant == LogoVariant.full;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final h = height ?? (isFull ? 32.h : 28.h);
+    final h =
+        height ??
+        switch (variant) {
+          LogoVariant.full => 32.h,
+          LogoVariant.mark => 28.h,
+          LogoVariant.badge => 32.h,
+        };
 
-    final asset = isFull
-        ? (isDark ? _fullDark : _fullLight)
-        : (isDark ? _markDark : _markLight);
+    final asset = switch (variant) {
+      LogoVariant.full => isDark ? _fullDark : _fullLight,
+      LogoVariant.mark => isDark ? _markDark : _markLight,
+      LogoVariant.badge => _badge,
+    };
 
     return SvgPicture.asset(
       asset,

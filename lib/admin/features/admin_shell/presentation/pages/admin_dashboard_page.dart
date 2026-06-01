@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/placeholders/admin_placeholder_stat.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_dashboard/presentation/providers/admin_dashboard_stats_provider.dart';
 import '../widgets/admin_scaffold.dart';
@@ -41,6 +42,8 @@ class AdminDashboardPage extends ConsumerWidget {
             ),
             const Gap(32),
             const _StatsStrip(),
+            const Gap(36),
+            const _ComingSoonStatsStrip(),
             const Gap(40),
             const _QuickNavGrid(),
           ],
@@ -151,6 +154,65 @@ class _StatTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Placeholder metrics for queues that light up in later phases. Rendered in a
+/// deliberately recessive treatment — transparent fill, em-dash value, a lock,
+/// and a "PHASE X" eyebrow — so they can't be mistaken for the live stats
+/// above. No data is fetched; nothing here touches the backend.
+class _ComingSoonStatsStrip extends StatelessWidget {
+  const _ComingSoonStatsStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.lock, size: 12, color: c.text3),
+            const Gap(6),
+            Text(
+              'COMING SOON',
+              style: AdminText.eyebrow(c.text3).copyWith(letterSpacing: 1.6),
+            ),
+          ],
+        ),
+        const Gap(12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const tiles = [
+              AdminPlaceholderStat(
+                label: 'VERIFICATION QUEUE DEPTH',
+                phase: 'PHASE 2',
+              ),
+              AdminPlaceholderStat(label: 'OPEN REPORTS', phase: 'PHASE 2'),
+              AdminPlaceholderStat(label: 'SUSPENDED USERS', phase: 'PHASE 2'),
+              AdminPlaceholderStat(
+                label: 'ACTIVE SUBSCRIPTIONS',
+                phase: 'PHASE 3',
+              ),
+            ];
+            final cols = constraints.maxWidth >= 1100
+                ? 4
+                : (constraints.maxWidth >= 720 ? 2 : 1);
+            const spacing = 16.0;
+            final tileWidth =
+                (constraints.maxWidth - (spacing * (cols - 1))) / cols;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: tiles
+                  .map((t) => SizedBox(width: tileWidth, child: t))
+                  .toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
+import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/placeholders/admin_status_tag.dart';
+import '../../../../app/placeholders/placeholder_models.dart';
 import '../../domain/entities/admin_job_row.dart';
 
 class AdminJobListRow extends StatelessWidget {
@@ -42,6 +45,22 @@ class AdminJobListRow extends StatelessWidget {
                   style: AdminText.caption(
                     c.text2,
                   ).copyWith(fontWeight: FontWeight.w500),
+                ),
+                const Gap(6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    AdminStatusTag(
+                      label: JobModerationStatus.placeholderDefault.label,
+                      tooltip: 'Moderation status — ${AdminPhase.moderation}',
+                    ),
+                    AdminStatusTag(
+                      label: '—',
+                      icon: AppIcons.warning,
+                      tooltip: 'Flags / reports — ${AdminPhase.moderation}',
+                    ),
+                  ],
                 ),
               ],
             ),

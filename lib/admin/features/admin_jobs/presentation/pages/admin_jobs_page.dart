@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../../app/theme/app_colors.dart';
@@ -38,8 +39,14 @@ class AdminJobsPage extends ConsumerWidget {
               child: PagedListView<int, AdminJobRow>(
                 pagingController: controller,
                 builderDelegate: PagedChildBuilderDelegate<AdminJobRow>(
-                  itemBuilder: (context, row, index) =>
-                      AdminJobListRow(row: row),
+                  itemBuilder: (context, row, index) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () =>
+                          context.go(AdminRoutes.jobDetail(row.id), extra: row),
+                      child: AdminJobListRow(row: row),
+                    ),
+                  ),
                   firstPageProgressIndicatorBuilder: (_) =>
                       const AdminListSkeleton(),
                   newPageProgressIndicatorBuilder: (_) => Padding(

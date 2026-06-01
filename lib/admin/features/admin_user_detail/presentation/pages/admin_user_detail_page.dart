@@ -13,6 +13,7 @@ import '../../domain/entities/admin_user_detail.dart';
 import '../providers/admin_user_detail_provider.dart';
 import '../widgets/admin_user_builder_card.dart';
 import '../widgets/admin_user_detail_header.dart';
+import '../widgets/admin_user_moderation_card.dart';
 import '../widgets/admin_user_profile_card.dart';
 import '../widgets/admin_user_trade_card.dart';
 import '../widgets/admin_user_verifications_card.dart';
@@ -77,6 +78,8 @@ class _DetailBody extends StatelessWidget {
           ],
           const Gap(16),
           AdminUserVerificationsCard(verifications: detail.verifications),
+          const Gap(16),
+          const AdminUserModerationCard(),
           const Gap(40),
         ],
       ),
