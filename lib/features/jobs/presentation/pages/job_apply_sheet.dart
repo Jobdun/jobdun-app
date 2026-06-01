@@ -13,7 +13,11 @@ import 'job_detail_args.dart';
 class JobApplySheet extends StatefulWidget {
   const JobApplySheet({super.key, required this.args, required this.onSubmit});
   final JobDetailArgs args;
-  final VoidCallback onSubmit;
+
+  /// Submits the application. Receives the parsed rate + trimmed cover note
+  /// (null when blank) and awaits the caller's write so the button can show
+  /// progress and stay disabled until the round-trip resolves.
+  final Future<void> Function(double? proposedRate, String? coverNote) onSubmit;
 
   @override
   State<JobApplySheet> createState() => _JobApplySheetState();
@@ -22,6 +26,7 @@ class JobApplySheet extends StatefulWidget {
 class _JobApplySheetState extends State<JobApplySheet> {
   final _rateCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -34,6 +39,14 @@ class _JobApplySheetState extends State<JobApplySheet> {
     _rateCtrl.dispose();
     _noteCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final rate = double.tryParse(_rateCtrl.text.trim());
+    final note = _noteCtrl.text.trim();
+    setState(() => _submitting = true);
+    await widget.onSubmit(rate, note.isEmpty ? null : note);
+    if (mounted) setState(() => _submitting = false);
   }
 
   @override
@@ -103,7 +116,11 @@ class _JobApplySheetState extends State<JobApplySheet> {
             ),
           ),
           Gap(20.h),
-          JButton(label: 'SUBMIT APPLICATION', onPressed: widget.onSubmit),
+          JButton(
+            label: _submitting ? 'SUBMITTING…' : 'SUBMIT APPLICATION',
+            isLoading: _submitting,
+            onPressed: _submitting ? null : _submit,
+          ),
         ],
       ),
     );

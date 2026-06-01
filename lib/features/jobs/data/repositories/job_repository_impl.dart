@@ -39,7 +39,8 @@ class JobRepositoryImpl implements JobRepository {
   @override
   Future<Either<Failure, Job>> createJob(Job job) async {
     try {
-      return right(await _datasource.createJob(job as JobModel));
+      final model = job is JobModel ? job : JobModel.fromEntity(job);
+      return right(await _datasource.createJob(model));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -48,7 +49,8 @@ class JobRepositoryImpl implements JobRepository {
   @override
   Future<Either<Failure, Job>> updateJob(Job job) async {
     try {
-      return right(await _datasource.updateJob(job as JobModel));
+      final model = job is JobModel ? job : JobModel.fromEntity(job);
+      return right(await _datasource.updateJob(model));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }

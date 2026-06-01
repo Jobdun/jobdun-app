@@ -87,10 +87,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
     final rawList = isBuilder
         ? appsState.filteredIncoming
         : appsState.myApplications;
-    final useReal = rawList.isNotEmpty;
-    final filtered = useReal
-        ? _filtered(rawList)
-        : _filtered(_mockApps(isBuilder));
+    final filtered = _filtered(rawList);
 
     return Scaffold(
       backgroundColor: c.background,

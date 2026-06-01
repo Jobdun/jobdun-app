@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -11,21 +12,22 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../applications/presentation/providers/applications_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
 
 export 'job_detail_args.dart';
 
-class JobDetailPage extends StatefulWidget {
+class JobDetailPage extends ConsumerStatefulWidget {
   const JobDetailPage({super.key, required this.args});
 
   final JobDetailArgs args;
 
   @override
-  State<JobDetailPage> createState() => _JobDetailPageState();
+  ConsumerState<JobDetailPage> createState() => _JobDetailPageState();
 }
 
-class _JobDetailPageState extends State<JobDetailPage> {
+class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   bool _applied = false;
 
   @override
@@ -182,7 +184,7 @@ class _JobDetailPageState extends State<JobDetailPage> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              args.builderInitials ?? 'BC',
+                              args.builderInitials ?? 'B',
                               style: tt.titleLarge!.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: c.text2,
@@ -195,36 +197,18 @@ class _JobDetailPageState extends State<JobDetailPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  args.companyName ?? 'Pinnacle Construct',
+                                  args.companyName ?? 'Builder',
                                   style: tt.titleMedium!.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: c.text1,
                                   ),
                                 ),
-                                Gap(3.h),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      AppIcons.starFilled,
-                                      size: AppIconSize.micro.r,
-                                      color: c.star,
-                                    ),
-                                    Gap(4.w),
-                                    Text(
-                                      '4.8 · 23 reviews',
-                                      style: tt.labelMedium!.copyWith(
-                                        color: c.text3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                // TODO(core-loop): surface the real builder
+                                // rating + review count and a verified badge
+                                // once JobDetailArgs carries builder_profiles
+                                // data. No fabricated rating/badge until then.
                               ],
                             ),
-                          ),
-                          Icon(
-                            AppIcons.verified,
-                            size: AppIconSize.md.r,
-                            color: c.verified,
                           ),
                         ],
                       ),
@@ -311,6 +295,8 @@ class _JobDetailPageState extends State<JobDetailPage> {
   }
 
   void _showApplySheet(BuildContext context, JColors c, JobDetailArgs args) {
+    final tt = Theme.of(context).textTheme;
+    final messenger = ScaffoldMessenger.of(context);
     showJSheet<void>(
       context: context,
       backgroundColor: c.card,
@@ -319,10 +305,70 @@ class _JobDetailPageState extends State<JobDetailPage> {
       ),
       builder: (ctx) => JobApplySheet(
         args: args,
-        onSubmit: () {
-          Navigator.pop(ctx);
-          setState(() => _applied = true);
+        onSubmit: (rate, note) async {
+          final jobId = args.id;
+          if (jobId == null) {
+            Navigator.pop(ctx);
+            _showError(
+              messenger,
+              c,
+              tt,
+              'This is a sample listing — open a real job to apply.',
+            );
+            return;
+          }
+          final ok = await ref
+              .read(applicationsControllerProvider.notifier)
+              .apply(
+                jobId: jobId,
+                coverNote: note,
+                proposedRate: rate,
+                proposedRateType: 'Hourly',
+              );
+          if (!ctx.mounted) return;
+          if (ok) {
+            Navigator.pop(ctx);
+            if (mounted) setState(() => _applied = true);
+          } else {
+            final err =
+                ref.read(applicationsControllerProvider).error ??
+                'Could not submit application. Please try again.';
+            _showError(messenger, c, tt, err);
+          }
         },
+      ),
+    );
+  }
+
+  void _showError(
+    ScaffoldMessengerState messenger,
+    JColors c,
+    TextTheme tt,
+    String message,
+  ) {
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              AppIcons.urgent,
+              size: AppIconSize.md.r,
+              color: Colors.white, // intentional: white-on-error
+            ),
+            Gap(10.w),
+            Expanded(
+              child: Text(
+                message,
+                style: tt.bodyMedium!.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white, // intentional: white-on-error
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: c.urgent,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

@@ -81,6 +81,43 @@ class JobModel extends Job {
     placeId: json['place_id'] as String?,
   );
 
+  /// Wraps a domain [Job] so the data layer can serialise it. Lets the
+  /// presentation layer hand the repo a plain domain entity (it must not
+  /// import this model) — the repo upgrades it here before `toJson`.
+  factory JobModel.fromEntity(Job job) => JobModel(
+    id: job.id,
+    builderId: job.builderId,
+    title: job.title,
+    description: job.description,
+    tradeTypeRequired: job.tradeTypeRequired,
+    suburb: job.suburb,
+    state: job.state,
+    postcode: job.postcode,
+    status: job.status,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+    budgetMin: job.budgetMin,
+    budgetMax: job.budgetMax,
+    budgetType: job.budgetType,
+    urgency: job.urgency,
+    startDate: job.startDate,
+    estimatedDurationDays: job.estimatedDurationDays,
+    durationText: job.durationText,
+    requiresWhiteCard: job.requiresWhiteCard,
+    requiresPublicLiability: job.requiresPublicLiability,
+    requiresVerified: job.requiresVerified,
+    requiredCertifications: job.requiredCertifications,
+    applicationCount: job.applicationCount,
+    viewCount: job.viewCount,
+    publishedAt: job.publishedAt,
+    hiredTradeId: job.hiredTradeId,
+    deletedAt: job.deletedAt,
+    latitude: job.latitude,
+    longitude: job.longitude,
+    formattedAddress: job.formattedAddress,
+    placeId: job.placeId,
+  );
+
   Map<String, dynamic> toJson() => {
     'builder_id': builderId,
     'title': title,

@@ -82,65 +82,6 @@ final _placeholderApp = JobApplication(
   proposedRateType: 'hr',
 );
 
-// ── Sample mock data (shown when provider returns empty) ───────────────────────
-
-List<JobApplication> _mockApps(bool isBuilder) => [
-  JobApplication(
-    id: 'mock-1',
-    jobId: 'j1',
-    tradeId: 't1',
-    builderId: 'b1',
-    status: ApplicationStatus.pending,
-    createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-    updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-    jobTitle: 'Install 3-phase switchboard',
-    jobSuburb: 'Surry Hills',
-    jobState: 'NSW',
-    builderCompanyName: 'Pinnacle Construct',
-    tradeFullName: 'Marcus Webb',
-    tradePrimaryTrade: 'Electrician',
-    tradeIsVerified: true,
-    proposedRate: 85,
-    proposedRateType: 'hr',
-  ),
-  JobApplication(
-    id: 'mock-2',
-    jobId: 'j2',
-    tradeId: 't2',
-    builderId: 'b1',
-    status: ApplicationStatus.shortlisted,
-    createdAt: DateTime.now().subtract(const Duration(days: 1)),
-    updatedAt: DateTime.now().subtract(const Duration(hours: 5)),
-    jobTitle: 'Frame internal walls — Newtown renovation',
-    jobSuburb: 'Newtown',
-    jobState: 'NSW',
-    builderCompanyName: 'BuildRight Pty Ltd',
-    tradeFullName: "Sarah O'Brien",
-    tradePrimaryTrade: 'Carpenter',
-    tradeIsVerified: true,
-    proposedRate: 45,
-    proposedRateType: 'hr',
-  ),
-  JobApplication(
-    id: 'mock-3',
-    jobId: 'j3',
-    tradeId: 't3',
-    builderId: 'b1',
-    status: ApplicationStatus.hired,
-    createdAt: DateTime.now().subtract(const Duration(days: 4)),
-    updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-    jobTitle: 'Concrete footings for deck extension',
-    jobSuburb: 'Cronulla',
-    jobState: 'NSW',
-    builderCompanyName: 'Coast & Country Builds',
-    tradeFullName: 'Jake Kowalski',
-    tradePrimaryTrade: 'Concreter',
-    tradeIsVerified: false,
-    proposedRate: 75,
-    proposedRateType: 'hr',
-  ),
-];
-
 class _VerifiedOnlyToggle extends StatelessWidget {
   const _VerifiedOnlyToggle({required this.value, required this.onChanged});
 
