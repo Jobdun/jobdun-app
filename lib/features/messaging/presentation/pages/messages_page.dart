@@ -44,8 +44,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
     final isBuilder = authState.role == UserRole.builder;
     final userId = ref.watch(currentUserIdSyncProvider) ?? '';
 
-    final useReal = msgState.conversations.isNotEmpty;
-    final totalUnread = useReal ? msgState.totalUnread : 3;
+    final totalUnread = msgState.totalUnread;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -102,10 +101,9 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                         ),
                       ),
                     )
-                  : (!useReal && _mockConvos.isEmpty)
+                  : msgState.conversations.isEmpty
                   ? _EmptyState(isBuilder: isBuilder)
-                  : useReal
-                  ? JStaggeredList(
+                  : JStaggeredList(
                       itemCount: msgState.conversations.length,
                       separatorBuilder: (_, _) =>
                           Divider(height: 1, color: c.border),
@@ -157,31 +155,6 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                             ],
                           ),
                           child: row,
-                        );
-                      },
-                    )
-                  : JStaggeredList(
-                      itemCount: _mockConvos.length,
-                      separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: c.border),
-                      itemBuilder: (ctx, i) {
-                        final m = _mockConvos[i];
-                        return _ConvoRow(
-                          initials: m.initials,
-                          name: m.name,
-                          preview: m.preview,
-                          time: m.time,
-                          unreadCount: m.unread,
-                          jobTitle: m.jobTitle,
-                          onTap: () => context.push(
-                            '/messages/mock-${m.initials}',
-                            extra: ConversationArgs(
-                              conversationId: 'mock-${m.initials}',
-                              otherName: m.name,
-                              jobTitle: m.jobTitle,
-                              otherInitials: m.initials,
-                            ),
-                          ),
                         );
                       },
                     ),
@@ -397,57 +370,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Sample mock data ───────────────────────────────────────────────────────────
-
-class _MockConvo {
-  const _MockConvo({
-    required this.initials,
-    required this.name,
-    required this.preview,
-    required this.time,
-    required this.unread,
-    this.jobTitle,
-  });
-
-  final String initials;
-  final String name;
-  final String preview;
-  final String time;
-  final int unread;
-  final String? jobTitle;
-}
-
-const _mockConvos = [
-  _MockConvo(
-    initials: 'PC',
-    name: 'Pinnacle Construct',
-    preview: 'Thanks for applying! Can you start Monday at 7am?',
-    time: '2h',
-    unread: 2,
-    jobTitle: 'Install 3-phase switchboard',
-  ),
-  _MockConvo(
-    initials: 'BR',
-    name: 'BuildRight Pty Ltd',
-    preview: "We've shortlisted you for the framing job. Documents received.",
-    time: '1d',
-    unread: 0,
-    jobTitle: 'Frame internal walls',
-  ),
-  _MockConvo(
-    initials: 'CC',
-    name: 'Coast & Country Builds',
-    preview: 'Can you confirm your daily rate for the footings work?',
-    time: '2d',
-    unread: 1,
-    jobTitle: 'Concrete footings — deck extension',
-  ),
-  _MockConvo(
-    initials: 'HH',
-    name: 'Harbour Homes',
-    preview: 'Job has been completed. Review has been submitted. Thanks!',
-    time: '5d',
-    unread: 0,
-    jobTitle: null,
-  ),
-];
