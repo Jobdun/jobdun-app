@@ -32,20 +32,18 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   @override
   Future<List<ConversationModel>> getConversations(String userId) async {
     try {
-      // Hide rows the current viewer has archived. Each side has its own
-      // archived_at column so the other participant keeps seeing the thread
-      // until they archive independently.
-      final data = await _client
-          .from('conversations')
-          .select('*, jobs(title)')
-          .or(
-            'and(builder_id.eq.$userId,builder_archived_at.is.null),'
-            'and(trade_id.eq.$userId,trade_archived_at.is.null)',
-          )
-          .neq('status', 'blocked')
-          .order('last_message_at', ascending: false, nullsFirst: false);
+      // get_inbox() resolves the counterparty (display name/avatar), the
+      // viewer's unread count, and the job title server-side, and already
+      // excludes the viewer's archived rows. See migration
+      // 20260603000001_messaging_realtime_fixes.sql.
+      final data = await _client.rpc('get_inbox', params: {'p_user': userId});
       return (data as List)
-          .map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) => ConversationModel.fromInboxRow(
+              e as Map<String, dynamic>,
+              viewerId: userId,
+            ),
+          )
           .toList();
     } catch (e) {
       throw ServerException(e.toString());
