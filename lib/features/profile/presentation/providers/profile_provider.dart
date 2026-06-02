@@ -59,7 +59,8 @@ class ProfileController extends Notifier<ProfileState> {
 
     // Clear state on logout or account switch to prevent stale data
     ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null || (previous?.value != null && previous?.value != next.value)) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
         state = const ProfileState();
       }
     });

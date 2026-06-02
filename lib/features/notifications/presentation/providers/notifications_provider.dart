@@ -47,10 +47,11 @@ class NotificationsController extends Notifier<NotificationsState> {
   @override
   NotificationsState build() {
     _repo = ref.read(notificationRepositoryProvider);
-    
+
     // Clear state on logout or account switch to prevent stale data
     ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null || (previous?.value != null && previous?.value != next.value)) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
         _sub?.cancel();
         state = const NotificationsState();
         if (next.value != null) Future.microtask(_loadAndWatch);

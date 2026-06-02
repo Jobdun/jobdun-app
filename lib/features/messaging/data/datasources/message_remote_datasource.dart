@@ -64,11 +64,7 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
     try {
       final id = await _client.rpc(
         'get_or_create_conversation',
-        params: {
-          'p_builder': builderId,
-          'p_trade': tradeId,
-          'p_job': jobId,
-        },
+        params: {'p_builder': builderId, 'p_trade': tradeId, 'p_job': jobId},
       );
       return id as String;
     } catch (e) {

@@ -62,10 +62,11 @@ class MessagingController extends Notifier<MessagingState> {
   @override
   MessagingState build() {
     _repo = ref.read(messageRepositoryProvider);
-    
+
     // Clear state on logout or account switch to prevent stale data
     ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null || (previous?.value != null && previous?.value != next.value)) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
         _cancelAllSubscriptions();
         state = const MessagingState();
       }

@@ -49,7 +49,10 @@ void main() {
     final r = await repo.getOrCreateConversation(builderId: 'b', tradeId: 't');
 
     expect(r.isLeft(), isTrue);
-    r.fold((f) => expect(f, isA<ServerFailure>()), (_) => fail('expected left'));
+    r.fold(
+      (f) => expect(f, isA<ServerFailure>()),
+      (_) => fail('expected left'),
+    );
   });
 
   test('use case delegates to the repo', () async {
@@ -61,10 +64,9 @@ void main() {
       ),
     ).thenAnswer((_) async => 'conv-9');
 
-    final result = await GetOrCreateConversation(repo).call(
-      builderId: 'b',
-      tradeId: 't',
-    );
+    final result = await GetOrCreateConversation(
+      repo,
+    ).call(builderId: 'b', tradeId: 't');
 
     expect(result, const Right<Failure, String>('conv-9'));
   });

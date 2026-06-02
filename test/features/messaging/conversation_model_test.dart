@@ -29,12 +29,15 @@ void main() {
       expect(c.status, ConversationStatus.active);
     });
 
-    test('routes my_unread_count to the builder side when viewer is builder', () {
-      final c = ConversationModel.fromInboxRow(_row(), viewerId: 'b1');
-      expect(c.builderUnreadCount, 2);
-      expect(c.tradeUnreadCount, 0);
-      expect(c.unreadCountFor('b1'), 2);
-    });
+    test(
+      'routes my_unread_count to the builder side when viewer is builder',
+      () {
+        final c = ConversationModel.fromInboxRow(_row(), viewerId: 'b1');
+        expect(c.builderUnreadCount, 2);
+        expect(c.tradeUnreadCount, 0);
+        expect(c.unreadCountFor('b1'), 2);
+      },
+    );
 
     test('routes my_unread_count to the trade side when viewer is trade', () {
       final c = ConversationModel.fromInboxRow(_row(), viewerId: 't1');

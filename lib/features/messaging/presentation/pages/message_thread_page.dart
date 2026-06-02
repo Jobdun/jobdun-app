@@ -328,7 +328,10 @@ class _MessageBubble extends StatelessWidget {
                   : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 14.w,
+                    vertical: 10.h,
+                  ),
                   decoration: BoxDecoration(
                     color: isMine ? c.action : c.card,
                     borderRadius: BorderRadius.only(
@@ -344,7 +347,8 @@ class _MessageBubble extends StatelessWidget {
                     style: tt.bodyLarge!.copyWith(
                       fontWeight: FontWeight.w400,
                       color: isMine
-                          ? Colors.white // intentional
+                          ? Colors
+                                .white // intentional
                           : c.text1,
                       height: 1.45,
                     ),
