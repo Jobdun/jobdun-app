@@ -142,6 +142,23 @@ class MessagingController extends Notifier<MessagingState> {
     result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 
+  /// Returns the id of the conversation with the given participants (creating
+  /// it if needed), or null on failure. Used by the builder "Message" CTA to
+  /// open a thread with an applicant.
+  Future<String?> getOrCreateConversation({
+    required String builderId,
+    required String tradeId,
+    String? jobId,
+  }) async {
+    final result = await ref
+        .read(getOrCreateConversationUseCaseProvider)
+        .call(builderId: builderId, tradeId: tradeId, jobId: jobId);
+    return result.fold((f) {
+      state = state.copyWith(error: f.message);
+      return null;
+    }, (id) => id);
+  }
+
   Future<void> markConversationRead(String conversationId) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return;

@@ -9,12 +9,14 @@ class _AppCard extends StatelessWidget {
     required this.isBuilder,
     this.onUpdateStatus,
     this.onWithdraw,
+    this.onMessage,
   });
 
   final JobApplication app;
   final bool isBuilder;
   final void Function(ApplicationStatus)? onUpdateStatus;
   final VoidCallback? onWithdraw;
+  final VoidCallback? onMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +288,19 @@ class _AppCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ),
+                ],
+                // ── Builder: open (or start) a chat with the applicant.
+                // Available while deciding (pending) and after shortlisting.
+                if (isBuilder &&
+                    (status == ApplicationStatus.pending ||
+                        status == ApplicationStatus.shortlisted)) ...[
+                  Gap(AppSpacing.sm.h),
+                  JButton(
+                    label: 'MESSAGE',
+                    variant: JButtonVariant.secondary,
+                    size: JButtonSize.compact,
+                    onPressed: onMessage,
                   ),
                 ],
                 // ── Trade: withdraw pending

@@ -16,6 +16,8 @@ import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../messaging/presentation/pages/message_thread_page.dart';
+import '../../../messaging/presentation/providers/messaging_provider.dart';
 import '../../../verification/presentation/widgets/builder_verified_badge.dart';
 import '../../../verification/presentation/widgets/unverified_consent_dialog.dart';
 import '../../domain/entities/job_application.dart';
@@ -61,6 +63,28 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
             .loadMyApplications(userId);
       }
     });
+  }
+
+  // Builder taps "Message" on an applicant → open (or create) the shared
+  // conversation, then navigate to the thread. The tradie sees it in their
+  // inbox and can reply.
+  Future<void> _openConversation(JobApplication app) async {
+    final convId = await ref
+        .read(messagingControllerProvider.notifier)
+        .getOrCreateConversation(
+          builderId: app.builderId,
+          tradeId: app.tradeId,
+          jobId: app.jobId,
+        );
+    if (convId == null || !mounted) return;
+    context.push(
+      '/messages/$convId',
+      extra: ConversationArgs(
+        conversationId: convId,
+        otherName: app.tradeFullName ?? 'Tradesperson',
+        jobTitle: app.jobTitle,
+      ),
+    );
   }
 
   List<JobApplication> _filtered(List<JobApplication> apps) {
@@ -199,6 +223,9 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                             ? () => ref
                                   .read(applicationsControllerProvider.notifier)
                                   .withdraw(filtered[i].id)
+                            : null,
+                        onMessage: isBuilder
+                            ? () => _openConversation(filtered[i])
                             : null,
                       ),
                     ),
