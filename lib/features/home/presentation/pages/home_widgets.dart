@@ -179,3 +179,52 @@ class _PrimaryActionCard extends StatelessWidget {
     );
   }
 }
+
+// ── Latest-jobs empty state ──────────────────────────────────────────────────
+// Compact "nothing yet" card for the home jobs mini-feed. The Browse CTA lives
+// in the _PrimaryActionCard above, so this just signals an empty feed rather
+// than repeating the action.
+class _HomeJobsEmpty extends StatelessWidget {
+  const _HomeJobsEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.lg.h),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: 20.w,
+          vertical: AppSpacing.lg.h,
+        ),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppRadius.card.r),
+          border: Border.all(color: c.border),
+        ),
+        child: Column(
+          children: [
+            Icon(AppIcons.search, size: AppIconSize.hero.r, color: c.text3),
+            Gap(AppSpacing.sm.h),
+            Text(
+              'No jobs nearby yet',
+              style: tt.titleMedium!.copyWith(
+                fontWeight: FontWeight.w700,
+                color: c.text1,
+              ),
+            ),
+            Gap(4.h),
+            Text(
+              'New jobs in your area will appear here.',
+              style: tt.bodyMedium!.copyWith(color: c.text3),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

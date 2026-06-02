@@ -18,7 +18,6 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
-import '../../../../core/design/widgets/tradie_card.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
@@ -35,7 +34,6 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 part 'home_widgets.dart';
 part 'home_map_view.dart';
 part 'home_map_widgets.dart';
-part 'home_sample_data.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, this.fixedPreview = false});
@@ -341,49 +339,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: _PrimaryActionCard(isBuilder: isBuilder),
                   ),
                   SliverToBoxAdapter(child: Gap(24.h)),
-                  // Section title — sentence-case, distinct from the page
-                  // title above (was an all-caps eyebrow that just repeated
-                  // "JOBS NEARBY"). titleLarge = section-header role.
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                      child: Text(
-                        isBuilder ? 'Available now' : 'Latest jobs',
-                        style: tt.titleLarge!.copyWith(color: c.text1),
+                  // Tradies only. The builder "Available now" tradie list is
+                  // hidden until a tradie-search backend exists (audit F-7);
+                  // builders get the stats + post-a-job card above. The jobs
+                  // feed reads real Supabase data — empty falls back to a
+                  // compact empty state, never sample listings.
+                  if (!isBuilder) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                        child: Text(
+                          'Latest jobs',
+                          style: tt.titleLarge!.copyWith(color: c.text1),
+                        ),
                       ),
                     ),
-                  ),
-                  if (isBuilder)
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: JStaggeredSliverList(
-                        itemCount: _tradies.length,
-                        itemBuilder: (_, i) {
-                          final t = _tradies[i];
-                          return TradieCard(
-                            name: t.name,
-                            trade: t.trade,
-                            suburb: t.suburb,
-                            rating: t.rating,
-                            jobCount: t.jobCount,
-                            isVerified: t.isVerified,
-                            isAvailable: t.isAvailable,
-                            distanceKm: t.distanceKm,
-                            initials: t.initials,
-                            onTap: () {},
-                          );
-                        },
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                      sliver: JStaggeredSliverList(
-                        itemCount: hasRealJobs
-                            ? feedJobs.length
-                            : _mockJobs.length,
-                        itemBuilder: (_, i) {
-                          if (hasRealJobs) {
+                    if (hasRealJobs)
+                      SliverPadding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        sliver: JStaggeredSliverList(
+                          itemCount: feedJobs.length,
+                          itemBuilder: (_, i) {
                             final j = feedJobs[i];
                             return JobCard(
                               title: j.title,
@@ -399,30 +375,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 extra: JobDetailArgs.fromJob(j),
                               ),
                             );
-                          }
-                          final j = _mockJobs[i];
-                          return JobCard(
-                            title: j.title,
-                            description: j.description,
-                            rate: j.rate,
-                            startDate: j.startDate,
-                            distanceKm: j.distanceKm,
-                            isUrgent: j.isUrgent,
-                            onTap: () => context.push(
-                              '/jobs/mock-home-$i',
-                              extra: JobDetailArgs(
-                                title: j.title,
-                                description: j.description,
-                                rate: j.rate,
-                                startDate: j.startDate,
-                                distanceKm: j.distanceKm,
-                                isUrgent: j.isUrgent,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                          },
+                        ),
+                      )
+                    else
+                      const SliverToBoxAdapter(child: _HomeJobsEmpty()),
+                  ],
                   // Clear the map-toggle FAB so the last job card (and its
                   // distance line) never scrolls underneath it. Only reserves
                   // the extra space when the FAB is actually shown.

@@ -246,16 +246,14 @@ class _MapViewState extends State<_MapView> {
     await Geolocator.openAppSettings();
   }
 
-  // Effective centre for the search radius + sample-pin spread: actual user
-  // GPS if granted, otherwise the Sydney default. Stays a LatLng (not nullable)
-  // so the CircleLayer + sample generator always have something to anchor on.
+  // Effective centre for the search radius: actual user GPS if granted,
+  // otherwise the Sydney default. Stays a LatLng (not nullable) so the
+  // CircleLayer always has something to anchor on.
   LatLng get _radiusCenter => _userLocation ?? _sydney;
 
-  // Real jobs win whenever they're available; otherwise we synthesize a
-  // small set of clickable pins inside the radius so the map view always
-  // demos end-to-end (pin → tap → detail page).
-  List<Job> get _effectiveJobs =>
-      widget.jobs.isNotEmpty ? widget.jobs : _sampleJobsAround(_radiusCenter);
+  // Real Supabase jobs only — no sample pins. An empty feed renders the radius
+  // circle + the user's location marker with no job pins (a valid empty state).
+  List<Job> get _effectiveJobs => widget.jobs;
 
   List<Marker> _buildMarkers(Color pinColor) {
     return [
