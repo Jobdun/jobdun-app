@@ -61,6 +61,41 @@ class _SettingsSection extends ConsumerWidget {
   }
 }
 
+// Dev-only quick-links to the preview/showcase screens. Relocated here off the
+// home feed (was the in-feed `_DebugToolsBar`) so the live home layout reads
+// clean while developing. Instantiated only behind `if (kDebugMode)` in
+// profile_page.dart, so it's stripped from release builds.
+class _DevToolsCard extends StatelessWidget {
+  const _DevToolsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: JCard(
+        title: 'DEVELOPER TOOLS',
+        children: [
+          _ActionRow(
+            icon: AppIcons.eyeOpen,
+            label: 'Home preview (fixed tokens)',
+            onTap: () => context.push('/home-preview'),
+          ),
+          _ActionRow(
+            icon: AppIcons.gridView,
+            label: 'Design tokens',
+            onTap: () => context.push('/design-preview'),
+          ),
+          _ActionRow(
+            icon: AppIcons.image,
+            label: 'Logo animation',
+            onTap: () => context.push('/logo-animation'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,

@@ -15,7 +15,7 @@ A standalone, rigorous audit of Jobdun's **type token system** — every role, i
 | `headlineLarge` | Oswald | 32 | 700 | 0.8 | — | text1 | screen titles |
 | `headlineMedium` | Oswald | 24 | 600 | 0.5 | — | text1 | section / tab titles |
 | `headlineSmall` | Oswald | 20 | 600 | 0.3 | — | text1 | sub-section |
-| `titleLarge` | Oswald | 16 | 600 | — | — | text1 | card headers |
+| `titleLarge` | Oswald | 16 | 600 | — | — | text1 | card headers |a
 | `titleMedium` | Open Sans | 15 | 600 | — | 1.6 | text1 | emphasised body |
 | `bodyLarge` | Open Sans | 15 | 400 | — | 1.6 | text1 | primary body |
 | `bodyMedium` | Open Sans | 13 | 400 | — | 1.45 | text2 | secondary body (most-used) |

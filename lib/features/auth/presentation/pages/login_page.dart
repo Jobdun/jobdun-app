@@ -135,7 +135,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             child: Center(
                               child: AnimatedJobdunLogo(
                                 variant: JLogoAnim.forge,
-                                height: 56.r,
+                                height: 80.r,
                               ),
                             ),
                           ),

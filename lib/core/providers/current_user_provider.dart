@@ -24,8 +24,12 @@ final currentUserIdProvider = StreamProvider<String?>((ref) async* {
 String? readCurrentUserId(Ref ref) => ref.read(currentUserIdSyncProvider);
 
 /// Overridable provider that returns the current user ID synchronously.
-/// In production it reads from the Supabase client; in tests, override it.
+/// In production it watches the stream provider so it always caches the
+/// freshest value. In tests, override it.
 final currentUserIdSyncProvider = Provider<String?>((ref) {
   if (!SupabaseConfig.isInitialized) return null;
-  return SupabaseConfig.client.auth.currentUser?.id;
+  // Watch the reactive stream so this synchronous provider's cached value
+  // stays up-to-date across logouts and account switches.
+  final asyncValue = ref.watch(currentUserIdProvider);
+  return asyncValue.value ?? SupabaseConfig.client.auth.currentUser?.id;
 });

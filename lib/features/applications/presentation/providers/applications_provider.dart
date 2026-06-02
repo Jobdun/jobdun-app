@@ -55,7 +55,17 @@ final applicationsControllerProvider =
 
 class ApplicationsController extends Notifier<ApplicationsState> {
   @override
-  ApplicationsState build() => const ApplicationsState();
+  ApplicationsState build() {
+    // Clear state on logout or account switch to prevent stale data
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
+        state = const ApplicationsState();
+      }
+    });
+
+    return const ApplicationsState();
+  }
 
   /// Flip the verified-only filter on the builder applicant list.
   /// The first-time consent dialog is owned by the page (caller must

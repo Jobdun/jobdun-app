@@ -100,6 +100,16 @@ class JobsController extends Notifier<JobsState> {
   JobsState build() {
     _repo = ref.read(jobRepositoryProvider);
     _interactions = ref.read(jobInteractionsRepositoryProvider);
+
+    // Clear state on logout or account switch to prevent stale data
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
+        state = const JobsState();
+        _pagingController?.refresh();
+      }
+    });
+
     ref.onDispose(() {
       _builderJobsSub?.cancel();
       _pagingController?.dispose();

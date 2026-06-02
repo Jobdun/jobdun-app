@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -84,6 +85,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
             const SliverToBoxAdapter(child: _SettingsSection()),
+            // Dev-only preview/showcase links, relocated off the home feed so
+            // the real home layout can be evaluated while developing. The
+            // kDebugMode gate strips the whole block from release builds —
+            // exactly as it was gated on /home.
+            if (kDebugMode) ...[
+              SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+              const SliverToBoxAdapter(child: _DevToolsCard()),
+            ],
             SliverToBoxAdapter(child: Gap(AppSpacing.lg.h)),
             SliverToBoxAdapter(
               child: Padding(

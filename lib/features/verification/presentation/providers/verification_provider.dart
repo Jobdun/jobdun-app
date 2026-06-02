@@ -49,6 +49,16 @@ class VerificationController extends Notifier<VerificationState> {
   @override
   VerificationState build() {
     _repo = ref.read(verificationRepositoryProvider);
+    
+    // Clear state on logout or account switch to prevent stale data
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next.value == null || (previous?.value != null && previous?.value != next.value)) {
+        _sub?.cancel();
+        state = const VerificationState();
+        if (next.value != null) Future.microtask(_loadAndWatch);
+      }
+    });
+
     ref.onDispose(() => _sub?.cancel());
     Future.microtask(_loadAndWatch);
     return const VerificationState();

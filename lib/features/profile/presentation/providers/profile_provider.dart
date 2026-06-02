@@ -56,6 +56,14 @@ class ProfileController extends Notifier<ProfileState> {
   @override
   ProfileState build() {
     _repo = ref.read(profileRepositoryProvider);
+
+    // Clear state on logout or account switch to prevent stale data
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next.value == null || (previous?.value != null && previous?.value != next.value)) {
+        state = const ProfileState();
+      }
+    });
+
     return const ProfileState();
   }
 

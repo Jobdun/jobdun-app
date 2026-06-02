@@ -54,13 +54,13 @@ class VerificationReceipts extends ConsumerWidget {
           title: 'WHAT\'S BEEN CHECKED',
           children: const [
             _ReceiptRow(
-              icon: Icons.circle,
+              icon: AppIcons.clock,
               label: 'Loading…',
               sub: 'Checking your records',
               isVerified: false,
             ),
             _ReceiptRow(
-              icon: Icons.circle,
+              icon: AppIcons.clock,
               label: 'Loading…',
               sub: 'Checking your records',
               isVerified: false,

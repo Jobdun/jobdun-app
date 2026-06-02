@@ -28,22 +28,23 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<(String, String)> stats;
 
+    // A known count reads as a real count — including zero. "—" is reserved for
+    // genuinely-not-loaded profile values (null), never a known zero: a dash
+    // reads as "still loading", a zero reads as "nothing yet", and the two must
+    // not appear side by side in one row (the old `> 0 ? n : '—'` masking did).
     if (isBuilder) {
       final active = builderProfile?.activeJobsCount.toString() ?? '—';
       final total = builderProfile?.totalJobsPosted.toString() ?? '—';
       stats = [
         (active, 'Active jobs'),
-        (pendingCount > 0 ? pendingCount.toString() : '—', 'Applicants'),
+        (pendingCount.toString(), 'Applicants'),
         (total, 'Jobs posted'),
       ];
     } else {
       final done = tradeProfile?.jobsCompleted.toString() ?? '—';
       stats = [
-        (myAppsCount > 0 ? myAppsCount.toString() : '—', 'Applied'),
-        (
-          shortlistedCount > 0 ? shortlistedCount.toString() : '—',
-          'Shortlisted',
-        ),
+        (myAppsCount.toString(), 'Applied'),
+        (shortlistedCount.toString(), 'Shortlisted'),
         (done, 'Jobs done'),
       ];
     }
@@ -174,51 +175,6 @@ class _PrimaryActionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Dev-only quick-links to the preview/showcase screens (kDebugMode). Lives in
-// this part so home_page.dart stays under the file-size budget.
-class _DebugToolsBar extends StatelessWidget {
-  const _DebugToolsBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: JButton(
-                  label: 'HOME · FIXED',
-                  variant: JButtonVariant.primary,
-                  size: JButtonSize.compact,
-                  onPressed: () => context.push('/home-preview'),
-                ),
-              ),
-              Gap(8.w),
-              Expanded(
-                child: JButton(
-                  label: 'TOKENS',
-                  variant: JButtonVariant.secondary,
-                  size: JButtonSize.compact,
-                  onPressed: () => context.push('/design-preview'),
-                ),
-              ),
-            ],
-          ),
-          Gap(8.h),
-          JButton(
-            label: 'LOGO ANIMATION',
-            variant: JButtonVariant.secondary,
-            size: JButtonSize.compact,
-            onPressed: () => context.push('/logo-animation'),
-          ),
-        ],
       ),
     );
   }

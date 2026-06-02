@@ -308,6 +308,14 @@ class _TradeProfile extends ConsumerWidget {
     final tt = Theme.of(context).textTheme;
     final p = profile;
 
+    // Same identity signal the builder card shows: the OTP-verified primary
+    // phone. phone_verified_at == null → unverified, so no tick renders.
+    final userProfile = ref.watch(
+      profileControllerProvider.select((s) => s.profile),
+    );
+    final userPhone = _formatPhone(userProfile?.phone);
+    final phoneVerified = userProfile?.isPhoneVerified ?? false;
+
     final rating = p?.averageRating?.toStringAsFixed(1) ?? '—';
     final jobsDone = (p?.jobsCompleted ?? 0).toString();
     final yrsExp = p?.yearsExperience != null ? '${p!.yearsExperience}+' : '—';
@@ -404,6 +412,15 @@ class _TradeProfile extends ConsumerWidget {
                 icon: AppIcons.budget,
                 label: 'Hourly rate',
                 value: _formatHourlyRate(p),
+              ),
+              _InfoRow(
+                icon: AppIcons.phone,
+                label: 'Phone',
+                value: userPhone,
+                verified: phoneVerified,
+                onTap: userPhone == null
+                    ? () => context.push('/profile/verify-phone')
+                    : null,
               ),
             ],
           ),

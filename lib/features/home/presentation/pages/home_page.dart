@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,7 +15,6 @@ import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
-import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
@@ -46,8 +44,9 @@ class HomePage extends ConsumerStatefulWidget {
   /// rendered through [PreviewTheme.fixed] (the accessibility-corrected token
   /// set) with text scaling clamped, a back-arrow AppBar, and the one-shot
   /// role-sheet / welcome-toast side effects suppressed. Reached via the
-  /// "HOME · FIXED TOKENS" button (kDebugMode). Nothing about the real /home
-  /// changes — this just re-renders the same widget under a different theme.
+  /// "Home preview (fixed tokens)" link in the profile page's Developer tools
+  /// card (kDebugMode). Nothing about the real /home changes — this just
+  /// re-renders the same widget under a different theme.
   final bool fixedPreview;
 
   @override
@@ -59,6 +58,7 @@ enum _ViewMode { list, map }
 class _HomePageState extends ConsumerState<HomePage> {
   _ViewMode _viewMode = _ViewMode.list;
   bool _roleSheetShown = false;
+  bool _roleCheckInflight = false;
 
   // A/B preview only — which corrected theme the copy renders under. Toggled
   // by the sun/moon action in the preview AppBar. Ignored on the live page.
@@ -117,7 +117,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   // role + name + optional avatar in one flow. The sheet's own skip-step
   // logic decides which steps to render based on what's already populated.
   Future<void> _maybeShowRoleSheet(AuthState auth) async {
-    if (_roleSheetShown) return;
+    if (_roleSheetShown || _roleCheckInflight) return;
     if (!auth.isAuthenticated || !auth.isRoleLoaded) return;
 
     // Profile-loaded gate: ProfileState doesn't have an isProfileLoaded flag
@@ -130,26 +130,33 @@ class _HomePageState extends ConsumerState<HomePage> {
     final profileState = ref.read(profileControllerProvider);
     if (profileState.profile == null && profileState.error == null) return;
 
-    final hadRowInDb = auth.role != null
-        ? false
-        : await ref.read(authControllerProvider.notifier).hydrateRoleFromDb();
-    if (!mounted) return;
+    _roleCheckInflight = true;
+    try {
+      final hadRowInDb = auth.role != null
+          ? false
+          : await ref.read(authControllerProvider.notifier).hydrateRoleFromDb();
+      if (!mounted) return;
 
-    // After hydration the controller's role is updated if a DB row existed.
-    final refreshed = ref.read(authControllerProvider);
-    final profile = ref.read(profileControllerProvider).profile;
-    final needsRole = refreshed.role == null;
-    final needsName = (profile?.displayName ?? '').trim().isEmpty;
-    if (!needsRole && !needsName) return;
-    if (hadRowInDb && !needsName) return; // role hydrated + name present
+      // After hydration the controller's role is updated if a DB row existed.
+      final refreshed = ref.read(authControllerProvider);
+      final profile = ref.read(profileControllerProvider).profile;
+      final needsRole = refreshed.role == null;
+      final needsName = (profile?.displayName ?? '').trim().isEmpty;
+      if (!needsRole && !needsName) return;
+      if (hadRowInDb && !needsName) return; // role hydrated + name present
 
-    // Latch only when we're actually going to show, so a brief race where
-    // both gates returned early doesn't permanently suppress the sheet.
-    _roleSheetShown = true;
+      // Latch only when we're actually going to show, so a brief race where
+      // both gates returned early doesn't permanently suppress the sheet.
+      _roleSheetShown = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) OnboardingCompletionSheet.show(context);
-    });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) OnboardingCompletionSheet.show(context);
+      });
+    } finally {
+      if (mounted) {
+        _roleCheckInflight = false;
+      }
+    }
   }
 
   // First-home welcome toast — T1 audit spec. Fires once per device the
@@ -316,12 +323,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                   ),
                   const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
-                  // Debug-only A/B entry points (compiled out of release, and
-                  // hidden inside the preview copy itself). "HOME · FIXED" opens
-                  // a real copy of this page under the corrected token theme;
-                  // "TOKENS" opens the annotated what-changed cheat-sheet.
-                  if (kDebugMode && !widget.fixedPreview)
-                    const SliverToBoxAdapter(child: _DebugToolsBar()),
                   SliverToBoxAdapter(child: Gap(20.h)),
                   SliverToBoxAdapter(
                     child: _StatsRow(
@@ -422,7 +423,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                         },
                       ),
                     ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
+                  // Clear the map-toggle FAB so the last job card (and its
+                  // distance line) never scrolls underneath it. Only reserves
+                  // the extra space when the FAB is actually shown.
+                  SliverToBoxAdapter(child: Gap(showMapToggle ? 96.h : 24.h)),
                 ],
               ),
             ),
