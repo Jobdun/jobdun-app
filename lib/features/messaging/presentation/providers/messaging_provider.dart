@@ -12,6 +12,7 @@ import '../../domain/entities/message.dart';
 import '../../domain/repositories/message_repository.dart';
 import '../../domain/usecases/get_conversations.dart';
 import '../../domain/usecases/get_messages.dart';
+import '../../domain/usecases/get_or_create_conversation.dart';
 import '../../domain/usecases/send_message.dart';
 import '../../domain/usecases/watch_messages.dart';
 
@@ -33,6 +34,10 @@ final getConversationsUseCaseProvider = Provider(
 
 final getMessagesUseCaseProvider = Provider(
   (ref) => GetMessages(ref.read(messageRepositoryProvider)),
+);
+
+final getOrCreateConversationUseCaseProvider = Provider(
+  (ref) => GetOrCreateConversation(ref.read(messageRepositoryProvider)),
 );
 
 final sendMessageUseCaseProvider = Provider(

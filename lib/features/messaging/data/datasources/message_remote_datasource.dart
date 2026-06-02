@@ -6,6 +6,11 @@ import '../models/message_model.dart';
 
 abstract interface class MessageRemoteDataSource {
   Future<List<ConversationModel>> getConversations(String userId);
+  Future<String> getOrCreateConversation({
+    required String builderId,
+    required String tradeId,
+    String? jobId,
+  });
   Future<List<MessageModel>> getMessages(String conversationId);
   Future<void> sendMessage({
     required String conversationId,
@@ -45,6 +50,27 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
             ),
           )
           .toList();
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<String> getOrCreateConversation({
+    required String builderId,
+    required String tradeId,
+    String? jobId,
+  }) async {
+    try {
+      final id = await _client.rpc(
+        'get_or_create_conversation',
+        params: {
+          'p_builder': builderId,
+          'p_trade': tradeId,
+          'p_job': jobId,
+        },
+      );
+      return id as String;
     } catch (e) {
       throw ServerException(e.toString());
     }

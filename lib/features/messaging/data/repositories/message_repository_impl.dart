@@ -23,6 +23,25 @@ class MessageRepositoryImpl implements MessageRepository {
   }
 
   @override
+  Future<Either<Failure, String>> getOrCreateConversation({
+    required String builderId,
+    required String tradeId,
+    String? jobId,
+  }) async {
+    try {
+      return right(
+        await _datasource.getOrCreateConversation(
+          builderId: builderId,
+          tradeId: tradeId,
+          jobId: jobId,
+        ),
+      );
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<Message>>> getMessages(
     String conversationId,
   ) async {
