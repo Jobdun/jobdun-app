@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/providers/current_user_provider.dart';
+import '../../domain/entities/message.dart';
+import '../providers/messaging_provider.dart';
 
 // Passed via GoRouter extra when pushing /messages/:conversationId
 class ConversationArgs {
@@ -19,77 +23,59 @@ class ConversationArgs {
   final String otherName;
   final String? jobTitle;
   final String? otherInitials;
-
-  bool get isMock => conversationId.startsWith('mock-');
 }
 
-class _Msg {
-  const _Msg({required this.text, required this.isMine, required this.time});
-  final String text;
-  final bool isMine;
-  final String time;
-}
-
-const _mockThread = [
-  _Msg(
-    text: "Hi, I saw your job posting and I'm interested in the role.",
-    isMine: false,
-    time: '10:22 AM',
-  ),
-  _Msg(
-    text: 'Thanks for reaching out! Do you have your current licence handy?',
-    isMine: true,
-    time: '10:25 AM',
-  ),
-  _Msg(
-    text: 'Yes — EL 123456 NSW, valid until Dec 2026. Happy to send a copy.',
-    isMine: false,
-    time: '10:28 AM',
-  ),
-  _Msg(
-    text: 'Great. Can you start Monday at 7am? Site is in Surry Hills.',
-    isMine: true,
-    time: '10:31 AM',
-  ),
-  _Msg(
-    text: "Absolutely, I'll be there. What's the site address?",
-    isMine: false,
-    time: '10:34 AM',
-  ),
-];
-
-class MessageThreadPage extends StatefulWidget {
+class MessageThreadPage extends ConsumerStatefulWidget {
   const MessageThreadPage({super.key, required this.args});
 
   final ConversationArgs args;
 
   @override
-  State<MessageThreadPage> createState() => _MessageThreadPageState();
+  ConsumerState<MessageThreadPage> createState() => _MessageThreadPageState();
 }
 
-class _MessageThreadPageState extends State<MessageThreadPage> {
+class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   final _textCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  final _localMessages = <_Msg>[];
+  late final MessagingController _messaging;
+
+  String get _conversationId => widget.args.conversationId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Capture the notifier once — `ref` must not be used in dispose() during
+    // tree teardown, but the stored notifier reference stays valid.
+    _messaging = ref.read(messagingControllerProvider.notifier);
+    // Initial-load triggers belong off the first frame (see CLAUDE.md Riverpod
+    // rules). loadMessages fetches history + opens the realtime subscription;
+    // markConversationRead zeroes the viewer's unread counter server-side.
+    Future.microtask(() {
+      if (!mounted) return;
+      _messaging.loadMessages(_conversationId);
+      _messaging.markConversationRead(_conversationId);
+    });
+  }
 
   @override
   void dispose() {
+    // Drop the per-thread realtime subscription; the controller keeps the
+    // conversations stream alive for the inbox.
+    _messaging.unsubscribeMessages(_conversationId);
     _textCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
-    final now = TimeOfDay.now();
-    final h = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
-    final m = now.minute.toString().padLeft(2, '0');
-    final period = now.period == DayPeriod.am ? 'AM' : 'PM';
-    setState(() {
-      _localMessages.add(_Msg(text: text, isMine: true, time: '$h:$m $period'));
-      _textCtrl.clear();
-    });
+    _textCtrl.clear();
+    await _messaging.sendMessage(conversationId: _conversationId, body: text);
+    // The realtime echo re-renders the list; scroll handled by the listener.
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(
@@ -106,8 +92,20 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final args = widget.args;
+    final me = ref.watch(currentUserIdSyncProvider);
+    final messages = ref.watch(
+      messagingControllerProvider.select((s) => s.messagesFor(_conversationId)),
+    );
     final initials = args.otherInitials ?? _initials(args.otherName);
-    final allMessages = [..._mockThread, ..._localMessages];
+
+    // Keep the newest message in view as history loads and as realtime echoes
+    // arrive (initial load, sent, received all change the count).
+    ref.listen<int>(
+      messagingControllerProvider.select(
+        (s) => s.messagesFor(_conversationId).length,
+      ),
+      (_, _) => _scrollToBottom(),
+    );
 
     return Scaffold(
       backgroundColor: c.background,
@@ -128,7 +126,6 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                       color: c.text1,
                     ),
                   ),
-                  // Avatar
                   Container(
                     width: 38.r,
                     height: 38.r,
@@ -181,98 +178,25 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
 
             // ── Messages
             Expanded(
-              child: ListView.builder(
-                controller: _scrollCtrl,
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md.w,
-                  vertical: AppSpacing.md.h,
-                ),
-                itemCount: allMessages.length,
-                itemBuilder: (ctx, i) {
-                  final msg = allMessages[i];
-                  final isMine = msg.isMine;
-
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 12.h),
-                    child: Row(
-                      mainAxisAlignment: isMine
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (!isMine) ...[
-                          Container(
-                            width: 28.r,
-                            height: 28.r,
-                            decoration: BoxDecoration(
-                              color: c.surfaceRaised,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: c.border),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              initials,
-                              style: tt.labelSmall!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: c.action,
-                              ),
-                            ),
-                          ),
-                          Gap(AppSpacing.sm.w),
-                        ],
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: isMine
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 14.w,
-                                  vertical: 10.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isMine ? c.action : c.card,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(16.r),
-                                    topRight: Radius.circular(16.r),
-                                    bottomLeft: Radius.circular(
-                                      isMine ? 16.r : 4.r,
-                                    ),
-                                    bottomRight: Radius.circular(
-                                      isMine ? 4.r : 16.r,
-                                    ),
-                                  ),
-                                  border: isMine
-                                      ? null
-                                      : Border.all(color: c.border),
-                                ),
-                                child: Text(
-                                  msg.text,
-                                  style: tt.bodyLarge!.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: isMine
-                                        ? Colors
-                                              .white // intentional
-                                        : c.text1,
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ),
-                              Gap(4.h),
-                              Text(
-                                msg.time,
-                                style: tt.labelSmall!.copyWith(color: c.text3),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (isMine) Gap(AppSpacing.sm.w),
-                      ],
+              child: messages.isEmpty
+                  ? _ThreadEmpty(name: args.otherName)
+                  : ListView.builder(
+                      controller: _scrollCtrl,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md.w,
+                        vertical: AppSpacing.md.h,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (ctx, i) {
+                        final msg = messages[i];
+                        final isMine = msg.senderId == me;
+                        return _MessageBubble(
+                          message: msg,
+                          isMine: isMine,
+                          initials: initials,
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
 
             // ── Input bar
@@ -305,6 +229,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                         style: tt.bodyLarge!.copyWith(color: c.text1),
                         maxLines: null,
                         textCapitalization: TextCapitalization.sentences,
+                        onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
                           hintText: 'Message…',
                           border: InputBorder.none,
@@ -319,6 +244,7 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
                   ),
                   Gap(10.w),
                   GestureDetector(
+                    key: const Key('thread-send'),
                     onTap: _send,
                     child: Container(
                       width: 42.r,
@@ -348,5 +274,137 @@ class _MessageThreadPageState extends State<MessageThreadPage> {
     final parts = name.trim().split(' ');
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  const _MessageBubble({
+    required this.message,
+    required this.isMine,
+    required this.initials,
+  });
+
+  final Message message;
+  final bool isMine;
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isMine) ...[
+            Container(
+              width: 28.r,
+              height: 28.r,
+              decoration: BoxDecoration(
+                color: c.surfaceRaised,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.border),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                initials,
+                style: tt.labelSmall!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: c.action,
+                ),
+              ),
+            ),
+            Gap(AppSpacing.sm.w),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: isMine
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  decoration: BoxDecoration(
+                    color: isMine ? c.action : c.card,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16.r),
+                      topRight: Radius.circular(16.r),
+                      bottomLeft: Radius.circular(isMine ? 16.r : 4.r),
+                      bottomRight: Radius.circular(isMine ? 4.r : 16.r),
+                    ),
+                    border: isMine ? null : Border.all(color: c.border),
+                  ),
+                  child: Text(
+                    message.body,
+                    style: tt.bodyLarge!.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: isMine
+                          ? Colors.white // intentional
+                          : c.text1,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+                Gap(4.h),
+                Text(
+                  _fmtTime(message.createdAt),
+                  style: tt.labelSmall!.copyWith(color: c.text3),
+                ),
+              ],
+            ),
+          ),
+          if (isMine) Gap(AppSpacing.sm.w),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtTime(DateTime t) {
+    final local = t.toLocal();
+    final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final m = local.minute.toString().padLeft(2, '0');
+    return '$h:$m ${local.hour < 12 ? 'AM' : 'PM'}';
+  }
+}
+
+class _ThreadEmpty extends StatelessWidget {
+  const _ThreadEmpty({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.chat, size: AppIconSize.hero.r, color: c.text3),
+            Gap(AppSpacing.md.h),
+            Text(
+              'NO MESSAGES YET.',
+              style: tt.headlineSmall!.copyWith(
+                fontWeight: FontWeight.w700,
+                color: c.text1,
+              ),
+            ),
+            Gap(AppSpacing.sm.h),
+            Text(
+              'Say hello to $name to get the conversation started.',
+              style: tt.bodyLarge!.copyWith(color: c.text3, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
