@@ -11,12 +11,14 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/places_service.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
+import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../domain/entities/job.dart';
 import '../providers/jobs_provider.dart';
 import '../widgets/job_location_field.dart';
@@ -69,6 +71,20 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       return;
     }
 
+    // Soft gate: only Verified businesses (ABN) can publish a job. Unverified
+    // builders are routed through the ~15s ABN wizard, then they retry POST.
+    // The form stays intact behind the sheet. RLS is the hard backstop.
+    final verified = await _isVerifiedBusiness(builderId);
+    if (!context.mounted) return;
+    if (!verified) {
+      HapticFeedback.mediumImpact();
+      await showJSheet<void>(
+        context: context,
+        builder: (_) => const _VerifyGateSheet(),
+      );
+      return;
+    }
+
     setState(() => _isPosting = true);
     final result = await ref
         .read(createJobUseCaseProvider)
@@ -110,6 +126,19 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
         );
       },
     );
+  }
+
+  /// True when the builder is a Verified business (ABN verified). Fail-open on
+  /// a transient lookup error — the jobs-insert RLS backstop is the hard gate.
+  Future<bool> _isVerifiedBusiness(String builderId) async {
+    try {
+      final rows = await ref.read(
+        verificationsForUserProvider(builderId).future,
+      );
+      return summariseForBuilder(rows) == VerificationSummary.fullyVerified;
+    } catch (_) {
+      return true;
+    }
   }
 
   void _showError(

@@ -217,3 +217,87 @@ class _UrgentToggle extends StatelessWidget {
     );
   }
 }
+
+// Soft-gate sheet shown when an unverified builder taps POST JOB. Routes to the
+// ~15s ABN wizard; the create form stays intact behind it.
+class _VerifyGateSheet extends StatelessWidget {
+  const _VerifyGateSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.card.r),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg.w,
+        AppSpacing.md.h,
+        AppSpacing.lg.w,
+        AppSpacing.lg.h,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: c.border,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            Gap(AppSpacing.lg.h),
+            Container(
+              width: 56.r,
+              height: 56.r,
+              decoration: BoxDecoration(
+                color: c.actionBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                AppIcons.shield,
+                size: AppIconSize.feature.r,
+                color: c.action,
+              ),
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              'VERIFY YOUR BUSINESS',
+              style: tt.headlineSmall!.copyWith(color: c.text1),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.sm.h),
+            Text(
+              'Verified businesses can post jobs and get more applicants. '
+              "It's a quick ABN check — about 15 seconds.",
+              style: tt.bodyMedium!.copyWith(color: c.text2),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.lg.h),
+            JButton(
+              label: 'VERIFY NOW',
+              icon: AppIcons.shield,
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('/verification/wizard');
+              },
+            ),
+            Gap(AppSpacing.sm.h),
+            JButton(
+              label: 'NOT NOW',
+              variant: JButtonVariant.text,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
