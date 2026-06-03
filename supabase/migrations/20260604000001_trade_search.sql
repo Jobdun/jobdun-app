@@ -92,7 +92,7 @@ RETURNS TABLE (
   base_formatted_address text, base_place_id text,
   base_latitude double precision, base_longitude double precision,
   about text, trade_other text, licence_url text, portfolio_urls text[],
-  is_verified boolean, verified_at timestamptz,
+  is_verified boolean,
   average_rating numeric, rating_count int,
   is_available boolean, available_from date,
   distance_km double precision
@@ -111,7 +111,7 @@ AS $$
       tp.base_formatted_address, tp.base_place_id,
       tp.base_latitude, tp.base_longitude,
       tp.about, tp.trade_other, tp.licence_url, tp.portfolio_urls,
-      tp.is_verified, tp.verified_at,
+      tp.is_verified,
       tp.average_rating, tp.rating_count,
       tp.is_available, tp.available_from,
       (6371 * acos(least(1.0, greatest(-1.0,
