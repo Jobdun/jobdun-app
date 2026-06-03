@@ -24,6 +24,7 @@ import '../../features/jobs/presentation/pages/job_create_page.dart';
 import '../../features/jobs/presentation/pages/job_detail_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
 import '../../features/applications/presentation/pages/applications_page.dart';
+import '../../features/discovery/presentation/pages/discovery_page.dart';
 import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -158,6 +159,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) =>
             const PhoneAuthPage(mode: PhoneAuthMode.addToAccount),
       ),
+      // Builder-facing trade directory. Pushed full-screen over the shell
+      // (own AppBar back) from the home "TRADIES NEAR YOU" section.
+      GoRoute(path: '/discovery', builder: (_, _) => const DiscoveryPage()),
       if (kDebugMode) ...[
         GoRoute(
           path: '/logo-compare',
