@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobdun · Home Screen — 10 Modern Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0F172A; --surface:#1E293B; --raised:#334155;
+    --cta:#F97316; --ctaPressed:#EA6C0A; --ctaInk:#0F172A;
+    --text1:#F1F5F9; --text2:#94A3B8; --text3:#64748B;
+    --border:#334155; --success:#22C55E; --warning:#F59E0B; --error:#EF4444;
+    --r:6px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:#070C18; color:var(--text1);
+    font-family:'Open Sans',sans-serif; -webkit-font-smoothing:antialiased;
+    padding:32px 20px 80px;
+  }
+  .page-head{max-width:1320px; margin:0 auto 32px;}
+  .page-head h1{font-family:'Oswald',sans-serif; font-weight:700; font-size:34px; letter-spacing:.5px;}
+  .page-head .accent{color:var(--cta);}
+  .page-head p{color:var(--text2); font-size:15px; line-height:1.6; max-width:760px; margin-top:10px;}
+  .legend{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .legend span{font-size:11px; font-weight:600; letter-spacing:.4px; padding:5px 10px; border-radius:4px; border:1px solid var(--border); color:var(--text2);}
+  .legend b{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+
+  .grid{
+    max-width:1320px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(390px, 1fr));
+    gap:28px; align-items:start;
+  }
+  .sample{}
+  .cap{margin-bottom:14px;}
+  .cap .num{font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; color:var(--ctaInk); background:var(--cta); padding:2px 9px; border-radius:4px; letter-spacing:.5px;}
+  .cap h2{font-family:'Oswald',sans-serif; font-weight:600; font-size:20px; display:inline-block; margin-left:10px; letter-spacing:.3px;}
+  .cap .desc{color:var(--text2); font-size:13px; line-height:1.55; margin-top:7px;}
+  .cap .best{color:var(--text3); font-size:12px; margin-top:5px;}
+  .cap .best em{color:var(--cta); font-style:normal; font-weight:600;}
+
+  /* phone frame */
+  .phone{
+    width:390px; height:780px; background:var(--bg);
+    border:1px solid var(--border); border-radius:26px; overflow:hidden;
+    display:flex; flex-direction:column; position:relative;
+  }
+  .statusbar{display:flex; justify-content:space-between; align-items:center; padding:12px 22px 6px; font-size:12px; font-weight:600; color:var(--text1);}
+  .statusbar .ico{display:flex; gap:6px; align-items:center;}
+  .screen{flex:1; overflow:hidden; display:flex; flex-direction:column;}
+  .scroll{flex:1; overflow:hidden; padding:0 16px;}
+
+  /* top bar */
+  .topbar{display:flex; align-items:center; gap:10px; padding:8px 16px 14px;}
+  .avatar{width:38px; height:38px; border-radius:50%; background:var(--raised); display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:600; font-size:14px; color:var(--text1); flex:none;}
+  .searchbar{flex:1; height:42px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r); display:flex; align-items:center; gap:8px; padding:0 12px; color:var(--text3); font-size:13px;}
+  .iconbtn{width:42px; height:42px; border-radius:var(--r); background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex:none; position:relative;}
+  .dot{position:absolute; top:8px; right:9px; width:8px; height:8px; border-radius:50%; background:var(--cta); border:2px solid var(--surface);}
+
+  svg.i{width:22px; height:22px; stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round;}
+  svg.i.sm{width:18px;height:18px;} svg.i.lg{width:30px;height:30px;} svg.i.xl{width:40px;height:40px;}
+  .fill{fill:currentColor; stroke:none;}
+
+  /* generic blocks */
+  .h-eyebrow{font-family:'Open Sans'; font-weight:600; font-size:11px; letter-spacing:.6px; color:var(--text3); text-transform:uppercase; margin:18px 0 10px;}
+  .sec-title{font-family:'Oswald'; font-weight:600; font-size:18px; color:var(--text1); letter-spacing:.3px;}
+  .row-between{display:flex; align-items:center; justify-content:space-between;}
+  .seeall{font-family:'Oswald'; font-weight:600; font-size:12px; letter-spacing:.6px; color:var(--cta);}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px;}
+  .btn{font-family:'Oswald'; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; border-radius:var(--r); padding:13px; text-align:center; background:var(--cta); color:var(--ctaInk); display:flex; align-items:center; justify-content:center; gap:8px;}
+  .btn.sec{background:var(--raised); color:var(--text1);}
+  .chip{font-family:'Open Sans'; font-weight:600; font-size:11px; letter-spacing:.4px; padding:5px 11px; border-radius:5px; background:var(--surface); border:1px solid var(--border); color:var(--text2); white-space:nowrap;}
+  .chip.on{background:var(--cta); color:var(--ctaInk); border-color:var(--cta);}
+  .tag{font-family:'Open Sans'; font-weight:700; font-size:10px; letter-spacing:.5px; padding:3px 7px; border-radius:4px; text-transform:uppercase;}
+  .tag.open{background:rgba(34,197,94,.15); color:var(--success);}
+  .tag.urgent{background:rgba(239,68,68,.16); color:#FCA5A5;}
+  .tag.avail{background:rgba(34,197,94,.15); color:var(--success);}
+  .tag.pend{background:rgba(245,158,11,.16); color:var(--warning);}
+  .num-amt{font-family:'Oswald'; font-weight:700; font-variant-numeric:tabular-nums;}
+
+  /* bottom nav */
+  .nav{display:flex; justify-content:space-around; align-items:center; padding:14px 16px 18px; border-top:1px solid var(--border); background:var(--bg);}
+  .nav .n{color:var(--text3);} .nav .n.on{color:var(--cta);}
+
+  /* job card */
+  .job{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:13px; margin-bottom:10px;}
+  .job .t{font-family:'Oswald'; font-weight:600; font-size:16px; color:var(--text1);}
+  .job .meta{color:var(--text2); font-size:12px; margin-top:3px;}
+  .job .foot{display:flex; align-items:center; justify-content:space-between; margin-top:11px;}
+  .pay{font-family:'Oswald'; font-weight:700; font-size:17px; color:var(--text1); font-variant-numeric:tabular-nums;}
+
+  /* tradie card */
+  .tradie{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:13px; display:flex; gap:11px; margin-bottom:10px;}
+  .tradie .av{width:44px;height:44px;border-radius:50%;background:var(--raised);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;flex:none;}
+  .tradie .nm{font-family:'Oswald';font-weight:600;font-size:15px;}
+  .tradie .sub{color:var(--text2);font-size:12px;margin-top:2px;}
+  .tradie .dist{font-family:'Oswald';font-weight:700;font-size:13px;color:var(--text2);font-variant-numeric:tabular-nums;}
+  .stars{color:var(--warning); display:flex; align-items:center; gap:3px; font-family:'Oswald'; font-weight:700; font-size:13px;}
+
+  /* stat tiles */
+  .stat{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:13px;}
+  .stat .v{font-family:'Oswald'; font-weight:700; font-size:26px; line-height:1; color:var(--text1); font-variant-numeric:tabular-nums;}
+  .stat .l{color:var(--text3); font-size:11px; margin-top:6px; font-weight:600; letter-spacing:.3px;}
+
+  .mini-map{background:
+     radial-gradient(circle at 30% 40%, rgba(249,115,22,.0) 0, rgba(249,115,22,0) 100%),
+     repeating-linear-gradient(0deg, #16213b 0 1px, transparent 1px 26px),
+     repeating-linear-gradient(90deg, #16213b 0 1px, transparent 1px 26px),
+     #11192e;
+     position:relative; overflow:hidden;}
+  .pin{position:absolute; width:26px;height:26px;border-radius:50% 50% 50% 0; background:var(--cta); transform:rotate(-45deg); display:flex;align-items:center;justify-content:center; border:2px solid var(--bg);}
+  .pin span{transform:rotate(45deg); color:var(--ctaInk); font-family:'Oswald';font-weight:700;font-size:10px;}
+  .pin.ghost{background:var(--raised);} .pin.ghost span{color:var(--text1);}
+
+  .divider{height:1px;background:var(--border); margin:14px 0;}
+</style>
+</head>
+<body>
+
+<!-- SVG icon defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="hammer" viewBox="0 0 24 24"><path d="m15 12-8.4 8.4a2 2 0 0 1-2.8-2.8L12 9"/><path d="M17.6 6.4 14 10l-3-3 3.6-3.6a2 2 0 0 1 2.8 0l.2.2a2 2 0 0 1 0 2.8Z"/><path d="m10 7 3 3"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.2l5.9-.9Z"/></symbol>
+  <symbol id="brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.4A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="filter" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+  <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5a3.5 3.5 0 0 1 0 7"/><path d="M17.5 14A6 6 0 0 1 21 20"/></symbol>
+</defs></svg>
+
+<div class="page-head">
+  <h1>JOBDUN · HOME SCREEN — <span class="accent">10 MODERN DIRECTIONS</span></h1>
+  <p>Ten distinct home-screen architectures for the builder view, all built on the locked Jobdun system — dark slate <code>#0F172A</code>, safety-orange CTA, Oswald + Open Sans, aggressive-flat (no gradients, no shadows, borders for definition, dark-on-orange, all-caps Oswald buttons). Real Aussie-tradie content. Pick a direction (or mix sections across two) and I'll build it in Flutter.</p>
+  <div class="legend">
+    <span><b style="background:#0F172A;border:1px solid #334155"></b>BG #0F172A</span>
+    <span><b style="background:#1E293B"></b>Surface</span>
+    <span><b style="background:#334155"></b>Raised</span>
+    <span><b style="background:#F97316"></b>CTA orange</span>
+    <span><b style="background:#22C55E"></b>Open</span>
+    <span><b style="background:#F59E0B"></b>Pending</span>
+    <span><b style="background:#EF4444"></b>Urgent</span>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- 1. COMMAND DASHBOARD -->
+  <div class="sample">
+    <div class="cap"><span class="num">01</span><h2>COMMAND DASHBOARD</h2>
+      <div class="desc">Ops-console feel. Live counters first (active jobs / applicants / posted), one dominant action, then a recent-activity feed. Reads like a site foreman's clipboard.</div>
+      <div class="best"><em>Best for</em> builders who manage multiple live jobs and want status at a glance.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar">
+          <div class="avatar">HT</div>
+          <div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px">G'DAY, HAMMERTIME</div><div style="color:var(--text2);font-size:12px">Parramatta, NSW</div></div>
+          <div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div>
+        </div>
+        <div class="scroll">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+            <div class="stat"><div class="v">4</div><div class="l">ACTIVE JOBS</div></div>
+            <div class="stat"><div class="v" style="color:var(--cta)">12</div><div class="l">APPLICANTS</div></div>
+            <div class="stat"><div class="v">27</div><div class="l">POSTED</div></div>
+          </div>
+          <div class="btn" style="margin-top:14px"><svg class="i sm"><use href="#plus"/></svg> POST A NEW JOB</div>
+          <div class="h-eyebrow">Recent activity</div>
+          <div class="card" style="margin-bottom:9px;display:flex;gap:11px;align-items:center;padding:12px">
+            <div style="width:34px;height:34px;border-radius:7px;background:rgba(249,115,22,.15);display:flex;align-items:center;justify-content:center;color:var(--cta)"><svg class="i sm"><use href="#user"/></svg></div>
+            <div style="flex:1"><div style="font-weight:600;font-size:13px">Dave T. applied — Switchboard install</div><div style="color:var(--text3);font-size:11px">2 min ago</div></div>
+            <svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg>
+          </div>
+          <div class="card" style="margin-bottom:9px;display:flex;gap:11px;align-items:center;padding:12px">
+            <div style="width:34px;height:34px;border-radius:7px;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg class="i sm"><use href="#check"/></svg></div>
+            <div style="flex:1"><div style="font-weight:600;font-size:13px">Tiling job marked complete</div><div style="color:var(--text3);font-size:11px">1 hr ago</div></div>
+            <svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg>
+          </div>
+          <div class="card" style="display:flex;gap:11px;align-items:center;padding:12px">
+            <div style="width:34px;height:34px;border-radius:7px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;color:var(--warning)"><svg class="i sm"><use href="#chat"/></svg></div>
+            <div style="flex:1"><div style="font-weight:600;font-size:13px">New message from Sparky Mike</div><div style="color:var(--text3);font-size:11px">3 hrs ago</div></div>
+            <svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg>
+          </div>
+        </div>
+        <div class="nav">
+          <svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg>
+          <svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg>
+        </div>
+      </div></div>
+  </div>
+
+  <!-- 2. BENTO GRID -->
+  <div class="sample">
+    <div class="cap"><span class="num">02</span><h2>BENTO GRID</h2>
+      <div class="desc">Modern bento layout — mixed-size tiles. A big "post job" hero tile, two stat tiles, a mini-map tile and a tradies tile. Everything is one tap, visually punchy.</div>
+      <div class="best"><em>Best for</em> a launcher-style home where every key action is a tappable tile.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div style="flex:1;font-family:'Oswald';font-weight:600;font-size:18px">HOME</div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+        <div class="scroll">
+          <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:minmax(86px,auto);gap:10px">
+            <div class="card" style="grid-column:span 2;background:var(--cta);border-color:var(--cta);color:var(--ctaInk);display:flex;align-items:center;gap:12px;padding:18px">
+              <svg class="i lg"><use href="#plus"/></svg>
+              <div><div style="font-family:'Oswald';font-weight:700;font-size:20px">POST A JOB</div><div style="font-size:12px;font-weight:600;opacity:.85">Find tradies for your next site</div></div>
+            </div>
+            <div class="card"><svg class="i" style="color:var(--cta)"><use href="#brief"/></svg><div class="num-amt" style="font-size:24px;margin-top:8px">4</div><div style="color:var(--text3);font-size:11px;font-weight:600">ACTIVE JOBS</div></div>
+            <div class="card"><svg class="i" style="color:var(--cta)"><use href="#user"/></svg><div class="num-amt" style="font-size:24px;margin-top:8px;color:var(--cta)">12</div><div style="color:var(--text3);font-size:11px;font-weight:600">APPLICANTS</div></div>
+            <div class="card mini-map" style="grid-column:span 2;height:128px;padding:0">
+              <div class="pin" style="top:30px;left:60px"><span>$</span></div>
+              <div class="pin ghost" style="top:74px;left:150px"><span>2</span></div>
+              <div class="pin" style="top:46px;left:240px"><span>$</span></div>
+              <div style="position:absolute;left:12px;bottom:10px;font-family:'Oswald';font-weight:600;font-size:12px;background:rgba(15,23,42,.8);padding:5px 9px;border-radius:5px">8 TRADIES NEARBY</div>
+            </div>
+            <div class="card" style="display:flex;flex-direction:column;justify-content:space-between"><svg class="i" style="color:var(--cta)"><use href="#users"/></svg><div style="font-family:'Oswald';font-weight:600;font-size:15px;margin-top:8px">FIND A TRADIE</div></div>
+            <div class="card" style="display:flex;flex-direction:column;justify-content:space-between"><svg class="i" style="color:var(--cta)"><use href="#chat"/></svg><div style="font-family:'Oswald';font-weight:600;font-size:15px;margin-top:8px">MESSAGES <span style="color:var(--cta)">·3</span></div></div>
+          </div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 3. FEED-FIRST -->
+  <div class="sample">
+    <div class="cap"><span class="num">03</span><h2>FEED-FIRST (SCANNABLE)</h2>
+      <div class="desc">No hero. Straight into a dense, swipeable feed — exactly the "job board on a trailer wall" intent. Sticky search + filter chips, then cards. Closest to today's direction, tightened.</div>
+      <div class="best"><em>Best for</em> the trades side, or builders who live in the applicant stream.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div class="searchbar"><svg class="i sm"><use href="#search"/></svg> Search trades, suburbs…</div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+        <div style="display:flex;gap:8px;padding:0 16px 12px;overflow:hidden"><span class="chip on">ALL</span><span class="chip">SPARKIE</span><span class="chip">CHIPPIE</span><span class="chip">BRICKIE</span><span class="chip">PLUMBER</span></div>
+        <div class="scroll">
+          <div class="job"><div class="row-between"><div class="t">Switchboard upgrade</div><span class="tag urgent">URGENT</span></div><div class="meta">Hammertime Builds · Parramatta NSW</div><div class="foot"><span class="pay">$65/hr</span><span style="color:var(--text3);font-size:11px">Posted 2h ago</span></div></div>
+          <div class="job"><div class="row-between"><div class="t">Frame &amp; lock-up carpentry</div><span class="tag open">OPEN</span></div><div class="meta">Sutton Constructions · Penrith NSW</div><div class="foot"><span class="pay">$58/hr</span><span style="color:var(--text3);font-size:11px">Posted 5h ago</span></div></div>
+          <div class="job"><div class="row-between"><div class="t">Brick fence — 18 lineal m</div><span class="tag open">OPEN</span></div><div class="meta">R. Nguyen · Blacktown NSW</div><div class="foot"><span class="pay">$3,200 flat</span><span style="color:var(--text3);font-size:11px">Posted 1d ago</span></div></div>
+          <div class="job"><div class="row-between"><div class="t">Bathroom waterproofing</div><span class="tag open">OPEN</span></div><div class="meta">Westline Group · Auburn NSW</div><div class="foot"><span class="pay">$52/hr</span><span style="color:var(--text3);font-size:11px">Posted 1d ago</span></div></div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 4. MAP-FIRST -->
+  <div class="sample">
+    <div class="cap"><span class="num">04</span><h2>MAP-FIRST + DRAG SHEET</h2>
+      <div class="desc">Top two-thirds is a live dark map with orange tradie/job pins; a draggable sheet of nearby results sits over it. Uber/Airbnb pattern — geography is the home.</div>
+      <div class="best"><em>Best for</em> leaning into "nearby crews" (#10) as the primary discovery surface.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen" style="position:relative">
+        <div class="mini-map" style="position:absolute;inset:0">
+          <div class="topbar" style="position:relative;z-index:2"><div class="searchbar" style="background:rgba(30,41,59,.92)"><svg class="i sm"><use href="#search"/></svg> Tradies near Parramatta</div><div class="iconbtn" style="background:rgba(30,41,59,.92)"><svg class="i"><use href="#filter"/></svg></div></div>
+          <div class="pin" style="top:150px;left:90px"><span>★</span></div>
+          <div class="pin" style="top:230px;left:210px"><span>★</span></div>
+          <div class="pin ghost" style="top:300px;left:120px"><span>2</span></div>
+          <div class="pin" style="top:190px;left:290px"><span>★</span></div>
+        </div>
+        <div style="margin-top:auto;background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:10px 16px 14px;position:relative;z-index:3">
+          <div style="width:38px;height:4px;background:var(--raised);border-radius:2px;margin:2px auto 12px"></div>
+          <div class="row-between" style="margin-bottom:10px"><div class="sec-title">8 TRADIES NEARBY</div><span class="seeall">LIST</span></div>
+          <div class="tradie" style="margin-bottom:9px"><div class="av">DT</div><div style="flex:1"><div class="row-between"><div class="nm">Dave Thompson</div><div class="stars">4.8 <svg class="i sm fill" style="width:13px;height:13px"><use href="#star"/></svg></div></div><div class="sub">Electrician · Parramatta</div><div style="margin-top:6px"><span class="tag avail">AVAILABLE</span></div></div><div class="dist">2.3 km</div></div>
+          <div class="tradie" style="margin-bottom:0"><div class="av">SM</div><div style="flex:1"><div class="row-between"><div class="nm">Sparky Mike</div><div class="stars">4.9 <svg class="i sm fill" style="width:13px;height:13px"><use href="#star"/></svg></div></div><div class="sub">Electrician · Granville</div><div style="margin-top:6px"><span class="tag avail">AVAILABLE</span></div></div><div class="dist">3.1 km</div></div>
+        </div>
+        <div class="nav" style="position:relative;z-index:3"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 5. HERO SEARCH -->
+  <div class="sample">
+    <div class="cap"><span class="num">05</span><h2>HERO SEARCH (MARKETPLACE)</h2>
+      <div class="desc">Big declarative headline + a dominant search bar as the primary CTA, trade categories, then featured tradies. The classic marketplace conversion pattern, Jobdun-hardened.</div>
+      <div class="best"><em>Best for</em> making "find the right tradie fast" the single job of the home screen.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div style="flex:1"></div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div><div class="avatar">HT</div></div>
+        <div class="scroll">
+          <div style="font-family:'Oswald';font-weight:700;font-size:30px;line-height:1.1;margin:6px 0 16px">FIND A TRADIE<br>WHO TURNS UP.</div>
+          <div class="searchbar" style="height:52px;font-size:14px;border-color:var(--cta)"><svg class="i" style="color:var(--cta)"><use href="#search"/></svg> Sparkie, chippie, suburb…</div>
+          <div class="h-eyebrow">Trades</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+            <div class="card" style="text-align:center;padding:14px 8px"><svg class="i" style="color:var(--cta)"><use href="#bolt"/></svg><div style="font-family:'Oswald';font-weight:600;font-size:13px;margin-top:7px">SPARKIE</div></div>
+            <div class="card" style="text-align:center;padding:14px 8px"><svg class="i" style="color:var(--cta)"><use href="#hammer"/></svg><div style="font-family:'Oswald';font-weight:600;font-size:13px;margin-top:7px">CHIPPIE</div></div>
+            <div class="card" style="text-align:center;padding:14px 8px"><svg class="i" style="color:var(--cta)"><use href="#grid"/></svg><div style="font-family:'Oswald';font-weight:600;font-size:13px;margin-top:7px">BRICKIE</div></div>
+          </div>
+          <div class="row-between" style="margin:18px 0 10px"><div class="sec-title">TOP RATED NEAR YOU</div><span class="seeall">SEE ALL</span></div>
+          <div class="tradie"><div class="av">DT</div><div style="flex:1"><div class="row-between"><div class="nm">Dave Thompson</div><div class="stars">4.8 <svg class="i sm fill" style="width:13px;height:13px"><use href="#star"/></svg></div></div><div class="sub">Electrician · 2.3 km · <span style="color:var(--success)">Available</span></div></div></div>
+          <div class="tradie" style="margin-bottom:0"><div class="av">JC</div><div style="flex:1"><div class="row-between"><div class="nm">Jack Connor</div><div class="stars">4.7 <svg class="i sm fill" style="width:13px;height:13px"><use href="#star"/></svg></div></div><div class="sub">Carpenter · 4.0 km · <span style="color:var(--success)">Available</span></div></div></div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 6. QUICK ACTIONS -->
+  <div class="sample">
+    <div class="cap"><span class="num">06</span><h2>QUICK-ACTIONS GRID</h2>
+      <div class="desc">A utility launcher: one slim stat strip, then large 2-up action tiles (Post Job, Find Tradies, Applicants, Messages). Big touch targets, zero hunting.</div>
+      <div class="best"><em>Best for</em> older/gloved-hand users — maximum tap area, minimum reading.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:17px">G'DAY, MICK</div><div style="color:var(--text2);font-size:12px">What's on today?</div></div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+        <div class="scroll">
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;padding:13px 16px">
+            <div style="text-align:center"><div class="num-amt" style="font-size:22px">4</div><div style="color:var(--text3);font-size:10px;font-weight:600">ACTIVE</div></div>
+            <div style="width:1px;height:30px;background:var(--border)"></div>
+            <div style="text-align:center"><div class="num-amt" style="font-size:22px;color:var(--cta)">12</div><div style="color:var(--text3);font-size:10px;font-weight:600">APPLICANTS</div></div>
+            <div style="width:1px;height:30px;background:var(--border)"></div>
+            <div style="text-align:center"><div class="num-amt" style="font-size:22px">3</div><div style="color:var(--text3);font-size:10px;font-weight:600">UNREAD</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+            <div class="card" style="background:var(--cta);border-color:var(--cta);color:var(--ctaInk);height:120px;display:flex;flex-direction:column;justify-content:space-between"><svg class="i lg"><use href="#plus"/></svg><div style="font-family:'Oswald';font-weight:700;font-size:17px">POST<br>A JOB</div></div>
+            <div class="card" style="height:120px;display:flex;flex-direction:column;justify-content:space-between"><svg class="i lg" style="color:var(--cta)"><use href="#users"/></svg><div style="font-family:'Oswald';font-weight:700;font-size:17px">FIND A<br>TRADIE</div></div>
+            <div class="card" style="height:120px;display:flex;flex-direction:column;justify-content:space-between"><svg class="i lg" style="color:var(--cta)"><use href="#user"/></svg><div style="font-family:'Oswald';font-weight:700;font-size:17px">APPLICANTS <span style="color:var(--cta)">12</span></div></div>
+            <div class="card" style="height:120px;display:flex;flex-direction:column;justify-content:space-between"><svg class="i lg" style="color:var(--cta)"><use href="#chat"/></svg><div style="font-family:'Oswald';font-weight:700;font-size:17px">MESSAGES <span style="color:var(--cta)">3</span></div></div>
+          </div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 7. SEGMENTED -->
+  <div class="sample">
+    <div class="cap"><span class="num">07</span><h2>SEGMENTED SHELL</h2>
+      <div class="desc">A persistent stat header with a segmented control (OVERVIEW · MY JOBS · TRADIES) that swaps the body in place. One screen, three contexts, no navigation cost.</div>
+      <div class="best"><em>Best for</em> power users who flip between managing jobs and hunting tradies all day.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div style="flex:1;font-family:'Oswald';font-weight:600;font-size:18px">HOME</div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+        <div style="padding:0 16px"><div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px">
+          <div style="flex:1;text-align:center;font-family:'Oswald';font-weight:600;font-size:12px;letter-spacing:.5px;padding:8px;background:var(--cta);color:var(--ctaInk);border-radius:5px">OVERVIEW</div>
+          <div style="flex:1;text-align:center;font-family:'Oswald';font-weight:600;font-size:12px;letter-spacing:.5px;padding:8px;color:var(--text2)">MY JOBS</div>
+          <div style="flex:1;text-align:center;font-family:'Oswald';font-weight:600;font-size:12px;letter-spacing:.5px;padding:8px;color:var(--text2)">TRADIES</div>
+        </div></div>
+        <div class="scroll" style="padding-top:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="stat"><div class="v">4</div><div class="l">ACTIVE JOBS</div></div>
+            <div class="stat"><div class="v" style="color:var(--cta)">12</div><div class="l">NEW APPLICANTS</div></div>
+          </div>
+          <div class="h-eyebrow">Needs your attention</div>
+          <div class="card" style="margin-bottom:9px;border-left:3px solid var(--warning)"><div class="row-between"><div style="font-weight:600;font-size:14px">Switchboard install</div><span class="tag pend">3 NEW</span></div><div style="color:var(--text2);font-size:12px;margin-top:3px">Shortlist before Fri · 3 applicants waiting</div></div>
+          <div class="card" style="border-left:3px solid var(--cta)"><div class="row-between"><div style="font-weight:600;font-size:14px">Frame &amp; lock-up</div><span class="tag open">OPEN</span></div><div style="color:var(--text2);font-size:12px;margin-top:3px">Posted 5h ago · 2 applicants</div></div>
+          <div class="btn" style="margin-top:14px"><svg class="i sm"><use href="#plus"/></svg> POST A NEW JOB</div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 8. TIMELINE -->
+  <div class="sample">
+    <div class="cap"><span class="num">08</span><h2>ACTIVITY TIMELINE</h2>
+      <div class="desc">A single vertical timeline — applicants, messages, status changes, reminders — newest first. Ops/CRM feel; the home is "what's happened and what's next."</div>
+      <div class="best"><em>Best for</em> builders juggling many moving parts who want one chronological truth.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:17px">ACTIVITY</div><div style="color:var(--text2);font-size:12px">Today, Wed 4 Jun</div></div><div class="iconbtn"><svg class="i"><use href="#plus"/></svg></div></div>
+        <div class="scroll">
+          <div style="position:relative;padding-left:26px">
+            <div style="position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--border)"></div>
+            <div style="position:relative;margin-bottom:16px"><div style="position:absolute;left:-26px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--cta);display:flex;align-items:center;justify-content:center;color:var(--ctaInk)"><svg class="i" style="width:12px;height:12px"><use href="#user"/></svg></div><div class="card" style="padding:11px"><div style="font-weight:600;font-size:13px">Dave T. applied — Switchboard install</div><div style="color:var(--text3);font-size:11px;margin-top:3px">9:38 am · ★ 4.8 · 2.3 km away</div></div></div>
+            <div style="position:relative;margin-bottom:16px"><div style="position:absolute;left:-26px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--warning)"><svg class="i" style="width:12px;height:12px"><use href="#chat"/></svg></div><div class="card" style="padding:11px"><div style="font-weight:600;font-size:13px">Sparky Mike sent a quote</div><div style="color:var(--text3);font-size:11px;margin-top:3px">8:15 am · $4,200 for the rewire</div></div></div>
+            <div style="position:relative;margin-bottom:16px"><div style="position:absolute;left:-26px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--success)"><svg class="i" style="width:12px;height:12px"><use href="#check"/></svg></div><div class="card" style="padding:11px"><div style="font-weight:600;font-size:13px">Tiling job marked complete</div><div style="color:var(--text3);font-size:11px;margin-top:3px">Yesterday · leave a review</div></div></div>
+            <div style="position:relative"><div style="position:absolute;left:-26px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2)"><svg class="i" style="width:12px;height:12px"><use href="#clock"/></svg></div><div class="card" style="padding:11px"><div style="font-weight:600;font-size:13px">Licence check: Sparky Mike expires in 14 days</div><div style="color:var(--text3);font-size:11px;margin-top:3px">Reminder</div></div></div>
+          </div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 9. CAROUSEL RAILS -->
+  <div class="sample">
+    <div class="cap"><span class="num">09</span><h2>SPOTLIGHT RAILS</h2>
+      <div class="desc">Horizontal rails — "Your active jobs", "Top tradies near you", "Urgent jobs". Netflix-style browse; lots of content surfaced without a long vertical scroll.</div>
+      <div class="best"><em>Best for</em> a content-rich home once there's real volume of jobs and tradies.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div class="avatar">HT</div><div class="searchbar"><svg class="i sm"><use href="#search"/></svg> Search</div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+        <div class="scroll">
+          <div class="row-between" style="margin:4px 0 10px"><div class="sec-title">YOUR ACTIVE JOBS</div><span class="seeall">ALL 4</span></div>
+          <div style="display:flex;gap:10px;overflow:hidden">
+            <div class="card" style="min-width:200px"><div class="row-between"><div style="font-family:'Oswald';font-weight:600;font-size:15px">Switchboard</div><span class="tag pend">3 NEW</span></div><div style="color:var(--text2);font-size:12px;margin-top:4px">Parramatta · $65/hr</div></div>
+            <div class="card" style="min-width:200px"><div class="row-between"><div style="font-family:'Oswald';font-weight:600;font-size:15px">Frame &amp; lock-up</div><span class="tag open">OPEN</span></div><div style="color:var(--text2);font-size:12px;margin-top:4px">Penrith · $58/hr</div></div>
+          </div>
+          <div class="row-between" style="margin:18px 0 10px"><div class="sec-title">TOP TRADIES NEARBY</div><span class="seeall">SEE ALL</span></div>
+          <div style="display:flex;gap:10px;overflow:hidden">
+            <div class="card" style="min-width:150px;text-align:center"><div class="av" style="margin:0 auto 8px;width:48px;height:48px">DT</div><div style="font-family:'Oswald';font-weight:600;font-size:14px">Dave T.</div><div style="color:var(--text2);font-size:11px">Sparkie · 2.3km</div><div class="stars" style="justify-content:center;margin-top:5px;font-size:12px">4.8 <svg class="i sm fill" style="width:12px;height:12px"><use href="#star"/></svg></div></div>
+            <div class="card" style="min-width:150px;text-align:center"><div class="av" style="margin:0 auto 8px;width:48px;height:48px">JC</div><div style="font-family:'Oswald';font-weight:600;font-size:14px">Jack C.</div><div style="color:var(--text2);font-size:11px">Chippie · 4.0km</div><div class="stars" style="justify-content:center;margin-top:5px;font-size:12px">4.7 <svg class="i sm fill" style="width:12px;height:12px"><use href="#star"/></svg></div></div>
+          </div>
+          <div class="row-between" style="margin:18px 0 10px"><div class="sec-title" style="color:#FCA5A5">URGENT JOBS</div><span class="seeall">SEE ALL</span></div>
+          <div class="job" style="margin-bottom:0"><div class="row-between"><div class="t">Emergency switchboard</div><span class="tag urgent">URGENT</span></div><div class="meta">Auburn NSW · today</div><div class="foot"><span class="pay">$90/hr</span></div></div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+  <!-- 10. MINIMAL FOCUS -->
+  <div class="sample">
+    <div class="cap"><span class="num">10</span><h2>MINIMAL FOCUS</h2>
+      <div class="desc">Ruthless restraint. One headline metric, one dominant action, one short "next up" list. Everything else is a tap away. Confident, calm, fast — aggressive through emptiness.</div>
+      <div class="best"><em>Best for</em> a flagship first impression that feels premium and uncluttered.</div>
+    </div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span class="ico">5G&nbsp;&nbsp;100%</span></div>
+      <div class="screen">
+        <div class="topbar"><div style="flex:1"></div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div><div class="avatar">HT</div></div>
+        <div class="scroll">
+          <div style="margin:24px 0 6px;color:var(--text2);font-size:13px;font-weight:600;letter-spacing:.4px">12 APPLICANTS WAITING ON YOU</div>
+          <div style="font-family:'Oswald';font-weight:700;font-size:52px;line-height:1;color:var(--cta);font-variant-numeric:tabular-nums">4</div>
+          <div style="color:var(--text2);font-size:14px;margin-top:6px">active jobs across your sites</div>
+          <div class="btn" style="margin-top:26px;height:56px;font-size:14px"><svg class="i sm"><use href="#plus"/></svg> POST A NEW JOB</div>
+          <div class="btn sec" style="margin-top:10px;height:52px"><svg class="i sm"><use href="#users"/></svg> FIND A TRADIE</div>
+          <div class="h-eyebrow" style="margin-top:28px">Next up</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:var(--warning)"></div><div style="flex:1;font-weight:600;font-size:14px">Shortlist for Switchboard install</div><svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:var(--cta)"></div><div style="flex:1;font-weight:600;font-size:14px">Reply to Sparky Mike</div><svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:13px 0"><div style="width:8px;height:8px;border-radius:50%;background:var(--success)"></div><div style="flex:1;font-weight:600;font-size:14px">Review completed tiling job</div><svg class="i sm" style="color:var(--text3)"><use href="#chev"/></svg></div>
+        </div>
+        <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#users"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div></div>
+  </div>
+
+</div>
+</body>
+</html>
