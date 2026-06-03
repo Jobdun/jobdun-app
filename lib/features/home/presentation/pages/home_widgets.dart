@@ -228,3 +228,137 @@ class _HomeJobsEmpty extends StatelessWidget {
     );
   }
 }
+
+// Builder-only "tradies near you" mini-list (#9). Lives in this part file so
+// home_page.dart stays near its size budget. Resolves the search origin from
+// the builder's service location and shows the top results; SEE ALL / the
+// empty CTA route to /discovery, which handles GPS fallback + filters.
+class _HomeTradiesSection extends ConsumerStatefulWidget {
+  const _HomeTradiesSection();
+
+  @override
+  ConsumerState<_HomeTradiesSection> createState() =>
+      _HomeTradiesSectionState();
+}
+
+class _HomeTradiesSectionState extends ConsumerState<_HomeTradiesSection> {
+  bool _requested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _maybeLoad();
+    });
+  }
+
+  // Builder profile loads async — resolve origin + load once geo is present.
+  void _maybeLoad() {
+    if (_requested) return;
+    final bp = ref.read(profileControllerProvider).builderProfile;
+    final lat = bp?.serviceLatitude;
+    final lng = bp?.serviceLongitude;
+    if (lat != null && lng != null) {
+      _requested = true;
+      ref.read(tradeSearchControllerProvider.notifier).setOrigin(lat, lng);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    ref.listen<ProfileState>(profileControllerProvider, (_, _) => _maybeLoad());
+    final tradies = ref
+        .watch(tradeSearchControllerProvider)
+        .results
+        .take(3)
+        .toList();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.lg.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TRADIES NEAR YOU',
+                style: tt.titleLarge!.copyWith(color: c.text1),
+              ),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => context.push('/discovery'),
+                child: Text(
+                  'SEE ALL',
+                  style: tt.labelLarge!.copyWith(
+                    color: c.action,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Gap(12.h),
+          if (tradies.isEmpty)
+            const _HomeTradiesEmpty()
+          else
+            for (var i = 0; i < tradies.length; i++) ...[
+              if (i > 0) Gap(9.h),
+              DiscoveryTradieTile(
+                result: tradies[i],
+                onTap: () => context.push('/discovery'),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeTradiesEmpty extends StatelessWidget {
+  const _HomeTradiesEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: AppSpacing.lg.h),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        children: [
+          Icon(AppIcons.search, size: AppIconSize.hero.r, color: c.text3),
+          Gap(AppSpacing.sm.h),
+          Text(
+            'NO TRADIES NEARBY',
+            style: tt.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              color: c.text1,
+            ),
+          ),
+          Gap(4.h),
+          Text(
+            'Widen your search radius.',
+            style: tt.bodyMedium!.copyWith(color: c.text3),
+            textAlign: TextAlign.center,
+          ),
+          Gap(AppSpacing.md.h),
+          SizedBox(
+            width: 200.w,
+            child: JButton(
+              label: 'WIDEN SEARCH',
+              onPressed: () => context.push('/discovery'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

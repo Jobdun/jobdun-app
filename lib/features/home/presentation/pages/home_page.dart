@@ -15,6 +15,7 @@ import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
@@ -30,6 +31,8 @@ import '../../../jobs/presentation/pages/job_detail_page.dart';
 import '../../../profile/domain/entities/builder_profile.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../discovery/presentation/providers/discovery_provider.dart';
+import '../../../discovery/presentation/widgets/discovery_tradie_tile.dart';
 
 part 'home_widgets.dart';
 part 'home_map_view.dart';
@@ -339,6 +342,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                     child: _PrimaryActionCard(isBuilder: isBuilder),
                   ),
                   SliverToBoxAdapter(child: Gap(24.h)),
+                  // Builders get a live "tradies near you" mini-list (#9).
+                  if (isBuilder)
+                    const SliverToBoxAdapter(child: _HomeTradiesSection()),
                   // Tradies only. The builder "Available now" tradie list is
                   // hidden until a tradie-search backend exists (audit F-7);
                   // builders get the stats + post-a-job card above. The jobs
