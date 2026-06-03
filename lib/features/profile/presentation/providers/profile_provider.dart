@@ -131,6 +131,8 @@ class ProfileController extends Notifier<ProfileState> {
     double? hourlyRateMin,
     double? hourlyRateMax,
     bool? hourlyRateVisible,
+    bool? isAvailable,
+    DateTime? availableFrom,
   }) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return false;
@@ -201,6 +203,11 @@ class ProfileController extends Notifier<ProfileState> {
           hourlyRateMax: hourlyRateMax,
           hourlyRateVisible:
               hourlyRateVisible ?? existing?.hourlyRateVisible ?? true,
+          isAvailable: isAvailable ?? existing?.isAvailable ?? true,
+          // Available now ⇒ no "free from" date; otherwise keep the chosen one.
+          availableFrom: (isAvailable ?? existing?.isAvailable ?? true)
+              ? null
+              : (availableFrom ?? existing?.availableFrom),
         );
         final r = await _repo.upsertTradeProfile(upserted);
         r.fold((f) => throw Exception(f.message), (_) {});

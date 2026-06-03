@@ -247,6 +247,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           hourlyRateMin: _parseDoubleOrNull(values['hourly_rate_min']),
           hourlyRateMax: _parseDoubleOrNull(values['hourly_rate_max']),
           hourlyRateVisible: _hourlyRateVisible,
+          isAvailable: values['is_available'] as bool?,
+          availableFrom: values['available_from'] as DateTime?,
         );
 
     if (!mounted) return;

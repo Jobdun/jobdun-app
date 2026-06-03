@@ -232,7 +232,43 @@ class _TradeFields extends StatelessWidget {
           onChanged: onRateVisibilityChanged,
         ),
         Gap(AppSpacing.md.h),
+        const FieldLabel('AVAILABILITY'),
+        Gap(AppSpacing.sm.h),
+        _AvailabilityFields(tp: tp),
+        Gap(AppSpacing.md.h),
       ],
+    );
+  }
+}
+
+/// Trade availability controls, threaded through FormBuilder so the edit page
+/// reads `is_available` / `available_from` from form values without extra page
+/// state. "Open for work" off reveals an optional "free from" date.
+class _AvailabilityFields extends StatelessWidget {
+  const _AvailabilityFields({required this.tp});
+
+  final TradeProfile? tp;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormBuilderField<bool>(
+      name: 'is_available',
+      initialValue: tp?.isAvailable ?? true,
+      builder: (field) {
+        final open = field.value ?? true;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AvailabilityToggleRow(value: open, onChanged: field.didChange),
+            if (!open) ...[
+              Gap(AppSpacing.md.h),
+              const FieldLabel('AVAILABLE FROM'),
+              Gap(AppSpacing.sm.h),
+              _AvailableFromField(initial: tp?.availableFrom),
+            ],
+          ],
+        );
+      },
     );
   }
 }
