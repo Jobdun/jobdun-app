@@ -79,6 +79,19 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Either<Failure, void>> setTradeAvailability(
+    String userId,
+    bool isAvailable,
+  ) async {
+    try {
+      await _datasource.setTradeAvailability(userId, isAvailable);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> uploadAvatar(String userId, File file) async {
     try {
       return right(await _datasource.uploadAvatar(userId, file));

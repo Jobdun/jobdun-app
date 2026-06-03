@@ -106,84 +106,10 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Primary Action Card ────────────────────────────────────────────────────────
-
-class _PrimaryActionCard extends StatelessWidget {
-  const _PrimaryActionCard({required this.isBuilder});
-
-  final bool isBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: GestureDetector(
-        onTap: () =>
-            isBuilder ? context.push('/jobs/create') : context.go('/jobs'),
-        child: Container(
-          padding: EdgeInsets.all(20.r),
-          decoration: BoxDecoration(
-            color: c.surfaceRaised,
-            borderRadius: BorderRadius.circular(AppRadius.card.r),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44.r,
-                height: 44.r,
-                decoration: BoxDecoration(
-                  color: c.action,
-                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                ),
-                child: Icon(
-                  isBuilder ? AppIcons.addSquare : AppIcons.search,
-                  size: AppIconSize.nav.r,
-                  color: c
-                      .background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
-                ),
-              ),
-              Gap(AppSpacing.md.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isBuilder ? 'Post a new job' : 'Browse open jobs',
-                      style: tt.titleLarge!.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: c.text1,
-                      ),
-                    ),
-                    Gap(2.h),
-                    Text(
-                      isBuilder
-                          ? 'Find skilled tradies for your next site'
-                          : 'Construction work near you',
-                      style: tt.bodyMedium!.copyWith(color: c.text3),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                AppIcons.chevronRight,
-                size: AppIconSize.md.r,
-                color: c.text3,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Latest-jobs empty state ──────────────────────────────────────────────────
-// Compact "nothing yet" card for the home jobs mini-feed. The Browse CTA lives
-// in the _PrimaryActionCard above, so this just signals an empty feed rather
-// than repeating the action.
+// ── Jobs-near-you empty state ────────────────────────────────────────────────
+// Compact "nothing yet" card for the tradie jobs feed when no real jobs are
+// nearby. The list/map toggle + availability bar carry the actions, so this
+// just signals an empty feed.
 class _HomeJobsEmpty extends StatelessWidget {
   const _HomeJobsEmpty();
 

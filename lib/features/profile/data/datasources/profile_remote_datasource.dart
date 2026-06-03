@@ -15,6 +15,7 @@ abstract interface class ProfileRemoteDataSource {
   Future<void> updateProfile(UserProfileModel profile);
   Future<void> upsertBuilderProfile(BuilderProfileModel profile);
   Future<void> upsertTradeProfile(TradeProfileModel profile);
+  Future<void> setTradeAvailability(String userId, bool isAvailable);
   Future<String> uploadAvatar(String userId, File file);
   Future<void> removeAvatar(String userId);
   Future<String> uploadTradeLicence(String userId, File file);
@@ -111,6 +112,20 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   Future<void> upsertTradeProfile(TradeProfileModel profile) async {
     try {
       await _client.from('trade_profiles').upsert(profile.toJson());
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  // Targeted "open for work" toggle — a single-column update so flipping
+  // availability from the home doesn't round-trip the whole profile row.
+  @override
+  Future<void> setTradeAvailability(String userId, bool isAvailable) async {
+    try {
+      await _client
+          .from('trade_profiles')
+          .update({'is_available': isAvailable})
+          .eq('id', userId);
     } catch (e) {
       throw ServerException(e.toString());
     }

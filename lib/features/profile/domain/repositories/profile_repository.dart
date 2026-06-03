@@ -14,6 +14,12 @@ abstract interface class ProfileRepository {
   Future<Either<Failure, void>> updateProfile(UserProfile profile);
   Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile);
   Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile);
+
+  // Single-column "open for work" toggle for the trade's home availability bar.
+  Future<Either<Failure, void>> setTradeAvailability(
+    String userId,
+    bool isAvailable,
+  );
   Future<Either<Failure, String>> uploadAvatar(String userId, File file);
 
   // Clears profiles.avatar_url and deletes the avatar object from public-media.

@@ -234,6 +234,22 @@ class ProfileController extends Notifier<ProfileState> {
     }
   }
 
+  /// Persist the trade's "open for work" status from the home availability bar
+  /// and refresh the cached trade profile. Returns true on success so the
+  /// toggle can roll back its optimistic flip on failure.
+  Future<bool> setTradeAvailability(bool isAvailable) async {
+    final userId = readCurrentUserId(ref);
+    if (userId == null) return false;
+    final result = await _repo.setTradeAvailability(userId, isAvailable);
+    if (result.isLeft()) {
+      state = state.copyWith(error: result.fold((f) => f.message, (_) => null));
+      return false;
+    }
+    final refreshed = await _repo.getTradeProfile(userId);
+    refreshed.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
+    return true;
+  }
+
   Future<bool> uploadAvatar(File file) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return false;

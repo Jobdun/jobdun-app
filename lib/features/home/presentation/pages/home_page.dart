@@ -18,6 +18,7 @@ import '../../../../app/theme/app_typography.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
+import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/services/ftue_service.dart';
@@ -37,6 +38,7 @@ import '../../../discovery/presentation/providers/discovery_provider.dart';
 
 part 'home_widgets.dart';
 part 'home_builder_bento.dart';
+part 'home_tradie_availability.dart';
 part 'home_map_view.dart';
 part 'home_map_widgets.dart';
 
@@ -331,8 +333,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                   // hero + live stat tiles + tradies-nearby + quick actions.
                   if (isBuilder)
                     const SliverToBoxAdapter(child: _BuilderBentoGrid()),
-                  // Tradies keep the stats + post/browse card + latest-jobs feed.
+                  // Tradie home (direction E): availability bar spine + stats +
+                  // a list-primary "jobs near you" feed. The map is one tap away
+                  // via the list/map toggle FAB (showMapToggle).
                   if (!isBuilder) ...[
+                    const SliverToBoxAdapter(child: _TradieAvailabilityBar()),
                     SliverToBoxAdapter(
                       child: _StatsRow(
                         isBuilder: false,
@@ -347,14 +352,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     SliverToBoxAdapter(child: Gap(24.h)),
                     SliverToBoxAdapter(
-                      child: _PrimaryActionCard(isBuilder: false),
-                    ),
-                    SliverToBoxAdapter(child: Gap(24.h)),
-                    SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
                         child: Text(
-                          'Latest jobs',
+                          'JOBS NEAR YOU',
                           style: tt.titleLarge!.copyWith(color: c.text1),
                         ),
                       ),
