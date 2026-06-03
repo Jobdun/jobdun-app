@@ -72,10 +72,14 @@ One migration: `supabase/migrations/<ts>_trade_search.sql`.
 
 ### 4.1 Columns + indexes
 
+> **Schema-drift fix (discovered during planning):** `TradeProfileModel.fromJson` already reads `average_rating` / `rating_count`, but **those columns were never created** — ratings live only in `reviews` (`reviewee_id`, `rating`). This migration adds the real columns and keeps them in sync, fixing the drift *and* giving the search an index-able rating to filter on. (`hire_count` / `jobs_completed` / `total_applications` are also phantom in the model but out of scope here — noted for a later cleanup.)
+
 ```sql
 ALTER TABLE public.trade_profiles
   ADD COLUMN IF NOT EXISTS is_available   boolean NOT NULL DEFAULT true,
-  ADD COLUMN IF NOT EXISTS available_from date;
+  ADD COLUMN IF NOT EXISTS available_from date,
+  ADD COLUMN IF NOT EXISTS average_rating numeric(3,2),
+  ADD COLUMN IF NOT EXISTS rating_count   int NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS trade_profiles_is_available_idx
   ON public.trade_profiles (is_available);
@@ -83,6 +87,8 @@ CREATE INDEX IF NOT EXISTS trade_profiles_average_rating_idx
   ON public.trade_profiles (average_rating);
 -- composite (base_latitude, base_longitude) btree already exists (places_columns migration)
 ```
+
+**Rating denormalisation** — `recompute_trade_rating(p_trade_id uuid)` recomputes `average_rating`/`rating_count` from `reviews` for one reviewee that has a `trade_profiles` row; an `AFTER INSERT/UPDATE/DELETE` trigger on `reviews` calls it for the affected `reviewee_id`; a one-time backfill seeds existing rows. Builders share the same model drift in `builder_profiles` — explicitly out of scope this slice.
 
 ### 4.2 `search_trades` RPC
 
