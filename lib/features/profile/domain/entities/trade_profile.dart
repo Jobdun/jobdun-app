@@ -30,6 +30,8 @@ class TradeProfile extends Equatable {
     this.jobsCompleted = 0,
     this.averageRating,
     this.ratingCount = 0,
+    this.isAvailable = true,
+    this.availableFrom,
     this.deletedAt,
   });
 
@@ -68,6 +70,11 @@ class TradeProfile extends Equatable {
   final int jobsCompleted;
   final double? averageRating;
   final int ratingCount;
+  // "Open for work" toggle, driven by the trade in profile-edit. Search treats
+  // `isAvailable || availableFrom <= today` as available now.
+  final bool isAvailable;
+  // When isAvailable is false, the date the trade becomes free again.
+  final DateTime? availableFrom;
   // Soft-delete timestamp. Repository default reads filter on
   // `deletedAt == null`; deleted rows stay around so references in
   // job_applications and reviews still resolve.

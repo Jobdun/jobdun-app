@@ -29,6 +29,8 @@ class TradeProfileModel extends TradeProfile {
     super.jobsCompleted,
     super.averageRating,
     super.ratingCount,
+    super.isAvailable,
+    super.availableFrom,
     super.deletedAt,
   });
 
@@ -64,6 +66,10 @@ class TradeProfileModel extends TradeProfile {
         jobsCompleted: json['jobs_completed'] as int? ?? 0,
         averageRating: (json['average_rating'] as num?)?.toDouble(),
         ratingCount: json['rating_count'] as int? ?? 0,
+        isAvailable: json['is_available'] as bool? ?? true,
+        availableFrom: json['available_from'] != null
+            ? DateTime.parse(json['available_from'] as String)
+            : null,
         deletedAt: json['deleted_at'] != null
             ? DateTime.parse(json['deleted_at'] as String)
             : null,
@@ -84,6 +90,9 @@ class TradeProfileModel extends TradeProfile {
     'base_postcode': basePostcode,
     'about': about,
     'trade_other': tradeOther,
+    'is_available': isAvailable,
+    if (availableFrom != null)
+      'available_from': availableFrom!.toIso8601String().substring(0, 10),
     // Post-MapTiler additions — emit only when set so writes don't fail
     // pre-migration on environments that haven't applied
     // 20260522000001_places_columns.sql yet.
