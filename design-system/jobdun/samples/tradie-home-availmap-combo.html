@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobdun · Tradie Home — Availability + Map (5 variations)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0F172A;--surface:#1E293B;--raised:#334155;--cta:#F97316;--ctaInk:#0F172A;--text1:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--border:#334155;--success:#22C55E;--warning:#F59E0B;--error:#EF4444;--r:6px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#070C18;color:var(--text1);font-family:'Open Sans',sans-serif;-webkit-font-smoothing:antialiased;padding:32px 20px 80px;}
+  .page-head{max-width:1320px;margin:0 auto 32px;}
+  .page-head h1{font-family:'Oswald';font-weight:700;font-size:32px;letter-spacing:.5px;}
+  .page-head .accent{color:var(--cta);}
+  .page-head p{color:var(--text2);font-size:15px;line-height:1.6;max-width:800px;margin-top:10px;}
+  .grid{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(390px,1fr));gap:28px;align-items:start;}
+  .cap{margin-bottom:14px;}
+  .cap .num{font-family:'Oswald';font-weight:700;font-size:13px;color:var(--ctaInk);background:var(--cta);padding:2px 9px;border-radius:4px;letter-spacing:.5px;}
+  .cap h2{font-family:'Oswald';font-weight:600;font-size:19px;display:inline-block;margin-left:10px;letter-spacing:.3px;}
+  .cap .desc{color:var(--text2);font-size:13px;line-height:1.55;margin-top:7px;}
+  .cap .best{color:var(--text3);font-size:12px;margin-top:5px;}
+  .cap .best em{color:var(--cta);font-style:normal;font-weight:600;}
+  .phone{width:390px;height:780px;background:var(--bg);border:1px solid var(--border);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 6px;font-size:12px;font-weight:600;}
+  .screen{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative;}
+  .topbar{display:flex;align-items:center;gap:10px;padding:8px 16px 12px;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--raised);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:14px;flex:none;}
+  .searchbar{flex:1;height:42px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--text3);font-size:13px;}
+  .iconbtn{width:42px;height:42px;border-radius:var(--r);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:none;position:relative;}
+  .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--cta);border:2px solid var(--surface);}
+  svg.i{width:22px;height:22px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  svg.i.sm{width:18px;height:18px;}svg.i.lg{width:30px;height:30px;}
+  .sec-title{font-family:'Oswald';font-weight:600;font-size:17px;letter-spacing:.3px;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;}
+  .seeall{font-family:'Oswald';font-weight:600;font-size:12px;letter-spacing:.6px;color:var(--cta);}
+  .btn{font-family:'Oswald';font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;border-radius:var(--r);padding:14px;text-align:center;background:var(--cta);color:var(--ctaInk);display:flex;align-items:center;justify-content:center;gap:8px;}
+  .tag{font-weight:700;font-size:10px;letter-spacing:.5px;padding:3px 7px;border-radius:4px;text-transform:uppercase;}
+  .tag.open{background:rgba(34,197,94,.15);color:var(--success);}
+  .tag.urgent{background:rgba(239,68,68,.16);color:#FCA5A5;}
+  .job{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:10px;}
+  .job .t{font-family:'Oswald';font-weight:600;font-size:16px;}
+  .job .meta{color:var(--text2);font-size:12px;margin-top:3px;}
+  .job .foot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;}
+  .pay{font-family:'Oswald';font-weight:700;font-size:17px;font-variant-numeric:tabular-nums;}
+  .applybtn{font-family:'Oswald';font-weight:700;font-size:11px;letter-spacing:.6px;background:var(--cta);color:var(--ctaInk);padding:7px 14px;border-radius:5px;}
+  /* availability */
+  .avail{display:inline-flex;align-items:center;gap:10px;background:rgba(30,41,59,.95);border:1px solid var(--border);border-radius:999px;padding:6px 8px 6px 14px;}
+  .avail .lab{font-family:'Oswald';font-weight:600;font-size:13px;letter-spacing:.4px;color:var(--success);}
+  .toggle{width:46px;height:26px;background:var(--cta);border-radius:999px;position:relative;flex:none;}
+  .toggle i{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;}
+  .toggle.off{background:var(--raised);}.toggle.off i{left:3px;right:auto;background:var(--text3);}
+  .availband{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--success);border-radius:8px;padding:14px 16px;}
+  .availband.off{border-color:var(--border);}
+  /* map */
+  .map{background:repeating-linear-gradient(0deg,#16213b 0 1px,transparent 1px 26px),repeating-linear-gradient(90deg,#16213b 0 1px,transparent 1px 26px),#11192e;position:relative;overflow:hidden;}
+  .pin{position:absolute;height:24px;padding:0 7px;border-radius:12px;background:var(--cta);display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);font-family:'Oswald';font-weight:700;font-size:11px;color:var(--ctaInk);font-variant-numeric:tabular-nums;}
+  .me{position:absolute;width:16px;height:16px;border-radius:50%;background:#3B82F6;border:3px solid var(--bg);box-shadow:0 0 0 6px rgba(59,130,246,.25);}
+  .sheet{background:var(--surface);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:10px 16px 14px;}
+  .handle{width:38px;height:4px;background:var(--raised);border-radius:2px;margin:2px auto 12px;}
+  .nav{display:flex;justify-content:space-around;align-items:center;padding:14px 16px 18px;border-top:1px solid var(--border);background:var(--bg);}
+  .nav .n{color:var(--text3);}.nav .n.on{color:var(--cta);}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="filter" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></symbol>
+  <symbol id="brief" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5.4A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="checklist" viewBox="0 0 24 24"><path d="M4 7h12M4 12h12M4 17h8"/><path d="m18 6 1.5 1.5L22 5"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7Z"/></symbol>
+  <symbol id="expand" viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"/></symbol>
+  <symbol id="eyeoff" viewBox="0 0 24 24"><path d="M10.7 5.1A9 9 0 0 1 21 12a9.6 9.6 0 0 1-1.6 2.4M6.6 6.6A9.5 9.5 0 0 0 3 12a9 9 0 0 0 12.9 4.3"/><path d="M3 3l18 18"/></symbol>
+</defs></svg>
+
+<div class="page-head">
+  <h1>TRADIE HOME · <span class="accent">AVAILABILITY + MAP</span> — 5 VARIATIONS</h1>
+  <p>Five takes on combining <b>#02 Availability Hero</b> + <b>#04 Map-First Jobs</b> — the rideshare-driver model for trades ("I'm ON → here's the work near me"). They differ in how dominant the map is and where availability sits. Variation C is the all-important <b>OFF state</b> the whole pattern hinges on. Same Jobdun system: dark, orange CTA, Oswald + Open Sans, flat, dark-on-orange.</p>
+</div>
+
+<div class="grid">
+
+  <!-- A — DRIVER MODE -->
+  <div><div class="cap"><span class="num">A</span><h2>DRIVER MODE (full map)</h2>
+    <div class="desc">Full-bleed map. A floating OPEN-FOR-WORK pill sits top-left; pins show pay; a draggable sheet peeks the matched job list. Most immersive — pure rideshare feel.</div>
+    <div class="best"><em>Strongest when</em> distance is the #1 decision and you want the boldest, most modern home.</div></div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div><div class="screen">
+      <div class="map" style="position:absolute;inset:0">
+        <div style="position:absolute;top:14px;left:16px;right:16px;display:flex;gap:10px;align-items:center;z-index:2">
+          <div class="avail"><span class="lab">OPEN FOR WORK</span><div class="toggle"><i></i></div></div>
+          <div style="flex:1"></div>
+          <div class="iconbtn" style="background:rgba(30,41,59,.95)"><svg class="i"><use href="#filter"/></svg></div>
+        </div>
+        <div class="me" style="top:300px;left:185px"></div>
+        <div class="pin" style="top:150px;left:80px">$65</div>
+        <div class="pin" style="top:235px;left:240px">$58</div>
+        <div class="pin" style="top:185px;left:295px">$90</div>
+        <div class="pin" style="top:330px;left:110px">$52</div>
+      </div>
+      <div style="margin-top:auto;position:relative;z-index:3"><div class="sheet">
+        <div class="handle"></div>
+        <div class="row-between" style="margin-bottom:10px"><div class="sec-title">11 JOBS NEARBY</div><span class="seeall">LIST</span></div>
+        <div class="job"><div class="row-between"><div class="t">Switchboard upgrade</div><span class="tag urgent">URGENT</span></div><div class="meta">Auburn · 4.2km</div><div class="foot"><span class="pay">$65/hr</span><span class="applybtn">APPLY NOW</span></div></div>
+        <div class="job" style="margin-bottom:0"><div class="row-between"><div class="t">Emergency callout</div><span class="tag urgent">URGENT</span></div><div class="meta">Granville · 3km</div><div class="foot"><span class="pay">$90/hr</span><span class="applybtn">APPLY NOW</span></div></div>
+      </div>
+      <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#checklist"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- B — STATUS BAND + MAP CARD -->
+  <div><div class="cap"><span class="num">B</span><h2>STATUS BAND + MAP CARD</h2>
+    <div class="desc">More structured. A solid availability band up top ("visible to 8 builders"), then a contained map card, then the matched-jobs list. Map is a section, not the whole screen — calmer, more scannable.</div>
+    <div class="best"><em>Strongest when</em> you want the map's value without committing the whole home to it.</div></div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div><div class="screen">
+      <div class="topbar"><div class="avatar">DT</div><div style="flex:1"><div style="font-family:'Oswald';font-weight:600;font-size:16px">G'DAY, DAVE</div><div style="color:var(--text2);font-size:12px">Electrician · Parramatta</div></div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+      <div style="flex:1;overflow:hidden;padding:0 16px">
+        <div class="availband"><div><div style="font-family:'Oswald';font-weight:700;font-size:16px;color:var(--success)">OPEN FOR WORK</div><div style="color:var(--text2);font-size:12px;margin-top:2px">Visible to 8 builders nearby</div></div><div class="toggle"><i></i></div></div>
+        <div class="map" style="height:230px;border-radius:8px;margin-top:12px;border:1px solid var(--border)">
+          <div class="me" style="top:110px;left:175px"></div>
+          <div class="pin" style="top:55px;left:70px">$65</div><div class="pin" style="top:150px;left:230px">$58</div><div class="pin" style="top:90px;left:285px">$90</div>
+          <div style="position:absolute;left:12px;bottom:12px;font-family:'Oswald';font-weight:600;font-size:12px;background:rgba(15,23,42,.85);padding:6px 10px;border-radius:5px">11 JOBS NEARBY</div>
+        </div>
+        <div class="row-between" style="margin:16px 0 10px"><div class="sec-title">MATCHED FOR YOU</div><span class="seeall">SEE ALL</span></div>
+        <div class="job" style="margin-bottom:0"><div class="row-between"><div class="t">Switchboard upgrade</div><span class="tag urgent">URGENT</span></div><div class="meta">Auburn · 4.2km</div><div class="foot"><span class="pay">$65/hr</span><span class="applybtn">APPLY NOW</span></div></div>
+      </div>
+      <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#checklist"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+    </div></div>
+  </div>
+
+  <!-- C — OFF STATE -->
+  <div><div class="cap"><span class="num">C</span><h2>OFF STATE (go online)</h2>
+    <div class="desc">The make-or-break edge state of the whole pattern. Toggle OFF ⇒ map dims, pins hide, you're invisible to builders, and a single GO ONLINE CTA takes over. Makes the toggle <em>mean</em> something.</div>
+    <div class="best"><em>Pairs with A or B</em> — this is what they become when the tradie is off the clock.</div></div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div><div class="screen">
+      <div class="map" style="position:absolute;inset:0">
+        <div class="me" style="top:300px;left:185px;opacity:.5"></div>
+        <div class="pin" style="top:150px;left:80px;opacity:.18">$65</div><div class="pin" style="top:235px;left:240px;opacity:.18">$58</div><div class="pin" style="top:185px;left:295px;opacity:.18">$90</div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(7,12,24,.78);z-index:1"></div>
+      <div style="position:relative;z-index:2;display:flex;flex-direction:column;height:100%">
+        <div style="position:absolute;top:14px;left:16px;right:16px;display:flex;align-items:center"><div class="avail off" style="background:rgba(30,41,59,.95)"><span class="lab" style="color:var(--text3)">OFF THE CLOCK</span><div class="toggle off"><i></i></div></div></div>
+        <div style="margin:auto;text-align:center;padding:0 30px">
+          <div style="width:64px;height:64px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--text3)"><svg class="i lg"><use href="#eyeoff"/></svg></div>
+          <div style="font-family:'Oswald';font-weight:700;font-size:24px">YOU'RE OFF THE CLOCK</div>
+          <div style="color:var(--text2);font-size:14px;line-height:1.5;margin-top:8px">Builders can't see you and jobs are hidden. Go online to start getting work near you.</div>
+          <div class="btn" style="margin-top:22px"><svg class="i sm"><use href="#bolt"/></svg> GO ONLINE</div>
+        </div>
+        <div class="nav" style="background:transparent"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#checklist"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- D — SPLIT 3-ZONE -->
+  <div><div class="cap"><span class="num">D</span><h2>SPLIT 3-ZONE</h2>
+    <div class="desc">Map on top (~40%), an availability strip as the divider, then a scrollable job list filling the rest. Map and list are always both visible — no dragging, no hidden content.</div>
+    <div class="best"><em>Strongest when</em> you want map + list at once with zero interaction cost.</div></div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div><div class="screen">
+      <div class="map" style="height:240px;position:relative">
+        <div style="position:absolute;top:12px;left:16px;right:16px;display:flex;gap:10px"><div class="searchbar" style="background:rgba(30,41,59,.95)"><svg class="i sm"><use href="#search"/></svg> Jobs near you</div><div class="iconbtn" style="background:rgba(30,41,59,.95)"><svg class="i"><use href="#filter"/></svg></div></div>
+        <div class="me" style="top:130px;left:180px"></div>
+        <div class="pin" style="top:80px;left:80px">$65</div><div class="pin" style="top:160px;left:240px">$58</div><div class="pin" style="top:110px;left:300px">$90</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--surface);border-top:1px solid var(--success);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:var(--success)"></span><span style="font-family:'Oswald';font-weight:600;font-size:14px;color:var(--success)">OPEN FOR WORK</span></div>
+        <div class="toggle"><i></i></div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:12px 16px 0">
+        <div class="job"><div class="row-between"><div class="t">Switchboard upgrade</div><span class="tag urgent">URGENT</span></div><div class="meta">Auburn · 4.2km</div><div class="foot"><span class="pay">$65/hr</span><span class="applybtn">APPLY</span></div></div>
+        <div class="job" style="margin-bottom:0"><div class="row-between"><div class="t">Rewire — 3br reno</div><span class="tag open">OPEN</span></div><div class="meta">Penrith · 9km</div><div class="foot"><span class="pay">$58/hr</span><span class="applybtn">APPLY</span></div></div>
+      </div>
+      <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#checklist"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+    </div></div>
+  </div>
+
+  <!-- E — LIST-PRIMARY + MAP PEEK -->
+  <div><div class="cap"><span class="num">E</span><h2>LIST-PRIMARY + MAP PEEK</h2>
+    <div class="desc">Inverts the dominance: availability hero + matched-jobs list lead, with a slim "map peek" strip you tap to expand to full map. Cheapest on map cost; keeps the scannable list as the hero.</div>
+    <div class="best"><em>Strongest when</em> you want the combo's benefits but the list to stay primary (and lighter to build).</div></div>
+    <div class="phone"><div class="statusbar"><span>9:41</span><span>5G&nbsp;&nbsp;100%</span></div><div class="screen">
+      <div class="topbar"><div class="avatar">DT</div><div style="flex:1;font-family:'Oswald';font-weight:600;font-size:18px">FIND WORK</div><div class="iconbtn"><svg class="i"><use href="#bell"/></svg><span class="dot"></span></div></div>
+      <div style="flex:1;overflow:hidden;padding:0 16px">
+        <div class="availband"><div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:var(--success)"></span><span style="font-family:'Oswald';font-weight:600;font-size:15px;color:var(--success)">OPEN FOR WORK</span></div><div class="toggle"><i></i></div></div>
+        <div class="map" style="height:96px;border-radius:8px;margin-top:12px;border:1px solid var(--border);position:relative">
+          <div class="pin" style="top:24px;left:50px">$65</div><div class="pin" style="top:54px;left:150px">$90</div><div class="pin" style="top:30px;left:250px">$58</div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(15,23,42,.35)"><span style="font-family:'Oswald';font-weight:700;font-size:14px">11 JOBS ON THE MAP</span><span style="display:flex;align-items:center;gap:6px;color:var(--cta);font-family:'Oswald';font-weight:600;font-size:12px">EXPAND <svg class="i sm" style="color:var(--cta)"><use href="#expand"/></svg></span></div>
+        </div>
+        <div class="row-between" style="margin:16px 0 10px"><div class="sec-title">MATCHED FOR YOU</div><span class="seeall">SEE ALL</span></div>
+        <div class="job"><div class="row-between"><div class="t">Switchboard upgrade</div><span class="tag urgent">URGENT</span></div><div class="meta">Auburn · 4.2km</div><div class="foot"><span class="pay">$65/hr</span><span class="applybtn">APPLY</span></div></div>
+        <div class="job" style="margin-bottom:0"><div class="row-between"><div class="t">Rewire — 3br reno</div><span class="tag open">OPEN</span></div><div class="meta">Penrith · 9km</div><div class="foot"><span class="pay">$58/hr</span><span class="applybtn">APPLY</span></div></div>
+      </div>
+      <div class="nav"><svg class="i n on"><use href="#home"/></svg><svg class="i n"><use href="#brief"/></svg><svg class="i n"><use href="#checklist"/></svg><svg class="i n"><use href="#chat"/></svg><svg class="i n"><use href="#user"/></svg></div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>
