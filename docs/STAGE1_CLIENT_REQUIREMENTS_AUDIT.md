@@ -29,11 +29,11 @@
 | 6 | Job posting system | ✅ | `jobs` table, create/edit/delete, feed, detail, map. |
 | 7 | Urgent job posting option | ✅ | `job_urgency` enum (`standard`/`urgent`) + badge. |
 | 8 | Push notifications for new jobs | ❌ | No push SDK, no device-token table, no new-job trigger. In-app centre only. |
-| 9 | Search trades by location / rating / availability | ❌ | No trade-search feature. Home "tradies nearby" list is **sample data**. |
-| 10 | GPS / map view for nearby crews | 🟡 | Real map exists but plots **jobs**, not crews. |
+| 9 | Search trades by location / rating / availability | ✅ | `search_trades` RPC (bounding-box + haversine + rating + availability); `lib/features/discovery/` module; home builder mini-list + `/discovery` page; trade `OPEN FOR WORK` toggle. *(2026-06-04)* |
+| 10 | GPS / map view for nearby crews | 🟡 | Real map plots **jobs**; crew markers are the next fast-follow now that `search_trades` exists. |
 | 11 | In-app messaging / chat | ✅ | Realtime Supabase `.stream()` threads + conversations. |
 | 12 | Photo / file uploads | ✅ | Pick/crop/compress pipeline, 5 storage buckets, zoom viewer. |
-| 13 | Availability calendar | ❌ | `table_calendar` declared but **unused**; no availability field/UI. |
+| 13 | Availability calendar | 🟡 | Availability **filter** shipped (`is_available`/`available_from` + search filter + profile toggle, 2026-06-04). Full weekly `table_calendar` view still deferred. |
 | 14 | Accept / decline job requests | ✅ | Application flow: shortlist/hire/reject + trade withdraw/decline. |
 | 15 | Scheduling calendar | ❌ | No scheduling feature; `table_calendar` unused. |
 | 16 | Timesheets / check in–out | ❌ | No code, no table. |
@@ -45,7 +45,7 @@
 | 22 | Licence / insurance expiry reminders | 🟡 | Sweep function + notify exists but **not scheduled** (no pg_cron / cron edge fn). |
 | 23 | AI auto-match / smart recommendations | ❌ | Marked *future* by client; no recommendation code. |
 
-**Tally:** ✅ 10 done · 🟡 3 partial · ❌ 10 not started.
+**Tally:** ✅ 11 done · 🟡 3 partial · ❌ 9 not started. *(Updated 2026-06-04: #9 done, #13 → partial via the availability filter.)*
 
 ---
 

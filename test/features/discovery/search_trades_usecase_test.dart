@@ -9,8 +9,7 @@ import 'package:jobdun/features/discovery/domain/repositories/trade_search_repos
 import 'package:jobdun/features/discovery/domain/usecases/search_trades.dart';
 import 'package:jobdun/features/profile/domain/entities/trade_profile.dart';
 
-class MockTradeSearchRepository extends Mock
-    implements TradeSearchRepository {}
+class MockTradeSearchRepository extends Mock implements TradeSearchRepository {}
 
 void main() {
   late SearchTrades useCase;

@@ -112,11 +112,18 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
         backgroundColor: c.card,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text('FIND A TRADIE', style: tt.titleLarge!.copyWith(color: c.text1)),
+        title: Text(
+          'FIND A TRADIE',
+          style: tt.titleLarge!.copyWith(color: c.text1),
+        ),
         actions: [
           IconButton(
             tooltip: 'Filters',
-            icon: Icon(AppIcons.filter, size: AppIconSize.inline.r, color: c.text1),
+            icon: Icon(
+              AppIcons.filter,
+              size: AppIconSize.inline.r,
+              color: c.text1,
+            ),
             onPressed: _openFilters,
           ),
         ],
@@ -138,10 +145,8 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
                   ),
                   separatorBuilder: (_, _) => Gap(9.h),
                   builderDelegate: PagedChildBuilderDelegate<TradeSearchResult>(
-                    itemBuilder: (context, result, i) => DiscoveryTradieTile(
-                      result: result,
-                      onTap: () {},
-                    ),
+                    itemBuilder: (context, result, i) =>
+                        DiscoveryTradieTile(result: result, onTap: () {}),
                     firstPageProgressIndicatorBuilder: (_) =>
                         const _DiscoverySkeleton(),
                     newPageProgressIndicatorBuilder: (_) => Padding(

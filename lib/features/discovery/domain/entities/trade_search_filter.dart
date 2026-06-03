@@ -40,6 +40,12 @@ class TradeSearchFilter extends Equatable {
   );
 
   @override
-  List<Object?> get props =>
-      [originLat, originLng, radiusKm, minRating, availableOnly, query];
+  List<Object?> get props => [
+    originLat,
+    originLng,
+    radiusKm,
+    minRating,
+    availableOnly,
+    query,
+  ];
 }

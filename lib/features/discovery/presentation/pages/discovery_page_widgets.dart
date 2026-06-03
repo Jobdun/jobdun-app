@@ -15,7 +15,10 @@ class _DiscoverySkeleton extends StatelessWidget {
     return JSkeletonList(
       enabled: true,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: AppSpacing.sm.h),
+        padding: EdgeInsets.symmetric(
+          horizontal: 20.w,
+          vertical: AppSpacing.sm.h,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -107,7 +110,11 @@ class _DiscoveryError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(AppIcons.warning, size: AppIconSize.feature.r, color: c.urgent),
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
             Gap(AppSpacing.md.h),
             Text(
               message,

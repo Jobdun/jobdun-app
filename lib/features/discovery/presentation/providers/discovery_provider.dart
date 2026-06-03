@@ -41,7 +41,9 @@ class TradeSearchController extends Notifier<TradeSearchState> {
   PagingController<int, TradeSearchResult> get pagingController {
     final existing = _pagingController;
     if (existing != null) return existing;
-    final controller = PagingController<int, TradeSearchResult>(firstPageKey: 0);
+    final controller = PagingController<int, TradeSearchResult>(
+      firstPageKey: 0,
+    );
     controller.addPageRequestListener(_fetchPage);
     _pagingController = controller;
     return controller;

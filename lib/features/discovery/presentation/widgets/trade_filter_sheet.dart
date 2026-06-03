@@ -68,7 +68,9 @@ class _TradeFilterSheetState extends State<TradeFilterSheet> {
     return Container(
       decoration: BoxDecoration(
         color: c.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.card.r)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.card.r),
+        ),
       ),
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg.w,

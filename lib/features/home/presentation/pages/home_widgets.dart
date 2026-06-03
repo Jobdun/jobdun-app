@@ -326,7 +326,10 @@ class _HomeTradiesEmpty extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: AppSpacing.lg.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: 20.w,
+        vertical: AppSpacing.lg.h,
+      ),
       decoration: BoxDecoration(
         color: c.card,
         borderRadius: BorderRadius.circular(AppRadius.card.r),
