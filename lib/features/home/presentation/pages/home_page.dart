@@ -14,8 +14,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../../app/theme/app_typography.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
-import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
@@ -31,10 +32,11 @@ import '../../../jobs/presentation/pages/job_detail_page.dart';
 import '../../../profile/domain/entities/builder_profile.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../discovery/domain/entities/trade_search_result.dart';
 import '../../../discovery/presentation/providers/discovery_provider.dart';
-import '../../../discovery/presentation/widgets/discovery_tradie_tile.dart';
 
 part 'home_widgets.dart';
+part 'home_builder_bento.dart';
 part 'home_map_view.dart';
 part 'home_map_widgets.dart';
 
@@ -325,32 +327,29 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
                   SliverToBoxAdapter(child: Gap(20.h)),
-                  SliverToBoxAdapter(
-                    child: _StatsRow(
-                      isBuilder: isBuilder,
-                      builderProfile: profileState.builderProfile,
-                      tradeProfile: profileState.tradeProfile,
-                      pendingCount: appsState.pendingIncomingCount,
-                      myAppsCount: appsState.myApplications.length,
-                      shortlistedCount: appsState.myApplications
-                          .where((a) => a.status.name == 'shortlisted')
-                          .length,
-                    ),
-                  ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
-                  SliverToBoxAdapter(
-                    child: _PrimaryActionCard(isBuilder: isBuilder),
-                  ),
-                  SliverToBoxAdapter(child: Gap(24.h)),
-                  // Builders get a live "tradies near you" mini-list (#9).
+                  // Builders get the bento-grid home (direction #02): post-job
+                  // hero + live stat tiles + tradies-nearby + quick actions.
                   if (isBuilder)
-                    const SliverToBoxAdapter(child: _HomeTradiesSection()),
-                  // Tradies only. The builder "Available now" tradie list is
-                  // hidden until a tradie-search backend exists (audit F-7);
-                  // builders get the stats + post-a-job card above. The jobs
-                  // feed reads real Supabase data — empty falls back to a
-                  // compact empty state, never sample listings.
+                    const SliverToBoxAdapter(child: _BuilderBentoGrid()),
+                  // Tradies keep the stats + post/browse card + latest-jobs feed.
                   if (!isBuilder) ...[
+                    SliverToBoxAdapter(
+                      child: _StatsRow(
+                        isBuilder: false,
+                        builderProfile: profileState.builderProfile,
+                        tradeProfile: profileState.tradeProfile,
+                        pendingCount: appsState.pendingIncomingCount,
+                        myAppsCount: appsState.myApplications.length,
+                        shortlistedCount: appsState.myApplications
+                            .where((a) => a.status.name == 'shortlisted')
+                            .length,
+                      ),
+                    ),
+                    SliverToBoxAdapter(child: Gap(24.h)),
+                    SliverToBoxAdapter(
+                      child: _PrimaryActionCard(isBuilder: false),
+                    ),
+                    SliverToBoxAdapter(child: Gap(24.h)),
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
