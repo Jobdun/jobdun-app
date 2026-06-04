@@ -14,6 +14,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../providers/jobs_provider.dart';
 import 'job_apply_sheet.dart';
@@ -296,8 +297,22 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                         label: 'VIEW APPLICANTS',
                         icon: AppIcons.applicantsOutline,
                         onPressed: () {
-                          context.pop();
-                          context.go('/applications');
+                          final jobId = args.id;
+                          if (jobId == null) return;
+                          final loc = [args.suburb, args.state]
+                              .whereType<String>()
+                              .where((s) => s.isNotEmpty)
+                              .join(', ');
+                          context.push(
+                            '/jobs/$jobId/applicants',
+                            extra: JobApplicantsArgs(
+                              jobId: jobId,
+                              title: args.title,
+                              tradeType: args.tradeType,
+                              locationLabel: loc.isEmpty ? null : loc,
+                              payLabel: args.rate,
+                            ),
+                          );
                         },
                       ),
                     ),

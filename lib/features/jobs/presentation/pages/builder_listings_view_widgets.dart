@@ -16,7 +16,7 @@ class _ListingCard extends ConsumerWidget {
     final applicants = job.applicationCount;
 
     return GestureDetector(
-      onTap: () => _openDetail(context),
+      onTap: () => _openApplicants(context),
       child: Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
@@ -104,6 +104,22 @@ class _ListingCard extends ConsumerWidget {
     context.push('/jobs/${job.id}', extra: JobDetailArgs.fromJob(job));
   }
 
+  // Builder taps a listing → applicants for that job (layout A). The job
+  // summary rides along so the screen renders before the list loads.
+  void _openApplicants(BuildContext context) {
+    context.push(
+      '/jobs/${job.id}/applicants',
+      extra: JobApplicantsArgs(
+        jobId: job.id,
+        title: job.title,
+        tradeType: job.tradeTypeRequired,
+        locationLabel: '${job.suburb}, ${job.state}',
+        payLabel: job.displayBudget,
+        statusLabel: job.status.label.toUpperCase(),
+      ),
+    );
+  }
+
   /// Overflow sheet for a listing. Lists only the actions wired today (view
   /// applicants + delete); Edit / Mark filled / Duplicate slot in here as they
   /// are built.
@@ -148,13 +164,13 @@ class _ListingCard extends ConsumerWidget {
                   child: Row(
                     children: [
                       Icon(
-                        AppIcons.applicantsOutline,
+                        AppIcons.info,
                         size: AppIconSize.md.r,
                         color: c.text2,
                       ),
                       Gap(AppSpacing.md.w),
                       Text(
-                        'View applicants',
+                        'Job details',
                         style: tt.bodyLarge!.copyWith(
                           fontWeight: FontWeight.w600,
                           color: c.text1,

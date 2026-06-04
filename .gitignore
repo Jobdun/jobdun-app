@@ -89,3 +89,6 @@ firebase-debug.log*
 
 # Flutter golden-test failure artifacts (regenerated on every mismatch)
 test/**/failures/
+
+# Brainstorming visual-companion artifacts
+.superpowers/

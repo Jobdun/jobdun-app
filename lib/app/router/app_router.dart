@@ -24,7 +24,9 @@ import '../../features/home/presentation/pages/home_shell_page.dart';
 import '../../features/jobs/presentation/pages/job_create_page.dart';
 import '../../features/jobs/presentation/pages/job_detail_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
+import '../../features/applications/presentation/pages/applicant_detail_page.dart';
 import '../../features/applications/presentation/pages/applications_page.dart';
+import '../../features/applications/presentation/pages/job_applicants_page.dart';
 import '../../features/discovery/presentation/pages/discovery_page.dart';
 import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
@@ -225,6 +227,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       if (args == null) return const JobsPage();
                       return JobDetailPage(args: args);
                     },
+                    routes: [
+                      // Builder: applicants for this job (layout A) → applicant detail.
+                      GoRoute(
+                        path: 'applicants',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) {
+                          final args = state.extra as JobApplicantsArgs?;
+                          if (args == null) return const JobsPage();
+                          return JobApplicantsPage(args: args);
+                        },
+                        routes: [
+                          GoRoute(
+                            path: ':applicationId',
+                            parentNavigatorKey: _rootNavigatorKey,
+                            builder: (context, state) {
+                              final args = state.extra as ApplicantDetailArgs?;
+                              if (args == null) return const JobsPage();
+                              return ApplicantDetailPage(args: args);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),

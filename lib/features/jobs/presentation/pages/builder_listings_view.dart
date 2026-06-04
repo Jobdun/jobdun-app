@@ -11,6 +11,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../domain/entities/job.dart';
 import '../providers/jobs_provider.dart';
 import 'job_detail_page.dart';
