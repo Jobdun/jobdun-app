@@ -96,6 +96,18 @@ final builderJobsPostedCountProvider = FutureProvider.autoDispose<int>((
   return result.fold((_) => 0, (jobs) => jobs.length);
 });
 
+// All of the signed-in builder's listings (any status, non-deleted), one-shot —
+// drives the "Your listings" management view, where status tabs filter the list
+// client-side. autoDispose; invalidate to refresh after a delete / new post.
+final builderListingsProvider = FutureProvider.autoDispose<List<Job>>((
+  ref,
+) async {
+  final uid = ref.watch(currentUserIdSyncProvider);
+  if (uid == null) return const [];
+  final result = await ref.read(getBuilderJobsUseCaseProvider).call(uid);
+  return result.fold((_) => const <Job>[], (jobs) => jobs);
+});
+
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
   JobsController.new,

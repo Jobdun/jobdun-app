@@ -17,7 +17,7 @@ import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
-import '../../../../core/providers/current_user_provider.dart';
+import 'builder_listings_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../verification/presentation/widgets/verification_nudge_banner.dart';
@@ -61,17 +61,14 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final notifier = ref.read(jobsControllerProvider.notifier);
-      // Builders see only their own listings; tradies browse the open feed.
+      // Builders get the dedicated management view (BuilderListingsView) which
+      // owns its own data — only the tradie browse feed loads here.
       final isBuilder =
           ref.read(authControllerProvider).role == UserRole.builder;
-      final me = ref.read(currentUserIdSyncProvider);
-      if (isBuilder && me != null) notifier.setBuilderScope(me);
+      if (isBuilder) return;
+      final notifier = ref.read(jobsControllerProvider.notifier);
       notifier.loadFeed();
-      // Tradies use the SAVED tab; builders never see it. Loading the IDs
-      // unconditionally keeps the swipe label (SAVE vs UNSAVE) accurate
-      // even for builders who hit /jobs in dev or by deep-link.
-      ref.read(jobsControllerProvider.notifier).loadInteractionIds();
+      notifier.loadInteractionIds();
     });
   }
 
@@ -110,6 +107,9 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final isBuilder = ref.watch(
       authControllerProvider.select((s) => s.role == UserRole.builder),
     );
+    // Builders get the dedicated listings-management view; tradies get the
+    // browse feed below.
+    if (isBuilder) return const BuilderListingsView();
     final activeFilter = jobsState.filter?.tradeType;
     // Observing the paging controller via ref.read so this widget rebuilds
     // for filter/search changes (which run through it) without listening
