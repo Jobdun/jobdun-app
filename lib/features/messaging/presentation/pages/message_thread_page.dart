@@ -10,6 +10,8 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/message.dart';
 import '../providers/messaging_provider.dart';
 
+part 'message_thread_widgets.dart';
+
 // Passed via GoRouter extra when pushing /messages/:conversationId
 class ConversationArgs {
   const ConversationArgs({
@@ -190,10 +192,40 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                       itemBuilder: (ctx, i) {
                         final msg = messages[i];
                         final isMine = msg.senderId == me;
-                        return _MessageBubble(
+                        final prev = i > 0 ? messages[i - 1] : null;
+                        final next = i < messages.length - 1
+                            ? messages[i + 1]
+                            : null;
+                        const groupGap = Duration(minutes: 15);
+                        final newDay =
+                            prev == null ||
+                            !_sameDayLocal(prev.createdAt, msg.createdAt);
+                        final groupedWithPrev =
+                            prev != null &&
+                            !newDay &&
+                            prev.senderId == msg.senderId &&
+                            msg.createdAt.difference(prev.createdAt) < groupGap;
+                        final lastInGroup =
+                            next == null ||
+                            next.senderId != msg.senderId ||
+                            !_sameDayLocal(next.createdAt, msg.createdAt) ||
+                            next.createdAt.difference(msg.createdAt) >=
+                                groupGap;
+                        final bubble = _MessageBubble(
                           message: msg,
                           isMine: isMine,
                           initials: initials,
+                          showAvatar: !isMine && lastInGroup,
+                          groupedWithPrev: groupedWithPrev,
+                          lastInGroup: lastInGroup,
+                        );
+                        if (!newDay) return bubble;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _DaySeparator(date: msg.createdAt),
+                            bubble,
+                          ],
                         );
                       },
                     ),
@@ -274,141 +306,5 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     final parts = name.trim().split(' ');
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
-  }
-}
-
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.message,
-    required this.isMine,
-    required this.initials,
-  });
-
-  final Message message;
-  final bool isMine;
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: Row(
-        mainAxisAlignment: isMine
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMine) ...[
-            Container(
-              width: 28.r,
-              height: 28.r,
-              decoration: BoxDecoration(
-                color: c.surfaceRaised,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.border),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: tt.labelSmall!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: c.action,
-                ),
-              ),
-            ),
-            Gap(AppSpacing.sm.w),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isMine
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isMine ? c.action : c.card,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16.r),
-                      topRight: Radius.circular(16.r),
-                      bottomLeft: Radius.circular(isMine ? 16.r : 4.r),
-                      bottomRight: Radius.circular(isMine ? 4.r : 16.r),
-                    ),
-                    border: isMine ? null : Border.all(color: c.border),
-                  ),
-                  child: Text(
-                    message.body,
-                    style: tt.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: isMine
-                          ? Colors
-                                .white // intentional
-                          : c.text1,
-                      height: 1.45,
-                    ),
-                  ),
-                ),
-                Gap(4.h),
-                Text(
-                  _fmtTime(message.createdAt),
-                  style: tt.labelSmall!.copyWith(color: c.text3),
-                ),
-              ],
-            ),
-          ),
-          if (isMine) Gap(AppSpacing.sm.w),
-        ],
-      ),
-    );
-  }
-
-  static String _fmtTime(DateTime t) {
-    final local = t.toLocal();
-    final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
-    final m = local.minute.toString().padLeft(2, '0');
-    return '$h:$m ${local.hour < 12 ? 'AM' : 'PM'}';
-  }
-}
-
-class _ThreadEmpty extends StatelessWidget {
-  const _ThreadEmpty({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.chat, size: AppIconSize.hero.r, color: c.text3),
-            Gap(AppSpacing.md.h),
-            Text(
-              'NO MESSAGES YET.',
-              style: tt.headlineSmall!.copyWith(
-                fontWeight: FontWeight.w700,
-                color: c.text1,
-              ),
-            ),
-            Gap(AppSpacing.sm.h),
-            Text(
-              'Say hello to $name to get the conversation started.',
-              style: tt.bodyLarge!.copyWith(color: c.text3, height: 1.5),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
