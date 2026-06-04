@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,8 +10,10 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../domain/entities/conversation_typing.dart';
 import '../../domain/entities/message.dart';
 import '../providers/messaging_provider.dart';
+import '../providers/messaging_realtime_provider.dart';
 
 part 'message_thread_widgets.dart';
 
@@ -20,12 +24,15 @@ class ConversationArgs {
     required this.otherName,
     this.jobTitle,
     this.otherInitials,
+    this.otherUserId,
   });
 
   final String conversationId;
   final String otherName;
   final String? jobTitle;
   final String? otherInitials;
+  // The counterparty's profile id — for presence (online) + typing self-filter.
+  final String? otherUserId;
 }
 
 class MessageThreadPage extends ConsumerStatefulWidget {
@@ -41,6 +48,12 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   final _textCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   late final MessagingController _messaging;
+
+  // Per-conversation typing channel. Null when there's no signed-in user.
+  ConversationTyping? _typing;
+  bool _otherTyping = false; // is the counterparty typing right now?
+  bool _typingSent = false; // have we broadcast our own "typing" already?
+  Timer? _typingTimer; // fires "stop" after a keystroke pause
 
   String get _conversationId => widget.args.conversationId;
 
@@ -58,6 +71,39 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       _messaging.loadMessages(_conversationId);
       _messaging.markConversationRead(_conversationId);
     });
+
+    // Join the realtime typing channel for live "typing…" both ways.
+    final me = ref.read(currentUserIdSyncProvider);
+    if (me != null) {
+      _typing = ref
+          .read(messagingRealtimeServiceProvider)
+          .joinTyping(conversationId: _conversationId, myUserId: me);
+      _typing!.otherIsTyping.listen((typing) {
+        if (mounted) setState(() => _otherTyping = typing);
+      });
+      _textCtrl.addListener(_onTextChanged);
+    }
+  }
+
+  // Broadcast "typing" once, then "stop" after a 2s keystroke pause.
+  void _onTextChanged() {
+    if (_textCtrl.text.trim().isEmpty) {
+      _typingTimer?.cancel();
+      if (_typingSent) {
+        _typing?.setTyping(false);
+        _typingSent = false;
+      }
+      return;
+    }
+    if (!_typingSent) {
+      _typing?.setTyping(true);
+      _typingSent = true;
+    }
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      _typing?.setTyping(false);
+      _typingSent = false;
+    });
   }
 
   @override
@@ -65,6 +111,10 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     // Drop the per-thread realtime subscription; the controller keeps the
     // conversations stream alive for the inbox.
     _messaging.unsubscribeMessages(_conversationId);
+    _typingTimer?.cancel();
+    _textCtrl.removeListener(_onTextChanged);
+    final disposeTyping = _typing?.dispose();
+    if (disposeTyping != null) unawaited(disposeTyping);
     _textCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -73,7 +123,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   Future<void> _send() async {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
-    _textCtrl.clear();
+    _textCtrl.clear(); // also fires _onTextChanged -> broadcasts "stop"
     await _messaging.sendMessage(conversationId: _conversationId, body: text);
     // The realtime echo re-renders the list; scroll handled by the listener.
   }
@@ -103,6 +153,14 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       messagingControllerProvider.select((s) => s.isLoading),
     );
     final initials = args.otherInitials ?? _initials(args.otherName);
+    final otherOnline =
+        args.otherUserId != null &&
+        ref
+            .watch(onlineUserIdsProvider)
+            .maybeWhen(
+              data: (ids) => ids.contains(args.otherUserId),
+              orElse: () => false,
+            );
 
     // Keep the newest message in view as history loads and as realtime echoes
     // arrive (initial load, sent, received all change the count).
@@ -132,23 +190,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                       color: c.text1,
                     ),
                   ),
-                  Container(
-                    width: 38.r,
-                    height: 38.r,
-                    decoration: BoxDecoration(
-                      color: c.surfaceRaised,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: c.border),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initials,
-                      style: tt.labelLarge!.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: c.action,
-                      ),
-                    ),
-                  ),
+                  _HeaderAvatar(initials: initials, online: otherOnline),
                   Gap(10.w),
                   Expanded(
                     child: Column(
@@ -162,7 +204,26 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (args.jobTitle != null) ...[
+                        // Subtitle priority: typing → online → job title.
+                        if (_otherTyping) ...[
+                          Gap(2.h),
+                          Text(
+                            'typing…',
+                            style: tt.bodySmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: c.action,
+                            ),
+                          ),
+                        ] else if (otherOnline) ...[
+                          Gap(2.h),
+                          Text(
+                            'Active now',
+                            style: tt.bodySmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: c.verified,
+                            ),
+                          ),
+                        ] else if (args.jobTitle != null) ...[
                           Gap(2.h),
                           Text(
                             args.jobTitle!,
@@ -236,6 +297,21 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                       },
                     ),
             ),
+
+            // Live typing indicator (animated dots) above the input bar.
+            if (_otherTyping)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.md.w,
+                  0,
+                  0,
+                  AppSpacing.sm.h,
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: _TypingBubble(),
+                ),
+              ),
 
             // ── Input bar
             Container(

@@ -272,3 +272,118 @@ class _SkeletonBubble extends StatelessWidget {
     );
   }
 }
+
+// Header avatar with a green presence dot when the counterparty is online.
+class _HeaderAvatar extends StatelessWidget {
+  const _HeaderAvatar({required this.initials, required this.online});
+
+  final String initials;
+  final bool online;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 38.r,
+          height: 38.r,
+          decoration: BoxDecoration(
+            color: c.surfaceRaised,
+            shape: BoxShape.circle,
+            border: Border.all(color: c.border),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initials,
+            style: tt.labelLarge!.copyWith(
+              fontWeight: FontWeight.w700,
+              color: c.action,
+            ),
+          ),
+        ),
+        if (online)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 11.r,
+              height: 11.r,
+              decoration: BoxDecoration(
+                color: c.verified,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.card, width: 2),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// Incoming "typing…" bubble with three staggered bouncing dots.
+class _TypingBubble extends StatefulWidget {
+  const _TypingBubble();
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16.r),
+          topRight: Radius.circular(16.r),
+          bottomLeft: Radius.circular(4.r),
+          bottomRight: Radius.circular(16.r),
+        ),
+        border: Border.all(color: c.border),
+      ),
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++) ...[
+              if (i > 0) Gap(4.w),
+              Transform.scale(
+                scale:
+                    0.6 +
+                    0.4 *
+                        (1 - (2 * ((_ctrl.value + i * 0.22) % 1.0) - 1).abs()),
+                child: Container(
+                  width: 7.r,
+                  height: 7.r,
+                  decoration: BoxDecoration(
+                    color: c.text3,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

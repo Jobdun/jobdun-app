@@ -7,12 +7,31 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:jobdun/app/theme/app_colors.dart';
 import 'package:jobdun/core/providers/current_user_provider.dart';
+import 'package:jobdun/features/messaging/data/services/messaging_realtime_service.dart';
+import 'package:jobdun/features/messaging/domain/entities/conversation_typing.dart';
 import 'package:jobdun/features/messaging/domain/entities/message.dart';
 import 'package:jobdun/features/messaging/domain/repositories/message_repository.dart';
 import 'package:jobdun/features/messaging/presentation/pages/message_thread_page.dart';
 import 'package:jobdun/features/messaging/presentation/providers/messaging_provider.dart';
+import 'package:jobdun/features/messaging/presentation/providers/messaging_realtime_provider.dart';
 
 class _MockRepo extends Mock implements MessageRepository {}
+
+// No-op realtime so the thread can build without a live Supabase client.
+class _FakeRealtime implements MessagingRealtimeService {
+  @override
+  Stream<Set<String>> onlineUserIds(String myUserId) => const Stream.empty();
+
+  @override
+  ConversationTyping joinTyping({
+    required String conversationId,
+    required String myUserId,
+  }) => ConversationTyping(
+    otherIsTyping: const Stream.empty(),
+    setTyping: (_) {},
+    dispose: () async {},
+  );
+}
 
 // Deterministic theme: JColors extension (what `context.c` reads) + default
 // TextTheme — avoids the google_fonts network fetch that AppTheme triggers.
@@ -64,6 +83,7 @@ void main() {
       ProviderScope(
         overrides: [
           messageRepositoryProvider.overrideWithValue(repo),
+          messagingRealtimeServiceProvider.overrideWithValue(_FakeRealtime()),
           currentUserIdProvider.overrideWith((ref) => Stream.value('me')),
           currentUserIdSyncProvider.overrideWithValue('me'),
         ],

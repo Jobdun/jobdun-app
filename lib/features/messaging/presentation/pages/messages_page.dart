@@ -128,6 +128,9 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                               otherInitials: _initials(
                                 conv.otherUserDisplayName ?? '?',
                               ),
+                              otherUserId: conv.builderId == userId
+                                  ? conv.tradeId
+                                  : conv.builderId,
                             ),
                           ),
                         );
