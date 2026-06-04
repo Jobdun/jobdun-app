@@ -213,3 +213,62 @@ class _ThreadEmpty extends StatelessWidget {
     );
   }
 }
+
+// First-load shimmer: alternating placeholder bubbles masked by Skeletonizer,
+// shown while message history is fetching (before any bubble exists).
+class _ThreadSkeleton extends StatelessWidget {
+  const _ThreadSkeleton();
+
+  static const _rows = [
+    (mine: false, w: 0.62),
+    (mine: false, w: 0.40),
+    (mine: true, w: 0.50),
+    (mine: false, w: 0.70),
+    (mine: true, w: 0.45),
+    (mine: true, w: 0.34),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return JSkeletonList(
+      enabled: true,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md.w,
+          vertical: AppSpacing.md.h,
+        ),
+        child: Column(
+          children: [
+            for (var i = 0; i < _rows.length; i++) ...[
+              if (i > 0) Gap(10.h),
+              _SkeletonBubble(isMine: _rows[i].mine, widthFactor: _rows[i].w),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonBubble extends StatelessWidget {
+  const _SkeletonBubble({required this.isMine, required this.widthFactor});
+
+  final bool isMine;
+  final double widthFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return FractionallySizedBox(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: 40.h,
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+      ),
+    );
+  }
+}

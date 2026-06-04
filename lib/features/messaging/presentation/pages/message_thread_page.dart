@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/message.dart';
 import '../providers/messaging_provider.dart';
@@ -98,6 +99,9 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     final messages = ref.watch(
       messagingControllerProvider.select((s) => s.messagesFor(_conversationId)),
     );
+    final isLoading = ref.watch(
+      messagingControllerProvider.select((s) => s.isLoading),
+    );
     final initials = args.otherInitials ?? _initials(args.otherName);
 
     // Keep the newest message in view as history loads and as realtime echoes
@@ -181,7 +185,9 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
             // ── Messages
             Expanded(
               child: messages.isEmpty
-                  ? _ThreadEmpty(name: args.otherName)
+                  ? (isLoading
+                        ? const _ThreadSkeleton()
+                        : _ThreadEmpty(name: args.otherName))
                   : ListView.builder(
                       controller: _scrollCtrl,
                       padding: EdgeInsets.symmetric(
@@ -275,23 +281,32 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                     ),
                   ),
                   Gap(10.w),
-                  GestureDetector(
-                    key: const Key('thread-send'),
-                    onTap: _send,
-                    child: Container(
-                      width: 42.r,
-                      height: 42.r,
-                      decoration: BoxDecoration(
-                        color: c.action,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        AppIcons.send,
-                        size: AppIconSize.md.r,
-                        color: Colors.white, // intentional
-                      ),
-                    ),
+                  // Active state: orange + white icon when there's text to
+                  // send, dimmed + disabled when the field is empty.
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _textCtrl,
+                    builder: (context, value, _) {
+                      final canSend = value.text.trim().isNotEmpty;
+                      return GestureDetector(
+                        key: const Key('thread-send'),
+                        onTap: canSend ? _send : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 42.r,
+                          height: 42.r,
+                          decoration: BoxDecoration(
+                            color: canSend ? c.action : c.surfaceRaised,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            AppIcons.send,
+                            size: AppIconSize.md.r,
+                            color: canSend ? c.onAction : c.text3,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

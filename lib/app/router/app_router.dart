@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -34,6 +35,10 @@ import '../../features/reviews/presentation/pages/reviews_page.dart';
 import '../../features/verification/presentation/pages/verification_page.dart';
 import '../../features/verification/presentation/pages/verification_wizard_page.dart';
 
+// Root navigator key — lets detail routes (e.g. a message thread) push above
+// the tab shell so the bottom nav bar is hidden on those full-screen views.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _RouterNotifier();
 
@@ -49,6 +54,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.listen<FtueGateState>(ftueGateProvider, (_, _) => notifier.refresh());
 
   final router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: (context, state) {
@@ -240,6 +246,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: ':conversationId',
+                    // Push above the shell → full-screen thread, no bottom nav.
+                    parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final args = state.extra as ConversationArgs?;
                       if (args == null) return const MessagesPage();
