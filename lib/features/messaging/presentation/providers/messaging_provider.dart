@@ -81,28 +81,36 @@ class MessagingController extends Notifier<MessagingState> {
     if (userId == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
+    await _refreshInbox(userId);
+    state = state.copyWith(isLoading: false);
+    _startConversationsStream(userId);
+  }
+
+  // Fetches the inbox via get_inbox(), which resolves the counterparty's
+  // display name + the viewer's unread count server-side. The raw realtime
+  // stream can't do that join, so we never use its rows directly.
+  Future<void> _refreshInbox(String userId) async {
     final result = await ref.read(getConversationsUseCaseProvider).call(userId);
     result.fold(
-      (f) => state = state.copyWith(isLoading: false, error: f.message),
-      (convs) {
-        state = state.copyWith(
-          isLoading: false,
-          conversations: convs,
-          totalUnread: _computeUnread(convs),
-        );
-        _startConversationsStream(userId);
-      },
+      (f) => state = state.copyWith(error: f.message),
+      (convs) => state = state.copyWith(
+        conversations: convs,
+        totalUnread: _computeUnread(convs),
+      ),
     );
   }
 
   void _startConversationsStream(String userId) {
     _conversationsSub?.cancel();
-    _conversationsSub = _repo.watchConversations(userId).listen((convs) {
-      state = state.copyWith(
-        conversations: convs,
-        totalUnread: _computeUnread(convs),
-      );
-    }, onError: (Object e) => state = state.copyWith(error: e.toString()));
+    // The stream only signals "a conversation changed" (new message, unread,
+    // archive). Re-fetch through get_inbox so names/unread stay resolved —
+    // using the stream's raw rows here is what showed "Unknown".
+    _conversationsSub = _repo
+        .watchConversations(userId)
+        .listen(
+          (_) => unawaited(_refreshInbox(userId)),
+          onError: (Object e) => state = state.copyWith(error: e.toString()),
+        );
   }
 
   Future<void> loadMessages(String conversationId) async {
