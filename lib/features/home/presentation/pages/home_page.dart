@@ -17,6 +17,7 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/j_top_bar.dart';

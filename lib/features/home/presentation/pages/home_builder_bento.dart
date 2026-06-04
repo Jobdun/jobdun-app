@@ -19,7 +19,16 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _maybeLoad();
+      if (!mounted) return;
+      _maybeLoad();
+      // Pull the incoming-applicant count for the home tile (nothing else
+      // loads it on this screen, so it would otherwise sit at 0).
+      final me = ref.read(currentUserIdSyncProvider);
+      if (me != null) {
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadIncomingApplications(me);
+      }
     });
   }
 
@@ -41,12 +50,26 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
     ref.listen<ProfileState>(profileControllerProvider, (_, _) => _maybeLoad());
     // Real count of the builder's live (open + filled) jobs. The old
     // builderProfile.activeJobsCount read a non-existent DB column → always 0.
-    final active = ref.watch(builderActiveJobsCountProvider).asData?.value ?? 0;
+    final activeAsync = ref.watch(builderActiveJobsCountProvider);
+    final active = activeAsync.asData?.value ?? 0;
+    final activeLoading = activeAsync.isLoading;
     final applicants = ref.watch(
       applicationsControllerProvider.select((s) => s.pendingIncomingCount),
     );
+    // Shimmer the stat tiles only on first load (loading + nothing cached) so
+    // they don't flash 0 → real, and don't re-shimmer on background refresh.
+    final applicantsLoading = ref.watch(
+      applicationsControllerProvider.select(
+        (s) => s.isLoading && s.incomingApplications.isEmpty,
+      ),
+    );
     final nearby = ref.watch(
       tradeSearchControllerProvider.select((s) => s.results),
+    );
+    final nearbyLoading = ref.watch(
+      tradeSearchControllerProvider.select(
+        (s) => s.isLoading && s.results.isEmpty,
+      ),
     );
 
     return Padding(
@@ -62,6 +85,7 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
                   icon: AppIcons.briefcase,
                   title: 'ACTIVE JOBS',
                   value: active.toString(),
+                  loading: activeLoading,
                   onTap: () => context.go('/jobs'),
                 ),
               ),
@@ -71,6 +95,7 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
                   icon: AppIcons.applicantsOutline,
                   title: 'APPLICANTS',
                   value: applicants.toString(),
+                  loading: applicantsLoading,
                   accent: true,
                   onTap: () => context.go('/applications'),
                 ),
@@ -80,6 +105,7 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
           Gap(10.h),
           _BentoNearbyTile(
             tradies: nearby,
+            loading: nearbyLoading,
             onTap: () => context.push('/discovery'),
           ),
           Gap(10.h),
@@ -167,6 +193,7 @@ class _BentoTile extends StatelessWidget {
     required this.title,
     this.value,
     this.accent = false,
+    this.loading = false,
     this.onTap,
   });
 
@@ -174,6 +201,9 @@ class _BentoTile extends StatelessWidget {
   final String title;
   final String? value;
   final bool accent;
+  // First-load shimmer for stat tiles — masks a placeholder number instead of
+  // flashing 0 before the real count resolves.
+  final bool loading;
   final VoidCallback? onTap;
 
   @override
@@ -181,7 +211,7 @@ class _BentoTile extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return GestureDetector(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       child: Container(
         height: 116.h,
         padding: EdgeInsets.all(14.r),
@@ -190,27 +220,30 @@ class _BentoTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.card.r),
           border: Border.all(color: c.border),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: AppIconSize.feature.r, color: c.action),
-            const Spacer(),
-            if (value != null)
+        child: JSkeletonList(
+          enabled: loading,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: AppIconSize.feature.r, color: c.action),
+              const Spacer(),
+              if (value != null)
+                Text(
+                  loading ? '00' : value!,
+                  style: AppTypography.numeric(
+                    tt.headlineMedium!,
+                  ).copyWith(color: accent ? c.action : c.text1, height: 1),
+                ),
+              Gap(value != null ? 4.h : 0),
               Text(
-                value!,
-                style: AppTypography.numeric(
-                  tt.headlineMedium!,
-                ).copyWith(color: accent ? c.action : c.text1, height: 1),
+                title,
+                style: tt.titleSmall!.copyWith(
+                  color: value != null ? c.text3 : c.text1,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            Gap(value != null ? 4.h : 0),
-            Text(
-              title,
-              style: tt.titleSmall!.copyWith(
-                color: value != null ? c.text3 : c.text1,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -220,10 +253,15 @@ class _BentoTile extends StatelessWidget {
 // Full-width "tradies nearby" tile. Shows a count + stacked initials of the
 // top results; taps through to /discovery (which owns full search + GPS).
 class _BentoNearbyTile extends StatelessWidget {
-  const _BentoNearbyTile({required this.tradies, required this.onTap});
+  const _BentoNearbyTile({
+    required this.tradies,
+    required this.onTap,
+    this.loading = false,
+  });
 
   final List<TradeSearchResult> tradies;
   final VoidCallback onTap;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +270,7 @@ class _BentoNearbyTile extends StatelessWidget {
     final count = tradies.length;
     final top = tradies.take(3).toList();
     return GestureDetector(
-      onTap: onTap,
+      onTap: loading ? null : onTap,
       child: Container(
         padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
@@ -240,48 +278,55 @@ class _BentoNearbyTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.card.r),
           border: Border.all(color: c.border),
         ),
-        child: Row(
-          children: [
-            Icon(
-              AppIcons.location,
-              size: AppIconSize.feature.r,
-              color: c.action,
-            ),
-            Gap(AppSpacing.md.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    count > 0
-                        ? '$count TRADIES NEARBY'
-                        : 'FIND TRADIES NEAR YOU',
-                    style: tt.titleMedium!.copyWith(
-                      color: c.text1,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Gap(2.h),
-                  Text(
-                    count > 0
-                        ? 'Tap to browse and filter'
-                        : 'Search by trade, rating and distance',
-                    style: tt.bodySmall!.copyWith(color: c.text3),
-                  ),
-                ],
+        child: JSkeletonList(
+          enabled: loading,
+          child: Row(
+            children: [
+              Icon(
+                AppIcons.location,
+                size: AppIconSize.feature.r,
+                color: c.action,
               ),
-            ),
-            for (var i = 0; i < top.length; i++)
-              Padding(
-                padding: EdgeInsets.only(left: i == 0 ? 0 : 4.w),
-                child: AvatarBlock(
-                  initials: _initial(top[i].trade.fullName),
-                  size: 30,
+              Gap(AppSpacing.md.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count > 0
+                          ? '$count TRADIES NEARBY'
+                          : 'FIND TRADIES NEAR YOU',
+                      style: tt.titleMedium!.copyWith(
+                        color: c.text1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Gap(2.h),
+                    Text(
+                      count > 0
+                          ? 'Tap to browse and filter'
+                          : 'Search by trade, rating and distance',
+                      style: tt.bodySmall!.copyWith(color: c.text3),
+                    ),
+                  ],
                 ),
               ),
-            Gap(AppSpacing.sm.w),
-            Icon(AppIcons.chevronRight, size: AppIconSize.md.r, color: c.text3),
-          ],
+              for (var i = 0; i < top.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 4.w),
+                  child: AvatarBlock(
+                    initials: _initial(top[i].trade.fullName),
+                    size: 30,
+                  ),
+                ),
+              Gap(AppSpacing.sm.w),
+              Icon(
+                AppIcons.chevronRight,
+                size: AppIconSize.md.r,
+                color: c.text3,
+              ),
+            ],
+          ),
         ),
       ),
     );
