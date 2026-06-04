@@ -37,18 +37,12 @@ class _PlaceBranch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const FieldLabel('LOCATION'),
-        Gap(8.h),
-        JPlaceField(
-          name: 'place',
-          label: 'LOCATION',
-          validator: (value) =>
-              value == null ? 'Pick a suburb to continue.' : null,
-        ),
-      ],
+    // JPlaceField renders its own 'LOCATION' label — no separate FieldLabel
+    // here (that produced a duplicate "LOCATION").
+    return JPlaceField(
+      name: 'place',
+      label: 'LOCATION',
+      validator: (value) => value == null ? 'Pick a suburb to continue.' : null,
     );
   }
 }

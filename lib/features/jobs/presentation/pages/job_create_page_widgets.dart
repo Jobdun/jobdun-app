@@ -100,11 +100,11 @@ class _RateTypePicker extends StatelessWidget {
       name: 'rateType',
       builder: (field) {
         final selected = field.value ?? 'Hourly';
+        // No label here — the page renders a single 'RATE' header above this
+        // picker + the amount field so they read as one unit.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const FieldLabel('RATE TYPE'),
-            Gap(AppSpacing.sm.h),
             Row(
               children: rateTypes.map((rt) {
                 final active = selected == rt;

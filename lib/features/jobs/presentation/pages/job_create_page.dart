@@ -301,12 +301,16 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                         ]),
                       ),
 
+                      Gap(20.h),
                       _TradePicker(trades: _trades),
                       Gap(20.h),
 
                       const JobLocationField(),
-                      Gap(4.h),
+                      Gap(20.h),
 
+                      // RATE = one unit: type chips + amount under one label.
+                      const FieldLabel('RATE'),
+                      Gap(8.h),
                       _RateTypePicker(
                         rateTypes: _rateTypes,
                         onChanged: (rt) =>
@@ -315,7 +319,6 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                       Gap(10.h),
                       JTextField(
                         name: 'rate',
-                        label: 'RATE',
                         prefixText: '\$ ',
                         hint: '85',
                         keyboardType: TextInputType.number,
@@ -349,6 +352,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                           ),
                         ]),
                       ),
+                      Gap(20.h),
 
                       JTextField(
                         name: 'description',
@@ -367,6 +371,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                           ),
                         ]),
                       ),
+                      Gap(20.h),
 
                       const _UrgentToggle(),
                     ],
