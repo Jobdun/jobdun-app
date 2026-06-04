@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/conversation_typing.dart';
@@ -25,6 +26,7 @@ class ConversationArgs {
     this.jobTitle,
     this.otherInitials,
     this.otherUserId,
+    this.otherAvatarUrl,
   });
 
   final String conversationId;
@@ -33,6 +35,8 @@ class ConversationArgs {
   final String? otherInitials;
   // The counterparty's profile id — for presence (online) + typing self-filter.
   final String? otherUserId;
+  // The counterparty's avatar photo (header + incoming bubbles).
+  final String? otherAvatarUrl;
 }
 
 class MessageThreadPage extends ConsumerStatefulWidget {
@@ -190,7 +194,11 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                       color: c.text1,
                     ),
                   ),
-                  _HeaderAvatar(initials: initials, online: otherOnline),
+                  _HeaderAvatar(
+                    initials: initials,
+                    online: otherOnline,
+                    imageUrl: args.otherAvatarUrl,
+                  ),
                   Gap(10.w),
                   Expanded(
                     child: Column(
@@ -282,6 +290,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                           message: msg,
                           isMine: isMine,
                           initials: initials,
+                          imageUrl: args.otherAvatarUrl,
                           showAvatar: !isMine && lastInGroup,
                           groupedWithPrev: groupedWithPrev,
                           lastInGroup: lastInGroup,

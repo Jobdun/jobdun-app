@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
@@ -119,6 +120,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                               : '',
                           unreadCount: unread,
                           jobTitle: conv.jobTitle,
+                          avatarUrl: conv.otherUserAvatarUrl,
                           onTap: () => context.push(
                             '/messages/${conv.id}',
                             extra: ConversationArgs(
@@ -131,6 +133,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                               otherUserId: conv.builderId == userId
                                   ? conv.tradeId
                                   : conv.builderId,
+                              otherAvatarUrl: conv.otherUserAvatarUrl,
                             ),
                           ),
                         );
@@ -193,6 +196,7 @@ class _ConvoRow extends StatelessWidget {
     required this.unreadCount,
     required this.onTap,
     this.jobTitle,
+    this.avatarUrl,
   });
 
   final String initials;
@@ -201,6 +205,7 @@ class _ConvoRow extends StatelessWidget {
   final String time;
   final int unreadCount;
   final String? jobTitle;
+  final String? avatarUrl;
   final VoidCallback onTap;
 
   @override
@@ -217,23 +222,12 @@ class _ConvoRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Avatar
-            Container(
-              width: 46.r,
-              height: 46.r,
-              decoration: BoxDecoration(
-                color: c.surfaceRaised,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.border),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: tt.titleMedium!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: c.text2,
-                ),
-              ),
+            // ── Avatar (photo with initials fallback)
+            AvatarBlock(
+              initials: initials,
+              imageUrl: avatarUrl,
+              size: 46,
+              circle: true,
             ),
             Gap(12.w),
             Expanded(

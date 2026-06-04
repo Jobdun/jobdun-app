@@ -12,11 +12,13 @@ class _MessageBubble extends StatelessWidget {
     required this.showAvatar,
     required this.groupedWithPrev,
     required this.lastInGroup,
+    this.imageUrl,
   });
 
   final Message message;
   final bool isMine;
   final String initials;
+  final String? imageUrl; // counterparty avatar for incoming bubbles
   // Incoming avatar renders only on the last bubble of a run; a spacer keeps
   // earlier bubbles in the group aligned with it.
   final bool showAvatar;
@@ -45,22 +47,11 @@ class _MessageBubble extends StatelessWidget {
             showAvatar
                 ? Padding(
                     padding: EdgeInsets.only(right: AppSpacing.sm.w),
-                    child: Container(
-                      width: 28.r,
-                      height: 28.r,
-                      decoration: BoxDecoration(
-                        color: c.surfaceRaised,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.border),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        initials,
-                        style: tt.labelSmall!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: c.action,
-                        ),
-                      ),
+                    child: AvatarBlock(
+                      initials: initials,
+                      imageUrl: imageUrl,
+                      size: 28,
+                      circle: true,
                     ),
                   )
                 : Gap(28.r + AppSpacing.sm.w),
@@ -275,34 +266,27 @@ class _SkeletonBubble extends StatelessWidget {
 
 // Header avatar with a green presence dot when the counterparty is online.
 class _HeaderAvatar extends StatelessWidget {
-  const _HeaderAvatar({required this.initials, required this.online});
+  const _HeaderAvatar({
+    required this.initials,
+    required this.online,
+    this.imageUrl,
+  });
 
   final String initials;
   final bool online;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: 38.r,
-          height: 38.r,
-          decoration: BoxDecoration(
-            color: c.surfaceRaised,
-            shape: BoxShape.circle,
-            border: Border.all(color: c.border),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            initials,
-            style: tt.labelLarge!.copyWith(
-              fontWeight: FontWeight.w700,
-              color: c.action,
-            ),
-          ),
+        AvatarBlock(
+          initials: initials,
+          imageUrl: imageUrl,
+          size: 38,
+          circle: true,
         ),
         if (online)
           Positioned(
