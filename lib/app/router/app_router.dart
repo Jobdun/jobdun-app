@@ -28,6 +28,7 @@ import '../../features/applications/presentation/pages/applicant_detail_page.dar
 import '../../features/applications/presentation/pages/applications_page.dart';
 import '../../features/applications/presentation/pages/job_applicants_page.dart';
 import '../../features/discovery/presentation/pages/discovery_page.dart';
+import '../../features/discovery/presentation/pages/discovery_map_page.dart';
 import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -169,7 +170,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Builder-facing trade directory. Pushed full-screen over the shell
       // (own AppBar back) from the home "TRADIES NEAR YOU" section.
-      GoRoute(path: '/discovery', builder: (_, _) => const DiscoveryPage()),
+      GoRoute(
+        path: '/discovery',
+        builder: (_, _) => const DiscoveryPage(),
+        routes: [
+          // Full-screen tradie map. Opens with a fade + slight scale-up so the
+          // home map-preview tile feels like it expands into the screen.
+          GoRoute(
+            path: 'map',
+            pageBuilder: (context, state) => CustomTransitionPage<void>(
+              key: state.pageKey,
+              transitionDuration: const Duration(milliseconds: 200),
+              reverseTransitionDuration: const Duration(milliseconds: 180),
+              child: const DiscoveryMapPage(),
+              transitionsBuilder: (context, animation, secondary, child) {
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                );
+                return FadeTransition(
+                  opacity: curved,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
       if (kDebugMode) ...[
         GoRoute(
           path: '/logo-compare',

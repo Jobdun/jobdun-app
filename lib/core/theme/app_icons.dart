@@ -318,6 +318,9 @@ abstract final class AppIcons {
   /// Connectivity / offline banner.
   static const IconData wifi = PhosphorIconsBold.wifiHigh;
 
+  /// Disconnected — offline chips / banners.
+  static const IconData wifiOff = PhosphorIconsBold.wifiSlash;
+
   /// Safety / PPE. Reserved for future use.
   static const IconData hardHat = PhosphorIconsBold.hardHat;
 }

@@ -1,4 +1,3 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,19 +6,10 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/theme/app_icon_theme.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-
-final _connectivityProvider = StreamProvider<bool>((ref) async* {
-  final connectivity = Connectivity();
-  final initial = await connectivity.checkConnectivity();
-  yield _isOnline(initial);
-  yield* connectivity.onConnectivityChanged.map(_isOnline);
-});
-
-bool _isOnline(List<ConnectivityResult> results) =>
-    results.isNotEmpty && results.any((r) => r != ConnectivityResult.none);
 
 class HomeShellPage extends ConsumerWidget {
   const HomeShellPage({super.key, required this.navigationShell});
@@ -33,8 +23,7 @@ class HomeShellPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final onlineAsync = ref.watch(_connectivityProvider);
-    final isOnline = onlineAsync.asData?.value ?? true;
+    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? true;
     // .select() so the shell (and the bottom nav) doesn't rebuild on every
     // unrelated auth-state change (loading, error, email) — only when the
     // role itself flips, which only happens at sign-in / sign-out.

@@ -63,15 +63,6 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
         (s) => s.isLoading && s.incomingApplications.isEmpty,
       ),
     );
-    final nearby = ref.watch(
-      tradeSearchControllerProvider.select((s) => s.results),
-    );
-    final nearbyLoading = ref.watch(
-      tradeSearchControllerProvider.select(
-        (s) => s.isLoading && s.results.isEmpty,
-      ),
-    );
-
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.lg.h),
       child: Column(
@@ -103,11 +94,8 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
             ],
           ),
           Gap(10.h),
-          _BentoNearbyTile(
-            tradies: nearby,
-            loading: nearbyLoading,
-            onTap: () => context.push('/discovery'),
-          ),
+          // Map preview → full-screen tradie map (taps through to /discovery/map).
+          const TradeMapPreview(),
           Gap(10.h),
           Row(
             children: [
@@ -247,93 +235,5 @@ class _BentoTile extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// Full-width "tradies nearby" tile. Shows a count + stacked initials of the
-// top results; taps through to /discovery (which owns full search + GPS).
-class _BentoNearbyTile extends StatelessWidget {
-  const _BentoNearbyTile({
-    required this.tradies,
-    required this.onTap,
-    this.loading = false,
-  });
-
-  final List<TradeSearchResult> tradies;
-  final VoidCallback onTap;
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final count = tradies.length;
-    final top = tradies.take(3).toList();
-    return GestureDetector(
-      onTap: loading ? null : onTap,
-      child: Container(
-        padding: EdgeInsets.all(16.r),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: c.border),
-        ),
-        child: JSkeletonList(
-          enabled: loading,
-          child: Row(
-            children: [
-              Icon(
-                AppIcons.location,
-                size: AppIconSize.feature.r,
-                color: c.action,
-              ),
-              Gap(AppSpacing.md.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      count > 0
-                          ? '$count TRADIES NEARBY'
-                          : 'FIND TRADIES NEAR YOU',
-                      style: tt.titleMedium!.copyWith(
-                        color: c.text1,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Gap(2.h),
-                    Text(
-                      count > 0
-                          ? 'Tap to browse and filter'
-                          : 'Search by trade, rating and distance',
-                      style: tt.bodySmall!.copyWith(color: c.text3),
-                    ),
-                  ],
-                ),
-              ),
-              for (var i = 0; i < top.length; i++)
-                Padding(
-                  padding: EdgeInsets.only(left: i == 0 ? 0 : 4.w),
-                  child: AvatarBlock(
-                    initials: _initial(top[i].trade.fullName),
-                    size: 30,
-                  ),
-                ),
-              Gap(AppSpacing.sm.w),
-              Icon(
-                AppIcons.chevronRight,
-                size: AppIconSize.md.r,
-                color: c.text3,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _initial(String name) {
-    final t = name.trim();
-    return t.isEmpty ? '?' : t.substring(0, 1).toUpperCase();
   }
 }
