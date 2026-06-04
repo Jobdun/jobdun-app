@@ -212,10 +212,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'create',
+                    // Full-screen above the shell — no bottom nav while posting.
+                    parentNavigatorKey: _rootNavigatorKey,
                     builder: (_, _) => const JobCreatePage(),
                   ),
                   GoRoute(
                     path: ':id',
+                    // Full-screen detail — no bottom nav (matches the thread).
+                    parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final args = state.extra as JobDetailArgs?;
                       if (args == null) return const JobsPage();

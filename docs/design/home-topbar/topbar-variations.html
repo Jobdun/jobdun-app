@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jobdun · Home top-bar — 5 modern directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0F172A; --surface:#1E293B; --raised:#334155; --border:#334155;
+    --action:#F97316; --onAction:#0F172A; --t1:#F1F5F9; --t2:#CBD5E1; --t3:#94A3B8;
+    --green:#22C55E; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0f1d;color:var(--t1);font-family:'Open Sans',sans-serif;
+       padding:32px 20px 80px;}
+  h1{font-family:'Oswald',sans-serif;font-weight:700;font-size:28px;letter-spacing:.5px;text-transform:uppercase}
+  .sub{color:var(--t3);margin:6px 0 28px;max-width:760px;line-height:1.6}
+  .grid{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+  .col{width:380px;max-width:100%}
+  .tag{display:inline-block;font-family:'Oswald';font-weight:600;font-size:13px;
+       letter-spacing:1px;text-transform:uppercase;color:var(--action);margin-bottom:4px}
+  .why{color:var(--t3);font-size:13px;line-height:1.5;margin:2px 0 12px}
+  /* phone */
+  .phone{background:var(--bg);border:1px solid var(--border);border-radius:26px;
+         overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+  .statusbar{height:18px}
+  .bar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px}
+  .row{display:flex;align-items:center;gap:12px}
+  .av{width:42px;height:42px;border-radius:50%;background:var(--raised);
+      border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+      font-family:'Oswald';font-weight:700;color:var(--action);flex:0 0 auto}
+  .av.sm{width:34px;height:34px;font-size:13px}
+  .icon{width:42px;height:42px;border-radius:12px;background:var(--surface);
+        border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .icon svg{width:20px;height:20px;stroke:var(--t2)}
+  .bell{position:relative}
+  .bell .dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;
+             background:var(--action);border:2px solid var(--surface)}
+  .search{flex:1;height:42px;border-radius:21px;background:var(--bg);border:1px solid var(--border);
+          display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--t3);font-size:14px}
+  .search svg{width:18px;height:18px;stroke:var(--t3);flex:0 0 auto}
+  .search.big{height:52px;border-radius:14px;font-size:15px}
+  .grow{flex:1;min-width:0}
+  .hi{font-family:'Open Sans';font-size:13px;color:var(--t3)}
+  .name{font-family:'Oswald';font-weight:700;font-size:20px;color:var(--t1);line-height:1.1}
+  .name.big{font-size:26px}
+  .chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:15px;
+        background:var(--raised);font-size:12px;font-weight:700;color:var(--t2);font-family:'Open Sans'}
+  .chip svg{width:14px;height:14px;stroke:var(--t2)}
+  .brand{font-family:'Oswald';font-weight:700;font-size:22px;letter-spacing:1px;color:var(--t1);text-transform:uppercase}
+  .brand b{color:var(--action)}
+  .locpill{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:17px;
+           background:var(--bg);border:1px solid var(--border);font-size:13px;color:var(--t2);font-weight:600}
+  .locpill svg{width:15px;height:15px;stroke:var(--action)}
+  /* faux home body under the bar */
+  .body{padding:16px}
+  .hero{background:var(--action);border-radius:var(--radius);padding:16px;display:flex;gap:12px;align-items:center}
+  .hero .plus{width:34px;height:34px;border-radius:9px;background:rgba(15,23,42,.18);display:flex;align-items:center;justify-content:center}
+  .hero .plus svg{width:20px;height:20px;stroke:var(--onAction)}
+  .hero .ht{font-family:'Oswald';font-weight:700;color:var(--onAction);font-size:17px}
+  .hero .hs{color:rgba(15,23,42,.75);font-size:12px}
+  .tiles{display:flex;gap:10px;margin-top:10px}
+  .tile{flex:1;height:78px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+  .tile .n{font-family:'Oswald';font-weight:700;font-size:22px;color:var(--t1)}
+  .tile .l{font-size:11px;color:var(--t3);font-weight:600;margin-top:18px}
+  .mt{margin-top:14px}
+</style>
+</head>
+<body>
+  <h1>Home top-bar · 5 modern directions</h1>
+  <p class="sub">Each renders the Jobdun system (dark <code>#0F172A</code>, safety-orange <code>#F97316</code>, Oswald + Open Sans). The faded POST-A-JOB hero + stat tiles below each bar are just context — only the <strong>top bar</strong> is the proposal. Pick one (or mix) and I'll build it in Flutter.</p>
+  <div class="grid">
+
+    <!-- V1 -->
+    <div class="col">
+      <div class="tag">V1 · Greeting + actions</div>
+      <div class="why">Warm & personal. Time-of-day greeting + name, role chip for context. Search lives in the feed, not the bar. Best for retention/relationship feel.</div>
+      <div class="phone">
+        <div class="statusbar"></div>
+        <div class="bar">
+          <div class="row">
+            <div class="grow"><div class="hi">Good morning 👋</div><div class="name">Ken Garcia</div></div>
+            <div class="chip">BUILDER</div>
+            <div class="icon bell"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="hero"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div><div><div class="ht">POST A JOB</div><div class="hs">Find tradies for your next site</div></div></div>
+          <div class="tiles"><div class="tile"><div class="n">4</div><div class="l">ACTIVE JOBS</div></div><div class="tile"><div class="n">3</div><div class="l">APPLICANTS</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V2 -->
+    <div class="col">
+      <div class="tag">V2 · Search-first hero</div>
+      <div class="why">Marketplace pattern — the search bar is the dominant CTA. Avatar + bell shrink to the corners. Best if discovery/finding is the primary job-to-be-done.</div>
+      <div class="phone">
+        <div class="statusbar"></div>
+        <div class="bar">
+          <div class="row" style="margin-bottom:12px">
+            <div class="av sm">KG</div>
+            <div class="grow"></div>
+            <div class="icon bell" style="width:34px;height:34px"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          </div>
+          <div class="search big"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search your listings…</div>
+        </div>
+        <div class="body">
+          <div class="hero"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div><div><div class="ht">POST A JOB</div><div class="hs">Find tradies for your next site</div></div></div>
+          <div class="tiles"><div class="tile"><div class="n">4</div><div class="l">ACTIVE JOBS</div></div><div class="tile"><div class="n">3</div><div class="l">APPLICANTS</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V3 -->
+    <div class="col">
+      <div class="tag">V3 · Brand + compact actions</div>
+      <div class="why">Brand-forward & clean. Jobdun wordmark anchors the left; search/bell/avatar are tidy icon actions on the right. Most "app-store polished", least personal.</div>
+      <div class="phone">
+        <div class="statusbar"></div>
+        <div class="bar">
+          <div class="row">
+            <div class="brand grow">JOB<b>DUN</b></div>
+            <div class="icon" style="width:38px;height:38px"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+            <div class="icon bell" style="width:38px;height:38px"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+            <div class="av sm">KG</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="hero"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div><div><div class="ht">POST A JOB</div><div class="hs">Find tradies for your next site</div></div></div>
+          <div class="tiles"><div class="tile"><div class="n">4</div><div class="l">ACTIVE JOBS</div></div><div class="tile"><div class="n">3</div><div class="l">APPLICANTS</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V4 -->
+    <div class="col">
+      <div class="tag">V4 · Location-aware</div>
+      <div class="why">Context for trades — a tappable location pill (where you're hiring / working) sits centre. Avatar + bell flank it. Best if location drives the experience.</div>
+      <div class="phone">
+        <div class="statusbar"></div>
+        <div class="bar">
+          <div class="row">
+            <div class="av sm">KG</div>
+            <div class="grow" style="display:flex;justify-content:center">
+              <div class="locpill"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 1 1 14 0c0 5.4-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>Sydney, NSW
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" style="width:13px;height:13px"><path d="m6 9 6 6 6-6"/></svg></div>
+            </div>
+            <div class="icon bell" style="width:34px;height:34px"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="hero"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div><div><div class="ht">POST A JOB</div><div class="hs">Find tradies for your next site</div></div></div>
+          <div class="tiles"><div class="tile"><div class="n">4</div><div class="l">ACTIVE JOBS</div></div><div class="tile"><div class="n">3</div><div class="l">APPLICANTS</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- V5 -->
+    <div class="col">
+      <div class="tag">V5 · Stacked editorial</div>
+      <div class="why">Spacious & bold. A slim action row on top, then a large greeting headline + full-width search beneath. Most modern/airy; takes more vertical space.</div>
+      <div class="phone">
+        <div class="statusbar"></div>
+        <div class="bar">
+          <div class="row" style="margin-bottom:14px">
+            <div class="av sm">KG</div><div class="grow"></div>
+            <div class="icon bell" style="width:34px;height:34px"><span class="dot"></span><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          </div>
+          <div class="name big" style="margin-bottom:12px">Manage your<br/>listings.</div>
+          <div class="search big"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search your listings…</div>
+        </div>
+        <div class="body">
+          <div class="hero"><div class="plus"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div><div><div class="ht">POST A JOB</div><div class="hs">Find tradies for your next site</div></div></div>
+          <div class="tiles"><div class="tile"><div class="n">4</div><div class="l">ACTIVE JOBS</div></div><div class="tile"><div class="n">3</div><div class="l">APPLICANTS</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
