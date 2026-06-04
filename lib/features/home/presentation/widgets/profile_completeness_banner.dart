@@ -7,6 +7,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 
@@ -15,7 +16,17 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 // any future surfaces share the same dismissed flag without prop drilling.
 class _DismissedNotifier extends Notifier<bool> {
   @override
-  bool build() => false;
+  bool build() {
+    // Reset the dismissal on account switch so a new sign-in sees their own
+    // banner (it otherwise carried over the previous user's dismissed state).
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (previous?.value != null && previous?.value != next.value) {
+        state = false;
+      }
+    });
+    return false;
+  }
+
   void dismiss() => state = true;
 }
 

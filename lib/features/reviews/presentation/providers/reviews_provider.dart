@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/review_remote_datasource.dart';
 import '../../data/repositories/review_repository_impl.dart';
 import '../../domain/entities/review.dart';
@@ -37,7 +38,17 @@ final reviewsControllerProvider =
 
 class ReviewsController extends Notifier<ReviewsState> {
   @override
-  ReviewsState build() => const ReviewsState();
+  ReviewsState build() {
+    // Clear another account's reviews on logout / account switch — otherwise
+    // the previous user's reviews linger (this controller stays alive).
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next.value == null ||
+          (previous?.value != null && previous?.value != next.value)) {
+        state = const ReviewsState();
+      }
+    });
+    return const ReviewsState();
+  }
 
   Future<void> loadFor(String userId) async {
     state = state.copyWith(isLoading: true, error: null);
