@@ -108,16 +108,23 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
   @override
   Future<List<JobApplicationModel>> getMyApplications(String tradeId) async {
     try {
-      final data = await _client
+      // builder_profiles can't be embedded directly (applications.builder_id
+      // FKs profiles, not builder_profiles) — fetch + merge separately.
+      final rows = await _client
           .from('applications')
-          .select(
-            '*, jobs(title, suburb, state, status), builder_profiles(company_name)',
-          )
+          .select('*, jobs(title, suburb, state, status)')
           .eq('trade_id', tradeId)
           .order('created_at', ascending: false);
-      return (data as List)
-          .map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final apps = (rows as List).cast<Map<String, dynamic>>();
+      if (apps.isEmpty) return const [];
+      await _mergeProfiles(
+        rows: apps,
+        idKey: 'builder_id',
+        table: 'builder_profiles',
+        columns: 'id, company_name',
+        embedKey: 'builder_profiles',
+      );
+      return apps.map(JobApplicationModel.fromJson).toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -128,18 +135,51 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     String builderId,
   ) async {
     try {
-      final data = await _client
+      // trade_profiles can't be embedded directly (applications.trade_id FKs
+      // profiles, not trade_profiles) — fetch + merge separately.
+      final rows = await _client
           .from('applications')
-          .select(
-            '*, trade_profiles(full_name, primary_trade, is_verified), jobs(title, suburb, state)',
-          )
+          .select('*, jobs(title, suburb, state)')
           .eq('builder_id', builderId)
           .order('created_at', ascending: false);
-      return (data as List)
-          .map((e) => JobApplicationModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final apps = (rows as List).cast<Map<String, dynamic>>();
+      if (apps.isEmpty) return const [];
+      await _mergeProfiles(
+        rows: apps,
+        idKey: 'trade_id',
+        table: 'trade_profiles',
+        columns: 'id, full_name, primary_trade, is_verified',
+        embedKey: 'trade_profiles',
+      );
+      return apps.map(JobApplicationModel.fromJson).toList();
     } catch (e) {
       throw ServerException(e.toString());
+    }
+  }
+
+  // Fetches [table] rows for the distinct [idKey] values in [rows] and merges
+  // each under [embedKey], reproducing the shape a PostgREST embed would give
+  // — needed because the role tables (trade_profiles / builder_profiles) share
+  // their PK with profiles rather than being FK targets of applications.
+  Future<void> _mergeProfiles({
+    required List<Map<String, dynamic>> rows,
+    required String idKey,
+    required String table,
+    required String columns,
+    required String embedKey,
+  }) async {
+    final ids = rows.map((r) => r[idKey] as String).toSet().toList();
+    if (ids.isEmpty) return;
+    final profiles = await _client
+        .from(table)
+        .select(columns)
+        .inFilter('id', ids);
+    final byId = {
+      for (final p in (profiles as List).cast<Map<String, dynamic>>())
+        p['id'] as String: p,
+    };
+    for (final r in rows) {
+      r[embedKey] = byId[r[idKey]];
     }
   }
 
