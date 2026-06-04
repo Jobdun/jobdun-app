@@ -80,7 +80,9 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
           .select()
           .eq('conversation_id', conversationId)
           .isFilter('deleted_at', null)
-          .order('created_at');
+          // Oldest-first so the thread reads top→bottom (newest at the bottom).
+          // postgrest .order() defaults to descending, hence the explicit flag.
+          .order('created_at', ascending: true);
       return (data as List)
           .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -174,7 +176,8 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId)
-        .order('created_at')
+        // Oldest-first (newest at the bottom). .order() defaults to descending.
+        .order('created_at', ascending: true)
         .map(
           (rows) => rows
               .where((r) => r['deleted_at'] == null)
