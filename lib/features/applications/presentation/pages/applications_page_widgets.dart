@@ -7,24 +7,23 @@ part of 'applications_page.dart';
 class _EmptyTab extends StatelessWidget {
   const _EmptyTab({required this.tab, required this.isBuilder});
 
-  final String tab;
+  final AppTab tab;
   final bool isBuilder;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final message = tab == 'All'
+    final isAll = tab == AppTab.all;
+    final message = isAll
         ? isBuilder
               ? 'No applicants yet.\nPost a job to start receiving applications.'
               : 'No applications yet.\nBrowse open jobs to get started.'
-        : 'No $tab applications.';
+        : 'No ${tab.label.toLowerCase()} applications.';
 
     // CTA only on the "All" tab — secondary tab empties shouldn't push the
     // user to take an unrelated action.
-    final ctaLabel = tab == 'All'
-        ? (isBuilder ? 'POST A JOB' : 'BROWSE JOBS')
-        : null;
+    final ctaLabel = isAll ? (isBuilder ? 'POST A JOB' : 'BROWSE JOBS') : null;
 
     return Center(
       child: Padding(
@@ -50,7 +49,8 @@ class _EmptyTab extends StatelessWidget {
                 width: 200.w,
                 child: JButton(
                   label: ctaLabel,
-                  onPressed: () => context.go(isBuilder ? '/jobs' : '/jobs'),
+                  onPressed: () =>
+                      context.go(isBuilder ? '/jobs/create' : '/jobs'),
                 ),
               ),
             ],
@@ -92,7 +92,6 @@ class _VerifiedOnlyToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Row(
       children: [
@@ -102,7 +101,7 @@ class _VerifiedOnlyToggle extends StatelessWidget {
             style: tt.bodyMedium!.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
-        Switch(value: value, onChanged: onChanged, activeThumbColor: c.action),
+        JSwitch(value: value, onChanged: onChanged),
       ],
     );
   }

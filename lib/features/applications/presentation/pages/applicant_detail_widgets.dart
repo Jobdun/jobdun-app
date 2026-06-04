@@ -32,21 +32,13 @@ class _DetailHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 56.r,
-          height: 56.r,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: c.surfaceRaised,
-            shape: BoxShape.circle,
-            border: Border.all(color: c.border),
-          ),
-          child: Text(
-            _initials(app.tradeFullName),
-            style: tt.headlineSmall!.copyWith(
-              fontWeight: FontWeight.w700,
-              color: c.text1,
-            ),
+        Hero(
+          tag: 'applicant-avatar:${app.id}',
+          child: AvatarBlock(
+            initials: _initials(app.tradeFullName),
+            imageUrl: app.tradeAvatarUrl,
+            size: 56,
+            circle: true,
           ),
         ),
         Gap(14.w),
@@ -54,9 +46,24 @@ class _DetailHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Name — the primary identity, prominent. (The app bar shows it
+              // too, but the header body must lead with WHO this is.)
+              Text(
+                app.tradeFullName ?? 'Tradesperson',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: tt.titleLarge!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: c.text1,
+                  height: 1.1,
+                ),
+              ),
+              Gap(2.h),
               Text(
                 loc.isEmpty ? trade : '$trade · $loc',
-                style: tt.titleMedium!.copyWith(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tt.bodyMedium!.copyWith(
                   fontWeight: FontWeight.w600,
                   color: c.text2,
                 ),
@@ -283,64 +290,81 @@ class _ActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final message = JButton(
+
+    // MESSAGE supports the decision — secondary, on its own full-width row so
+    // the label is never squeezed. REJECT is the destructive secondary.
+    final messageSecondary = JButton(
       label: 'MESSAGE',
       icon: AppIcons.chat,
+      variant: JButtonVariant.secondary,
       size: JButtonSize.compact,
       onPressed: onMessage,
     );
+    final reject = JButton(
+      label: 'REJECT',
+      variant: JButtonVariant.secondary,
+      size: JButtonSize.compact,
+      onPressed: onReject,
+    );
 
-    List<Widget> children;
+    final Widget body;
     if (status == ApplicationStatus.pending) {
-      children = [
-        Expanded(flex: 5, child: message),
-        Gap(8.w),
-        Expanded(
-          flex: 4,
-          child: JButton(
-            label: 'SHORTLIST',
-            variant: JButtonVariant.secondary,
-            size: JButtonSize.compact,
-            onPressed: onShortlist,
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: JButton(
+                  label: 'SHORTLIST',
+                  size: JButtonSize.compact,
+                  onPressed: onShortlist,
+                ),
+              ),
+              Gap(8.w),
+              Expanded(child: reject),
+            ],
           ),
-        ),
-        Gap(8.w),
-        Expanded(
-          flex: 3,
-          child: JButton(
-            label: 'REJECT',
-            variant: JButtonVariant.secondary,
-            size: JButtonSize.compact,
-            onPressed: onReject,
-          ),
-        ),
-      ];
+          Gap(8.h),
+          Row(children: [Expanded(child: messageSecondary)]),
+        ],
+      );
     } else if (status == ApplicationStatus.shortlisted) {
-      children = [
-        Expanded(
-          flex: 5,
-          child: JButton(
-            label: 'HIRE',
-            size: JButtonSize.compact,
-            onPressed: onHire,
+      body = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: JButton(
+                  label: 'HIRE',
+                  size: JButtonSize.compact,
+                  onPressed: onHire,
+                ),
+              ),
+              Gap(8.w),
+              Expanded(child: reject),
+            ],
           ),
-        ),
-        Gap(8.w),
-        Expanded(flex: 5, child: message),
-        Gap(8.w),
-        Expanded(
-          flex: 3,
-          child: JButton(
-            label: 'REJECT',
-            variant: JButtonVariant.secondary,
-            size: JButtonSize.compact,
-            onPressed: onReject,
-          ),
-        ),
-      ];
+          Gap(8.h),
+          Row(children: [Expanded(child: messageSecondary)]),
+        ],
+      );
     } else {
-      // hired / rejected / withdrawn / declined — terminal: just message.
-      children = [Expanded(child: message)];
+      // hired / rejected / withdrawn / declined — terminal: MESSAGE is now the
+      // sole action, so it leads as the primary CTA.
+      body = Row(
+        children: [
+          Expanded(
+            child: JButton(
+              label: 'MESSAGE',
+              icon: AppIcons.chat,
+              size: JButtonSize.compact,
+              onPressed: onMessage,
+            ),
+          ),
+        ],
+      );
     }
 
     return Container(
@@ -349,7 +373,7 @@ class _ActionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: c.border)),
       ),
       padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-      child: Row(children: children),
+      child: body,
     );
   }
 }

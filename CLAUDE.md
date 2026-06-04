@@ -37,6 +37,7 @@ Available page-specific overrides:
 - `design-system/jobdun/pages/profile-dashboard.md`
 - `design-system/jobdun/pages/messaging.md`
 - `design-system/jobdun/pages/admin-web.md`
+- `design-system/jobdun/pages/applications.md`
 
 **Jobdun design tokens (from MASTER):**
 - Background: `#0F172A` (dark slate — NOT white, never `#F8FAFC`)

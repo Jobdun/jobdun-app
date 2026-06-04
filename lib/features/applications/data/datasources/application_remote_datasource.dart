@@ -152,6 +152,17 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
         columns: 'id, full_name, primary_trade, is_verified',
         embedKey: 'trade_profiles',
       );
+      // avatar_url lives on `profiles` (not trade_profiles) — merge it under
+      // `profiles` so the applicant row/detail can show the tradie's photo.
+      // Degrades gracefully: if RLS hides the row, the embed is null and the
+      // UI falls back to initials.
+      await _mergeProfiles(
+        rows: apps,
+        idKey: 'trade_id',
+        table: 'profiles',
+        columns: 'id, avatar_url',
+        embedKey: 'profiles',
+      );
       return apps.map(JobApplicationModel.fromJson).toList();
     } catch (e) {
       throw ServerException(e.toString());

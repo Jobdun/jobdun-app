@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/application_remote_datasource.dart';
 import '../../data/repositories/application_repository_impl.dart';
 import '../../domain/entities/job_application.dart';
@@ -58,9 +59,29 @@ class ApplicationsController extends Notifier<ApplicationsState>
     with AccountScoped<ApplicationsState> {
   @override
   ApplicationsState build() {
-    // Clear state on logout or account switch to prevent stale data.
-    resetOnAccountChange((_) => state = const ApplicationsState());
+    // Clear state on logout / account switch, then reload for the incoming
+    // user. The initial load lives HERE — not in a page's `initState` +
+    // `addPostFrameCallback` (forbidden by the Riverpod rules). The three
+    // applications screens share this one controller, so loading once on first
+    // read serves all of them.
+    resetOnAccountChange((userId) {
+      state = const ApplicationsState();
+      if (userId != null) _autoLoad(userId);
+    });
+    final userId = readCurrentUserId(ref);
+    if (userId != null) Future.microtask(() => _autoLoad(userId));
     return const ApplicationsState();
+  }
+
+  /// Role-appropriate load: builders get incoming applicants, tradies get
+  /// their own applications. Used for the initial load and pull-to-refresh.
+  void _autoLoad(String userId) {
+    final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
+    if (isBuilder) {
+      loadIncomingApplications(userId);
+    } else {
+      loadMyApplications(userId);
+    }
   }
 
   /// Flip the verified-only filter on the builder applicant list.

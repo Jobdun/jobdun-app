@@ -285,23 +285,29 @@ class _AppCard extends StatelessWidget {
                   Gap(12.h),
                   Divider(height: 1, color: c.border),
                   Gap(10.h),
-                  GestureDetector(
-                    onTap: () => onUpdateStatus?.call(ApplicationStatus.hired),
-                    child: Container(
-                      width: double.infinity,
-                      height: 34.h,
-                      decoration: BoxDecoration(
-                        color: c.verified,
-                        borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'HIRE THIS TRADIE',
-                        style: tt.labelMedium!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: c
-                              .onAction, // dark-on-fill: white-on-green is 2.28:1 (fails); onAction = 7.83:1
+                  Semantics(
+                    button: true,
+                    label: 'Hire this tradie',
+                    child: Material(
+                      color: c.verified,
+                      borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () =>
+                            onUpdateStatus?.call(ApplicationStatus.hired),
+                        child: Container(
+                          width: double.infinity,
+                          constraints: BoxConstraints(minHeight: 48.h),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'HIRE THIS TRADIE',
+                            style: tt.labelMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: c
+                                  .onAction, // dark-on-fill: white-on-green is 2.28:1 (fails); onAction = 7.83:1
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -325,15 +331,24 @@ class _AppCard extends StatelessWidget {
                   Gap(12.h),
                   Divider(height: 1, color: c.border),
                   Gap(10.h),
-                  GestureDetector(
-                    onTap: onWithdraw,
-                    child: Text(
-                      AppStrings.withdrawFromJob,
-                      style: tt.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: c.text3,
-                        decoration: TextDecoration.underline,
-                        decorationColor: c.text3,
+                  Semantics(
+                    button: true,
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: InkWell(
+                        onTap: onWithdraw,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          child: Text(
+                            AppStrings.withdrawFromJob,
+                            style: tt.bodyMedium!.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: c.text3,
+                              decoration: TextDecoration.underline,
+                              decorationColor: c.text3,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

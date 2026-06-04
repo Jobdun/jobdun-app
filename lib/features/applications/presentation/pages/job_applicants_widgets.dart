@@ -117,75 +117,93 @@ class _ApplicantRow extends StatelessWidget {
     final quote = app.quoteAmount != null
         ? '\$${app.quoteAmount!.toStringAsFixed(0)}$suffix'
         : '—';
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: EdgeInsets.all(AppSpacing.md.r),
-        decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: c.border),
-        ),
-        child: Row(
-          children: [
-            _RowAvatar(name: app.tradeFullName),
-            Gap(AppSpacing.md.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Semantics(
+      button: true,
+      label:
+          '${app.tradeFullName ?? 'Applicant'}, ${app.status.label}. Quote $quote',
+      child: Material(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.all(AppSpacing.md.r),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.card.r),
+              border: Border.all(color: c.border),
+            ),
+            child: Row(
+              children: [
+                Hero(
+                  tag: 'applicant-avatar:${app.id}',
+                  child: _RowAvatar(
+                    name: app.tradeFullName,
+                    imageUrl: app.tradeAvatarUrl,
+                  ),
+                ),
+                Gap(AppSpacing.md.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          app.tradeFullName ?? 'Tradesperson',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              app.tradeFullName ?? 'Tradesperson',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.titleMedium!.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: c.text1,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (app.tradeIsVerified == true) ...[
+                            Gap(5.w),
+                            Icon(
+                              AppIcons.verified,
+                              size: AppIconSize.micro.r,
+                              color: c.verified,
+                            ),
+                          ],
+                        ],
                       ),
-                      if (app.tradeIsVerified == true) ...[
-                        Gap(5.w),
-                        Icon(
-                          AppIcons.verified,
-                          size: AppIconSize.micro.r,
-                          color: c.verified,
-                        ),
-                      ],
+                      Gap(2.h),
+                      Text(
+                        '${app.tradePrimaryTrade ?? 'Trade'} · Quote $quote',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodySmall!.copyWith(color: c.text3),
+                      ),
                     ],
                   ),
-                  Gap(2.h),
-                  Text(
-                    '${app.tradePrimaryTrade ?? 'Trade'} · Quote $quote',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.bodySmall!.copyWith(color: c.text3),
-                  ),
-                ],
-              ),
-            ),
-            Gap(AppSpacing.sm.w),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-              decoration: BoxDecoration(
-                color: chipBg,
-                borderRadius: BorderRadius.circular(AppRadius.chip.r),
-              ),
-              child: Text(
-                app.status.label.toUpperCase(),
-                style: tt.labelSmall!.copyWith(
-                  letterSpacing: 0.5,
-                  color: chipTx,
                 ),
-              ),
+                Gap(AppSpacing.sm.w),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: chipBg,
+                    borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                  ),
+                  child: Text(
+                    app.status.label.toUpperCase(),
+                    style: tt.labelSmall!.copyWith(
+                      letterSpacing: 0.5,
+                      color: chipTx,
+                    ),
+                  ),
+                ),
+                Gap(4.w),
+                Icon(
+                  AppIcons.chevronRight,
+                  size: AppIconSize.md.r,
+                  color: c.text3,
+                ),
+              ],
             ),
-            Gap(4.w),
-            Icon(AppIcons.chevronRight, size: AppIconSize.md.r, color: c.text3),
-          ],
+          ),
         ),
       ),
     );
@@ -193,30 +211,18 @@ class _ApplicantRow extends StatelessWidget {
 }
 
 class _RowAvatar extends StatelessWidget {
-  const _RowAvatar({this.name});
+  const _RowAvatar({this.name, this.imageUrl});
 
   final String? name;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      width: 40.r,
-      height: 40.r,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: c.surfaceRaised,
-        shape: BoxShape.circle,
-        border: Border.all(color: c.border),
-      ),
-      child: Text(
-        _initials(name),
-        style: tt.titleSmall!.copyWith(
-          fontWeight: FontWeight.w700,
-          color: c.text1,
-        ),
-      ),
+    return AvatarBlock(
+      initials: _initials(name),
+      imageUrl: imageUrl,
+      size: 40,
+      circle: true,
     );
   }
 }
@@ -283,15 +289,23 @@ class _HiddenNotice extends StatelessWidget {
               ),
             ],
           ),
-          Gap(AppSpacing.md.h),
-          GestureDetector(
-            onTap: onShowAll,
-            behavior: HitTestBehavior.opaque,
-            child: Text(
-              'SHOW ALL APPLICANTS',
-              style: tt.labelLarge!.copyWith(
-                color: c.action,
-                letterSpacing: 0.8,
+          Gap(AppSpacing.sm.h),
+          Semantics(
+            button: true,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onShowAll,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  child: Text(
+                    'SHOW ALL APPLICANTS',
+                    style: tt.labelLarge!.copyWith(
+                      color: c.action,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -313,8 +327,9 @@ class _EmptyApplicants extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 40.h),
       child: Column(
         children: [
-          Icon(
-            AppIcons.applicantsOutline,
+          AnimatedEmptyGlyph(
+            icon: AppIcons.applicantsOutline,
+            motion: EmptyGlyphMotion.bounce,
             size: AppIconSize.hero.r,
             color: c.text3,
           ),

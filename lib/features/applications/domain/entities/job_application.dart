@@ -60,6 +60,7 @@ class JobApplication extends Equatable {
     this.tradeFullName,
     this.tradePrimaryTrade,
     this.tradeIsVerified,
+    this.tradeAvatarUrl,
     this.builderCompanyName,
   });
 
@@ -96,6 +97,8 @@ class JobApplication extends Equatable {
   final String? tradeFullName;
   final String? tradePrimaryTrade;
   final bool? tradeIsVerified;
+  // Joined from profiles (avatar_url lives on profiles, not trade_profiles).
+  final String? tradeAvatarUrl;
 
   // Joined from builder_profiles (trade view)
   final String? builderCompanyName;

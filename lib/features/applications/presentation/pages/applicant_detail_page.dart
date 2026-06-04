@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/page_header.dart';
@@ -122,76 +123,86 @@ class ApplicantDetailPage extends ConsumerWidget {
 
             // ── Body
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, AppSpacing.lg.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DetailHeader(
-                      app: app,
-                      profile: profile,
-                      hasLicence: hasLicence,
-                      hasAbn: hasAbn,
-                    ),
-                    Gap(AppSpacing.lg.h),
-                    _QuoteBlock(app: app),
-                    if (profile != null) ...[
-                      Gap(AppSpacing.lg.h),
-                      _StatsStrip(profile: profile),
-                    ],
-                    if ((profile?.about ?? '').trim().isNotEmpty) ...[
-                      Gap(AppSpacing.lg.h),
-                      const FieldLabel('ABOUT'),
-                      Gap(AppSpacing.sm.h),
-                      Text(
-                        profile!.about!.trim(),
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: c.text2,
-                          height: 1.55,
-                        ),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(_tradeProfileProvider(app.tradeId));
+                  ref.invalidate(verificationsForUserProvider(app.tradeId));
+                },
+                color: c.action,
+                backgroundColor: c.card,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    20.h,
+                    20.w,
+                    AppSpacing.xl.h,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _DetailHeader(
+                        app: app,
+                        profile: profile,
+                        hasLicence: hasLicence,
+                        hasAbn: hasAbn,
                       ),
-                    ],
-                    if ((app.coverNote ?? '').trim().isNotEmpty) ...[
                       Gap(AppSpacing.lg.h),
-                      const FieldLabel('COVER NOTE'),
-                      Gap(AppSpacing.sm.h),
-                      Text(
-                        app.coverNote!.trim(),
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          color: c.text2,
-                          height: 1.55,
-                        ),
-                      ),
-                    ],
-                    // ── Availability — the deferred availability-calendar plugs
-                    // in here next (table_calendar). For now: the applicant's
-                    // earliest start from their application.
-                    // TODO(availability-calendar): embed the tradie's
-                    // TableCalendar of available days in this section.
-                    Gap(AppSpacing.lg.h),
-                    const FieldLabel('AVAILABILITY'),
-                    Gap(AppSpacing.sm.h),
-                    Row(
-                      children: [
-                        Icon(
-                          AppIcons.calendar,
-                          size: AppIconSize.inline.r,
-                          color: c.text3,
-                        ),
-                        Gap(8.w),
+                      _QuoteBlock(app: app),
+                      if (profile != null) ...[
+                        Gap(AppSpacing.lg.h),
+                        _StatsStrip(profile: profile),
+                      ],
+                      if ((profile?.about ?? '').trim().isNotEmpty) ...[
+                        Gap(AppSpacing.lg.h),
+                        const FieldLabel('ABOUT'),
+                        Gap(AppSpacing.sm.h),
                         Text(
-                          app.availableFrom != null
-                              ? 'Available from ${StringUtils.fmtDate(app.availableFrom!)}'
-                              : 'Availability not specified',
+                          profile!.about!.trim(),
                           style: Theme.of(context).textTheme.bodyLarge!
-                              .copyWith(
-                                color: c.text1,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              .copyWith(color: c.text2, height: 1.55),
                         ),
                       ],
-                    ),
-                  ],
+                      if ((app.coverNote ?? '').trim().isNotEmpty) ...[
+                        Gap(AppSpacing.lg.h),
+                        const FieldLabel('COVER NOTE'),
+                        Gap(AppSpacing.sm.h),
+                        Text(
+                          app.coverNote!.trim(),
+                          style: Theme.of(context).textTheme.bodyLarge!
+                              .copyWith(color: c.text2, height: 1.55),
+                        ),
+                      ],
+                      // ── Availability — the deferred availability-calendar plugs
+                      // in here next (table_calendar). For now: the applicant's
+                      // earliest start from their application.
+                      // TODO(availability-calendar): embed the tradie's
+                      // TableCalendar of available days in this section.
+                      Gap(AppSpacing.lg.h),
+                      const FieldLabel('AVAILABILITY'),
+                      Gap(AppSpacing.sm.h),
+                      Row(
+                        children: [
+                          Icon(
+                            AppIcons.calendar,
+                            size: AppIconSize.inline.r,
+                            color: c.text3,
+                          ),
+                          Gap(8.w),
+                          Text(
+                            app.availableFrom != null
+                                ? 'Available from ${StringUtils.fmtDate(app.availableFrom!)}'
+                                : 'Availability not specified',
+                            style: Theme.of(context).textTheme.bodyLarge!
+                                .copyWith(
+                                  color: c.text1,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -15,6 +15,7 @@ import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
+import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../messaging/presentation/pages/message_thread_page.dart';
@@ -23,6 +24,7 @@ import '../../../verification/presentation/widgets/builder_verified_badge.dart';
 import '../../../verification/presentation/widgets/unverified_consent_dialog.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
+import 'application_tabs.dart';
 
 part 'applications_page_card.dart';
 part 'applications_page_widgets.dart';
@@ -35,35 +37,20 @@ class ApplicationsPage extends ConsumerStatefulWidget {
 }
 
 class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
-  String _tab = 'All';
+  AppTab _tab = AppTab.all;
 
-  static const _tradeTabs = ['All', 'Pending', 'Shortlisted', 'Hired'];
-  static const _builderTabs = [
-    'All',
-    'Pending',
-    'Shortlisted',
-    'Hired',
-    'Rejected',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final userId = ref.read(currentUserIdSyncProvider);
-      if (userId == null) return;
-      final role = ref.read(authControllerProvider).role;
-      if (role == UserRole.builder) {
-        ref
-            .read(applicationsControllerProvider.notifier)
-            .loadIncomingApplications(userId);
-      } else {
-        ref
-            .read(applicationsControllerProvider.notifier)
-            .loadMyApplications(userId);
-      }
-    });
+  // Pull-to-refresh: re-run the role-appropriate load. The initial load is
+  // owned by the controller's build() (see applications_provider.dart).
+  Future<void> _refresh() async {
+    final userId = ref.read(currentUserIdSyncProvider);
+    if (userId == null) return;
+    final notifier = ref.read(applicationsControllerProvider.notifier);
+    final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
+    if (isBuilder) {
+      await notifier.loadIncomingApplications(userId);
+    } else {
+      await notifier.loadMyApplications(userId);
+    }
   }
 
   // Builder taps "Message" on an applicant → open (or create) the shared
@@ -88,31 +75,18 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
     );
   }
 
-  List<JobApplication> _filtered(List<JobApplication> apps) {
-    if (_tab == 'All') return apps;
-    return apps.where((a) {
-      return switch (_tab) {
-        'Pending' => a.status == ApplicationStatus.pending,
-        'Shortlisted' => a.status == ApplicationStatus.shortlisted,
-        'Hired' => a.status == ApplicationStatus.hired,
-        'Rejected' => a.status == ApplicationStatus.rejected,
-        _ => true,
-      };
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final authState = ref.watch(authControllerProvider);
     final appsState = ref.watch(applicationsControllerProvider);
     final isBuilder = authState.role == UserRole.builder;
-    final tabs = isBuilder ? _builderTabs : _tradeTabs;
+    final tabs = ApplicationTabs.forRole(isBuilder: isBuilder);
 
     final rawList = isBuilder
         ? appsState.filteredIncoming
         : appsState.myApplications;
-    final filtered = _filtered(rawList);
+    final filtered = ApplicationTabs.filter(rawList, _tab);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -168,11 +142,15 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                       scrollDirection: Axis.horizontal,
                       itemCount: tabs.length,
                       separatorBuilder: (_, _) => Gap(AppSpacing.sm.w),
-                      itemBuilder: (ctx, i) => GvChip(
-                        label: tabs[i],
-                        active: _tab == tabs[i],
-                        onTap: () => setState(() => _tab = tabs[i]),
-                      ),
+                      itemBuilder: (ctx, i) {
+                        final tab = tabs[i];
+                        final n = ApplicationTabs.count(rawList, tab);
+                        return GvChip(
+                          label: n > 0 ? '${tab.label} · $n' : tab.label,
+                          active: _tab == tab,
+                          onTap: () => setState(() => _tab = tab),
+                        );
+                      },
                     ),
                   ),
                   Gap(12.h),
@@ -202,32 +180,43 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                     )
                   : filtered.isEmpty
                   ? _EmptyTab(tab: _tab, isBuilder: isBuilder)
-                  : JStaggeredList(
-                      animationKey: ValueKey(_tab),
-                      padding: EdgeInsets.fromLTRB(
-                        20.w,
-                        AppSpacing.md.h,
-                        20.w,
-                        AppSpacing.lg.h,
-                      ),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, _) => Gap(10.h),
-                      itemBuilder: (ctx, i) => _AppCard(
-                        app: filtered[i],
-                        isBuilder: isBuilder,
-                        onUpdateStatus: isBuilder
-                            ? (status) => ref
-                                  .read(applicationsControllerProvider.notifier)
-                                  .updateStatus(filtered[i].id, status)
-                            : null,
-                        onWithdraw: !isBuilder
-                            ? () => ref
-                                  .read(applicationsControllerProvider.notifier)
-                                  .withdraw(filtered[i].id)
-                            : null,
-                        onMessage: isBuilder
-                            ? () => _openConversation(filtered[i])
-                            : null,
+                  : RefreshIndicator(
+                      onRefresh: _refresh,
+                      color: c.action,
+                      backgroundColor: c.card,
+                      child: JStaggeredList(
+                        animationKey: ValueKey(_tab),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          AppSpacing.md.h,
+                          20.w,
+                          AppSpacing.xl.h +
+                              MediaQuery.of(context).padding.bottom,
+                        ),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, _) => Gap(10.h),
+                        itemBuilder: (ctx, i) => _AppCard(
+                          app: filtered[i],
+                          isBuilder: isBuilder,
+                          onUpdateStatus: isBuilder
+                              ? (status) => ref
+                                    .read(
+                                      applicationsControllerProvider.notifier,
+                                    )
+                                    .updateStatus(filtered[i].id, status)
+                              : null,
+                          onWithdraw: !isBuilder
+                              ? () => ref
+                                    .read(
+                                      applicationsControllerProvider.notifier,
+                                    )
+                                    .withdraw(filtered[i].id)
+                              : null,
+                          onMessage: isBuilder
+                              ? () => _openConversation(filtered[i])
+                              : null,
+                        ),
                       ),
                     ),
             ),

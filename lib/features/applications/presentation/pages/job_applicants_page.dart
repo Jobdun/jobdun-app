@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/animated_empty_glyph.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
@@ -33,20 +35,16 @@ class JobApplicantsPage extends ConsumerStatefulWidget {
 }
 
 class _JobApplicantsPageState extends ConsumerState<JobApplicantsPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Ensure the builder's incoming applications are loaded (this screen may be
-    // opened directly from "My Jobs" without visiting the Applicants tab first).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final me = ref.read(currentUserIdSyncProvider);
-      if (me != null) {
-        ref
-            .read(applicationsControllerProvider.notifier)
-            .loadIncomingApplications(me);
-      }
-    });
+  // The builder's incoming applications are loaded by the controller's build()
+  // (see applications_provider.dart). Pull-to-refresh re-runs that load so this
+  // screen — which can be opened straight from "My Jobs" — stays current.
+  Future<void> _refresh() async {
+    final me = ref.read(currentUserIdSyncProvider);
+    if (me != null) {
+      await ref
+          .read(applicationsControllerProvider.notifier)
+          .loadIncomingApplications(me);
+    }
   }
 
   Future<void> _toggleVerified(bool next) async {
@@ -145,56 +143,91 @@ class _JobApplicantsPageState extends ConsumerState<JobApplicantsPage> {
                         ),
                       ),
                     )
-                  : SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(
-                        20.w,
-                        AppSpacing.lg.h,
-                        20.w,
-                        AppSpacing.lg.h,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _JobSummaryCard(args: args),
-                          Gap(AppSpacing.lg.h),
-                          Row(
-                            children: [
-                              Text(
-                                forJob.length == 1
-                                    ? '1 APPLICANT'
-                                    : '${forJob.length} APPLICANTS',
-                                style: tt.labelSmall!.copyWith(
-                                  letterSpacing: 0.8,
-                                  color: c.text2,
-                                ),
+                  : RefreshIndicator(
+                      onRefresh: _refresh,
+                      color: c.action,
+                      backgroundColor: c.card,
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(
+                              20.w,
+                              AppSpacing.lg.h,
+                              20.w,
+                              AppSpacing.sm.h,
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _JobSummaryCard(args: args),
+                                  Gap(AppSpacing.lg.h),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        forJob.length == 1
+                                            ? '1 APPLICANT'
+                                            : '${forJob.length} APPLICANTS',
+                                        style: tt.labelSmall!.copyWith(
+                                          letterSpacing: 0.8,
+                                          color: c.text2,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        'Verified only',
+                                        style: tt.bodySmall!.copyWith(
+                                          color: c.text3,
+                                        ),
+                                      ),
+                                      Gap(8.w),
+                                      JSwitch(
+                                        value: st.verifiedOnlyFilter,
+                                        onChanged: _toggleVerified,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const Spacer(),
-                              Text(
-                                'Verified only',
-                                style: tt.bodySmall!.copyWith(color: c.text3),
-                              ),
-                              Gap(8.w),
-                              JSwitch(
-                                value: st.verifiedOnlyFilter,
-                                onChanged: _toggleVerified,
-                              ),
-                            ],
+                            ),
                           ),
-                          Gap(AppSpacing.md.h),
                           if (shown.isEmpty)
-                            (hiddenUnverified > 0 && st.verifiedOnlyFilter)
-                                ? _HiddenNotice(
-                                    count: hiddenUnverified,
-                                    onShowAll: () => _toggleVerified(false),
-                                  )
-                                : const _EmptyApplicants()
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  AppSpacing.md.h,
+                                  20.w,
+                                  0,
+                                ),
+                                child:
+                                    (hiddenUnverified > 0 &&
+                                        st.verifiedOnlyFilter)
+                                    ? _HiddenNotice(
+                                        count: hiddenUnverified,
+                                        onShowAll: () => _toggleVerified(false),
+                                      )
+                                    : const _EmptyApplicants(),
+                              ),
+                            )
                           else
-                            ...shown.map(
-                              (a) => Padding(
-                                padding: EdgeInsets.only(bottom: 10.h),
-                                child: _ApplicantRow(
-                                  app: a,
-                                  onTap: () => _openApplicant(a),
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                20.w,
+                                AppSpacing.md.h,
+                                20.w,
+                                AppSpacing.xl.h +
+                                    MediaQuery.of(context).padding.bottom,
+                              ),
+                              sliver: SliverList.builder(
+                                itemCount: shown.length,
+                                itemBuilder: (ctx, i) => Padding(
+                                  padding: EdgeInsets.only(bottom: 10.h),
+                                  child: _ApplicantRow(
+                                    app: shown[i],
+                                    onTap: () => _openApplicant(shown[i]),
+                                  ),
                                 ),
                               ),
                             ),

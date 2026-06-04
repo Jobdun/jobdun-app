@@ -25,6 +25,7 @@ class JobApplicationModel extends JobApplication {
     super.tradeFullName,
     super.tradePrimaryTrade,
     super.tradeIsVerified,
+    super.tradeAvatarUrl,
     super.builderCompanyName,
   });
 
@@ -37,6 +38,8 @@ class JobApplicationModel extends JobApplication {
     final jobData = json['jobs'] as Map<String, dynamic>?;
     final tradeData = json['trade_profiles'] as Map<String, dynamic>?;
     final builderData = json['builder_profiles'] as Map<String, dynamic>?;
+    // avatar_url lives on `profiles` (merged separately) — not trade_profiles.
+    final profileData = json['profiles'] as Map<String, dynamic>?;
 
     return JobApplicationModel(
       id: json['id'] as String,
@@ -66,6 +69,7 @@ class JobApplicationModel extends JobApplication {
       tradeFullName: tradeData?['full_name'] as String?,
       tradePrimaryTrade: tradeData?['primary_trade'] as String?,
       tradeIsVerified: tradeData?['is_verified'] as bool?,
+      tradeAvatarUrl: profileData?['avatar_url'] as String?,
       // Joined builder profile fields
       builderCompanyName: builderData?['company_name'] as String?,
     );
