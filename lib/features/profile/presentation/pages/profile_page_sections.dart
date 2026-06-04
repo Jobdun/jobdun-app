@@ -146,10 +146,6 @@ class _BuilderProfile extends ConsumerWidget {
     final c = context.c;
     final p = profile;
 
-    final rating = p?.averageRating?.toStringAsFixed(1) ?? '—';
-    final reviews = (p?.ratingCount ?? 0).toString();
-    final jobsPosted = (p?.totalJobsPosted ?? 0).toString();
-
     final companyName = _blank(p?.companyName);
     final abn = _formatAbn(p?.abn);
     final location = _blank(p?.displayLocation);
@@ -193,6 +189,16 @@ class _BuilderProfile extends ConsumerWidget {
     final registeredLocation = _formatRegisteredLocation(abrState, abrPostcode);
     final inBusinessSince = _formatInBusinessSince(abnRegisteredAt);
 
+    // Real stats only. Rating/reviews are phantom for builders (the rating
+    // trigger only updates trade_profiles), so we drop them — see
+    // docs/BUILDER_PROFILE_HOME_AUDIT.md. Jobs posted = real row count.
+    final jobsPosted = ref
+        .watch(builderJobsPostedCountProvider)
+        .asData
+        ?.value
+        .toString();
+    final sinceYear = abnRegisteredAt != null ? '${abnRegisteredAt.year}' : '—';
+
     void editProfile() => context.push('/profile/edit');
 
     return Padding(
@@ -203,24 +209,17 @@ class _BuilderProfile extends ConsumerWidget {
           Row(
             children: [
               JStatBadge(
-                value: rating,
-                label: 'Rating',
-                icon: AppIcons.star,
-                iconColor: c.star,
-              ),
-              Gap(AppSpacing.sm.w),
-              JStatBadge(
-                value: reviews,
-                label: 'Reviews',
-                icon: AppIcons.messageText,
-                iconColor: c.available,
-              ),
-              Gap(AppSpacing.sm.w),
-              JStatBadge(
-                value: jobsPosted,
+                value: jobsPosted ?? '—',
                 label: 'Jobs posted',
                 icon: AppIcons.briefcase,
                 iconColor: c.action,
+              ),
+              Gap(AppSpacing.sm.w),
+              JStatBadge(
+                value: sinceYear,
+                label: 'In business',
+                icon: AppIcons.calendar,
+                iconColor: c.available,
               ),
             ],
           ),

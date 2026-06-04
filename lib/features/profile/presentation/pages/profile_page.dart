@@ -19,6 +19,7 @@ import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../../verification/presentation/widgets/verification_receipts.dart';
