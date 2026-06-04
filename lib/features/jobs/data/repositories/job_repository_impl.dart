@@ -28,6 +28,15 @@ class JobRepositoryImpl implements JobRepository {
   }
 
   @override
+  Future<Either<Failure, List<Job>>> getBuilderJobs(String builderId) async {
+    try {
+      return right(await _datasource.getBuilderJobs(builderId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, Job>> getJobById(String id) async {
     try {
       return right(await _datasource.getJobById(id));

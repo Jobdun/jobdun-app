@@ -39,11 +39,9 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
   @override
   Widget build(BuildContext context) {
     ref.listen<ProfileState>(profileControllerProvider, (_, _) => _maybeLoad());
-    final active =
-        ref
-            .watch(profileControllerProvider.select((s) => s.builderProfile))
-            ?.activeJobsCount ??
-        0;
+    // Real count of the builder's live (open + filled) jobs. The old
+    // builderProfile.activeJobsCount read a non-existent DB column → always 0.
+    final active = ref.watch(builderActiveJobsCountProvider).asData?.value ?? 0;
     final applicants = ref.watch(
       applicationsControllerProvider.select((s) => s.pendingIncomingCount),
     );
@@ -58,7 +56,6 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
           _BentoHero(onTap: () => context.push('/jobs/create')),
           Gap(10.h),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: _BentoTile(
@@ -87,7 +84,6 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
           ),
           Gap(10.h),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: _BentoTile(

@@ -17,6 +17,7 @@ import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/utils/string_utils.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../verification/presentation/widgets/verification_nudge_banner.dart';
@@ -60,7 +61,13 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(jobsControllerProvider.notifier).loadFeed();
+      final notifier = ref.read(jobsControllerProvider.notifier);
+      // Builders see only their own listings; tradies browse the open feed.
+      final isBuilder =
+          ref.read(authControllerProvider).role == UserRole.builder;
+      final me = ref.read(currentUserIdSyncProvider);
+      if (isBuilder && me != null) notifier.setBuilderScope(me);
+      notifier.loadFeed();
       // Tradies use the SAVED tab; builders never see it. Loading the IDs
       // unconditionally keeps the swipe label (SAVE vs UNSAVE) accurate
       // even for builders who hit /jobs in dev or by deep-link.

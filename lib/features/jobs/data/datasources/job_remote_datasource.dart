@@ -7,6 +7,7 @@ import '../models/job_model.dart';
 
 abstract interface class JobRemoteDataSource {
   Future<List<JobModel>> getJobs({JobFilter? filter, int? limit, int? offset});
+  Future<List<JobModel>> getBuilderJobs(String builderId);
   Future<JobModel> getJobById(String id);
   Future<JobModel> createJob(JobModel job);
   Future<JobModel> updateJob(JobModel job);
@@ -29,7 +30,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
       var query = _client
           .from('jobs')
           .select(
-            'id, builder_id, title, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
+            'id, builder_id, title, description, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
           )
           .isFilter('deleted_at', null);
 
@@ -39,6 +40,11 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         }
         if (filter.tradeType != null) {
           query = query.eq('trade_type_required', filter.tradeType!) as dynamic;
+        }
+        if (filter.builderId != null) {
+          // "Your listings" — scope the feed to one builder's own jobs. RLS
+          // jobs_select_own then exposes all their statuses (incl. draft).
+          query = query.eq('builder_id', filter.builderId!) as dynamic;
         }
         if (filter.searchQuery != null && filter.searchQuery!.isNotEmpty) {
           query =
@@ -67,6 +73,28 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     }
   }
 
+  // One-shot fetch of a builder's own jobs (all statuses, non-deleted). Uses
+  // `.select()` (full row) so JobModel.fromJson always has every column —
+  // distinct from getJobs, whose trimmed feed projection must list each field.
+  @override
+  Future<List<JobModel>> getBuilderJobs(String builderId) async {
+    try {
+      final data =
+          await _client
+                  .from('jobs')
+                  .select()
+                  .eq('builder_id', builderId)
+                  .isFilter('deleted_at', null)
+                  .order('created_at', ascending: false)
+              as List<dynamic>;
+      return data
+          .map((e) => JobModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
   @override
   Future<JobModel> getJobById(String id) async {
     try {
@@ -86,6 +114,13 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   Future<JobModel> createJob(JobModel job) async {
     try {
       final json = job.toJson();
+      // Created straight as 'open' → it's published now. The Draft→Open
+      // transition that normally stamps published_at (see updateJobStatus) is
+      // skipped on create, so set it here. Without it the feed's
+      // `ORDER BY published_at DESC` sorts every fresh listing as NULL.
+      if (job.status == JobStatus.open && json['published_at'] == null) {
+        json['published_at'] = DateTime.now().toUtc().toIso8601String();
+      }
       final data = await _client.from('jobs').insert(json).select().single();
       return JobModel.fromJson(data);
     } catch (e) {

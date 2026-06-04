@@ -14,6 +14,10 @@ extension JobStatusX on JobStatus {
 
   String get dbValue => name;
 
+  /// "Active" = live work the builder is managing: open (taking applicants)
+  /// or filled (assigned / in progress). Excludes draft, closed, cancelled.
+  bool get isActive => this == JobStatus.open || this == JobStatus.filled;
+
   static JobStatus fromDb(String value) => JobStatus.values.firstWhere(
     (s) => s.dbValue == value,
     orElse: () => JobStatus.open,

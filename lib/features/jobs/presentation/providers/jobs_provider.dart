@@ -15,6 +15,7 @@ import '../../domain/repositories/job_interactions_repository.dart';
 import '../../domain/repositories/job_repository.dart';
 import '../../domain/usecases/create_job.dart';
 import '../../domain/usecases/delete_job.dart';
+import '../../domain/usecases/get_builder_jobs.dart';
 import '../../domain/usecases/get_job_by_id.dart';
 import '../../domain/usecases/get_jobs.dart';
 import '../../domain/usecases/update_job.dart';
@@ -45,6 +46,10 @@ final getJobsUseCaseProvider = Provider(
   (ref) => GetJobs(ref.read(jobRepositoryProvider)),
 );
 
+final getBuilderJobsUseCaseProvider = Provider(
+  (ref) => GetBuilderJobs(ref.read(jobRepositoryProvider)),
+);
+
 final getJobByIdUseCaseProvider = Provider(
   (ref) => GetJobById(ref.read(jobRepositoryProvider)),
 );
@@ -60,6 +65,23 @@ final updateJobUseCaseProvider = Provider(
 final deleteJobUseCaseProvider = Provider(
   (ref) => DeleteJob(ref.read(jobRepositoryProvider)),
 );
+
+// ── Derived counts ────────────────────────────────────────────────────────────
+// Active-job count for the signed-in builder's home tile. Counts real rows
+// (open + filled) — replaces builder_profiles.active_jobs_count, a phantom
+// column that never existed so the tile always read 0. autoDispose so it
+// re-fetches each time the home re-subscribes (e.g. after posting a job).
+final builderActiveJobsCountProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
+  final builderId = ref.watch(currentUserIdSyncProvider);
+  if (builderId == null) return 0;
+  final result = await ref.read(getBuilderJobsUseCaseProvider).call(builderId);
+  return result.fold(
+    (_) => 0,
+    (jobs) => jobs.where((j) => j.status.isActive).length,
+  );
+});
 
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
@@ -85,6 +107,11 @@ class JobsController extends Notifier<JobsState> {
   StreamSubscription<List<Job>>? _builderJobsSub;
   PagingController<int, Job>? _pagingController;
 
+  // When set (builders on "Your listings"), every feed fetch is scoped to this
+  // builder's own jobs. Kept off the user-facing JobFilter so trade-chip /
+  // search changes never drop the scope. Merged in via _effectiveFilter().
+  String? _builderScopeId;
+
   static const _pageSize = 20;
 
   PagingController<int, Job> get pagingController {
@@ -106,6 +133,7 @@ class JobsController extends Notifier<JobsState> {
       if (next.value == null ||
           (previous?.value != null && previous?.value != next.value)) {
         state = const JobsState();
+        _builderScopeId = null;
         _pagingController?.refresh();
       }
     });
@@ -128,11 +156,31 @@ class JobsController extends Notifier<JobsState> {
     );
   }
 
+  /// Scope the feed to one builder's own listings ("Your listings"). Builders
+  /// call this before [loadFeed]; tradies never do, so their path is unchanged.
+  void setBuilderScope(String builderId) {
+    if (_builderScopeId == builderId) return;
+    _builderScopeId = builderId;
+  }
+
+  /// Merges the builder scope into the user-facing filter at fetch time, so the
+  /// scope survives trade-chip / search / clear-filter changes.
+  JobFilter? _effectiveFilter() {
+    if (_builderScopeId == null) return state.filter;
+    final base = state.filter;
+    return JobFilter(
+      tradeType: base?.tradeType,
+      status: base?.status,
+      searchQuery: base?.searchQuery,
+      builderId: _builderScopeId,
+    );
+  }
+
   Future<void> _fetchPage(int pageKey) async {
     final result = await ref
         .read(getJobsUseCaseProvider)
         .call(
-          filter: state.filter,
+          filter: _effectiveFilter(),
           limit: _pageSize,
           offset: pageKey * _pageSize,
         );
@@ -162,7 +210,7 @@ class JobsController extends Notifier<JobsState> {
     state = state.copyWith(isLoading: true, error: null);
     final result = await ref
         .read(getJobsUseCaseProvider)
-        .call(filter: state.filter, limit: _pageSize);
+        .call(filter: _effectiveFilter(), limit: _pageSize);
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (jobs) {

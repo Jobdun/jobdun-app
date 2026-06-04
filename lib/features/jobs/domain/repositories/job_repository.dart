@@ -13,6 +13,9 @@ abstract interface class JobRepository {
     int? limit,
     int? offset,
   });
+
+  /// A builder's own jobs (all statuses, non-deleted), one-shot.
+  Future<Either<Failure, List<Job>>> getBuilderJobs(String builderId);
   Future<Either<Failure, Job>> getJobById(String id);
   Future<Either<Failure, Job>> createJob(Job job);
   Future<Either<Failure, Job>> updateJob(Job job);
