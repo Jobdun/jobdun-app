@@ -12,6 +12,7 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
@@ -31,10 +32,37 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
   bool _applied = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Load the tradie's applications so an already-applied job shows the
+    // "Applied" state instead of a re-apply button (which would hit the
+    // UNIQUE(job_id, trade_id) constraint and surface a raw error).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final me = ref.read(currentUserIdSyncProvider);
+      if (me != null) {
+        ref
+            .read(applicationsControllerProvider.notifier)
+            .loadMyApplications(me);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final args = widget.args;
+    // True once the tradie has applied — locally this session, or per the
+    // loaded application list (survives leaving and re-opening the job).
+    final applied =
+        _applied ||
+        (args.id != null &&
+            ref.watch(
+              applicationsControllerProvider.select(
+                (s) => s.myApplications.any((a) => a.jobId == args.id),
+              ),
+            ));
 
     return Scaffold(
       backgroundColor: c.background,
@@ -245,7 +273,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               ),
             ),
 
-            _applied
+            applied
                 ? Container(
                     decoration: BoxDecoration(
                       color: c.card,
@@ -307,7 +335,8 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         args: args,
         onSubmit: (rate, note) async {
           final jobId = args.id;
-          if (jobId == null) {
+          final builderId = args.builderId;
+          if (jobId == null || builderId == null) {
             Navigator.pop(ctx);
             _showError(
               messenger,
@@ -321,6 +350,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               .read(applicationsControllerProvider.notifier)
               .apply(
                 jobId: jobId,
+                builderId: builderId,
                 coverNote: note,
                 proposedRate: rate,
                 proposedRateType: 'Hourly',

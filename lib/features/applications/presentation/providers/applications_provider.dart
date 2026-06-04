@@ -126,9 +126,11 @@ class ApplicationsController extends Notifier<ApplicationsState> {
     });
   }
 
-  // Trade: apply to a job
+  // Trade: apply to a job. [builderId] is the JOB OWNER (recipient of the
+  // application) — NOT the applicant. The repo sets trade_id from auth.uid().
   Future<bool> apply({
     required String jobId,
+    required String builderId,
     String? coverNote,
     double? proposedRate,
     String? proposedRateType,
@@ -139,7 +141,7 @@ class ApplicationsController extends Notifier<ApplicationsState> {
         .read(applyToJobUseCaseProvider)
         .call(
           jobId: jobId,
-          builderId: tradeId,
+          builderId: builderId,
           coverNote: coverNote,
           proposedRate: proposedRate,
           proposedRateType: proposedRateType,

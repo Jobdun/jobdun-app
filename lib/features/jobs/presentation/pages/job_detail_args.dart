@@ -7,6 +7,7 @@ import '../../domain/entities/job.dart';
 class JobDetailArgs {
   const JobDetailArgs({
     this.id,
+    this.builderId,
     required this.title,
     required this.description,
     required this.rate,
@@ -23,6 +24,8 @@ class JobDetailArgs {
   });
 
   final String? id;
+  // The job owner's profile id — the builder who receives the application.
+  final String? builderId;
   final String title;
   final String description;
   final String rate;
@@ -39,6 +42,7 @@ class JobDetailArgs {
 
   factory JobDetailArgs.fromJob(Job job) => JobDetailArgs(
     id: job.id,
+    builderId: job.builderId,
     title: job.title,
     description: job.description,
     rate: job.displayBudget,
