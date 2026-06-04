@@ -30,7 +30,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
       var query = _client
           .from('jobs')
           .select(
-            'id, builder_id, title, description, suburb, state, postcode, trade_type_required, budget_min, budget_max, budget_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
+            'id, builder_id, title, description, suburb, state, postcode, trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
           )
           .isFilter('deleted_at', null);
 

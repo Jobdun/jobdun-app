@@ -12,6 +12,7 @@ class JobApplicationModel extends JobApplication {
     super.coverNote,
     super.proposedRate,
     super.proposedRateType,
+    super.quoteAmount,
     super.availableFrom,
     super.rejectionReason,
     super.jobTitle,
@@ -43,6 +44,7 @@ class JobApplicationModel extends JobApplication {
       coverNote: json['cover_note'] as String?,
       proposedRate: (json['proposed_rate'] as num?)?.toDouble(),
       proposedRateType: json['proposed_rate_type'] as String?,
+      quoteAmount: (json['quote_amount'] as num?)?.toDouble(),
       availableFrom: json['available_from'] != null
           ? DateTime.parse(json['available_from'] as String)
           : null,
@@ -70,6 +72,7 @@ class JobApplicationModel extends JobApplication {
     'cover_note': coverNote,
     'proposed_rate': proposedRate,
     'proposed_rate_type': proposedRateType,
+    'quote_amount': quoteAmount,
     'available_from': availableFrom?.toIso8601String().split('T').first,
   };
 }

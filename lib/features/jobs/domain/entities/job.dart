@@ -52,6 +52,59 @@ extension BudgetTypeX on BudgetType {
   );
 }
 
+// Matches schema enum job_pricing_unit: hourly|sqm|lm|per_job. The unit a job's
+// price (and any tradie quote against it) is expressed in. Always set.
+enum PricingUnit { hourly, sqm, lm, perJob }
+
+extension PricingUnitX on PricingUnit {
+  String get dbValue => switch (this) {
+    PricingUnit.perJob => 'per_job',
+    _ => name,
+  };
+
+  /// Full selector label (AU spelling — "metre", "m²").
+  String get label => switch (this) {
+    PricingUnit.hourly => 'Per hour',
+    PricingUnit.sqm => 'Per m²',
+    PricingUnit.lm => 'Per lineal metre',
+    PricingUnit.perJob => 'Per job',
+  };
+
+  /// Compact suffix after an amount, e.g. "\$85/hr". Per-job carries no suffix.
+  String get suffix => switch (this) {
+    PricingUnit.hourly => '/hr',
+    PricingUnit.sqm => '/m²',
+    PricingUnit.lm => '/lm',
+    PricingUnit.perJob => '',
+  };
+
+  static PricingUnit fromDb(String v) => switch (v) {
+    'per_job' => PricingUnit.perJob,
+    'sqm' => PricingUnit.sqm,
+    'lm' => PricingUnit.lm,
+    _ => PricingUnit.hourly,
+  };
+}
+
+// Matches schema enum job_pricing_type: builder_set|request_quote. Whether the
+// builder named a price or is asking tradies to quote. Always set.
+enum PricingType { builderSet, requestQuote }
+
+extension PricingTypeX on PricingType {
+  String get dbValue => switch (this) {
+    PricingType.builderSet => 'builder_set',
+    PricingType.requestQuote => 'request_quote',
+  };
+
+  String get label => switch (this) {
+    PricingType.builderSet => 'Set price',
+    PricingType.requestQuote => 'Request quotes',
+  };
+
+  static PricingType fromDb(String v) =>
+      v == 'request_quote' ? PricingType.requestQuote : PricingType.builderSet;
+}
+
 class Job extends Equatable {
   const Job({
     required this.id,
@@ -68,6 +121,9 @@ class Job extends Equatable {
     this.budgetMin,
     this.budgetMax,
     this.budgetType,
+    this.pricingUnit = PricingUnit.perJob,
+    this.pricingType = PricingType.builderSet,
+    this.budgetAmount,
     this.urgency = JobUrgency.standard,
     this.startDate,
     this.estimatedDurationDays,
@@ -95,9 +151,15 @@ class Job extends Equatable {
   final String suburb;
   final String state;
   final String postcode;
+  // Legacy budget fields — kept for backward compatibility (the create path now
+  // writes pricingUnit/pricingType/budgetAmount). Not emitted by JobModel.toJson.
   final double? budgetMin;
   final double? budgetMax;
   final BudgetType? budgetType;
+  // Pricing model (negotiation anchor — Jobdun never touches money).
+  final PricingUnit pricingUnit;
+  final PricingType pricingType;
+  final double? budgetAmount;
   final JobUrgency urgency;
   final DateTime? startDate;
   final int? estimatedDurationDays;
@@ -123,13 +185,9 @@ class Job extends Equatable {
   final String? placeId;
 
   String get displayBudget {
-    if (budgetMin == null && budgetMax == null) return 'Negotiable';
-    final suffix = budgetType?.label ?? '';
-    if (budgetMin != null && budgetMax != null) {
-      return '\$${budgetMin!.toStringAsFixed(0)}–\$${budgetMax!.toStringAsFixed(0)}$suffix';
-    }
-    final amount = budgetMin ?? budgetMax!;
-    return '\$${amount.toStringAsFixed(0)}$suffix';
+    if (pricingType == PricingType.requestQuote) return 'Quotes requested';
+    if (budgetAmount == null) return 'Negotiable';
+    return '\$${budgetAmount!.toStringAsFixed(0)}${pricingUnit.suffix}';
   }
 
   String get displayLocation => '$suburb, $state';

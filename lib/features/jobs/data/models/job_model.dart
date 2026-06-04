@@ -16,6 +16,9 @@ class JobModel extends Job {
     super.budgetMin,
     super.budgetMax,
     super.budgetType,
+    super.pricingUnit,
+    super.pricingType,
+    super.budgetAmount,
     super.urgency,
     super.startDate,
     super.estimatedDurationDays,
@@ -52,6 +55,13 @@ class JobModel extends Job {
     budgetType: json['budget_type'] != null
         ? BudgetTypeX.fromDb(json['budget_type'] as String)
         : null,
+    pricingUnit: PricingUnitX.fromDb(
+      json['pricing_unit'] as String? ?? 'per_job',
+    ),
+    pricingType: PricingTypeX.fromDb(
+      json['pricing_type'] as String? ?? 'builder_set',
+    ),
+    budgetAmount: (json['budget_amount'] as num?)?.toDouble(),
     urgency: json['urgency'] != null
         ? JobUrgencyX.fromDb(json['urgency'] as String)
         : JobUrgency.standard,
@@ -99,6 +109,9 @@ class JobModel extends Job {
     budgetMin: job.budgetMin,
     budgetMax: job.budgetMax,
     budgetType: job.budgetType,
+    pricingUnit: job.pricingUnit,
+    pricingType: job.pricingType,
+    budgetAmount: job.budgetAmount,
     urgency: job.urgency,
     startDate: job.startDate,
     estimatedDurationDays: job.estimatedDurationDays,
@@ -127,9 +140,9 @@ class JobModel extends Job {
     'state': state,
     'postcode': postcode,
     'status': status.dbValue,
-    'budget_min': budgetMin,
-    'budget_max': budgetMax,
-    'budget_type': budgetType?.dbValue,
+    'pricing_unit': pricingUnit.dbValue,
+    'pricing_type': pricingType.dbValue,
+    'budget_amount': budgetAmount,
     'urgency': urgency.dbValue,
     'start_date': startDate?.toIso8601String().split('T').first,
     'estimated_duration_days': estimatedDurationDays,

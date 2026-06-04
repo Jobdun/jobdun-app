@@ -12,8 +12,9 @@ class MockJobRepository extends Mock implements JobRepository {}
 
 Job _job({
   String id = '',
-  double? budgetMin = 85,
-  BudgetType? budgetType = BudgetType.hourly,
+  double? budgetAmount = 85,
+  PricingUnit pricingUnit = PricingUnit.hourly,
+  PricingType pricingType = PricingType.builderSet,
   JobUrgency urgency = JobUrgency.urgent,
   double? latitude = -33.8,
   String? placeId = 'place.parramatta',
@@ -29,8 +30,9 @@ Job _job({
   status: JobStatus.open,
   createdAt: DateTime(2026, 6, 1),
   updatedAt: DateTime(2026, 6, 1),
-  budgetMin: budgetMin,
-  budgetType: budgetType,
+  budgetAmount: budgetAmount,
+  pricingUnit: pricingUnit,
+  pricingType: pricingType,
   urgency: urgency,
   latitude: latitude,
   longitude: latitude == null ? null : 151.0,
@@ -48,8 +50,9 @@ void main() {
       expect(model.tradeTypeRequired, 'Electrician');
       expect(model.suburb, 'Parramatta');
       expect(model.postcode, '2150');
-      expect(model.budgetMin, 85);
-      expect(model.budgetType, BudgetType.hourly);
+      expect(model.budgetAmount, 85);
+      expect(model.pricingUnit, PricingUnit.hourly);
+      expect(model.pricingType, PricingType.builderSet);
       expect(model.urgency, JobUrgency.urgent);
       expect(model.placeId, 'place.parramatta');
     });
@@ -73,8 +76,9 @@ void main() {
       expect(json['trade_type_required'], 'Electrician');
       expect(json['status'], 'open');
       expect(json['urgency'], 'urgent');
-      expect(json['budget_type'], 'hourly');
-      expect(json['budget_min'], 85);
+      expect(json['pricing_unit'], 'hourly');
+      expect(json['pricing_type'], 'builder_set');
+      expect(json['budget_amount'], 85);
       expect(json['suburb'], 'Parramatta');
       expect(json['state'], 'NSW');
       expect(json['postcode'], '2150');

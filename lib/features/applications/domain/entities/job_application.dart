@@ -46,6 +46,7 @@ class JobApplication extends Equatable {
     this.coverNote,
     this.proposedRate,
     this.proposedRateType,
+    this.quoteAmount,
     this.availableFrom,
     this.rejectionReason,
     // Joined fields
@@ -65,8 +66,12 @@ class JobApplication extends Equatable {
   final String builderId;
   final ApplicationStatus status;
   final String? coverNote;
+  // Legacy applicant rate — superseded by [quoteAmount] (in the job's unit).
   final double? proposedRate;
   final String? proposedRateType;
+  // The tradie's quote, in the job's pricing unit. Lands on the application
+  // only — never writes back to the job. Null when they applied without a quote.
+  final double? quoteAmount;
   final DateTime? availableFrom;
   final String? rejectionReason;
   final DateTime createdAt;
