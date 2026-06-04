@@ -12,21 +12,27 @@ class _DiscoverySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SingleChildScrollView so the five fixed-height placeholders never
+    // overflow the SliverFillRemaining that hosts them on shorter screens
+    // (was a ~5px bottom overflow). Non-scrolling — it's a transient skeleton.
     return JSkeletonList(
       enabled: true,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: 20.w,
-          vertical: AppSpacing.sm.h,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < 5; i++) ...[
-              if (i > 0) Gap(9.h),
-              const _TradiePlaceholder(),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 20.w,
+            vertical: AppSpacing.sm.h,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < 5; i++) ...[
+                if (i > 0) Gap(9.h),
+                const _TradiePlaceholder(),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
