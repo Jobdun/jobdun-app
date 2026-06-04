@@ -84,6 +84,18 @@ final builderActiveJobsCountProvider = FutureProvider.autoDispose<int>((
   );
 });
 
+// Total jobs the signed-in builder has posted (any status, non-deleted) — the
+// real "Jobs posted" profile stat (builder_profiles.total_jobs_posted was a
+// phantom column that always read 0). autoDispose.
+final builderJobsPostedCountProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
+  final uid = ref.watch(currentUserIdSyncProvider);
+  if (uid == null) return 0;
+  final result = await ref.read(getBuilderJobsUseCaseProvider).call(uid);
+  return result.fold((_) => 0, (jobs) => jobs.length);
+});
+
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
   JobsController.new,
@@ -247,6 +259,22 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   }
 
   Future<void> refresh() => loadFeed();
+
+  /// Builder deletes their own listing (soft delete). Refreshes the feed so it
+  /// drops out immediately. Returns true on success.
+  Future<bool> deleteJob(String id) async {
+    final result = await ref.read(deleteJobUseCaseProvider).call(id);
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
+        loadFeed();
+        return true;
+      },
+    );
+  }
 
   void clearFilter() {
     state = state.copyWith(clearFilter: true);

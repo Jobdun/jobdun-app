@@ -14,10 +14,13 @@ import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
+import '../providers/jobs_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
 
 export 'job_detail_args.dart';
+
+part 'job_detail_page_widgets.dart';
 
 class JobDetailPage extends ConsumerStatefulWidget {
   const JobDetailPage({super.key, required this.args});
@@ -63,6 +66,10 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 (s) => s.myApplications.any((a) => a.jobId == args.id),
               ),
             ));
+    // The viewer owns this listing → manage it, never apply to it.
+    final isOwner =
+        args.builderId != null &&
+        args.builderId == ref.watch(currentUserIdSyncProvider);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -273,51 +280,122 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               ),
             ),
 
-            applied
-                ? Container(
-                    decoration: BoxDecoration(
-                      color: c.card,
-                      border: Border(top: BorderSide(color: c.border)),
-                    ),
-                    padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-                    child: Container(
-                      width: double.infinity,
-                      height: 48.h,
-                      decoration: BoxDecoration(
-                        color: c.verifiedBg,
-                        borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                        border: Border.all(color: c.verified),
-                      ),
-                      alignment: Alignment.center,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            AppIcons.successCircle,
-                            size: AppIconSize.md.r,
-                            color: c.verified,
-                          ),
-                          Gap(AppSpacing.sm.w),
-                          Text(
-                            'APPLICATION SUBMITTED',
-                            style: tt.bodyLarge!.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              color: c.verifiedTx,
-                            ),
-                          ),
-                        ],
+            if (isOwner)
+              Container(
+                decoration: BoxDecoration(
+                  color: c.card,
+                  border: Border(top: BorderSide(color: c.border)),
+                ),
+                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: JButton(
+                        label: 'VIEW APPLICANTS',
+                        icon: AppIcons.applicantsOutline,
+                        onPressed: () {
+                          context.pop();
+                          context.go('/applications');
+                        },
                       ),
                     ),
-                  )
-                : BottomActionBar(
-                    primary: JButton(
-                      label: 'APPLY NOW',
-                      onPressed: () => _showApplySheet(context, c, args),
+                    Gap(10.w),
+                    Expanded(
+                      child: JButton(
+                        label: 'DELETE',
+                        icon: AppIcons.trash,
+                        variant: JButtonVariant.danger,
+                        onPressed: () => _confirmDelete(context, c, args),
+                      ),
                     ),
+                  ],
+                ),
+              )
+            else if (applied)
+              Container(
+                decoration: BoxDecoration(
+                  color: c.card,
+                  border: Border(top: BorderSide(color: c.border)),
+                ),
+                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+                child: Container(
+                  width: double.infinity,
+                  height: 48.h,
+                  decoration: BoxDecoration(
+                    color: c.verifiedBg,
+                    borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                    border: Border.all(color: c.verified),
                   ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppIcons.successCircle,
+                        size: AppIconSize.md.r,
+                        color: c.verified,
+                      ),
+                      Gap(AppSpacing.sm.w),
+                      Text(
+                        'APPLICATION SUBMITTED',
+                        style: tt.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: c.verifiedTx,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              BottomActionBar(
+                primary: JButton(
+                  label: 'APPLY NOW',
+                  onPressed: () => _showApplySheet(context, c, args),
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, JColors c, JobDetailArgs args) {
+    final jobId = args.id;
+    if (jobId == null) return;
+    final tt = Theme.of(context).textTheme;
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    showJSheet<void>(
+      context: context,
+      builder: (ctx) => _DeleteConfirmSheet(
+        onConfirm: () async {
+          final ok = await ref
+              .read(jobsControllerProvider.notifier)
+              .deleteJob(jobId);
+          if (!ctx.mounted) return;
+          Navigator.pop(ctx);
+          if (ok && mounted) {
+            router.pop();
+            messenger.showSnackBar(
+              SnackBar(
+                content: const Text('Listing deleted.'),
+                backgroundColor: c.surfaceRaised,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else if (!ok) {
+            _showError(
+              messenger,
+              c,
+              tt,
+              ref.read(jobsControllerProvider).error ??
+                  'Could not delete the listing.',
+            );
+          }
+        },
       ),
     );
   }
@@ -399,68 +477,6 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         backgroundColor: c.urgent,
         behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-}
-
-// ── Shared sub-widgets ─────────────────────────────────────────────────────────
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.icon, required this.label});
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: AppIconSize.micro.r, color: c.text3),
-          Gap(6.w),
-          Text(label, style: tt.labelMedium!.copyWith(color: c.text2)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReqRow extends StatelessWidget {
-  const _ReqRow({required this.icon, required this.label, required this.met});
-  final IconData icon;
-  final String label;
-  final bool met;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: AppIconSize.inline.r,
-            color: met ? c.text2 : c.text3,
-          ),
-          Gap(10.w),
-          Expanded(
-            child: Text(
-              label,
-              style: tt.bodyMedium!.copyWith(color: met ? c.text2 : c.text3),
-            ),
-          ),
-        ],
       ),
     );
   }
