@@ -50,6 +50,7 @@ client_*.plist
 .env
 .env.*
 !.env.example
+scripts/.ship-env
 *.local
 *.secret
 *.secrets

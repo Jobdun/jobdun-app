@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jobdun · Post-a-Job — 5 Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0F172A; --surface:#1E293B; --raised:#334155; --border:#334155;
+    --cta:#F97316; --cta-bg:rgba(249,115,22,.14);
+    --t1:#F1F5F9; --t2:#94A3B8; --t3:#64748B;
+    --ok:#22C55E; --err:#EF4444;
+    --oswald:'Oswald',system-ui,sans-serif; --sans:'Open Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--t1);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:40px 24px 80px}
+
+  header.page{margin-bottom:8px}
+  .eyebrow{font-family:var(--oswald);font-weight:600;letter-spacing:1.5px;color:var(--cta);font-size:13px;text-transform:uppercase}
+  h1{font-family:var(--oswald);font-weight:700;font-size:38px;margin:6px 0 10px;letter-spacing:.5px}
+  .lede{color:var(--t2);max-width:760px;font-size:16px}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:22px 0 8px;font-size:13px;color:var(--t2)}
+  .legend b{color:var(--t1)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px;margin-top:30px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+  .card .head{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--cta-bg);color:var(--cta);font-family:var(--oswald);font-weight:700;font-size:14px;margin-right:10px}
+  .card h2{font-family:var(--oswald);font-weight:600;font-size:21px;margin:0;display:flex;align-items:center;letter-spacing:.4px}
+  .idea{color:var(--t2);font-size:14px;margin:10px 0 0}
+
+  .stage{background:var(--bg);padding:24px 18px;display:flex;justify-content:center}
+  /* phone frame */
+  .phone{width:236px;background:var(--bg);border:2px solid var(--raised);border-radius:26px;padding:10px 10px 14px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+  .notch{width:64px;height:5px;background:var(--raised);border-radius:99px;margin:2px auto 12px}
+  .screen{font-size:11px}
+
+  .topbar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .x{width:22px;height:22px;border-radius:7px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--t2)}
+  .ttl-eye{font-family:var(--oswald);font-size:8px;letter-spacing:1px;color:var(--cta);font-weight:600}
+  .ttl{font-family:var(--oswald);font-size:15px;font-weight:600;line-height:1}
+
+  .lbl{font-family:var(--oswald);font-size:8px;letter-spacing:1px;color:var(--t2);font-weight:600;margin:12px 0 5px;text-transform:uppercase}
+  .input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--t1);font-size:11px;display:flex;align-items:center;justify-content:space-between}
+  .input.hint{color:var(--t3)}
+  .input.focus{border-color:var(--cta)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:6px 11px;color:var(--t2);font-size:10px;font-weight:600}
+  .chip.on{background:var(--cta);border-color:var(--cta);color:#fff}
+  .seg{display:flex;gap:6px}
+  .seg .chip{flex:1;text-align:center}
+  .row{display:flex;gap:7px}
+  .cta{background:var(--cta);color:#fff;font-family:var(--oswald);font-weight:600;letter-spacing:.6px;text-align:center;padding:11px;border-radius:11px;font-size:13px;margin-top:14px}
+  .cta.ghost{background:transparent;border:1px solid var(--border);color:var(--t2)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px}
+  .sw{width:30px;height:17px;border-radius:99px;background:var(--raised);position:relative}
+  .sw::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:var(--t2);top:2px;left:2px}
+  .sw.on{background:var(--cta)} .sw.on::after{left:15px;background:#fff}
+  .muted{color:var(--t3);font-size:9px;margin-top:3px}
+
+  /* progress */
+  .steps{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+  .dot{height:4px;border-radius:99px;flex:1;background:var(--raised)}
+  .dot.on{background:var(--cta)}
+  .stepno{font-size:9px;color:var(--t2);margin-bottom:12px}
+
+  /* live preview card */
+  .jobcard{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cta);border-radius:11px;padding:11px}
+  .badge{display:inline-flex;align-items:center;gap:3px;background:var(--cta-bg);color:var(--cta);font-family:var(--oswald);font-weight:600;font-size:8px;letter-spacing:.5px;padding:3px 7px;border-radius:6px}
+  .pv-label{font-family:var(--oswald);font-size:8px;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin:14px 0 6px}
+
+  /* template grid */
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .tcard{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 9px}
+  .tcard .ic{width:24px;height:24px;border-radius:7px;background:var(--cta-bg);display:flex;align-items:center;justify-content:center;margin-bottom:7px;color:var(--cta)}
+  .tcard b{font-size:10px;display:block} .tcard span{font-size:8.5px;color:var(--t3)}
+
+  /* conversational */
+  .qbig{font-family:var(--oswald);font-weight:600;font-size:19px;line-height:1.15;margin:20px 0 4px}
+  .qsub{color:var(--t2);font-size:10px;margin-bottom:18px}
+  .bigchip{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px 14px;font-size:12px;font-weight:600;margin-bottom:9px;display:flex;align-items:center;gap:10px}
+  .bigchip.on{border-color:var(--cta);background:var(--cta-bg);color:var(--cta)}
+
+  .meta{padding:18px 20px 22px}
+  .meta .when{font-family:var(--oswald);font-size:11px;letter-spacing:.8px;color:var(--cta);font-weight:600;text-transform:uppercase;margin-bottom:8px}
+  .pc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}
+  .pc h4{font-size:11px;color:var(--t2);margin:0 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .pc ul{margin:0;padding-left:16px;font-size:12.5px;color:var(--t1)}
+  .pc li{margin-bottom:4px}
+  .pc.cons li{color:var(--t2)}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .tag{font-size:11px;padding:4px 10px;border-radius:7px;background:var(--raised);color:var(--t1)}
+  .tag.effort{background:var(--cta-bg);color:var(--cta)}
+  svg{display:block}
+  footer{margin-top:46px;color:var(--t3);font-size:13px;border-top:1px solid var(--border);padding-top:22px}
+  .rec{display:inline-block;background:var(--cta-bg);color:var(--cta);font-family:var(--oswald);font-weight:600;font-size:11px;letter-spacing:.5px;padding:3px 9px;border-radius:6px;margin-left:10px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <div class="eyebrow">Jobdun · Builder flow</div>
+    <h1>Post-a-Job — 5 directions</h1>
+    <p class="lede">Same content (trade, location, rate, description, urgency) — five different ways to put it in front of a builder on their phone. Mockups use the real Jobdun tokens (slate <code>#0F172A</code>, safety orange <code>#F97316</code>, Oswald + Open Sans). Pick a direction and I'll rebuild the Flutter screen to match.</p>
+    <div class="legend">
+      <span><b>Effort</b> = rough build cost vs. today's screen</span>
+      <span><b>Note</b> the <b>$</b> + <b>/hr</b> rate field reflects the fix just shipped</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- 1 SINGLE SCROLL -->
+    <section class="card">
+      <div class="head">
+        <h2><span class="num">1</span> Refined Single Scroll <span class="rec">Recommended</span></h2>
+        <p class="idea">Today's one-page form, tightened: grouped sections, a sticky CTA, and clean affixes. Lowest risk, instantly familiar.</p>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="notch"></div><div class="screen">
+          <div class="topbar"><div class="x">✕</div><div><div class="ttl-eye">NEW LISTING</div><div class="ttl">Post a Job</div></div></div>
+          <div class="lbl">Job title</div>
+          <div class="input hint">Install 3-phase switchboard…</div>
+          <div class="lbl">Trade required</div>
+          <div class="chips"><span class="chip on">Electrician</span><span class="chip">Plumber</span><span class="chip">Carpenter</span></div>
+          <div class="lbl">Rate</div>
+          <div class="seg"><span class="chip on">Hourly</span><span class="chip">Daily</span><span class="chip">Fixed</span></div>
+          <div class="input" style="margin-top:6px"><span><span style="color:var(--t1)">$</span> <span style="color:var(--t3)">85</span></span><span style="color:var(--t3)">/hr</span></div>
+          <div class="cta">POST JOB</div>
+        </div></div>
+      </div>
+      <div class="meta">
+        <div class="pc"><div><h4>Pros</h4><ul><li>Familiar, zero learning curve</li><li>One screen — fast for pros</li><li>Smallest build</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Can feel like a wall of form</li><li>No sense of "almost done"</li></ul></div></div>
+        <div class="tagrow"><span class="tag effort">Effort: Low</span><span class="tag">Best for: shipping now</span></div>
+      </div>
+    </section>
+
+    <!-- 2 WIZARD -->
+    <section class="card">
+      <div class="head">
+        <h2><span class="num">2</span> Multi-Step Wizard</h2>
+        <p class="idea">Break it into 4 light steps — What → Where → Pay → Review — with a progress bar. Less on screen at once, higher completion.</p>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="notch"></div><div class="screen">
+          <div class="topbar"><div class="x">←</div><div><div class="ttl-eye">POST A JOB</div><div class="ttl">Where's the job?</div></div></div>
+          <div class="steps"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="stepno">Step 2 of 4 · Location</div>
+          <div class="lbl">Suburb</div>
+          <div class="input focus"><span>Parramatta</span><span style="color:var(--t3)">▾</span></div>
+          <div class="muted">We show your job to tradies nearby first.</div>
+          <div style="height:60px"></div>
+          <div class="row"><div class="cta ghost" style="flex:1">BACK</div><div class="cta" style="flex:2">NEXT</div></div>
+        </div></div>
+      </div>
+      <div class="meta">
+        <div class="pc"><div><h4>Pros</h4><ul><li>Low cognitive load per step</li><li>Progress motivates finishing</li><li>Room for help text</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>More taps for repeat posters</li><li>Step state to manage</li></ul></div></div>
+        <div class="tagrow"><span class="tag effort">Effort: Medium</span><span class="tag">Best for: first-time builders</span></div>
+      </div>
+    </section>
+
+    <!-- 3 CONVERSATIONAL -->
+    <section class="card">
+      <div class="head">
+        <h2><span class="num">3</span> Conversational / Guided</h2>
+        <p class="idea">One big question per screen with large tap targets — feels like a friendly chat, not a form. Great for non-technical builders.</p>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="notch"></div><div class="screen">
+          <div class="steps"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="qbig">What trade do you need?</div>
+          <div class="qsub">Tap one — you can add details next.</div>
+          <div class="bigchip on">⚡ &nbsp;Electrician</div>
+          <div class="bigchip">🔧 &nbsp;Plumber</div>
+          <div class="bigchip">🔨 &nbsp;Carpenter</div>
+          <div class="bigchip">🧱 &nbsp;Bricklayer</div>
+          <div class="cta">CONTINUE</div>
+        </div></div>
+      </div>
+      <div class="meta">
+        <div class="pc"><div><h4>Pros</h4><ul><li>Friendliest, lowest friction</li><li>Huge, thumb-easy targets</li><li>Feels modern (Typeform-style)</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Most screens to tap through</li><li>Slowest for power users</li><li>Largest build</li></ul></div></div>
+        <div class="tagrow"><span class="tag effort">Effort: High</span><span class="tag">Best for: casual / first job</span></div>
+      </div>
+    </section>
+
+    <!-- 4 LIVE PREVIEW -->
+    <section class="card">
+      <div class="head">
+        <h2><span class="num">4</span> Live Preview Split</h2>
+        <p class="idea">Form on top, a live job-card preview below that updates as you type — the builder sees exactly what tradies will see.</p>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="notch"></div><div class="screen">
+          <div class="topbar"><div class="x">✕</div><div><div class="ttl-eye">NEW LISTING</div><div class="ttl">Post a Job</div></div></div>
+          <div class="lbl">Rate</div>
+          <div class="input focus"><span><span style="color:var(--t1)">$</span> 95</span><span style="color:var(--t3)">/hr</span></div>
+          <div class="toggle" style="margin-top:8px"><span style="color:var(--cta);font-weight:700">Mark as urgent</span><span class="sw on"></span></div>
+          <div class="pv-label">Tradies will see ↓</div>
+          <div class="jobcard">
+            <span class="badge">⚡ URGENT</span>
+            <div style="font-family:var(--oswald);font-weight:600;font-size:12px;margin:6px 0 3px">Switchboard upgrade</div>
+            <div style="color:var(--t2)">Electrician · Parramatta NSW</div>
+            <div style="color:var(--cta);font-family:var(--oswald);font-weight:600;font-size:13px;margin-top:5px">$95<span style="color:var(--t3);font-size:9px">/hr</span></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="meta">
+        <div class="pc"><div><h4>Pros</h4><ul><li>Confidence — no surprises</li><li>Teaches what makes a good post</li><li>Differentiated, premium feel</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Tighter vertical space</li><li>Preview must stay in sync</li></ul></div></div>
+        <div class="tagrow"><span class="tag effort">Effort: Medium-High</span><span class="tag">Best for: trust + quality posts</span></div>
+      </div>
+    </section>
+
+    <!-- 5 TEMPLATE FIRST -->
+    <section class="card">
+      <div class="head">
+        <h2><span class="num">5</span> Template-First Quick Post</h2>
+        <p class="idea">Start by picking a common job — it pre-fills trade + a sensible rate, then you tweak. Fastest path, especially for repeat posters.</p>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="notch"></div><div class="screen">
+          <div class="topbar"><div class="x">✕</div><div><div class="ttl-eye">QUICK POST</div><div class="ttl">Pick a job</div></div></div>
+          <div class="qsub" style="margin:2px 0 12px">Pre-fills the trade & a typical rate.</div>
+          <div class="tgrid">
+            <div class="tcard"><div class="ic">⚡</div><b>Switchboard</b><span>Electrician · $90/hr</span></div>
+            <div class="tcard"><div class="ic">🚿</div><b>Bathroom reno</b><span>Plumber · $80/hr</span></div>
+            <div class="tcard"><div class="ic">🪵</div><b>Decking</b><span>Carpenter · $75/hr</span></div>
+            <div class="tcard"><div class="ic">🧱</div><b>Retaining wall</b><span>Bricklayer · fixed</span></div>
+          </div>
+          <div class="cta ghost" style="margin-top:10px">START FROM BLANK</div>
+        </div></div>
+      </div>
+      <div class="meta">
+        <div class="pc"><div><h4>Pros</h4><ul><li>Fastest — defaults do the work</li><li>Great for repeat builders</li><li>Nudges complete, fair posts</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Needs a curated template set</li><li>Edge jobs still go "blank"</li></ul></div></div>
+        <div class="tagrow"><span class="tag effort">Effort: Medium</span><span class="tag">Best for: speed / repeat use</span></div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <strong style="color:var(--t1)">My read:</strong> ship <strong style="color:var(--cta)">#1 Refined Single Scroll</strong> as the baseline (it's where the just-fixed rate field lives), and layer in <strong style="color:var(--cta)">#4 Live Preview</strong> as the next step — it's the highest-trust, most "modern" feel without a full wizard rebuild. <strong style="color:var(--cta)">#5 Template-First</strong> is the strongest long-game once there's post volume. Tell me which one (or combo) to take into the Flutter rebuild.
+  </footer>
+</div>
+</body>
+</html>
