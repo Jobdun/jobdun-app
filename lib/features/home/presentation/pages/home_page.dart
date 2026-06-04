@@ -15,7 +15,6 @@ import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../app/theme/app_typography.dart';
-import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
@@ -27,6 +26,7 @@ import '../../../../core/services/profile_analytics.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
+import '../../../auth/presentation/widgets/onboarding_gate.dart';
 import '../widgets/profile_completeness_banner.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
@@ -34,8 +34,8 @@ import '../../../jobs/presentation/pages/job_detail_page.dart';
 import '../../../profile/domain/entities/builder_profile.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
-import '../../../discovery/domain/entities/trade_search_result.dart';
 import '../../../discovery/presentation/providers/discovery_provider.dart';
+import '../../../discovery/presentation/widgets/trade_map_preview.dart';
 
 part 'home_widgets.dart';
 part 'home_builder_bento.dart';
@@ -133,8 +133,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     // on needsName, opening the sheet for users whose name is actually set.
     // The ref.listen on profile state in build() re-runs this gate once
     // loadProfile resolves.
-    final profileState = ref.read(profileControllerProvider);
-    if (profileState.profile == null && profileState.error == null) return;
+    // Only decide on a SUCCESSFULLY loaded profile. A null profile means the
+    // load is still in flight OR it FAILED (offline / transient error) — neither
+    // is proof the user lacks a name. Evaluating the gate on a failed load showed
+    // the non-dismissible "WELCOME TO JOBDUN" sheet over fully-onboarded users.
+    // The profile `ref.listen` in build() re-runs this once the load succeeds.
+    if (ref.read(profileControllerProvider).profile == null) return;
 
     _roleCheckInflight = true;
     try {
@@ -146,9 +150,13 @@ class _HomePageState extends ConsumerState<HomePage> {
       // After hydration the controller's role is updated if a DB row existed.
       final refreshed = ref.read(authControllerProvider);
       final profile = ref.read(profileControllerProvider).profile;
-      final needsRole = refreshed.role == null;
       final needsName = (profile?.displayName ?? '').trim().isEmpty;
-      if (!needsRole && !needsName) return;
+      final shouldShow = OnboardingGate.needsCompletion(
+        hasProfile: profile != null,
+        hasRole: refreshed.role != null,
+        displayName: profile?.displayName,
+      );
+      if (!shouldShow) return;
       if (hadRowInDb && !needsName) return; // role hydrated + name present
 
       // Latch only when we're actually going to show, so a brief race where
