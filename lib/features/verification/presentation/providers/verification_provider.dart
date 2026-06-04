@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/verification_remote_datasource.dart';
 import '../../data/repositories/verification_repository_impl.dart';
@@ -42,7 +43,8 @@ final verificationControllerProvider =
       VerificationController.new,
     );
 
-class VerificationController extends Notifier<VerificationState> {
+class VerificationController extends Notifier<VerificationState>
+    with AccountScoped<VerificationState> {
   late VerificationRepository _repo;
   StreamSubscription<List<VerificationDocument>>? _sub;
 
@@ -51,13 +53,10 @@ class VerificationController extends Notifier<VerificationState> {
     _repo = ref.read(verificationRepositoryProvider);
 
     // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        _sub?.cancel();
-        state = const VerificationState();
-        if (next.value != null) Future.microtask(_loadAndWatch);
-      }
+    resetOnAccountChange((userId) {
+      _sub?.cancel();
+      state = const VerificationState();
+      if (userId != null) Future.microtask(_loadAndWatch);
     });
 
     ref.onDispose(() => _sub?.cancel());

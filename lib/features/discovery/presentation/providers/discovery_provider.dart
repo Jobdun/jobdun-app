@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/providers/current_user_provider.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../data/datasources/trade_search_remote_datasource.dart';
 import '../../data/repositories/trade_search_repository_impl.dart';
 import '../../domain/entities/trade_search_filter.dart';
@@ -32,7 +32,8 @@ final tradeSearchControllerProvider =
 /// Owns the trade directory. Mirrors JobsController: one source of truth feeds
 /// both the home mini-list (`state.results.take(3)`) and the full discovery
 /// page (`pagingController` via PagedListView).
-class TradeSearchController extends Notifier<TradeSearchState> {
+class TradeSearchController extends Notifier<TradeSearchState>
+    with AccountScoped<TradeSearchState> {
   late SearchTrades _search;
   PagingController<int, TradeSearchResult>? _pagingController;
 
@@ -54,12 +55,9 @@ class TradeSearchController extends Notifier<TradeSearchState> {
     _search = ref.read(searchTradesUseCaseProvider);
 
     // Clear state on logout or account switch to prevent stale data.
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        state = const TradeSearchState();
-        _pagingController?.refresh();
-      }
+    resetOnAccountChange((_) {
+      state = const TradeSearchState();
+      _pagingController?.refresh();
     });
 
     ref.onDispose(() => _pagingController?.dispose());

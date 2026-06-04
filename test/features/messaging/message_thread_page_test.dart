@@ -106,6 +106,9 @@ void main() {
     await pumpThread(tester, repo);
 
     await tester.enterText(find.byType(TextField), 'My reply');
+    // Let the send button re-enable (gated on non-empty text via a
+    // ValueListenableBuilder) before tapping it.
+    await tester.pump();
     await tester.tap(find.byKey(const Key('thread-send')));
     await tester.pump();
 

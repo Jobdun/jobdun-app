@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/providers/current_user_provider.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../data/datasources/review_remote_datasource.dart';
 import '../../data/repositories/review_repository_impl.dart';
 import '../../domain/entities/review.dart';
@@ -36,17 +36,12 @@ final submitReviewUseCaseProvider = Provider(
 final reviewsControllerProvider =
     NotifierProvider<ReviewsController, ReviewsState>(ReviewsController.new);
 
-class ReviewsController extends Notifier<ReviewsState> {
+class ReviewsController extends Notifier<ReviewsState>
+    with AccountScoped<ReviewsState> {
   @override
   ReviewsState build() {
-    // Clear another account's reviews on logout / account switch — otherwise
-    // the previous user's reviews linger (this controller stays alive).
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        state = const ReviewsState();
-      }
-    });
+    // Clear another account's reviews on logout / account switch.
+    resetOnAccountChange((_) => state = const ReviewsState());
     return const ReviewsState();
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/job_interactions_datasource.dart';
 import '../../data/datasources/job_remote_datasource.dart';
@@ -101,7 +102,7 @@ final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
 /// - [state.savedJobs] — the user's **saved** list, fetched in one shot
 ///   when the SAVED filter is selected. Doesn't paginate (a typical
 ///   bookmark list is bounded).
-class JobsController extends Notifier<JobsState> {
+class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   late JobRepository _repo;
   late JobInteractionsRepository _interactions;
   StreamSubscription<List<Job>>? _builderJobsSub;
@@ -129,13 +130,10 @@ class JobsController extends Notifier<JobsState> {
     _interactions = ref.read(jobInteractionsRepositoryProvider);
 
     // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        state = const JobsState();
-        _builderScopeId = null;
-        _pagingController?.refresh();
-      }
+    resetOnAccountChange((_) {
+      state = const JobsState();
+      _builderScopeId = null;
+      _pagingController?.refresh();
     });
 
     ref.onDispose(() {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/message_remote_datasource.dart';
@@ -54,7 +55,8 @@ final messagingControllerProvider =
       MessagingController.new,
     );
 
-class MessagingController extends Notifier<MessagingState> {
+class MessagingController extends Notifier<MessagingState>
+    with AccountScoped<MessagingState> {
   late MessageRepository _repo;
   StreamSubscription<List<Conversation>>? _conversationsSub;
   final Map<String, StreamSubscription<List<Message>>> _messageSubs = {};
@@ -64,12 +66,9 @@ class MessagingController extends Notifier<MessagingState> {
     _repo = ref.read(messageRepositoryProvider);
 
     // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        _cancelAllSubscriptions();
-        state = const MessagingState();
-      }
+    resetOnAccountChange((_) {
+      _cancelAllSubscriptions();
+      state = const MessagingState();
     });
 
     ref.onDispose(_cancelAllSubscriptions);

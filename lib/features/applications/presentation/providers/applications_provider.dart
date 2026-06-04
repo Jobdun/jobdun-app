@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/application_remote_datasource.dart';
 import '../../data/repositories/application_repository_impl.dart';
@@ -53,17 +54,12 @@ final applicationsControllerProvider =
       ApplicationsController.new,
     );
 
-class ApplicationsController extends Notifier<ApplicationsState> {
+class ApplicationsController extends Notifier<ApplicationsState>
+    with AccountScoped<ApplicationsState> {
   @override
   ApplicationsState build() {
-    // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        state = const ApplicationsState();
-      }
-    });
-
+    // Clear state on logout or account switch to prevent stale data.
+    resetOnAccountChange((_) => state = const ApplicationsState());
     return const ApplicationsState();
   }
 

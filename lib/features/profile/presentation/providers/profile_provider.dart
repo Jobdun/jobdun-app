@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/sentry_reporter.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/domain/entities/user_role.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
@@ -50,7 +51,8 @@ final uploadAvatarUseCaseProvider = Provider(
 final profileControllerProvider =
     NotifierProvider<ProfileController, ProfileState>(ProfileController.new);
 
-class ProfileController extends Notifier<ProfileState> {
+class ProfileController extends Notifier<ProfileState>
+    with AccountScoped<ProfileState> {
   late ProfileRepository _repo;
 
   @override
@@ -58,12 +60,7 @@ class ProfileController extends Notifier<ProfileState> {
     _repo = ref.read(profileRepositoryProvider);
 
     // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        state = const ProfileState();
-      }
-    });
+    resetOnAccountChange((_) => state = const ProfileState());
 
     return const ProfileState();
   }

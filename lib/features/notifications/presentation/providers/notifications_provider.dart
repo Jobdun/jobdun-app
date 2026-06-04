@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/notification_remote_datasource.dart';
 import '../../data/repositories/notification_repository_impl.dart';
@@ -40,7 +41,8 @@ final notificationsControllerProvider =
       NotificationsController.new,
     );
 
-class NotificationsController extends Notifier<NotificationsState> {
+class NotificationsController extends Notifier<NotificationsState>
+    with AccountScoped<NotificationsState> {
   late NotificationRepository _repo;
   StreamSubscription<List<AppNotification>>? _sub;
 
@@ -48,14 +50,11 @@ class NotificationsController extends Notifier<NotificationsState> {
   NotificationsState build() {
     _repo = ref.read(notificationRepositoryProvider);
 
-    // Clear state on logout or account switch to prevent stale data
-    ref.listen(currentUserIdProvider, (previous, next) {
-      if (next.value == null ||
-          (previous?.value != null && previous?.value != next.value)) {
-        _sub?.cancel();
-        state = const NotificationsState();
-        if (next.value != null) Future.microtask(_loadAndWatch);
-      }
+    // Clear + reload on logout / account switch to prevent stale data.
+    resetOnAccountChange((userId) {
+      _sub?.cancel();
+      state = const NotificationsState();
+      if (userId != null) Future.microtask(_loadAndWatch);
     });
 
     ref.onDispose(() => _sub?.cancel());
