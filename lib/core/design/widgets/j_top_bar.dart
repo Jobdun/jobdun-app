@@ -6,28 +6,29 @@ import '../../../app/theme/app_colors.dart';
 import '../../theme/app_icons.dart';
 import 'avatar_block.dart';
 
-/// LinkedIn-style utility bar for feed surfaces: avatar (→ profile), a tappable
-/// search affordance (→ the list that owns search), and a notifications bell.
+/// Home top bar — V1 "greeting + actions": a time-of-day greeting + the user's
+/// name (tap → profile), a role chip, and a notifications bell. Search lives in
+/// the feed/list surfaces, not here.
 ///
-/// Built to sit inside a **floating** [SliverAppBar.title] so it scrolls away on
-/// scroll-down and snaps back on scroll-up, reclaiming vertical space mid-feed.
-///
-/// Brand-flat (MASTER): squared avatar (`AppRadius.avatar`), sharp search field
-/// (`AppRadius.input`) — no pill, no shadow. The search box is a **button**, not
-/// a live field; it routes to the surface that already owns search.
+/// Sits inside a **floating** [SliverAppBar.title] so it scrolls away on
+/// scroll-down and snaps back on scroll-up.
 class JTopBar extends StatelessWidget {
   const JTopBar({
     super.key,
+    required this.displayName,
     required this.initials,
-    required this.searchHint,
-    required this.onSearchTap,
     required this.onAvatarTap,
     required this.onNotificationsTap,
+    this.roleLabel,
+    this.avatarUrl,
+    this.hasUnread = false,
   });
 
+  final String displayName;
   final String initials;
-  final String searchHint;
-  final VoidCallback onSearchTap;
+  final String? roleLabel;
+  final String? avatarUrl;
+  final bool hasUnread;
   final VoidCallback onAvatarTap;
   final VoidCallback onNotificationsTap;
 
@@ -38,88 +39,118 @@ class JTopBar extends StatelessWidget {
 
     return Row(
       children: [
-        // Avatar → profile tab. 44dp tap area around the 36dp squared avatar.
+        // Avatar (photo or initials) → profile.
         Semantics(
           button: true,
           label: 'Your profile',
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onAvatarTap,
-            child: SizedBox(
-              width: 44.r,
-              height: 44.r,
-              child: Center(child: AvatarBlock(initials: initials, size: 36)),
+            child: AvatarBlock(
+              initials: initials,
+              imageUrl: avatarUrl,
+              size: 44,
+              circle: true,
             ),
           ),
         ),
-        Gap(AppSpacing.sm.w),
-        // Search affordance — routes to the list that owns search.
+        Gap(AppSpacing.md.w),
+        // Greeting + name (also taps through to profile).
         Expanded(
-          child: Semantics(
-            button: true,
-            label: searchHint,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onSearchTap,
-              child: Container(
-                height: 44.h,
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
-                decoration: BoxDecoration(
-                  color: c.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.input.r),
-                  border: Border.all(color: c.borderStrong),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onAvatarTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _greeting(),
+                  style: tt.bodySmall!.copyWith(color: c.text3),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      AppIcons.search,
-                      size: AppIconSize.inline.r,
-                      color: c.text3,
-                    ),
-                    Gap(AppSpacing.sm.w),
-                    Expanded(
-                      child: Text(
-                        searchHint,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium!.copyWith(color: c.text3),
-                      ),
-                    ),
-                  ],
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.titleLarge!.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: c.text1,
+                  ),
                 ),
+              ],
+            ),
+          ),
+        ),
+        if (roleLabel != null) ...[
+          Gap(AppSpacing.sm.w),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: c.surfaceRaised,
+              borderRadius: BorderRadius.circular(AppRadius.chip.r),
+            ),
+            child: Text(
+              roleLabel!,
+              style: tt.labelSmall!.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: c.text2,
               ),
             ),
           ),
-        ),
+        ],
         Gap(AppSpacing.sm.w),
-        // Notifications (no dedicated tab — belongs in the utility bar).
+        // Notifications bell (unread dot).
         Semantics(
           button: true,
           label: 'Notifications',
-          child: Tooltip(
-            message: 'Notifications',
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onNotificationsTap,
-              child: Container(
-                width: 44.r,
-                height: 44.r,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-                  border: Border.all(color: c.border),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onNotificationsTap,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44.r,
+                  height: 44.r,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.avatar.r),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Icon(
+                    AppIcons.notification,
+                    size: AppIconSize.nav.r,
+                    color: c.text2,
+                  ),
                 ),
-                child: Icon(
-                  AppIcons.notification,
-                  size: AppIconSize.nav.r,
-                  color: c.text2,
-                ),
-              ),
+                if (hasUnread)
+                  Positioned(
+                    top: 10.r,
+                    right: 11.r,
+                    child: Container(
+                      width: 9.r,
+                      height: 9.r,
+                      decoration: BoxDecoration(
+                        color: c.action,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.surface, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  static String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 }

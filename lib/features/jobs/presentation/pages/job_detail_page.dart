@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobdun/app/constants/app_strings.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
@@ -338,7 +339,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                       ),
                       Gap(AppSpacing.sm.w),
                       Text(
-                        'APPLICATION SUBMITTED',
+                        AppStrings.respondedState,
                         style: tt.bodyLarge!.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
@@ -352,7 +353,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
             else
               BottomActionBar(
                 primary: JButton(
-                  label: 'APPLY NOW',
+                  label: AppStrings.respondToJob,
                   onPressed: () => _showApplySheet(context, c, args),
                 ),
               ),
@@ -430,8 +431,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 jobId: jobId,
                 builderId: builderId,
                 coverNote: note,
-                proposedRate: rate,
-                proposedRateType: 'Hourly',
+                quoteAmount: rate,
               );
           if (!ctx.mounted) return;
           if (ok) {

@@ -20,6 +20,7 @@ class JTextField extends StatefulWidget {
     this.hint,
     this.prefixIcon,
     this.prefixText,
+    this.prefix,
     this.suffixIcon,
     this.validator,
     this.obscureText = false,
@@ -52,6 +53,13 @@ class JTextField extends StatefulWidget {
   final String? hint;
   final IconData? prefixIcon;
   final String? prefixText;
+
+  /// Always-visible leading widget, mapped to [InputDecoration.prefixIcon] so
+  /// it stays on screen at rest — unlike [prefixText], which Flutter hides
+  /// until the field is focused or non-empty. Use for a persistent currency
+  /// symbol so it mirrors an always-on [suffixIcon]. Ignored when [prefixIcon]
+  /// is also set.
+  final Widget? prefix;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
   final bool obscureText;
@@ -190,6 +198,13 @@ class _JTextFieldState extends State<JTextField> {
               prefixText: widget.prefixText,
               prefixIcon: widget.prefixIcon != null
                   ? Icon(widget.prefixIcon, size: AppIconSize.md.r)
+                  : widget.prefix,
+              // A bare prefix widget (e.g. a "$") should hug the value, not sit
+              // centred in the default ~48px icon box. Icon prefixes keep the
+              // framework defaults.
+              prefixIconConstraints:
+                  widget.prefix != null && widget.prefixIcon == null
+                  ? const BoxConstraints(minWidth: 0, minHeight: 0)
                   : null,
               suffixIcon: effectiveSuffix,
               // Reserve helper/error space so layout doesn't jump on validation.

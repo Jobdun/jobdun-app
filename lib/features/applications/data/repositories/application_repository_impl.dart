@@ -17,8 +17,7 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
     required String jobId,
     required String builderId,
     String? coverNote,
-    double? proposedRate,
-    String? proposedRateType,
+    double? quoteAmount,
   }) async {
     try {
       final tradeId = _client.auth.currentUser?.id;
@@ -28,8 +27,7 @@ class ApplicationRepositoryImpl implements ApplicationRepository {
         tradeId: tradeId,
         builderId: builderId,
         coverNote: coverNote,
-        proposedRate: proposedRate,
-        proposedRateType: proposedRateType,
+        quoteAmount: quoteAmount,
       );
       return right(result);
     } on ServerException catch (e) {

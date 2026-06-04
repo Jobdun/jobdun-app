@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:jobdun/app/constants/app_strings.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../domain/entities/job.dart';
 import 'job_detail_args.dart';
 
 /// Bottom-sheet content for applying to a job. Extracted from
@@ -14,10 +16,10 @@ class JobApplySheet extends StatefulWidget {
   const JobApplySheet({super.key, required this.args, required this.onSubmit});
   final JobDetailArgs args;
 
-  /// Submits the application. Receives the parsed rate + trimmed cover note
+  /// Submits the application. Receives the parsed quote + trimmed cover note
   /// (null when blank) and awaits the caller's write so the button can show
   /// progress and stay disabled until the round-trip resolves.
-  final Future<void> Function(double? proposedRate, String? coverNote) onSubmit;
+  final Future<void> Function(double? quote, String? coverNote) onSubmit;
 
   @override
   State<JobApplySheet> createState() => _JobApplySheetState();
@@ -65,12 +67,12 @@ class _JobApplySheetState extends State<JobApplySheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PageHeader(
-            eyebrow: 'APPLY FOR THIS JOB',
+            eyebrow: AppStrings.respondSheetTitle,
             title: widget.args.title,
             size: PageHeaderSize.sub,
           ),
           Gap(20.h),
-          const FieldLabel('YOUR RATE'),
+          const FieldLabel('YOUR QUOTE'),
           Gap(AppSpacing.sm.h),
           Container(
             decoration: BoxDecoration(
@@ -99,7 +101,12 @@ class _JobApplySheetState extends State<JobApplySheet> {
                     ),
                   ),
                 ),
-                Text('/hr', style: tt.bodyMedium!.copyWith(color: c.text3)),
+                Text(
+                  widget.args.pricingUnit.suffix.isEmpty
+                      ? 'total'
+                      : widget.args.pricingUnit.suffix,
+                  style: tt.bodyMedium!.copyWith(color: c.text3),
+                ),
               ],
             ),
           ),
@@ -117,7 +124,9 @@ class _JobApplySheetState extends State<JobApplySheet> {
           ),
           Gap(20.h),
           JButton(
-            label: _submitting ? 'SUBMITTING…' : 'SUBMIT APPLICATION',
+            label: _submitting
+                ? AppStrings.respondSubmitting
+                : AppStrings.respondSubmit,
             isLoading: _submitting,
             onPressed: _submitting ? null : _submit,
           ),

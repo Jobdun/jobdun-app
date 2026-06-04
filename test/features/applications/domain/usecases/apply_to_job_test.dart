@@ -42,8 +42,7 @@ void main() {
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => Right(application));
 
@@ -56,15 +55,14 @@ void main() {
       });
     });
 
-    test('passes cover note and proposed rate to repository', () async {
+    test('passes cover note and quote to repository', () async {
       final application = _makeApplication();
       when(
         () => mockRepo.applyToJob(
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: 'Available immediately',
-          proposedRate: 85.0,
-          proposedRateType: 'hourly',
+          quoteAmount: 85.0,
         ),
       ).thenAnswer((_) async => Right(application));
 
@@ -72,8 +70,7 @@ void main() {
         jobId: tJobId,
         builderId: tBuilderId,
         coverNote: 'Available immediately',
-        proposedRate: 85.0,
-        proposedRateType: 'hourly',
+        quoteAmount: 85.0,
       );
 
       verify(
@@ -81,8 +78,7 @@ void main() {
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: 'Available immediately',
-          proposedRate: 85.0,
-          proposedRateType: 'hourly',
+          quoteAmount: 85.0,
         ),
       ).called(1);
     });
@@ -94,8 +90,7 @@ void main() {
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => const Left(failure));
 
@@ -114,8 +109,7 @@ void main() {
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => const Left(failure));
 
@@ -134,8 +128,7 @@ void main() {
           jobId: tJobId,
           builderId: tBuilderId,
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => const Left(failure));
 

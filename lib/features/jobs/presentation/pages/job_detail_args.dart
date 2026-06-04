@@ -17,6 +17,8 @@ class JobDetailArgs {
     this.tradeType = 'Trades',
     this.suburb,
     this.state,
+    this.pricingUnit = PricingUnit.perJob,
+    this.pricingType = PricingType.builderSet,
     this.companyName,
     this.builderInitials,
     this.requiresWhiteCard = false,
@@ -35,6 +37,10 @@ class JobDetailArgs {
   final String tradeType;
   final String? suburb;
   final String? state;
+  // Pricing unit/type the job is priced in — drives the apply sheet's quote
+  // suffix and whether the builder named a price or is requesting quotes.
+  final PricingUnit pricingUnit;
+  final PricingType pricingType;
   final String? companyName;
   final String? builderInitials;
   final bool requiresWhiteCard;
@@ -54,6 +60,8 @@ class JobDetailArgs {
     tradeType: job.tradeTypeRequired,
     suburb: job.suburb,
     state: job.state,
+    pricingUnit: job.pricingUnit,
+    pricingType: job.pricingType,
     requiresWhiteCard: job.requiresWhiteCard,
     requiresLiability: job.requiresPublicLiability,
   );

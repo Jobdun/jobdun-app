@@ -8,8 +8,7 @@ abstract interface class ApplicationRepository {
     required String jobId,
     required String builderId,
     String? coverNote,
-    double? proposedRate,
-    String? proposedRateType,
+    double? quoteAmount,
   });
   Future<Either<Failure, List<JobApplication>>> getMyApplications(
     String tradeId,

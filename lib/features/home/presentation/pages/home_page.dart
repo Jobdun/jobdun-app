@@ -317,11 +317,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                     title: Padding(
                       padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
                       child: JTopBar(
+                        displayName:
+                            (profileState.profile?.displayName ?? '')
+                                .trim()
+                                .isEmpty
+                            ? 'there'
+                            : profileState.profile!.displayName!.trim(),
                         initials: _initials(profileState.profile?.displayName),
-                        searchHint: isBuilder
-                            ? 'Search your listings'
-                            : 'Search jobs near you',
-                        onSearchTap: () => context.go('/jobs'),
+                        roleLabel: isBuilder ? 'BUILDER' : 'TRADIE',
+                        avatarUrl: profileState.profile?.avatarUrl,
                         onAvatarTap: () => context.go('/profile'),
                         onNotificationsTap: () =>
                             context.push('/notifications'),

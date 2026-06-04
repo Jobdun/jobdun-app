@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:jobdun/app/constants/app_strings.dart';
 import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/features/jobs/presentation/pages/job_apply_sheet.dart';
 import 'package:jobdun/features/jobs/presentation/pages/job_detail_args.dart';
@@ -50,7 +51,7 @@ void main() {
       find.byType(TextField).last,
       'Available next week, fully licensed.',
     );
-    await tester.tap(find.text('SUBMIT APPLICATION'));
+    await tester.tap(find.text(AppStrings.respondSubmit));
     await tester.pumpAndSettle();
 
     expect(gotRate, 85);
@@ -74,7 +75,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('SUBMIT APPLICATION'));
+    await tester.tap(find.text(AppStrings.respondSubmit));
     await tester.pumpAndSettle();
 
     expect(submitted, isTrue);

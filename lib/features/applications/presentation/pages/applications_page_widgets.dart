@@ -78,8 +78,10 @@ final _placeholderApp = JobApplication(
   tradeFullName: 'Loading trade name placeholder',
   tradePrimaryTrade: 'Trade',
   tradeIsVerified: false,
-  proposedRate: 0,
-  proposedRateType: 'hr',
+  jobBudgetAmount: 120,
+  jobPricingUnit: 'hourly',
+  jobPricingType: 'builder_set',
+  quoteAmount: 110,
 );
 
 class _VerifiedOnlyToggle extends StatelessWidget {

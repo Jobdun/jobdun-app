@@ -54,6 +54,9 @@ class JobApplication extends Equatable {
     this.jobSuburb,
     this.jobState,
     this.jobStatus,
+    this.jobBudgetAmount,
+    this.jobPricingUnit,
+    this.jobPricingType,
     this.tradeFullName,
     this.tradePrimaryTrade,
     this.tradeIsVerified,
@@ -82,6 +85,12 @@ class JobApplication extends Equatable {
   final String? jobSuburb;
   final String? jobState;
   final String? jobStatus;
+  // Job pricing for the applicant card (raw db values, kept as primitives so
+  // the applications feature stays decoupled from the jobs pricing enums —
+  // same convention as jobStatus above).
+  final double? jobBudgetAmount;
+  final String? jobPricingUnit; // hourly | sqm | lm | per_job
+  final String? jobPricingType; // builder_set | request_quote
 
   // Joined from trade_profiles (builder view)
   final String? tradeFullName;

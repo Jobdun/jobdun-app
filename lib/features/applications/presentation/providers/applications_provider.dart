@@ -128,8 +128,7 @@ class ApplicationsController extends Notifier<ApplicationsState>
     required String jobId,
     required String builderId,
     String? coverNote,
-    double? proposedRate,
-    String? proposedRateType,
+    double? quoteAmount,
   }) async {
     final tradeId = readCurrentUserId(ref);
     if (tradeId == null) return false;
@@ -139,8 +138,7 @@ class ApplicationsController extends Notifier<ApplicationsState>
           jobId: jobId,
           builderId: builderId,
           coverNote: coverNote,
-          proposedRate: proposedRate,
-          proposedRateType: proposedRateType,
+          quoteAmount: quoteAmount,
         );
     return result.fold(
       (f) {

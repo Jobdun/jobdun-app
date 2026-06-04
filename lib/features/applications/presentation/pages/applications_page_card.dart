@@ -226,13 +226,30 @@ class _AppCard extends StatelessWidget {
                         style: tt.labelMedium!.copyWith(color: c.text3),
                       ),
                     ),
-                    if (app.proposedRate != null) ...[
-                      Gap(8.w),
-                      Text(
-                        '\$${app.proposedRate!.toStringAsFixed(0)}${app.proposedRateType != null ? '/${app.proposedRateType}' : ''}',
-                        style: tt.titleMedium!.copyWith(color: c.action),
+                  ],
+                ),
+                // ── Pricing: builder budget vs the applicant's quote.
+                // Display only — never ranked, sorted, or compared.
+                Gap(8.h),
+                Row(
+                  children: [
+                    Icon(
+                      AppIcons.wallet,
+                      size: AppIconSize.micro.r,
+                      color: c.text3,
+                    ),
+                    Gap(6.w),
+                    Expanded(
+                      child: Text(
+                        _pricingLine(app, isBuilder),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium!.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: c.text2,
+                        ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
                 // ── Builder actions (shortlist → hire / reject)
@@ -311,7 +328,7 @@ class _AppCard extends StatelessWidget {
                   GestureDetector(
                     onTap: onWithdraw,
                     child: Text(
-                      'Withdraw application',
+                      AppStrings.withdrawFromJob,
                       style: tt.bodyMedium!.copyWith(
                         fontWeight: FontWeight.w500,
                         color: c.text3,
@@ -373,6 +390,29 @@ class _AppCard extends StatelessWidget {
         ApplicationStatus.withdrawn => (c.surfaceRaised, c.text1),
         ApplicationStatus.declinedByTrade => (c.surfaceRaised, c.text1),
       };
+
+  // "Budget $X/unit · Quote $Y/unit", or "Quotes requested · Quote …" when the
+  // job asks tradies to quote. Display only — no comparison/ranking logic.
+  static String _pricingLine(JobApplication app, bool isBuilder) {
+    final suffix = _unitSuffix(app.jobPricingUnit);
+    final budget = app.jobPricingType == 'request_quote'
+        ? 'Quotes requested'
+        : (app.jobBudgetAmount != null
+              ? 'Budget \$${app.jobBudgetAmount!.toStringAsFixed(0)}$suffix'
+              : 'Budget —');
+    final quoteLabel = isBuilder ? 'Quote' : 'Your quote';
+    final quote = app.quoteAmount != null
+        ? '$quoteLabel \$${app.quoteAmount!.toStringAsFixed(0)}$suffix'
+        : '$quoteLabel —';
+    return '$budget · $quote';
+  }
+
+  static String _unitSuffix(String? unit) => switch (unit) {
+    'hourly' => '/hr',
+    'sqm' => '/m²',
+    'lm' => '/lm',
+    _ => '',
+  };
 
   static String _relDate(DateTime d) {
     final diff = DateTime.now().difference(d);

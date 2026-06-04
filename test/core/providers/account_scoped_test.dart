@@ -16,9 +16,12 @@ class _CountNotifier extends Notifier<int> with AccountScoped<int> {
   void inc() => state++;
 }
 
-final _countProvider = NotifierProvider<_CountNotifier, int>(_CountNotifier.new);
+final _countProvider = NotifierProvider<_CountNotifier, int>(
+  _CountNotifier.new,
+);
 
-Future<void> _settle() => Future<void>.delayed(const Duration(milliseconds: 20));
+Future<void> _settle() =>
+    Future<void>.delayed(const Duration(milliseconds: 20));
 
 void main() {
   test('AccountScoped clears state on account switch and on logout', () async {

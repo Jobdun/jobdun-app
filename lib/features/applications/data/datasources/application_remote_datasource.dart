@@ -10,8 +10,7 @@ abstract interface class ApplicationRemoteDataSource {
     required String tradeId,
     required String builderId,
     String? coverNote,
-    double? proposedRate,
-    String? proposedRateType,
+    double? quoteAmount,
   });
   Future<List<JobApplicationModel>> getMyApplications(String tradeId);
   Future<List<JobApplicationModel>> getApplicationsForMyJobs(String builderId);
@@ -29,8 +28,7 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
     required String tradeId,
     required String builderId,
     String? coverNote,
-    double? proposedRate,
-    String? proposedRateType,
+    double? quoteAmount,
   }) async {
     try {
       // v2: stamp applied_when_verified_at when the trade has a verified
@@ -44,11 +42,10 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
             'builder_id': builderId,
             // ignore: use_null_aware_elements
             if (coverNote != null) 'cover_note': coverNote,
+            // The tradie's quote, in the job's unit. Lands on the application
+            // only — the protect_quote trigger keeps it tradie-owned.
             // ignore: use_null_aware_elements
-            if (proposedRate != null) 'proposed_rate': proposedRate,
-            // ignore: use_null_aware_elements
-            if (proposedRateType != null)
-              'proposed_rate_type': proposedRateType,
+            if (quoteAmount != null) 'quote_amount': quoteAmount,
             if (hasVerifiedLicence)
               'applied_when_verified_at': DateTime.now().toIso8601String(),
           })
@@ -112,7 +109,9 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
       // FKs profiles, not builder_profiles) — fetch + merge separately.
       final rows = await _client
           .from('applications')
-          .select('*, jobs(title, suburb, state, status)')
+          .select(
+            '*, jobs(title, suburb, state, status, budget_amount, pricing_unit, pricing_type)',
+          )
           .eq('trade_id', tradeId)
           .order('created_at', ascending: false);
       final apps = (rows as List).cast<Map<String, dynamic>>();
@@ -139,7 +138,9 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
       // profiles, not trade_profiles) — fetch + merge separately.
       final rows = await _client
           .from('applications')
-          .select('*, jobs(title, suburb, state)')
+          .select(
+            '*, jobs(title, suburb, state, budget_amount, pricing_unit, pricing_type)',
+          )
           .eq('builder_id', builderId)
           .order('created_at', ascending: false);
       final apps = (rows as List).cast<Map<String, dynamic>>();

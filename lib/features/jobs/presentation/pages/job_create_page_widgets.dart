@@ -11,9 +11,13 @@ part of 'job_create_page.dart';
 // blocked until a trade is picked.
 
 class _TradePicker extends StatelessWidget {
-  const _TradePicker({required this.trades});
+  const _TradePicker({required this.trades, required this.onChanged});
 
   final List<String> trades;
+
+  /// Mirrors the picked trade (or null on deselect) up to the page so the rate
+  /// field can show a trade-aware hourly guide.
+  final ValueChanged<String?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +40,9 @@ class _TradePicker extends StatelessWidget {
                 return GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    field.didChange(active ? null : t);
+                    final next = active ? null : t;
+                    field.didChange(next);
+                    onChanged(next);
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -80,69 +86,123 @@ class _TradePicker extends StatelessWidget {
   }
 }
 
-// ── Rate-type picker ───────────────────────────────────────────────────────────
+// ── Pricing mode picker ────────────────────────────────────────────────────────
 //
-// Three-segment selector (Hourly / Daily / Fixed). Default 'Hourly' is set on
-// the FormBuilder's initialValue. Passes the new value up so the rate field's
-// trailing label stays in sync.
+// Two-segment selector: Set price (builder names a rate) vs Request quotes
+// (tradies send their own). Default builder_set via the FormBuilder
+// initialValue. Passes the mode up so the page shows/hides the amount field.
 
-class _RateTypePicker extends StatelessWidget {
-  const _RateTypePicker({required this.rateTypes, required this.onChanged});
+class _PricingModePicker extends StatelessWidget {
+  const _PricingModePicker({required this.onChanged});
 
-  final List<String> rateTypes;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<PricingType> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    return FormBuilderField<String>(
-      name: 'rateType',
+    return FormBuilderField<PricingType>(
+      name: 'pricingMode',
       builder: (field) {
-        final selected = field.value ?? 'Hourly';
-        // No label here — the page renders a single 'RATE' header above this
-        // picker + the amount field so they read as one unit.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: rateTypes.map((rt) {
-                final active = selected == rt;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      field.didChange(rt);
-                      onChanged(rt);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      margin: EdgeInsets.only(
-                        right: rt != rateTypes.last ? AppSpacing.sm.w : 0,
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 10.h),
-                      decoration: BoxDecoration(
-                        color: active ? c.action : c.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                        border: Border.all(color: active ? c.action : c.border),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        rt,
-                        style: tt.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: active
-                              ? Colors
-                                    .white // intentional: white-on-action
-                              : c.text2,
-                        ),
-                      ),
+        final selected = field.value ?? PricingType.builderSet;
+        return Row(
+          children: PricingType.values.map((mode) {
+            final active = selected == mode;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  field.didChange(mode);
+                  onChanged(mode);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: EdgeInsets.only(
+                    right: mode != PricingType.values.last
+                        ? AppSpacing.sm.w
+                        : 0,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  decoration: BoxDecoration(
+                    color: active ? c.action : c.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                    border: Border.all(color: active ? c.action : c.border),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    mode.label,
+                    style: tt.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: active
+                          ? Colors
+                                .white // intentional: white-on-action
+                          : c.text2,
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+// ── Pricing unit picker ────────────────────────────────────────────────────────
+//
+// Single-select chip grid for the unit a job is priced in (Per hour / Per m² /
+// Per lineal metre / Per job). A Wrap, not an equal-width Row, so "Per lineal
+// metre" isn't squeezed. Default hourly via the FormBuilder initialValue.
+
+class _PricingUnitPicker extends StatelessWidget {
+  const _PricingUnitPicker({required this.onChanged});
+
+  final ValueChanged<PricingUnit> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return FormBuilderField<PricingUnit>(
+      name: 'pricingUnit',
+      builder: (field) {
+        final selected = field.value ?? PricingUnit.hourly;
+        return Wrap(
+          spacing: AppSpacing.sm.w,
+          runSpacing: AppSpacing.sm.h,
+          children: PricingUnit.values.map((unit) {
+            final active = selected == unit;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                field.didChange(unit);
+                onChanged(unit);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                decoration: BoxDecoration(
+                  color: active ? c.action : c.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                  border: Border.all(
+                    color: active ? c.action : c.border,
+                    width: active ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Text(
+                  unit.label,
+                  style: tt.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: active
+                        ? Colors
+                              .white // intentional: white-on-action
+                        : c.text2,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         );
       },
     );

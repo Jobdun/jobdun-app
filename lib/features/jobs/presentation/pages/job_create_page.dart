@@ -36,10 +36,15 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _isPosting = false;
 
-  // Mirrors the active rate type into local state so the rate field's
-  // trailing label ("/hr" vs "/day" vs "flat") can react without rebuilding
-  // the whole form via the FormBuilder controller every keystroke.
-  String _rateTypeForSuffix = 'Hourly';
+  // Mirrors the active pricing unit + mode into local state so the amount
+  // field's suffix and visibility can react without rebuilding the whole form
+  // via the FormBuilder controller every keystroke.
+  PricingUnit _pricingUnit = PricingUnit.hourly;
+  PricingType _pricingMode = PricingType.builderSet;
+
+  // Mirrors the picked trade so the rate field can show a trade-aware hourly
+  // guide without reading the FormBuilder controller on every build.
+  String? _selectedTrade;
 
   static const _trades = [
     'Electrician',
@@ -52,13 +57,25 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
     'Labourer',
   ];
 
-  static const _rateTypes = ['Hourly', 'Daily', 'Fixed'];
+  // Ballpark AUD hourly rates by trade — a guide shown under the rate field,
+  // never a quote. Used only for the 'Hourly' rate type.
+  static const _typicalHourly = <String, int>{
+    'Electrician': 85,
+    'Plumber': 90,
+    'Carpenter': 70,
+    'Concreter': 75,
+    'Painter': 60,
+    'Roofer': 70,
+    'Welder': 75,
+    'Labourer': 45,
+  };
 
   Future<void> _post(BuildContext context, JColors c) async {
     final tt = Theme.of(context).textTheme;
     final formState = _formKey.currentState;
     if (formState == null || !formState.saveAndValidate()) {
       HapticFeedback.heavyImpact();
+      _scrollToFirstError(formState);
       return;
     }
     final messenger = ScaffoldMessenger.of(context);
@@ -179,11 +196,10 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   Job _buildJob(String builderId, Map<String, dynamic> values) {
     final now = DateTime.now();
     final rate = double.tryParse('${values['rate'] ?? ''}');
-    final budgetType = switch (values['rateType'] as String? ?? 'Hourly') {
-      'Daily' => BudgetType.daily,
-      'Fixed' => BudgetType.fixed,
-      _ => BudgetType.hourly,
-    };
+    final pricingType =
+        values['pricingMode'] as PricingType? ?? PricingType.builderSet;
+    final pricingUnit =
+        values['pricingUnit'] as PricingUnit? ?? PricingUnit.hourly;
 
     // Location resolves two ways: the MapTiler picker emits a single
     // JPlaceResult under 'place'; the legacy fallback emits suburb / state /
@@ -222,8 +238,11 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       status: JobStatus.open,
       createdAt: now,
       updatedAt: now,
-      budgetMin: rate,
-      budgetType: budgetType,
+      // budget_amount only when the builder named a price; null for
+      // request_quote (matches the jobs_budget_amount_when_set CHECK).
+      budgetAmount: pricingType == PricingType.builderSet ? rate : null,
+      pricingType: pricingType,
+      pricingUnit: pricingUnit,
       urgency: (values['urgent'] as bool? ?? false)
           ? JobUrgency.urgent
           : JobUrgency.standard,
@@ -232,6 +251,49 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       formattedAddress: formattedAddress,
       placeId: placeId,
     );
+  }
+
+  /// Trade-aware hourly-rate guide for the rate field's helper slot. Returns
+  /// null for non-hourly types or unknown trades so the slot stays empty.
+  String? _rateHint() {
+    final trade = _selectedTrade;
+    if (_pricingMode != PricingType.builderSet ||
+        _pricingUnit != PricingUnit.hourly ||
+        trade == null) {
+      return null;
+    }
+    final typical = _typicalHourly[trade];
+    if (typical == null) return null;
+    return 'Most ${trade.toLowerCase()}s nearby charge around \$$typical/hr.';
+  }
+
+  /// On a failed submit, scrolls the first invalid field into view so the
+  /// builder sees what's blocking POST instead of just feeling a haptic with
+  /// the error off-screen. Order mirrors the visual top-to-bottom layout.
+  void _scrollToFirstError(FormBuilderState? formState) {
+    if (formState == null) return;
+    const order = [
+      'title',
+      'trade',
+      'description',
+      'place',
+      'suburb',
+      'state',
+      'postcode',
+      'rate',
+    ];
+    for (final name in order) {
+      final field = formState.fields[name];
+      if (field != null && field.hasError) {
+        Scrollable.ensureVisible(
+          field.context,
+          alignment: 0.1,
+          duration: AppMotion.medium,
+          curve: AppMotion.standard,
+        );
+        return;
+      }
+    }
   }
 
   @override
@@ -243,7 +305,11 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       body: SafeArea(
         child: FormBuilder(
           key: _formKey,
-          initialValue: const {'rateType': 'Hourly', 'urgent': false},
+          initialValue: const {
+            'pricingMode': PricingType.builderSet,
+            'pricingUnit': PricingUnit.hourly,
+            'urgent': false,
+          },
           child: Column(
             children: [
               // ── App bar
@@ -302,58 +368,14 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                       ),
 
                       Gap(20.h),
-                      _TradePicker(trades: _trades),
-                      Gap(20.h),
-
-                      const JobLocationField(),
-                      Gap(20.h),
-
-                      // RATE = one unit: type chips + amount under one label.
-                      const FieldLabel('RATE'),
-                      Gap(8.h),
-                      _RateTypePicker(
-                        rateTypes: _rateTypes,
-                        onChanged: (rt) =>
-                            setState(() => _rateTypeForSuffix = rt),
-                      ),
-                      Gap(10.h),
-                      JTextField(
-                        name: 'rate',
-                        prefixText: '\$ ',
-                        hint: '85',
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.next,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        suffixIcon: Padding(
-                          padding: EdgeInsets.only(right: 12.w),
-                          child: Text(
-                            _rateTypeForSuffix == 'Hourly'
-                                ? '/hr'
-                                : _rateTypeForSuffix == 'Daily'
-                                ? '/day'
-                                : 'flat',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium!.copyWith(color: c.text3),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: 'Rate is required.',
-                          ),
-                          FormBuilderValidators.integer(
-                            errorText: 'Whole dollars only.',
-                          ),
-                          FormBuilderValidators.min(
-                            1,
-                            errorText: 'Must be at least \$1.',
-                          ),
-                        ]),
+                      _TradePicker(
+                        trades: _trades,
+                        onChanged: (t) => setState(() => _selectedTrade = t),
                       ),
                       Gap(20.h),
 
+                      // Description sits with the title + trade — together they
+                      // are "the job" the builder is describing.
                       JTextField(
                         name: 'description',
                         label: 'DESCRIPTION',
@@ -361,6 +383,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                             'Describe the scope of work, site conditions, tools required…',
                         textCapitalization: TextCapitalization.sentences,
                         maxLength: 1000,
+                        maxLines: 5,
                         validator: FormBuilderValidators.compose([
                           FormBuilderValidators.required(
                             errorText: 'A short description helps tradies.',
@@ -371,8 +394,106 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                           ),
                         ]),
                       ),
-                      Gap(20.h),
 
+                      // ── Where ──────────────────────────────────────────────
+                      Gap(AppSpacing.xl.h),
+                      const JobLocationField(),
+
+                      // ── Pricing: mode toggle + unit, then the amount (only
+                      // when the builder names a price; request-quote jobs
+                      // collect tradie quotes instead).
+                      Gap(AppSpacing.xl.h),
+                      const FieldLabel('PRICING'),
+                      Gap(8.h),
+                      _PricingModePicker(
+                        onChanged: (m) => setState(() => _pricingMode = m),
+                      ),
+                      Gap(AppSpacing.md.h),
+                      const FieldLabel('PRICED PER'),
+                      Gap(8.h),
+                      _PricingUnitPicker(
+                        onChanged: (u) => setState(() => _pricingUnit = u),
+                      ),
+                      Gap(AppSpacing.md.h),
+                      if (_pricingMode == PricingType.builderSet)
+                        JTextField(
+                          name: 'rate',
+                          // Persistent "$" via the always-visible prefix slot,
+                          // mirroring the always-on unit suffix.
+                          prefix: Padding(
+                            padding: EdgeInsets.only(left: 16.w, right: 6.w),
+                            child: Text(
+                              '\$',
+                              style: Theme.of(context).textTheme.bodyLarge!
+                                  .copyWith(
+                                    color: c.text1,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                          ),
+                          hint: '85',
+                          helperText: _rateHint(),
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          suffixIcon: Padding(
+                            padding: EdgeInsets.only(right: 12.w),
+                            child: Text(
+                              _pricingUnit.suffix.isEmpty
+                                  ? 'total'
+                                  : _pricingUnit.suffix,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium!.copyWith(color: c.text3),
+                            ),
+                          ),
+                          validator: FormBuilderValidators.compose([
+                            FormBuilderValidators.required(
+                              errorText: 'Rate is required.',
+                            ),
+                            FormBuilderValidators.integer(
+                              errorText: 'Whole dollars only.',
+                            ),
+                            FormBuilderValidators.min(
+                              1,
+                              errorText: 'Must be at least \$1.',
+                            ),
+                          ]),
+                        )
+                      else
+                        Container(
+                          padding: EdgeInsets.all(AppSpacing.md.r),
+                          decoration: BoxDecoration(
+                            color: c.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.card.r,
+                            ),
+                            border: Border.all(color: c.border),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                AppIcons.quote,
+                                size: AppIconSize.md.r,
+                                color: c.text3,
+                              ),
+                              Gap(10.w),
+                              Expanded(
+                                child: Text(
+                                  'Tradies send their quotes when they apply. '
+                                  "You'll see each quote on the Applicants screen.",
+                                  style: Theme.of(context).textTheme.bodyMedium!
+                                      .copyWith(color: c.text2, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // ── Visibility ─────────────────────────────────────────
+                      Gap(AppSpacing.xl.h),
                       const _UrgentToggle(),
                     ],
                   ),

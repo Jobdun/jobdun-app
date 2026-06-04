@@ -104,8 +104,7 @@ void main() {
           jobId: 'job-1',
           builderId: 'trade-1',
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => Right(_application()));
 
@@ -124,8 +123,7 @@ void main() {
           jobId: 'job-1',
           builderId: 'trade-1',
           coverNote: any(named: 'coverNote'),
-          proposedRate: any(named: 'proposedRate'),
-          proposedRateType: any(named: 'proposedRateType'),
+          quoteAmount: any(named: 'quoteAmount'),
         ),
       ).thenAnswer((_) async => const Left(failure));
 
