@@ -103,8 +103,11 @@ This keeps the domain `Message` entity pure; it only gains the real persisted
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS client_tag uuid;
 
 -- Make retries idempotent: a re-send with the same client_tag cannot double-insert.
+-- NON-partial on purpose: Postgres treats NULLs as distinct (pre-existing rows are
+-- unconstrained), AND PostgREST upsert can only target a non-partial index as its
+-- ON CONFLICT arbiter.
 CREATE UNIQUE INDEX IF NOT EXISTS messages_conv_client_tag_uidx
-  ON public.messages (conversation_id, client_tag) WHERE client_tag IS NOT NULL;
+  ON public.messages (conversation_id, client_tag);
 ```
 
 - `messages` already has `REPLICA IDENTITY FULL` (set in
