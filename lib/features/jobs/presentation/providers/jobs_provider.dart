@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 import '../../../../core/cache/cache_for.dart';
+import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
@@ -28,7 +29,10 @@ final jobDatasourceProvider = Provider<JobRemoteDataSource>(
 );
 
 final jobRepositoryProvider = Provider<JobRepository>(
-  (ref) => JobRepositoryImpl(ref.read(jobDatasourceProvider)),
+  (ref) => JobRepositoryImpl(
+    ref.read(jobDatasourceProvider),
+    ref.read(cacheStoreProvider),
+  ),
 );
 
 final jobInteractionsDatasourceProvider = Provider<JobInteractionsDataSource>(

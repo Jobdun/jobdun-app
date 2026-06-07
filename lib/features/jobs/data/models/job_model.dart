@@ -159,4 +159,46 @@ class JobModel extends Job {
     if (formattedAddress != null) 'formatted_address': formattedAddress,
     if (placeId != null) 'place_id': placeId,
   };
+
+  /// Full round-trip serialization for the local cache (Phase 2,
+  /// docs/CACHING_ARCHITECTURE.md). Unlike [toJson] (a *write* projection that
+  /// omits server-set fields), this emits every key [JobModel.fromJson] reads —
+  /// id, timestamps, counts — so a cached job rehydrates identically offline.
+  /// All values are JSON-encodable. The deprecated `budget_type` is omitted
+  /// (fromJson defaults it to null).
+  Map<String, dynamic> toCacheMap() => {
+    'id': id,
+    'builder_id': builderId,
+    'title': title,
+    'description': description,
+    'trade_type_required': tradeTypeRequired,
+    'suburb': suburb,
+    'state': state,
+    'postcode': postcode,
+    'status': status.dbValue,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+    'budget_min': budgetMin,
+    'budget_max': budgetMax,
+    'pricing_unit': pricingUnit.dbValue,
+    'pricing_type': pricingType.dbValue,
+    'budget_amount': budgetAmount,
+    'urgency': urgency.dbValue,
+    'start_date': startDate?.toIso8601String(),
+    'estimated_duration_days': estimatedDurationDays,
+    'duration_text': durationText,
+    'requires_white_card': requiresWhiteCard,
+    'requires_public_liability': requiresPublicLiability,
+    'requires_verified': requiresVerified,
+    'required_certifications': requiredCertifications,
+    'application_count': applicationCount,
+    'view_count': viewCount,
+    'published_at': publishedAt?.toIso8601String(),
+    'hired_trade_id': hiredTradeId,
+    'deleted_at': deletedAt?.toIso8601String(),
+    'latitude': latitude,
+    'longitude': longitude,
+    'formatted_address': formattedAddress,
+    'place_id': placeId,
+  };
 }

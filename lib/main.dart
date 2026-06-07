@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app/app.dart';
 import 'app/theme/app_colors.dart';
 import 'app/theme/theme_provider.dart';
+import 'core/cache/cache_store.dart';
+import 'core/cache/cache_store_provider.dart';
+import 'core/cache/hive_cache_store.dart';
+import 'core/cache/in_memory_cache_store.dart';
 import 'core/config/env.dart';
 import 'core/config/supabase_config.dart';
 
@@ -30,6 +35,18 @@ Future<void> main() async {
   await SupabaseConfig.initialize();
   final initialTheme = await loadSavedTheme();
 
+  // Open the on-disk cache (Phase 2 — docs/CACHING_ARCHITECTURE.md). Fail-safe:
+  // if Hive can't initialise or the box is corrupt, degrade to in-memory rather
+  // than blocking startup. Phase 2.5 will open this box with a HiveAesCipher.
+  CacheStore cacheStore = InMemoryCacheStore();
+  try {
+    await Hive.initFlutter();
+    final box = await Hive.openBox<String>('jobdun_cache');
+    cacheStore = HiveCacheStore(box);
+  } catch (_) {
+    // in-memory fallback already assigned
+  }
+
   // Replace Flutter's default red-on-yellow error widget with a dark-themed
   // fallback in release builds. Debug builds keep the default so developers
   // see the stack trace immediately. Sentry still captures the underlying
@@ -50,6 +67,7 @@ Future<void> main() async {
             themeProvider.overrideWith(
               () => ThemeNotifier(initial: initialTheme),
             ),
+            cacheStoreProvider.overrideWithValue(cacheStore),
           ],
           child: const JobdunApp(),
         ),

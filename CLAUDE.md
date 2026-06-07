@@ -222,6 +222,10 @@ intl, connectivity_plus,
 image_picker, file_picker, cached_network_image,
 url_launcher, google_sign_in, sign_in_with_apple, crypto
 
+# Local cache / persistence (Phase 2 — docs/CACHING_ARCHITECTURE.md)
+hive_ce, hive_ce_flutter   # disk-backed CacheStore (lib/core/cache/): stale-while-
+                           # revalidate + offline last-known. Phase 2.5 adds AES at rest.
+
 # === UI/UX — Animations & Motion ===
 flutter_animate    # composable widget animations (.animate().fadeIn().slideY())
 lottie             # Lottie JSON animations — use for empty states, success, loading
