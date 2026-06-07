@@ -394,6 +394,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
           if (!ctx.mounted) return;
           Navigator.pop(ctx);
           if (ok && mounted) {
+            // Bust the builder aggregate caches so home/profile/listings drop
+            // the deleted job instead of serving a stale Phase 1 cache.
+            invalidateBuilderJobAggregates(ref);
             router.pop();
             messenger.showSnackBar(
               SnackBar(

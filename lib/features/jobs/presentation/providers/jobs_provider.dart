@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
+import '../../../../core/cache/cache_for.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
@@ -70,13 +71,15 @@ final deleteJobUseCaseProvider = Provider(
 // ── Derived counts ────────────────────────────────────────────────────────────
 // Active-job count for the signed-in builder's home tile. Counts real rows
 // (open + filled) — replaces builder_profiles.active_jobs_count, a phantom
-// column that never existed so the tile always read 0. autoDispose so it
-// re-fetches each time the home re-subscribes (e.g. after posting a job).
+// column that never existed so the tile always read 0. Cached in-memory for
+// kDefaultCacheTtl (Phase 1, docs/CACHING_ARCHITECTURE.md §3.1) so revisiting
+// home is instant; create/delete bust it via invalidateBuilderJobAggregates.
 final builderActiveJobsCountProvider = FutureProvider.autoDispose<int>((
   ref,
 ) async {
   final builderId = ref.watch(currentUserIdSyncProvider);
   if (builderId == null) return 0;
+  cacheFor(ref, kDefaultCacheTtl);
   final result = await ref.read(getBuilderJobsUseCaseProvider).call(builderId);
   return result.fold(
     (_) => 0,
@@ -92,21 +95,45 @@ final builderJobsPostedCountProvider = FutureProvider.autoDispose<int>((
 ) async {
   final uid = ref.watch(currentUserIdSyncProvider);
   if (uid == null) return 0;
+  cacheFor(ref, kDefaultCacheTtl);
   final result = await ref.read(getBuilderJobsUseCaseProvider).call(uid);
   return result.fold((_) => 0, (jobs) => jobs.length);
 });
 
 // All of the signed-in builder's listings (any status, non-deleted), one-shot —
 // drives the "Your listings" management view, where status tabs filter the list
-// client-side. autoDispose; invalidate to refresh after a delete / new post.
+// client-side. Cached in-memory for kDefaultCacheTtl (Phase 1) so revisiting is
+// instant; create/delete bust it via invalidateBuilderJobAggregates.
 final builderListingsProvider = FutureProvider.autoDispose<List<Job>>((
   ref,
 ) async {
   final uid = ref.watch(currentUserIdSyncProvider);
   if (uid == null) return const [];
+  cacheFor(ref, kDefaultCacheTtl);
   final result = await ref.read(getBuilderJobsUseCaseProvider).call(uid);
   return result.fold((_) => const <Job>[], (jobs) => jobs);
 });
+
+// ── Cache invalidation (Phase 1) ──────────────────────────────────────────────
+// Builder-scoped aggregates derived from the jobs table. Every create/delete
+// must invalidate these so the change shows immediately instead of waiting out
+// the Phase 1 cache window (docs/CACHING_ARCHITECTURE.md §7 — a write invalidates
+// the cache it affects). Single source of truth for the helper below.
+// Element type is inferred (the internal `ProviderOrFamily` supertype is not
+// publicly nameable); each entry upcasts cleanly when passed to `invalidate`.
+final builderJobAggregateProviders = [
+  builderActiveJobsCountProvider,
+  builderJobsPostedCountProvider,
+  builderListingsProvider,
+];
+
+/// Bust every builder-job aggregate cache after a write (post / delete). Call
+/// from the UI site that performed the mutation.
+void invalidateBuilderJobAggregates(WidgetRef ref) {
+  for (final provider in builderJobAggregateProviders) {
+    ref.invalidate(provider);
+  }
+}
 
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(

@@ -117,6 +117,9 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       (_) {
         // Refresh the open-jobs feed so the new listing shows immediately.
         ref.read(jobsControllerProvider.notifier).refresh();
+        // Bust the builder aggregate caches so home/profile/listings reflect
+        // the new post instead of serving a stale Phase 1 cache.
+        invalidateBuilderJobAggregates(ref);
         router.pop();
         messenger.showSnackBar(
           SnackBar(

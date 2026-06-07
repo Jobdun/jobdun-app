@@ -266,7 +266,9 @@ class _ListingCard extends ConsumerWidget {
                           .deleteJob(job.id);
                       if (!ctx.mounted) return;
                       Navigator.pop(ctx);
-                      ref.invalidate(builderListingsProvider);
+                      // Bust every builder aggregate (not just listings) so the
+                      // home/profile counts drop the deleted job too.
+                      invalidateBuilderJobAggregates(ref);
                       messenger.showSnackBar(
                         SnackBar(
                           content: Text(
