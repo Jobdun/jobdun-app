@@ -384,6 +384,16 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                         controller: _textCtrl,
                         style: tt.bodyLarge!.copyWith(color: c.text1),
                         maxLines: null,
+                        // Text guardrail: hard cap input length; counter hidden
+                        // to keep the chat bar clean.
+                        maxLength: kMaxMessageLength,
+                        buildCounter:
+                            (
+                              _, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) => null,
                         textCapitalization: TextCapitalization.sentences,
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(

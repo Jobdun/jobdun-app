@@ -25,6 +25,9 @@ import '../state/thread_messages.dart';
 const _pageSize = 30;
 // A send that does not confirm within this window is marked failed (retryable).
 const _sendTimeout = Duration(seconds: 10);
+// Max characters in a single message body. Mirrors the DB-side
+// `messages_body_len_chk` constraint (migration 20260608000002).
+const kMaxMessageLength = 4000;
 
 // ── Data layer providers (public so tests can override) ───────────────────────
 final messageDatasourceProvider = Provider<MessageRemoteDataSource>(
@@ -198,11 +201,18 @@ class MessagingController extends Notifier<MessagingState>
     final senderId = readCurrentUserId(ref);
     if (senderId == null) return;
 
+    // Text guardrail: trim, reject blank, cap length (mirrors the DB constraint).
+    final text = body.trim();
+    if (text.isEmpty) return;
+    final safe = text.length > kMaxMessageLength
+        ? text.substring(0, kMaxMessageLength)
+        : text;
+
     final pending = PendingMessage(
       clientTag: uuidV4(),
       conversationId: conversationId,
       senderId: senderId,
-      body: body,
+      body: safe,
       createdAt: DateTime.now(),
     );
     _addToOutbox(conversationId, pending);
