@@ -31,4 +31,38 @@ void main() {
       );
     });
   });
+
+  group('resolveReachableOnline', () {
+    test('radio offline is always offline, regardless of probe', () {
+      expect(
+        resolveReachableOnline(radioOnline: false, reachable: true),
+        isFalse,
+      );
+      expect(
+        resolveReachableOnline(radioOnline: false, reachable: null),
+        isFalse,
+      );
+    });
+
+    test('radio online + not yet probed is optimistically online', () {
+      expect(
+        resolveReachableOnline(radioOnline: true, reachable: null),
+        isTrue,
+      );
+    });
+
+    test('radio online + reachable is online', () {
+      expect(
+        resolveReachableOnline(radioOnline: true, reachable: true),
+        isTrue,
+      );
+    });
+
+    test('radio online but unreachable (captive portal) is offline', () {
+      expect(
+        resolveReachableOnline(radioOnline: true, reachable: false),
+        isFalse,
+      );
+    });
+  });
 }

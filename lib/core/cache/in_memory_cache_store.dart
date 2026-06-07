@@ -5,6 +5,10 @@ import 'string_backed_cache_store.dart';
 /// crash. `main()` overrides the provider with a disk-backed store for real
 /// cross-restart persistence.
 class InMemoryCacheStore extends StringBackedCacheStore {
+  InMemoryCacheStore({super.maxEntries});
+
+  // A plain Map is a LinkedHashMap — keys iterate in insertion order, and
+  // updating an existing key keeps its position, so `keys` gives FIFO order.
   final _box = <String, String>{};
 
   @override
@@ -15,6 +19,9 @@ class InMemoryCacheStore extends StringBackedCacheStore {
 
   @override
   Future<void> rawDelete(String key) async => _box.remove(key);
+
+  @override
+  Iterable<String> rawKeys() => _box.keys;
 
   @override
   Future<void> clear() async => _box.clear();

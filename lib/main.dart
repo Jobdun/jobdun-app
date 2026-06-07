@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app/app.dart';
 import 'app/theme/app_colors.dart';
 import 'app/theme/theme_provider.dart';
+import 'core/cache/cache_encryption.dart';
 import 'core/cache/cache_store.dart';
 import 'core/cache/cache_store_provider.dart';
 import 'core/cache/hive_cache_store.dart';
@@ -35,14 +37,16 @@ Future<void> main() async {
   await SupabaseConfig.initialize();
   final initialTheme = await loadSavedTheme();
 
-  // Open the on-disk cache (Phase 2 — docs/CACHING_ARCHITECTURE.md). Fail-safe:
-  // if Hive can't initialise or the box is corrupt, degrade to in-memory rather
-  // than blocking startup. Phase 2.5 will open this box with a HiveAesCipher.
+  // Open the on-disk cache (Phase 2/2.5 — docs/CACHING_ARCHITECTURE.md),
+  // encrypted at rest with an AES key from the platform keystore. Fail-safe: if
+  // Hive can't initialise or the box is unreadable, degrade to in-memory rather
+  // than blocking startup.
   CacheStore cacheStore = InMemoryCacheStore();
   try {
     await Hive.initFlutter();
-    final box = await Hive.openBox<String>('jobdun_cache');
-    cacheStore = HiveCacheStore(box);
+    final key = await getOrCreateCacheEncryptionKey(FlutterSecureStorage());
+    final cipher = HiveAesCipher(key);
+    cacheStore = HiveCacheStore(await _openCacheBox(cipher));
   } catch (_) {
     // in-memory fallback already assigned
   }
@@ -74,6 +78,19 @@ Future<void> main() async {
       );
     },
   );
+}
+
+/// Opens the encrypted cache box. A pre-encryption (plaintext) box left on disk
+/// by an earlier build can't be decrypted with [cipher] — drop it and recreate
+/// encrypted (the cache is disposable; it repopulates from the network online).
+Future<Box<String>> _openCacheBox(HiveCipher cipher) async {
+  const name = 'jobdun_cache';
+  try {
+    return await Hive.openBox<String>(name, encryptionCipher: cipher);
+  } catch (_) {
+    await Hive.deleteBoxFromDisk(name);
+    return Hive.openBox<String>(name, encryptionCipher: cipher);
+  }
 }
 
 void _configureSentry(SentryFlutterOptions options) {

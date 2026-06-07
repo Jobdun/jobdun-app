@@ -8,7 +8,7 @@ import 'string_backed_cache_store.dart';
 /// Phase 2.5 will open this box with a `HiveAesCipher` for encryption at rest;
 /// the store code is unchanged by that — only how the box is opened in `main()`.
 class HiveCacheStore extends StringBackedCacheStore {
-  HiveCacheStore(this._box);
+  HiveCacheStore(this._box, {super.maxEntries});
 
   final Box<String> _box;
 
@@ -20,6 +20,9 @@ class HiveCacheStore extends StringBackedCacheStore {
 
   @override
   Future<void> rawDelete(String key) => _box.delete(key);
+
+  @override
+  Iterable<String> rawKeys() => _box.keys.cast<String>();
 
   @override
   Future<void> clear() => _box.clear();

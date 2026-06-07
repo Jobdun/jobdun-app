@@ -8,9 +8,18 @@ import 'cache_store.dart';
 /// `Map<dynamic, dynamic>`) and gives identical version + fail-safe semantics
 /// across every backend. Subclasses only supply raw key→string access.
 abstract class StringBackedCacheStore implements CacheStore {
+  StringBackedCacheStore({this.maxEntries = 200});
+
+  /// Hard cap on stored entries. On write, the oldest entries beyond this are
+  /// evicted (FIFO) so the cache can't grow without bound (docs/CACHING §3.3).
+  final int maxEntries;
+
   String? rawGet(String key);
   Future<void> rawPut(String key, String value);
   Future<void> rawDelete(String key);
+
+  /// Keys in insertion order (oldest first) — drives eviction.
+  Iterable<String> rawKeys();
 
   @override
   Future<CacheRecord?> read(String key, {required int schemaVersion}) async {
@@ -29,12 +38,25 @@ abstract class StringBackedCacheStore implements CacheStore {
     Object payload, {
     required int schemaVersion,
     DateTime? at,
-  }) {
+  }) async {
     final stamped = (at ?? DateTime.now()).millisecondsSinceEpoch;
-    return rawPut(
+    await rawPut(
       key,
       jsonEncode({'v': schemaVersion, 't': stamped, 'p': payload}),
     );
+    await _enforceBound(justWrote: key);
+  }
+
+  /// Evict oldest entries (FIFO) until at most [maxEntries] remain. Never evicts
+  /// the entry just written.
+  Future<void> _enforceBound({required String justWrote}) async {
+    final keys = rawKeys().toList(growable: false);
+    var over = keys.length - maxEntries;
+    for (var i = 0; over > 0 && i < keys.length; i++) {
+      if (keys[i] == justWrote) continue;
+      await rawDelete(keys[i]);
+      over--;
+    }
   }
 
   @override
