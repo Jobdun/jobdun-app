@@ -14,8 +14,10 @@ import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
+import '../../../../core/design/widgets/j_offline_banner.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
+import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
@@ -51,6 +53,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final c = context.c;
     final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
+    final isOnline = ref.watch(isOnlineProvider).asData?.value ?? true;
 
     final role = authState.role;
     final isBuilder = role == UserRole.builder;
@@ -65,6 +68,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
+            if (!isOnline) const SliverToBoxAdapter(child: JOfflineBanner()),
             SliverToBoxAdapter(
               child: _ProfileHeader(
                 initials: initials,

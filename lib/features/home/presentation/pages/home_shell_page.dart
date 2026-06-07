@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_offline_banner.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/theme/app_icon_theme.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -33,7 +34,7 @@ class HomeShellPage extends ConsumerWidget {
     return Scaffold(
       body: Column(
         children: [
-          if (!isOnline) const _OfflineBanner(),
+          if (!isOnline) const JOfflineBanner(),
           Expanded(
             child: GestureDetector(
               // opaque lets the gesture fire on empty regions of a page; the
@@ -149,38 +150,6 @@ class TabSpec {
         semanticsLabel: 'My profile',
       ),
     ];
-  }
-}
-
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      width: double.infinity,
-      color: c.urgentBg,
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            Icon(AppIcons.wifi, size: AppIconSize.micro.r, color: c.urgentTx),
-            Gap(8.w),
-            Text(
-              'No internet connection',
-              style: tt.bodySmall!.copyWith(
-                color: c.urgentTx,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

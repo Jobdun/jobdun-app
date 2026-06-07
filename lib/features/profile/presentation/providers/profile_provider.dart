@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/sentry_reporter.dart';
 import '../../../../core/providers/account_scoped.dart';
@@ -28,7 +29,10 @@ final profileDatasourceProvider = Provider<ProfileRemoteDataSource>(
 );
 
 final profileRepositoryProvider = Provider<ProfileRepository>(
-  (ref) => ProfileRepositoryImpl(ref.read(profileDatasourceProvider)),
+  (ref) => ProfileRepositoryImpl(
+    ref.read(profileDatasourceProvider),
+    ref.read(cacheStoreProvider),
+  ),
 );
 
 // ── Use cases ─────────────────────────────────────────────────────────────────

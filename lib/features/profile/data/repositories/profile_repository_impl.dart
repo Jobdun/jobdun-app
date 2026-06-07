@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/cache/cache_store.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/builder_profile.dart';
@@ -14,14 +15,34 @@ import '../models/trade_profile_model.dart';
 import '../models/user_profile_model.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
-  const ProfileRepositoryImpl(this._datasource);
+  const ProfileRepositoryImpl(this._datasource, this._cache);
   final ProfileRemoteDataSource _datasource;
+  final CacheStore _cache;
+
+  // Bump when a profile model's cache shape changes (docs/CACHING §3.3).
+  static const _cacheVersion = 1;
+  String _profileKey(String userId) => 'profile:$userId';
+  String _builderProfileKey(String userId) => 'builder_profile:$userId';
+  String _tradeProfileKey(String userId) => 'trade_profile:$userId';
 
   @override
   Future<Either<Failure, UserProfile>> getProfile(String userId) async {
+    final key = _profileKey(userId);
     try {
-      return right(await _datasource.getProfile(userId));
+      final profile = await _datasource.getProfile(userId);
+      await _cache.write(
+        key,
+        profile.toCacheMap(),
+        schemaVersion: _cacheVersion,
+      );
+      return right(profile);
     } on ServerException catch (e) {
+      final cached = await _cache.read(key, schemaVersion: _cacheVersion);
+      if (cached != null) {
+        return right(
+          UserProfileModel.fromJson(cached.payload as Map<String, dynamic>),
+        );
+      }
       return left(ServerFailure(e.message));
     }
   }
@@ -30,18 +51,48 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<Either<Failure, BuilderProfile?>> getBuilderProfile(
     String userId,
   ) async {
+    final key = _builderProfileKey(userId);
     try {
-      return right(await _datasource.getBuilderProfile(userId));
+      final profile = await _datasource.getBuilderProfile(userId);
+      if (profile != null) {
+        await _cache.write(
+          key,
+          profile.toCacheMap(),
+          schemaVersion: _cacheVersion,
+        );
+      }
+      return right(profile);
     } on ServerException catch (e) {
+      final cached = await _cache.read(key, schemaVersion: _cacheVersion);
+      if (cached != null) {
+        return right(
+          BuilderProfileModel.fromJson(cached.payload as Map<String, dynamic>),
+        );
+      }
       return left(ServerFailure(e.message));
     }
   }
 
   @override
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId) async {
+    final key = _tradeProfileKey(userId);
     try {
-      return right(await _datasource.getTradeProfile(userId));
+      final profile = await _datasource.getTradeProfile(userId);
+      if (profile != null) {
+        await _cache.write(
+          key,
+          profile.toCacheMap(),
+          schemaVersion: _cacheVersion,
+        );
+      }
+      return right(profile);
     } on ServerException catch (e) {
+      final cached = await _cache.read(key, schemaVersion: _cacheVersion);
+      if (cached != null) {
+        return right(
+          TradeProfileModel.fromJson(cached.payload as Map<String, dynamic>),
+        );
+      }
       return left(ServerFailure(e.message));
     }
   }

@@ -102,4 +102,41 @@ class TradeProfileModel extends TradeProfile {
     if (baseLatitude != null) 'base_latitude': baseLatitude,
     if (baseLongitude != null) 'base_longitude': baseLongitude,
   };
+
+  /// Full round-trip serialization for the offline cache (Phase 2). Unlike
+  /// [toJson] (a write projection that omits verification + stats), this emits
+  /// every key [fromJson] reads so a cached profile rehydrates identically
+  /// offline. All values JSON-encodable.
+  Map<String, dynamic> toCacheMap() => {
+    'id': id,
+    'full_name': fullName,
+    'primary_trade': primaryTrade,
+    'crew_size': crewSize,
+    'years_experience': yearsExperience,
+    'hourly_rate_min': hourlyRateMin,
+    'hourly_rate_max': hourlyRateMax,
+    'hourly_rate_visible': hourlyRateVisible,
+    'service_radius_km': serviceRadiusKm,
+    'base_suburb': baseSuburb,
+    'base_state': baseState,
+    'base_postcode': basePostcode,
+    'base_formatted_address': baseFormattedAddress,
+    'base_place_id': basePlaceId,
+    'base_latitude': baseLatitude,
+    'base_longitude': baseLongitude,
+    'about': about,
+    'trade_other': tradeOther,
+    'licence_url': licenceUrl,
+    'portfolio_urls': portfolioUrls,
+    'is_verified': isVerified,
+    'verified_at': verifiedAt?.toIso8601String(),
+    'total_applications': totalApplications,
+    'hire_count': hireCount,
+    'jobs_completed': jobsCompleted,
+    'average_rating': averageRating,
+    'rating_count': ratingCount,
+    'is_available': isAvailable,
+    'available_from': availableFrom?.toIso8601String(),
+    'deleted_at': deletedAt?.toIso8601String(),
+  };
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:jobdun/core/cache/in_memory_cache_store.dart';
 import 'package:jobdun/core/errors/exceptions.dart';
 import 'package:jobdun/core/errors/failures.dart';
 import 'package:jobdun/features/profile/data/datasources/profile_remote_datasource.dart';
@@ -14,7 +15,7 @@ void main() {
 
   setUp(() {
     ds = _MockDs();
-    repo = ProfileRepositoryImpl(ds);
+    repo = ProfileRepositoryImpl(ds, InMemoryCacheStore());
   });
 
   test('setTradeAvailability returns Right(void) on success', () async {

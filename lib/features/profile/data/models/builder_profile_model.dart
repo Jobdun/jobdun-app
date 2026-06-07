@@ -73,4 +73,32 @@ class BuilderProfileModel extends BuilderProfile {
     if (serviceLatitude != null) 'service_latitude': serviceLatitude,
     if (serviceLongitude != null) 'service_longitude': serviceLongitude,
   };
+
+  /// Full round-trip serialization for the offline cache (Phase 2). Unlike
+  /// [toJson] (a write projection that omits server-set stats), this emits every
+  /// key [fromJson] reads — counts, ratings, deletedAt — so a cached profile
+  /// rehydrates identically offline. All values JSON-encodable.
+  Map<String, dynamic> toCacheMap() => {
+    'id': id,
+    'company_name': companyName,
+    'abn': abn,
+    'contact_name': contactName,
+    'contact_phone': contactPhone,
+    'about': about,
+    'website': website,
+    'years_in_business': yearsInBusiness,
+    'service_suburb': serviceSuburb,
+    'service_state': serviceState,
+    'service_postcode': servicePostcode,
+    'service_formatted_address': serviceFormattedAddress,
+    'service_place_id': servicePlaceId,
+    'service_latitude': serviceLatitude,
+    'service_longitude': serviceLongitude,
+    'total_jobs_posted': totalJobsPosted,
+    'active_jobs_count': activeJobsCount,
+    'hire_count': hireCount,
+    'average_rating': averageRating,
+    'rating_count': ratingCount,
+    'deleted_at': deletedAt?.toIso8601String(),
+  };
 }

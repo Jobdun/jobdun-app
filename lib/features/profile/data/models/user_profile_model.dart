@@ -35,4 +35,18 @@ class UserProfileModel extends UserProfile {
     'phone': phone,
     'avatar_url': avatarUrl,
   };
+
+  /// Full round-trip serialization for the offline cache (Phase 2). Unlike
+  /// [toJson] (a write projection), this emits every key [fromJson] reads so a
+  /// cached profile rehydrates identically offline. All values JSON-encodable.
+  Map<String, dynamic> toCacheMap() => {
+    'id': id,
+    'display_name': displayName,
+    'email': email,
+    'phone': phone,
+    'phone_verified_at': phoneVerifiedAt?.toIso8601String(),
+    'avatar_url': avatarUrl,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
+  };
 }
