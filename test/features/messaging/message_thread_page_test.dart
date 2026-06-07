@@ -44,7 +44,13 @@ ThemeData _testTheme() => ThemeData(
 void main() {
   _MockRepo buildRepo() {
     final repo = _MockRepo();
-    when(() => repo.getMessages(any())).thenAnswer(
+    when(
+      () => repo.getMessages(
+        any(),
+        limit: any(named: 'limit'),
+        before: any(named: 'before'),
+      ),
+    ).thenAnswer(
       (_) async => right([
         Message(
           id: 'm1',
@@ -56,7 +62,10 @@ void main() {
       ]),
     );
     when(
-      () => repo.watchMessages(any()),
+      () => repo.watchMessages(any(), tailLimit: any(named: 'tailLimit')),
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => repo.watchConversation(any()),
     ).thenAnswer((_) => const Stream.empty());
     when(
       () => repo.markConversationRead(
@@ -70,6 +79,7 @@ void main() {
         conversationId: any(named: 'conversationId'),
         senderId: any(named: 'senderId'),
         body: any(named: 'body'),
+        clientTag: any(named: 'clientTag'),
       ),
     ).thenAnswer((_) async => right(null));
     return repo;
@@ -118,7 +128,13 @@ void main() {
     await pumpThread(tester, repo);
 
     expect(find.text('Hello there'), findsOneWidget);
-    verify(() => repo.getMessages('c1')).called(1);
+    verify(
+      () => repo.getMessages(
+        'c1',
+        limit: any(named: 'limit'),
+        before: any(named: 'before'),
+      ),
+    ).called(1);
   });
 
   testWidgets('send routes the typed text through sendMessage', (tester) async {
@@ -137,6 +153,7 @@ void main() {
         conversationId: 'c1',
         senderId: 'me',
         body: 'My reply',
+        clientTag: any(named: 'clientTag'),
       ),
     ).called(1);
   });

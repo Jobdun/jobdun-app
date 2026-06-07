@@ -6,16 +6,18 @@ part of 'message_thread_page.dart';
 
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
-    required this.message,
+    required this.entry,
     required this.isMine,
     required this.initials,
     required this.showAvatar,
     required this.groupedWithPrev,
     required this.lastInGroup,
+    required this.showSeenAvatar,
     this.imageUrl,
+    this.onRetry,
   });
 
-  final Message message;
+  final ThreadEntry entry;
   final bool isMine;
   final String initials;
   final String? imageUrl; // counterparty avatar for incoming bubbles
@@ -27,6 +29,11 @@ class _MessageBubble extends StatelessWidget {
   // ends (lastInGroup).
   final bool groupedWithPrev;
   final bool lastInGroup;
+  // True only on the last of my messages the counterparty has read → render
+  // their mini-avatar beneath it ("Seen").
+  final bool showSeenAvatar;
+  // Re-dispatch handler when this is a failed outbound message.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +41,11 @@ class _MessageBubble extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final round = Radius.circular(16.r);
     final tight = Radius.circular(5.r);
+    final isFailed = entry.status == MessageStatus.failed;
+    // Dim my own bubble while the insert is still in flight.
+    final mineColor = entry.status == MessageStatus.sending
+        ? c.action.withValues(alpha: 0.6)
+        : c.action;
 
     return Padding(
       padding: EdgeInsets.only(bottom: lastInGroup ? 10.h : 2.h),
@@ -67,7 +79,7 @@ class _MessageBubble extends StatelessWidget {
                     vertical: 10.h,
                   ),
                   decoration: BoxDecoration(
-                    color: isMine ? c.action : c.card,
+                    color: isMine ? mineColor : c.card,
                     borderRadius: BorderRadius.only(
                       topLeft: isMine || !groupedWithPrev ? round : tight,
                       topRight: !isMine || !groupedWithPrev ? round : tight,
@@ -77,7 +89,7 @@ class _MessageBubble extends StatelessWidget {
                     border: isMine ? null : Border.all(color: c.border),
                   ),
                   child: Text(
-                    message.body,
+                    entry.body,
                     style: tt.bodyLarge!.copyWith(
                       fontWeight: FontWeight.w400,
                       color: isMine
@@ -88,11 +100,33 @@ class _MessageBubble extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (lastInGroup) ...[
+                // Failed (mine) → retry line; otherwise timestamp, plus a status
+                // tick on my own last-in-group message.
+                if (isMine && isFailed)
+                  _RetryLine(onRetry: onRetry)
+                else if (lastInGroup) ...[
                   Gap(4.h),
-                  Text(
-                    _fmtTime(message.createdAt),
-                    style: tt.labelSmall!.copyWith(color: c.text3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _fmtTime(entry.createdAt),
+                        style: tt.labelSmall!.copyWith(color: c.text3),
+                      ),
+                      if (isMine) ...[
+                        Gap(4.w),
+                        _StatusTick(status: entry.status),
+                      ],
+                    ],
+                  ),
+                ],
+                if (isMine && showSeenAvatar) ...[
+                  Gap(3.h),
+                  AvatarBlock(
+                    initials: initials,
+                    imageUrl: imageUrl,
+                    size: 14,
+                    circle: true,
                   ),
                 ],
               ],

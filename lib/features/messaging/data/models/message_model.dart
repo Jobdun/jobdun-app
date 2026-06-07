@@ -10,6 +10,7 @@ class MessageModel extends Message {
     super.readAt,
     super.deletedAt,
     super.editedAt,
+    super.clientTag,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
@@ -17,6 +18,7 @@ class MessageModel extends Message {
     conversationId: json['conversation_id'] as String,
     senderId: json['sender_id'] as String,
     body: json['body'] as String,
+    clientTag: json['client_tag'] as String?,
     readAt: json['read_at'] != null
         ? DateTime.parse(json['read_at'] as String)
         : null,
@@ -33,5 +35,6 @@ class MessageModel extends Message {
     'conversation_id': conversationId,
     'sender_id': senderId,
     'body': body,
+    if (clientTag != null) 'client_tag': clientTag,
   };
 }

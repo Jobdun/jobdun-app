@@ -11,11 +11,21 @@ abstract interface class MessageRemoteDataSource {
     required String tradeId,
     String? jobId,
   });
-  Future<List<MessageModel>> getMessages(String conversationId);
+
+  /// Fetches messages oldest→newest. With [limit] set, returns the most-recent
+  /// page (or, with [before], the page immediately older than that timestamp) —
+  /// used for scroll-back pagination. With [limit] null, returns the whole
+  /// thread (one-shot callers).
+  Future<List<MessageModel>> getMessages(
+    String conversationId, {
+    int? limit,
+    DateTime? before,
+  });
   Future<void> sendMessage({
     required String conversationId,
     required String senderId,
     required String body,
+    required String clientTag,
   });
   Future<void> markConversationRead({
     required String conversationId,
@@ -27,7 +37,17 @@ abstract interface class MessageRemoteDataSource {
     required bool isBuilder,
   });
   Stream<List<ConversationModel>> watchConversations(String userId);
-  Stream<List<MessageModel>> watchMessages(String conversationId);
+
+  /// Live tail of the most recent [tailLimit] messages, oldest→newest. Older
+  /// history is paged in separately via [getMessages].
+  Stream<List<MessageModel>> watchMessages(
+    String conversationId, {
+    int tailLimit,
+  });
+
+  /// Live updates to a single conversation row — used by the thread to read the
+  /// counterparty's `*_last_read_at` (the "Seen" marker) as it changes.
+  Stream<ConversationModel> watchConversation(String conversationId);
 }
 
 class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
@@ -73,19 +93,38 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   }
 
   @override
-  Future<List<MessageModel>> getMessages(String conversationId) async {
+  Future<List<MessageModel>> getMessages(
+    String conversationId, {
+    int? limit,
+    DateTime? before,
+  }) async {
     try {
-      final data = await _client
+      final base = _client
           .from('messages')
           .select()
           .eq('conversation_id', conversationId)
-          .isFilter('deleted_at', null)
-          // Oldest-first so the thread reads top→bottom (newest at the bottom).
-          // postgrest .order() defaults to descending, hence the explicit flag.
-          .order('created_at', ascending: true);
-      return (data as List)
+          .isFilter('deleted_at', null);
+
+      // One-shot path: whole thread, oldest-first.
+      if (limit == null) {
+        final data = await base.order('created_at', ascending: true);
+        return (data as List)
+            .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+
+      // Paged path: take the most-recent `limit` (older than `before` when
+      // scrolling back) newest-first, then reverse to oldest-first for display.
+      final filtered = before == null
+          ? base
+          : base.lt('created_at', before.toIso8601String());
+      final data = await filtered
+          .order('created_at', ascending: false)
+          .limit(limit);
+      final page = (data as List)
           .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      return page.reversed.toList();
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -96,13 +135,24 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
     required String conversationId,
     required String senderId,
     required String body,
+    required String clientTag,
   }) async {
     try {
-      await _client.from('messages').insert({
-        'conversation_id': conversationId,
-        'sender_id': senderId,
-        'body': body,
-      });
+      // Upsert + ignoreDuplicates makes a retry idempotent: a second insert
+      // with the same (conversation_id, client_tag) is a no-op rather than a
+      // duplicate row. Verified against Supabase docs (context7).
+      await _client
+          .from('messages')
+          .upsert(
+            {
+              'conversation_id': conversationId,
+              'sender_id': senderId,
+              'body': body,
+              'client_tag': clientTag,
+            },
+            onConflict: 'conversation_id,client_tag',
+            ignoreDuplicates: true,
+          );
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -171,18 +221,39 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
   }
 
   @override
-  Stream<List<MessageModel>> watchMessages(String conversationId) {
+  Stream<List<MessageModel>> watchMessages(
+    String conversationId, {
+    int tailLimit = 50,
+  }) {
+    // Most-recent `tailLimit` newest-first (so the window keeps the latest as
+    // new rows arrive), reversed to oldest-first for the merge/display.
     return _client
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId)
-        // Oldest-first (newest at the bottom). .order() defaults to descending.
-        .order('created_at', ascending: true)
+        .order('created_at', ascending: false)
+        .limit(tailLimit)
         .map(
           (rows) => rows
               .where((r) => r['deleted_at'] == null)
               .map(MessageModel.fromJson)
+              .toList()
+              .reversed
               .toList(),
         );
+  }
+
+  @override
+  Stream<ConversationModel> watchConversation(String conversationId) {
+    return _client
+        .from('conversations')
+        .stream(primaryKey: ['id'])
+        .eq('id', conversationId)
+        .map(
+          (rows) =>
+              rows.isEmpty ? null : ConversationModel.fromJson(rows.first),
+        )
+        .where((c) => c != null)
+        .cast<ConversationModel>();
   }
 }

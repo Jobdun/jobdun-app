@@ -11,9 +11,11 @@ class SendMessage {
     required String conversationId,
     required String senderId,
     required String body,
+    required String clientTag,
   }) => _repository.sendMessage(
     conversationId: conversationId,
     senderId: senderId,
     body: body,
+    clientTag: clientTag,
   );
 }

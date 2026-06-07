@@ -11,11 +11,16 @@ abstract interface class MessageRepository {
     required String tradeId,
     String? jobId,
   });
-  Future<Either<Failure, List<Message>>> getMessages(String conversationId);
+  Future<Either<Failure, List<Message>>> getMessages(
+    String conversationId, {
+    int? limit,
+    DateTime? before,
+  });
   Future<Either<Failure, void>> sendMessage({
     required String conversationId,
     required String senderId,
     required String body,
+    required String clientTag,
   });
   Future<Either<Failure, void>> markConversationRead({
     required String conversationId,
@@ -27,5 +32,6 @@ abstract interface class MessageRepository {
     required bool isBuilder,
   });
   Stream<List<Conversation>> watchConversations(String userId);
-  Stream<List<Message>> watchMessages(String conversationId);
+  Stream<List<Message>> watchMessages(String conversationId, {int tailLimit});
+  Stream<Conversation> watchConversation(String conversationId);
 }

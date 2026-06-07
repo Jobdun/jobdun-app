@@ -10,6 +10,7 @@ class Message extends Equatable {
     this.readAt,
     this.deletedAt,
     this.editedAt,
+    this.clientTag,
   });
 
   final String id;
@@ -20,6 +21,10 @@ class Message extends Equatable {
   final DateTime? deletedAt; // null = not deleted
   final DateTime? editedAt;
   final DateTime createdAt;
+  // Client-generated idempotency key, echoed back from the server. Lets an
+  // optimistic local bubble be matched to its server row (dedup by client_tag,
+  // not by server id). Null for rows inserted before Phase A / server-only.
+  final String? clientTag;
 
   bool get isRead => readAt != null;
   bool get isDeleted => deletedAt != null;

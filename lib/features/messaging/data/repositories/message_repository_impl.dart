@@ -43,10 +43,18 @@ class MessageRepositoryImpl implements MessageRepository {
 
   @override
   Future<Either<Failure, List<Message>>> getMessages(
-    String conversationId,
-  ) async {
+    String conversationId, {
+    int? limit,
+    DateTime? before,
+  }) async {
     try {
-      return right(await _datasource.getMessages(conversationId));
+      return right(
+        await _datasource.getMessages(
+          conversationId,
+          limit: limit,
+          before: before,
+        ),
+      );
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -57,12 +65,14 @@ class MessageRepositoryImpl implements MessageRepository {
     required String conversationId,
     required String senderId,
     required String body,
+    required String clientTag,
   }) async {
     try {
       await _datasource.sendMessage(
         conversationId: conversationId,
         senderId: senderId,
         body: body,
+        clientTag: clientTag,
       );
       return right(null);
     } on ServerException catch (e) {
@@ -109,6 +119,12 @@ class MessageRepositoryImpl implements MessageRepository {
       _datasource.watchConversations(userId);
 
   @override
-  Stream<List<Message>> watchMessages(String conversationId) =>
-      _datasource.watchMessages(conversationId);
+  Stream<List<Message>> watchMessages(
+    String conversationId, {
+    int tailLimit = 50,
+  }) => _datasource.watchMessages(conversationId, tailLimit: tailLimit);
+
+  @override
+  Stream<Conversation> watchConversation(String conversationId) =>
+      _datasource.watchConversation(conversationId);
 }

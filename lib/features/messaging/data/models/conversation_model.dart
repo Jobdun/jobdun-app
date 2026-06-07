@@ -13,6 +13,8 @@ class ConversationModel extends Conversation {
     super.lastMessageAt,
     super.lastMessagePreview,
     super.lastMessageSenderId,
+    super.builderLastReadAt,
+    super.tradeLastReadAt,
     super.otherUserDisplayName,
     super.otherUserAvatarUrl,
     super.jobTitle,
@@ -32,6 +34,12 @@ class ConversationModel extends Conversation {
           : null,
       lastMessagePreview: json['last_message_preview'] as String?,
       lastMessageSenderId: json['last_message_sender_id'] as String?,
+      builderLastReadAt: json['builder_last_read_at'] != null
+          ? DateTime.parse(json['builder_last_read_at'] as String)
+          : null,
+      tradeLastReadAt: json['trade_last_read_at'] != null
+          ? DateTime.parse(json['trade_last_read_at'] as String)
+          : null,
       builderUnreadCount: json['builder_unread_count'] as int? ?? 0,
       tradeUnreadCount: json['trade_unread_count'] as int? ?? 0,
       status: ConversationStatusX.fromDb(json['status'] as String? ?? 'active'),

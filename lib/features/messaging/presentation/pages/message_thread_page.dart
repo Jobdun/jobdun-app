@@ -12,11 +12,12 @@ import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/conversation_typing.dart';
-import '../../domain/entities/message.dart';
 import '../providers/messaging_provider.dart';
 import '../providers/messaging_realtime_provider.dart';
+import '../state/thread_messages.dart';
 
 part 'message_thread_widgets.dart';
+part 'message_thread_status.dart';
 
 // Passed via GoRouter extra when pushing /messages/:conversationId
 class ConversationArgs {
@@ -150,12 +151,18 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     final tt = Theme.of(context).textTheme;
     final args = widget.args;
     final me = ref.watch(currentUserIdSyncProvider);
-    final messages = ref.watch(
-      messagingControllerProvider.select((s) => s.messagesFor(_conversationId)),
-    );
-    final isLoading = ref.watch(
-      messagingControllerProvider.select((s) => s.isLoading),
-    );
+    final mState = ref.watch(messagingControllerProvider);
+    final entries = mState.entriesFor(_conversationId, me);
+    final loaded = mState.isThreadLoaded(_conversationId);
+    final hasMore = mState.hasMoreFor(_conversationId);
+    // Key of the last of my messages the counterparty has read — drives the
+    // "Seen" mini-avatar (last write wins → the most recent seen message).
+    String? lastSeenKey;
+    for (final e in entries) {
+      if (e.senderId == me && e.status == MessageStatus.seen) {
+        lastSeenKey = e.key;
+      }
+    }
     final initials = args.otherInitials ?? _initials(args.otherName);
     final otherOnline =
         args.otherUserId != null &&
@@ -170,7 +177,9 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     // arrive (initial load, sent, received all change the count).
     ref.listen<int>(
       messagingControllerProvider.select(
-        (s) => s.messagesFor(_conversationId).length,
+        (s) =>
+            s.messagesFor(_conversationId).length +
+            s.outboxFor(_conversationId).length,
       ),
       (_, _) => _scrollToBottom(),
     );
@@ -253,57 +262,81 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
 
             // ── Messages
             Expanded(
-              child: messages.isEmpty
-                  ? (isLoading
-                        ? const _ThreadSkeleton()
-                        : _ThreadEmpty(name: args.otherName))
-                  : ListView.builder(
-                      controller: _scrollCtrl,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md.w,
-                        vertical: AppSpacing.md.h,
-                      ),
-                      itemCount: messages.length,
-                      itemBuilder: (ctx, i) {
-                        final msg = messages[i];
-                        final isMine = msg.senderId == me;
-                        final prev = i > 0 ? messages[i - 1] : null;
-                        final next = i < messages.length - 1
-                            ? messages[i + 1]
-                            : null;
-                        const groupGap = Duration(minutes: 15);
-                        final newDay =
-                            prev == null ||
-                            !_sameDayLocal(prev.createdAt, msg.createdAt);
-                        final groupedWithPrev =
-                            prev != null &&
-                            !newDay &&
-                            prev.senderId == msg.senderId &&
-                            msg.createdAt.difference(prev.createdAt) < groupGap;
-                        final lastInGroup =
-                            next == null ||
-                            next.senderId != msg.senderId ||
-                            !_sameDayLocal(next.createdAt, msg.createdAt) ||
-                            next.createdAt.difference(msg.createdAt) >=
-                                groupGap;
-                        final bubble = _MessageBubble(
-                          message: msg,
-                          isMine: isMine,
-                          initials: initials,
-                          imageUrl: args.otherAvatarUrl,
-                          showAvatar: !isMine && lastInGroup,
-                          groupedWithPrev: groupedWithPrev,
-                          lastInGroup: lastInGroup,
-                        );
-                        if (!newDay) return bubble;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _DaySeparator(date: msg.createdAt),
-                            bubble,
-                          ],
-                        );
-                      },
+              child: !loaded
+                  ? const _ThreadSkeleton()
+                  : entries.isEmpty
+                  ? _ThreadEmpty(name: args.otherName)
+                  : Column(
+                      children: [
+                        if (hasMore)
+                          _LoadEarlierBar(
+                            onTap: () => _messaging.loadOlder(_conversationId),
+                          ),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _scrollCtrl,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md.w,
+                              vertical: AppSpacing.md.h,
+                            ),
+                            itemCount: entries.length,
+                            itemBuilder: (ctx, i) {
+                              final entry = entries[i];
+                              final isMine = entry.senderId == me;
+                              final prev = i > 0 ? entries[i - 1] : null;
+                              final next = i < entries.length - 1
+                                  ? entries[i + 1]
+                                  : null;
+                              const groupGap = Duration(minutes: 15);
+                              final newDay =
+                                  prev == null ||
+                                  !_sameDayLocal(
+                                    prev.createdAt,
+                                    entry.createdAt,
+                                  );
+                              final groupedWithPrev =
+                                  prev != null &&
+                                  !newDay &&
+                                  prev.senderId == entry.senderId &&
+                                  entry.createdAt.difference(prev.createdAt) <
+                                      groupGap;
+                              final lastInGroup =
+                                  next == null ||
+                                  next.senderId != entry.senderId ||
+                                  !_sameDayLocal(
+                                    next.createdAt,
+                                    entry.createdAt,
+                                  ) ||
+                                  next.createdAt.difference(entry.createdAt) >=
+                                      groupGap;
+                              final bubble = _MessageBubble(
+                                entry: entry,
+                                isMine: isMine,
+                                initials: initials,
+                                imageUrl: args.otherAvatarUrl,
+                                showAvatar: !isMine && lastInGroup,
+                                groupedWithPrev: groupedWithPrev,
+                                lastInGroup: lastInGroup,
+                                showSeenAvatar: entry.key == lastSeenKey,
+                                onRetry: entry.clientTag == null
+                                    ? null
+                                    : () => _messaging.retryMessage(
+                                        conversationId: _conversationId,
+                                        clientTag: entry.clientTag!,
+                                      ),
+                              );
+                              if (!newDay) return bubble;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _DaySeparator(date: entry.createdAt),
+                                  bubble,
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
             ),
 

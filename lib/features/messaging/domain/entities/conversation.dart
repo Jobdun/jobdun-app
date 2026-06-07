@@ -25,6 +25,8 @@ class Conversation extends Equatable {
     this.lastMessageAt,
     this.lastMessagePreview,
     this.lastMessageSenderId,
+    this.builderLastReadAt,
+    this.tradeLastReadAt,
     // Joined display fields
     this.otherUserDisplayName,
     this.otherUserAvatarUrl,
@@ -40,6 +42,10 @@ class Conversation extends Equatable {
   final String? lastMessageSenderId;
   final int builderUnreadCount;
   final int tradeUnreadCount;
+  // Read markers (Phase A "Seen"): the timestamp each side last opened the
+  // thread. The counterparty's marker drives the sender's Seen indicator.
+  final DateTime? builderLastReadAt;
+  final DateTime? tradeLastReadAt;
   final ConversationStatus status;
   final DateTime createdAt;
 
@@ -50,6 +56,11 @@ class Conversation extends Equatable {
 
   int unreadCountFor(String userId) =>
       userId == builderId ? builderUnreadCount : tradeUnreadCount;
+
+  /// The OTHER participant's last-read timestamp, from [userId]'s point of view.
+  /// This is what decides whether [userId]'s sent messages show as "Seen".
+  DateTime? otherLastReadAtFor(String userId) =>
+      userId == builderId ? tradeLastReadAt : builderLastReadAt;
 
   @override
   List<Object?> get props => [id, builderId, tradeId];
