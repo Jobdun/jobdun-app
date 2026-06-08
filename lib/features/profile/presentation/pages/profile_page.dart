@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
@@ -28,6 +29,10 @@ import '../../../verification/presentation/widgets/verification_receipts.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/portfolio_strip.dart';
+import '../widgets/profile_about_section.dart';
+import '../widgets/profile_availability_banner.dart';
+import '../widgets/profile_reviews_preview.dart';
 
 part 'profile_page_sections.dart';
 part 'profile_page_settings.dart';

@@ -50,7 +50,7 @@ void main() {
     throw exc;
   }
 
-  Widget wrap(ProfileState state) {
+  Widget wrap(ProfileState state, {bool readOnly = false}) {
     return ProviderScope(
       overrides: [
         profileControllerProvider.overrideWith(
@@ -61,11 +61,11 @@ void main() {
         designSize: const Size(390, 844),
         builder: (_, _) => MaterialApp(
           theme: AppTheme.dark(),
-          home: const Scaffold(
+          home: Scaffold(
             body: SafeArea(
               child: Padding(
-                padding: EdgeInsets.all(16),
-                child: PortfolioStrip(),
+                padding: const EdgeInsets.all(16),
+                child: PortfolioStrip(readOnly: readOnly),
               ),
             ),
           ),
@@ -135,5 +135,34 @@ void main() {
     drainKnownOverflow(tester);
 
     expect(find.text('ADD'), findsNothing);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Read-only mode (profile view / future public profile): never shows ADD,
+  // even with an empty portfolio — editing lives on /profile/edit.
+  // ───────────────────────────────────────────────────────────────────────────
+  testWidgets('read-only empty portfolio hides the ADD tile', (tester) async {
+    await tester.pumpWidget(wrap(tradeWith(const []), readOnly: true));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    expect(find.text('ADD'), findsNothing);
+  });
+
+  testWidgets('read-only portfolio with photos shows no ADD tile', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        tradeWith(const [
+          'https://example.com/storage/v1/object/public/public-media/u1/portfolio/1.jpg',
+        ]),
+        readOnly: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    expect(find.text('ADD', skipOffstage: false), findsNothing);
   });
 }

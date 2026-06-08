@@ -20,7 +20,12 @@ import '../providers/profile_provider.dart';
 // (4:3 crop + JPEG compression) so the bucket never receives raw camera
 // originals.
 class PortfolioStrip extends ConsumerWidget {
-  const PortfolioStrip({super.key});
+  const PortfolioStrip({super.key, this.readOnly = false});
+
+  /// When true (profile view / future public profile), the strip is a pure
+  /// showcase: no ADD tile, no long-press remove — tap still opens the
+  /// zoomable gallery. Editing stays on `/profile/edit` (default `false`).
+  final bool readOnly;
 
   static const _maxImages = 12;
 
@@ -120,7 +125,7 @@ class PortfolioStrip extends ConsumerWidget {
       profileControllerProvider.select((s) => s.isUploadingPortfolio),
     );
 
-    final canAdd = urls.length < _maxImages;
+    final canAdd = !readOnly && urls.length < _maxImages;
 
     return SizedBox(
       height: 88.h,
@@ -139,7 +144,7 @@ class PortfolioStrip extends ConsumerWidget {
           return _PortfolioTile(
             url: url,
             onTap: () => _openGallery(ctx, urls, i),
-            onLongPress: () => _confirmRemove(ctx, ref, url),
+            onLongPress: readOnly ? null : () => _confirmRemove(ctx, ref, url),
           );
         },
       ),
@@ -166,13 +171,15 @@ class _PortfolioTile extends StatelessWidget {
 
   final String url;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     return Semantics(
-      label: 'Portfolio photo. Tap to enlarge, long-press to remove.',
+      label: onLongPress == null
+          ? 'Portfolio photo. Tap to enlarge.'
+          : 'Portfolio photo. Tap to enlarge, long-press to remove.',
       button: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

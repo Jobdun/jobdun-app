@@ -147,6 +147,7 @@ class _BuilderProfile extends ConsumerWidget {
     final p = profile;
 
     final companyName = _blank(p?.companyName);
+    final contactName = _blank(p?.contactName);
     final abn = _formatAbn(p?.abn);
     final location = _blank(p?.displayLocation);
     final website = _blank(p?.website);
@@ -216,12 +217,27 @@ class _BuilderProfile extends ConsumerWidget {
               ),
               Gap(AppSpacing.sm.w),
               JStatBadge(
+                value: (p?.hireCount ?? 0).toString(),
+                label: 'Hires',
+                icon: AppIcons.user,
+                iconColor: c.verified,
+              ),
+              Gap(AppSpacing.sm.w),
+              JStatBadge(
                 value: sinceYear,
                 label: 'In business',
                 icon: AppIcons.calendar,
-                iconColor: c.available,
+                iconColor: c.star,
               ),
             ],
+          ),
+          Gap(AppSpacing.md.h),
+          // Own profile: always shown, with an Add prompt when empty so the
+          // builder discovers the field. (addPrompt = owner mode.)
+          ProfileAboutSection(
+            about: p?.about,
+            label: 'ABOUT THE COMPANY',
+            addPrompt: 'Add a company description so tradies trust you',
           ),
           Gap(AppSpacing.md.h),
           JCard(
@@ -231,6 +247,11 @@ class _BuilderProfile extends ConsumerWidget {
                 icon: AppIcons.building,
                 label: 'Company',
                 value: companyName,
+              ),
+              _InfoRow(
+                icon: AppIcons.user,
+                label: 'Contact',
+                value: contactName,
               ),
               _InfoRow(
                 icon: AppIcons.receipt,
@@ -304,7 +325,6 @@ class _TradeProfile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final p = profile;
 
     // Same identity signal the builder card shows: the OTP-verified primary
@@ -363,36 +383,23 @@ class _TradeProfile extends ConsumerWidget {
             ],
           ),
           Gap(AppSpacing.md.h),
-          // Availability / verification banner
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md.w,
-              vertical: 12.h,
-            ),
-            decoration: BoxDecoration(
-              color: isVerified ? c.verifiedBg : c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card.r),
-              border: Border.all(color: isVerified ? c.verified : c.border),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isVerified ? AppIcons.verified : AppIcons.successCircle,
-                  size: AppIconSize.md.r,
-                  color: isVerified ? c.verified : c.text3,
-                ),
-                Gap(10.w),
-                Text(
-                  isVerified ? 'Verified tradie' : 'Available for work',
-                  style: tt.bodyLarge!.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isVerified ? c.verifiedTx : c.text2,
-                  ),
-                ),
-              ],
-            ),
+          // Availability (real, from the profile) split from the verified
+          // signal — see ProfileAvailabilityBanner.
+          ProfileAvailabilityBanner(profile: p, isVerified: isVerified),
+          Gap(AppSpacing.md.h),
+          // Own profile: always shown with an Add prompt when empty.
+          ProfileAboutSection(
+            about: p?.about,
+            label: 'ABOUT',
+            addPrompt: 'Add a short bio so builders know you',
           ),
-          Gap(12.h),
+          Gap(AppSpacing.md.h),
+          const FieldLabel('PORTFOLIO'),
+          Gap(AppSpacing.sm.h),
+          // Editable on the owner's own profile — the strip's ADD tile is the
+          // empty-state affordance. (Public/applicant views pass readOnly:true.)
+          const PortfolioStrip(),
+          Gap(AppSpacing.md.h),
           JCard(
             title: 'TRADE DETAILS',
             children: [
@@ -423,6 +430,13 @@ class _TradeProfile extends ConsumerWidget {
               ),
             ],
           ),
+          if (p?.id != null) ...[
+            Gap(AppSpacing.md.h),
+            ProfileReviewsPreview(
+              userId: p!.id,
+              emptyMessage: 'No reviews yet — complete a job to earn one.',
+            ),
+          ],
           Gap(12.h),
           if (p?.id != null)
             VerificationReceipts(

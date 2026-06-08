@@ -32,6 +32,17 @@ final submitReviewUseCaseProvider = Provider(
   (ref) => SubmitReview(ref.read(reviewRepositoryProvider)),
 );
 
+// ── Read-only family ──────────────────────────────────────────────────────────
+// Watchable list of reviews ABOUT a given user — for embeddable previews
+// (e.g. the profile reviews block) that shouldn't drive the page-level
+// ReviewsController. autoDispose so each mount re-fetches; failures degrade to
+// an empty list so the host surface just hides its reviews section.
+final reviewsForUserProvider = FutureProvider.autoDispose
+    .family<List<Review>, String>((ref, userId) async {
+      final res = await ref.read(getReviewsForUserUseCaseProvider).call(userId);
+      return res.fold((_) => const <Review>[], (r) => r);
+    });
+
 // ── Controller ────────────────────────────────────────────────────────────────
 final reviewsControllerProvider =
     NotifierProvider<ReviewsController, ReviewsState>(ReviewsController.new);
