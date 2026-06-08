@@ -15,6 +15,9 @@ import '../../../messaging/presentation/pages/message_thread_page.dart';
 import '../../../messaging/presentation/providers/messaging_provider.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/widgets/portfolio_strip.dart';
+import '../../../profile/presentation/widgets/profile_rating_block.dart';
+import '../../../profile/presentation/widgets/profile_reviews_preview.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../domain/entities/job_application.dart';
@@ -201,6 +204,30 @@ class ApplicantDetailPage extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      // S15: the persuasive evidence — work photos + reviews —
+                      // brought onto the builder's hire-decision screen.
+                      if (profile != null &&
+                          profile.portfolioUrls.isNotEmpty) ...[
+                        Gap(AppSpacing.lg.h),
+                        const FieldLabel('PORTFOLIO'),
+                        Gap(AppSpacing.sm.h),
+                        PortfolioStrip(
+                          urls: profile.portfolioUrls,
+                          readOnly: true,
+                        ),
+                      ],
+                      if (profile != null && profile.ratingCount > 0) ...[
+                        Gap(AppSpacing.lg.h),
+                        ProfileRatingBlock(
+                          average: profile.averageRating,
+                          count: profile.ratingCount,
+                        ),
+                        Gap(AppSpacing.sm.h),
+                        ProfileReviewsPreview(
+                          userId: app.tradeId,
+                          emptyMessage: 'No reviews yet.',
+                        ),
+                      ],
                     ],
                   ),
                 ),

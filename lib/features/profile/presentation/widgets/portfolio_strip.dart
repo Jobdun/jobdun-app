@@ -20,12 +20,17 @@ import '../providers/profile_provider.dart';
 // (4:3 crop + JPEG compression) so the bucket never receives raw camera
 // originals.
 class PortfolioStrip extends ConsumerWidget {
-  const PortfolioStrip({super.key, this.readOnly = false});
+  const PortfolioStrip({super.key, this.readOnly = false, this.urls});
 
   /// When true (profile view / future public profile), the strip is a pure
   /// showcase: no ADD tile, no long-press remove — tap still opens the
   /// zoomable gallery. Editing stays on `/profile/edit` (default `false`).
   final bool readOnly;
+
+  /// Explicit image list to show instead of the signed-in owner's portfolio —
+  /// lets the strip render another tradie's work (applicant detail, public
+  /// profile). When set, the strip is always a read-only showcase.
+  final List<String>? urls;
 
   static const _maxImages = 12;
 
@@ -116,35 +121,40 @@ class PortfolioStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final urls = ref.watch(
-      profileControllerProvider.select(
-        (s) => s.tradeProfile?.portfolioUrls ?? const <String>[],
-      ),
-    );
+    final List<String> imageUrls =
+        urls ??
+        ref.watch(
+          profileControllerProvider.select(
+            (s) => s.tradeProfile?.portfolioUrls ?? const <String>[],
+          ),
+        );
     final isUploading = ref.watch(
       profileControllerProvider.select((s) => s.isUploadingPortfolio),
     );
 
-    final canAdd = !readOnly && urls.length < _maxImages;
+    // Explicit [urls] (another tradie's portfolio) is always a read-only show.
+    final canAdd = !readOnly && urls == null && imageUrls.length < _maxImages;
 
     return SizedBox(
       height: 88.h,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: urls.length + (canAdd ? 1 : 0),
+        itemCount: imageUrls.length + (canAdd ? 1 : 0),
         separatorBuilder: (_, _) => Gap(8.w),
         itemBuilder: (ctx, i) {
-          if (canAdd && i == urls.length) {
+          if (canAdd && i == imageUrls.length) {
             return _AddTile(
               isLoading: isUploading,
               onTap: isUploading ? null : () => _pickAndUpload(ctx, ref),
             );
           }
-          final url = urls[i];
+          final url = imageUrls[i];
           return _PortfolioTile(
             url: url,
-            onTap: () => _openGallery(ctx, urls, i),
-            onLongPress: readOnly ? null : () => _confirmRemove(ctx, ref, url),
+            onTap: () => _openGallery(ctx, imageUrls, i),
+            onLongPress: (readOnly || urls != null)
+                ? null
+                : () => _confirmRemove(ctx, ref, url),
           );
         },
       ),
