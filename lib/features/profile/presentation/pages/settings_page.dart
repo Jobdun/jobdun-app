@@ -86,6 +86,7 @@ class SettingsPage extends ConsumerWidget {
                         _ActionRow(
                           icon: AppIcons.notification,
                           label: 'Notifications',
+                          onTap: () => context.push('/settings/notifications'),
                         ),
                         _ActionRow(
                           icon: AppIcons.policy,
