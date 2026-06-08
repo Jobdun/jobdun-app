@@ -28,6 +28,7 @@ import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_about_section.dart';
 import '../widgets/profile_availability_banner.dart';
 import '../widgets/profile_incomplete_banner.dart';
+import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
 
 part 'profile_page_sections.dart';

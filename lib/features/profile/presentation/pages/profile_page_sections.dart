@@ -452,6 +452,18 @@ class _TradeProfile extends ConsumerWidget {
                 value: location,
               ),
               _InfoRow(
+                icon: AppIcons.map,
+                label: 'Service area',
+                value: '${p?.serviceRadiusKm ?? 50} km radius',
+              ),
+              _InfoRow(
+                icon: AppIcons.user,
+                label: 'Crew',
+                value: (p?.crewSize ?? 1) <= 1
+                    ? 'Solo operator'
+                    : 'Crew of ${p!.crewSize}',
+              ),
+              _InfoRow(
                 icon: AppIcons.budget,
                 label: 'Hourly rate',
                 value: _formatHourlyRate(p),
@@ -469,8 +481,13 @@ class _TradeProfile extends ConsumerWidget {
           ),
           if (p?.id != null) ...[
             Gap(AppSpacing.md.h),
+            ProfileRatingBlock(
+              average: p!.averageRating,
+              count: p.ratingCount,
+            ),
+            if (p.ratingCount > 0) Gap(AppSpacing.sm.h),
             ProfileReviewsPreview(
-              userId: p!.id,
+              userId: p.id,
               emptyMessage: 'No reviews yet — complete a job to earn one.',
             ),
           ],
