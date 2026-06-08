@@ -27,6 +27,10 @@ abstract interface class MessageRemoteDataSource {
     required String body,
     required String clientTag,
   });
+
+  /// Soft-delete (unsend) a message — sets `deleted_at`. RLS limits this to the
+  /// sender's own messages.
+  Future<void> softDeleteMessage(String messageId);
   Future<void> markConversationRead({
     required String conversationId,
     required String userId,
@@ -99,11 +103,12 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
     DateTime? before,
   }) async {
     try {
+      // Deleted rows are intentionally NOT filtered out — they render as a
+      // "message deleted" tombstone (Phase C). RLS still scopes to participants.
       final base = _client
           .from('messages')
           .select()
-          .eq('conversation_id', conversationId)
-          .isFilter('deleted_at', null);
+          .eq('conversation_id', conversationId);
 
       // One-shot path: whole thread, oldest-first.
       if (limit == null) {
@@ -153,6 +158,19 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
             onConflict: 'conversation_id,client_tag',
             ignoreDuplicates: true,
           );
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> softDeleteMessage(String messageId) async {
+    try {
+      // RLS (messages_modify_own) restricts this to the sender's own rows.
+      await _client
+          .from('messages')
+          .update({'deleted_at': DateTime.now().toIso8601String()})
+          .eq('id', messageId);
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -233,13 +251,10 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
         .eq('conversation_id', conversationId)
         .order('created_at', ascending: false)
         .limit(tailLimit)
+        // Deleted rows stay in the stream so an unsend echoes live as a
+        // tombstone; the UI renders the tombstone from MessageModel.isDeleted.
         .map(
-          (rows) => rows
-              .where((r) => r['deleted_at'] == null)
-              .map(MessageModel.fromJson)
-              .toList()
-              .reversed
-              .toList(),
+          (rows) => rows.map(MessageModel.fromJson).toList().reversed.toList(),
         );
   }
 

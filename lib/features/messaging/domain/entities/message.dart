@@ -28,7 +28,33 @@ class Message extends Equatable {
 
   bool get isRead => readAt != null;
   bool get isDeleted => deletedAt != null;
+  bool get isEdited => editedAt != null;
+
+  Message copyWith({
+    String? body,
+    DateTime? readAt,
+    DateTime? deletedAt,
+    DateTime? editedAt,
+  }) => Message(
+    id: id,
+    conversationId: conversationId,
+    senderId: senderId,
+    body: body ?? this.body,
+    createdAt: createdAt,
+    readAt: readAt ?? this.readAt,
+    deletedAt: deletedAt ?? this.deletedAt,
+    editedAt: editedAt ?? this.editedAt,
+    clientTag: clientTag,
+  );
 
   @override
-  List<Object?> get props => [id, conversationId, senderId, createdAt];
+  List<Object?> get props => [
+    id,
+    conversationId,
+    senderId,
+    createdAt,
+    body,
+    deletedAt,
+    editedAt,
+  ];
 }

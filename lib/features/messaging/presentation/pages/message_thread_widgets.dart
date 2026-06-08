@@ -15,6 +15,7 @@ class _MessageBubble extends StatelessWidget {
     required this.showSeenAvatar,
     this.imageUrl,
     this.onRetry,
+    this.onLongPress,
   });
 
   final ThreadEntry entry;
@@ -34,6 +35,8 @@ class _MessageBubble extends StatelessWidget {
   final bool showSeenAvatar;
   // Re-dispatch handler when this is a failed outbound message.
   final VoidCallback? onRetry;
+  // Hold-to-open the actions sheet. Null for pending/deleted bubbles.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +45,12 @@ class _MessageBubble extends StatelessWidget {
     final round = Radius.circular(16.r);
     final tight = Radius.circular(5.r);
     final isFailed = entry.status == MessageStatus.failed;
+    final isDeleted = entry.isDeleted;
     // Dim my own bubble while the insert is still in flight.
     final mineColor = entry.status == MessageStatus.sending
         ? c.action.withValues(alpha: 0.6)
         : c.action;
+    final bubbleColor = isDeleted ? c.surface : (isMine ? mineColor : c.card);
 
     return Padding(
       padding: EdgeInsets.only(bottom: lastInGroup ? 10.h : 2.h),
@@ -73,61 +78,93 @@ class _MessageBubble extends StatelessWidget {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 10.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isMine ? mineColor : c.card,
-                    borderRadius: BorderRadius.only(
-                      topLeft: isMine || !groupedWithPrev ? round : tight,
-                      topRight: !isMine || !groupedWithPrev ? round : tight,
-                      bottomLeft: isMine || lastInGroup ? round : tight,
-                      bottomRight: !isMine || lastInGroup ? round : tight,
+                GestureDetector(
+                  onLongPress: onLongPress,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 10.h,
                     ),
-                    border: isMine ? null : Border.all(color: c.border),
-                  ),
-                  child: Text(
-                    entry.body,
-                    style: tt.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.w400,
-                      color: isMine
-                          ? Colors
-                                .white // intentional
-                          : c.text1,
-                      height: 1.45,
+                    decoration: BoxDecoration(
+                      color: bubbleColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: isMine || !groupedWithPrev ? round : tight,
+                        topRight: !isMine || !groupedWithPrev ? round : tight,
+                        bottomLeft: isMine || lastInGroup ? round : tight,
+                        bottomRight: !isMine || lastInGroup ? round : tight,
+                      ),
+                      border: (isMine && !isDeleted)
+                          ? null
+                          : Border.all(color: c.border),
                     ),
+                    child: isDeleted
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(AppIcons.trash, size: 14.r, color: c.text3),
+                              Gap(6.w),
+                              Text(
+                                'Message deleted',
+                                style: tt.bodyMedium!.copyWith(
+                                  color: c.text3,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            entry.body,
+                            style: tt.bodyLarge!.copyWith(
+                              fontWeight: FontWeight.w400,
+                              color: isMine
+                                  ? Colors
+                                        .white // intentional
+                                  : c.text1,
+                              height: 1.45,
+                            ),
+                          ),
                   ),
                 ),
-                // Failed (mine) → retry line; otherwise timestamp, plus a status
-                // tick on my own last-in-group message.
-                if (isMine && isFailed)
-                  _RetryLine(onRetry: onRetry)
-                else if (lastInGroup) ...[
-                  Gap(4.h),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _fmtTime(entry.createdAt),
-                        style: tt.labelSmall!.copyWith(color: c.text3),
-                      ),
-                      if (isMine) ...[
-                        Gap(4.w),
-                        _StatusTick(status: entry.status),
+                if (!isDeleted) ...[
+                  // Failed (mine) → retry line; otherwise timestamp (+ "edited"
+                  // marker) plus a status tick on my last-in-group message.
+                  if (isMine && isFailed)
+                    _RetryLine(onRetry: onRetry)
+                  else if (lastInGroup) ...[
+                    Gap(4.h),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _fmtTime(entry.createdAt),
+                          style: tt.labelSmall!.copyWith(color: c.text3),
+                        ),
+                        if (entry.isEdited) ...[
+                          Gap(4.w),
+                          Text(
+                            'edited',
+                            style: tt.labelSmall!.copyWith(
+                              color: c.text3,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                        if (isMine) ...[
+                          Gap(4.w),
+                          _StatusTick(status: entry.status),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
-                if (isMine && showSeenAvatar) ...[
-                  Gap(3.h),
-                  AvatarBlock(
-                    initials: initials,
-                    imageUrl: imageUrl,
-                    size: 14,
-                    circle: true,
-                  ),
+                    ),
+                  ],
+                  if (isMine && showSeenAvatar) ...[
+                    Gap(3.h),
+                    AvatarBlock(
+                      initials: initials,
+                      imageUrl: imageUrl,
+                      size: 14,
+                      circle: true,
+                    ),
+                  ],
                 ],
               ],
             ),

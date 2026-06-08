@@ -112,6 +112,47 @@ void main() {
       expect(entries.single.status, isNot(MessageStatus.seen));
     });
 
+    test('a soft-deleted message becomes a tombstone entry', () {
+      final entries = buildThreadEntries(
+        confirmed: [
+          Message(
+            id: 'm1',
+            conversationId: 'c1',
+            senderId: 'me',
+            body: 'secret',
+            createdAt: t1,
+            deletedAt: t1,
+          ),
+        ],
+        outbox: const [],
+        otherLastReadAt: null,
+        me: 'me',
+      );
+
+      expect(entries.single.isDeleted, isTrue);
+      expect(entries.single.messageId, 'm1');
+    });
+
+    test('an edited message is flagged isEdited', () {
+      final entries = buildThreadEntries(
+        confirmed: [
+          Message(
+            id: 'm1',
+            conversationId: 'c1',
+            senderId: 'me',
+            body: 'fixed typo',
+            createdAt: t1,
+            editedAt: t2,
+          ),
+        ],
+        outbox: const [],
+        otherLastReadAt: null,
+        me: 'me',
+      );
+
+      expect(entries.single.isEdited, isTrue);
+    });
+
     test('confirmed rows are deduped by id and ordered oldest→newest', () {
       final entries = buildThreadEntries(
         confirmed: [

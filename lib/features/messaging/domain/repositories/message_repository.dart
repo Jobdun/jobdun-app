@@ -22,6 +22,7 @@ abstract interface class MessageRepository {
     required String body,
     required String clientTag,
   });
+  Future<Either<Failure, void>> softDeleteMessage(String messageId);
   Future<Either<Failure, void>> markConversationRead({
     required String conversationId,
     required String userId,

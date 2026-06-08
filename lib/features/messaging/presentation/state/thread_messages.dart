@@ -59,6 +59,9 @@ class ThreadEntry {
     required this.status,
     required this.isPending,
     this.clientTag,
+    this.messageId,
+    this.isDeleted = false,
+    this.isEdited = false,
   });
 
   /// Stable identity for keys + grouping: the server id, or `pending:<tag>`.
@@ -71,6 +74,13 @@ class ThreadEntry {
   // The outbox idempotency key — set for pending entries so a failed one can be
   // retried. Null for confirmed server messages.
   final String? clientTag;
+  // The server message id — set for confirmed messages (the target for the
+  // long-press actions: unsend/edit/copy). Null for pending entries.
+  final String? messageId;
+  // Soft-deleted → render a "message deleted" tombstone instead of the body.
+  final bool isDeleted;
+  // Edited after sending → show an "edited" marker.
+  final bool isEdited;
 }
 
 /// Merges confirmed server messages with the optimistic outbox into one ordered
@@ -105,11 +115,14 @@ List<ThreadEntry> buildThreadEntries({
     entries.add(
       ThreadEntry(
         key: m.id,
+        messageId: m.id,
         senderId: m.senderId,
         body: m.body,
         createdAt: m.createdAt,
         status: seen ? MessageStatus.seen : MessageStatus.sent,
         isPending: false,
+        isDeleted: m.isDeleted,
+        isEdited: m.isEdited,
       ),
     );
   }

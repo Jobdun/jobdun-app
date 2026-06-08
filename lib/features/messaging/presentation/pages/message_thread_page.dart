@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
@@ -9,6 +10,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/conversation_typing.dart';
@@ -18,6 +20,7 @@ import '../state/thread_messages.dart';
 
 part 'message_thread_widgets.dart';
 part 'message_thread_status.dart';
+part 'message_thread_actions.dart';
 
 // Passed via GoRouter extra when pushing /messages/:conversationId
 class ConversationArgs {
@@ -131,6 +134,37 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     _textCtrl.clear(); // also fires _onTextChanged -> broadcasts "stop"
     await _messaging.sendMessage(conversationId: _conversationId, body: text);
     // The realtime echo re-renders the list; scroll handled by the listener.
+  }
+
+  // Long-press a bubble → action sheet (Copy / Unsend). Reply/React/Edit land
+  // in the next increments.
+  Future<void> _showActions(ThreadEntry entry, bool isMine) async {
+    HapticFeedback.mediumImpact();
+    final action = await showJSheet<_MessageAction>(
+      context: context,
+      builder: (_) => _MessageActionsSheet(isMine: isMine),
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _MessageAction.copy:
+        await Clipboard.setData(ClipboardData(text: entry.body));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Copied'),
+              duration: Duration(milliseconds: 900),
+            ),
+          );
+        }
+      case _MessageAction.unsend:
+        final id = entry.messageId;
+        if (id != null) {
+          await _messaging.unsendMessage(
+            conversationId: _conversationId,
+            messageId: id,
+          );
+        }
+    }
   }
 
   void _scrollToBottom() {
@@ -324,6 +358,11 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                                         conversationId: _conversationId,
                                         clientTag: entry.clientTag!,
                                       ),
+                                // Hold a real (confirmed, non-deleted) bubble to
+                                // open the actions sheet.
+                                onLongPress: entry.isPending || entry.isDeleted
+                                    ? null
+                                    : () => _showActions(entry, isMine),
                               );
                               if (!newDay) return bubble;
                               return Column(

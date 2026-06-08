@@ -260,6 +260,33 @@ class MessagingController extends Notifier<MessagingState>
     );
   }
 
+  /// Unsend (soft-delete) one of my messages. Optimistically swaps the bubble
+  /// for a tombstone, then persists; reverts if the server rejects.
+  Future<void> unsendMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final list = state.messagesFor(conversationId);
+    final idx = list.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return;
+    final original = list[idx];
+
+    final optimistic = [...list];
+    optimistic[idx] = original.copyWith(deletedAt: DateTime.now());
+    _setMessages(conversationId, optimistic);
+
+    final result = await _repo.softDeleteMessage(messageId);
+    result.fold((f) {
+      final cur = state.messagesFor(conversationId);
+      final i = cur.indexWhere((m) => m.id == messageId);
+      if (i != -1) {
+        final reverted = [...cur]..[i] = original;
+        _setMessages(conversationId, reverted);
+      }
+      state = state.copyWith(error: f.message);
+    }, (_) {});
+  }
+
   /// Returns the id of the conversation with the given participants (creating
   /// it if needed), or null on failure. Used by the builder "Message" CTA to
   /// open a thread with an applicant.
@@ -343,6 +370,12 @@ class MessagingController extends Notifier<MessagingState>
     }
 
     state = state.copyWith(messagesByConvId: messages, outboxByConvId: outbox);
+  }
+
+  void _setMessages(String conversationId, List<Message> msgs) {
+    final map = Map<String, List<Message>>.from(state.messagesByConvId)
+      ..[conversationId] = msgs;
+    state = state.copyWith(messagesByConvId: map);
   }
 
   void _addToOutbox(String conversationId, PendingMessage pending) {

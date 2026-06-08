@@ -172,6 +172,37 @@ void main() {
     },
   );
 
+  test(
+    'unsendMessage optimistically tombstones the message + persists',
+    () async {
+      final repo = _MockRepo();
+      stubStreams(repo);
+      when(
+        () => repo.getMessages(
+          any(),
+          limit: any(named: 'limit'),
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer((_) async => right([msg(id: 'm1', createdAt: base)]));
+      when(
+        () => repo.softDeleteMessage(any()),
+      ).thenAnswer((_) async => right(null));
+
+      final container = makeContainer(repo);
+      final ctrl = container.read(messagingControllerProvider.notifier);
+
+      await ctrl.loadMessages('c1');
+      await ctrl.unsendMessage(conversationId: 'c1', messageId: 'm1');
+
+      final entry = container
+          .read(messagingControllerProvider)
+          .entriesFor('c1', 'me')
+          .single;
+      expect(entry.isDeleted, isTrue);
+      verify(() => repo.softDeleteMessage('m1')).called(1);
+    },
+  );
+
   test('Seen lights up when the counterparty read marker arrives', () async {
     final repo = _MockRepo();
     when(

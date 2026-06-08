@@ -81,6 +81,16 @@ class MessageRepositoryImpl implements MessageRepository {
   }
 
   @override
+  Future<Either<Failure, void>> softDeleteMessage(String messageId) async {
+    try {
+      await _datasource.softDeleteMessage(messageId);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> markConversationRead({
     required String conversationId,
     required String userId,
