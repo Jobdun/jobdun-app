@@ -32,6 +32,7 @@ import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
 
 part 'profile_page_sections.dart';
+part 'profile_page_trade.dart';
 part 'profile_page_rows.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
