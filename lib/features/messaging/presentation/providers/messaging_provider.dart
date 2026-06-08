@@ -44,9 +44,8 @@ final messageRepositoryProvider = Provider<MessageRepository>(
 );
 
 // ── Use cases ─────────────────────────────────────────────────────────────────
-// archive / markConversationRead / watchConversation don't have use cases yet —
-// they hit the repo directly until one is added. See CLAUDE.md → Engineering
-// Standards (documented exception, same as the auth services pattern).
+// archive / markConversationRead / watchConversation hit the repo directly (no
+// use case yet) — documented exception, like the auth services pattern.
 final getConversationsUseCaseProvider = Provider(
   (ref) => GetConversations(ref.read(messageRepositoryProvider)),
 );
@@ -107,9 +106,8 @@ class MessagingController extends Notifier<MessagingState>
     _startConversationsStream(userId);
   }
 
-  // Fetches the inbox via get_inbox(), which resolves the counterparty's
-  // display name + the viewer's unread count server-side. The raw realtime
-  // stream can't do that join, so we never use its rows directly.
+  // Inbox via get_inbox() (counterparty + unread resolved server-side); the raw
+  // realtime stream can't do that join, so we never use its rows directly.
   Future<void> _refreshInbox(String userId) async {
     final result = await ref.read(getConversationsUseCaseProvider).call(userId);
     result.fold(
@@ -123,9 +121,8 @@ class MessagingController extends Notifier<MessagingState>
 
   void _startConversationsStream(String userId) {
     _conversationsSub?.cancel();
-    // The stream only signals "a conversation changed" (new message, unread,
-    // archive). Re-fetch through get_inbox so names/unread stay resolved —
-    // using the stream's raw rows here is what showed "Unknown".
+    // The stream only signals "a conversation changed"; re-fetch through
+    // get_inbox so names/unread stay resolved (raw rows showed "Unknown").
     _conversationsSub = _repo
         .watchConversations(userId)
         .listen(
@@ -134,8 +131,8 @@ class MessagingController extends Notifier<MessagingState>
         );
   }
 
-  /// Loads the most-recent history page, opens the live tail, and starts
-  /// watching the conversation row for the counterparty's read marker (Seen).
+  /// Loads the latest history page, opens the live tail + reaction stream, and
+  /// watches the conversation row for the counterparty's read marker (Seen).
   Future<void> loadMessages(String conversationId) async {
     final result = await ref
         .read(getMessagesUseCaseProvider)
@@ -210,9 +207,8 @@ class MessagingController extends Notifier<MessagingState>
     _reactionSubs.remove(conversationId)?.cancel();
   }
 
-  /// Optimistic send: shows an instant local bubble, inserts with a client_tag,
-  /// then lets the realtime echo (matched by client_tag) confirm it. On
-  /// failure/timeout the bubble flips to a retryable failed state.
+  /// Optimistic send: instant local bubble, insert with a client_tag, then the
+  /// realtime echo confirms it (or it flips to a retryable failed state).
   Future<void> sendMessage({
     required String conversationId,
     required String body,
@@ -238,8 +234,7 @@ class MessagingController extends Notifier<MessagingState>
     await _dispatch(pending);
   }
 
-  /// Re-sends a previously failed outbox message with the same client_tag, so a
-  /// duplicate insert is a server-side no-op (idempotent upsert).
+  /// Re-sends a failed outbox message with the same client_tag (idempotent).
   Future<void> retryMessage({
     required String conversationId,
     required String clientTag,
@@ -248,9 +243,13 @@ class MessagingController extends Notifier<MessagingState>
         .outboxFor(conversationId)
         .where((p) => p.clientTag == clientTag);
     if (matches.isEmpty) return;
-    final pending = matches.first;
+    final reset = matches.first.copyWith(failed: false);
     _updateOutbox(conversationId, clientTag, failed: false);
-    await _dispatch(pending.copyWith(failed: false));
+    if (reset.isImage && reset.localImagePath != null) {
+      await _dispatchImage(reset, File(reset.localImagePath!), null, null);
+    } else {
+      await _dispatch(reset);
+    }
   }
 
   Future<void> _dispatch(PendingMessage pending) async {
@@ -279,8 +278,7 @@ class MessagingController extends Notifier<MessagingState>
     );
   }
 
-  /// Upload + send an image message. The realtime echo renders the image once
-  /// the upload + insert complete (no optimistic preview in v1).
+  /// Optimistic image send: instant local preview, upload, echo swaps in (or fails).
   Future<void> sendImage({
     required String conversationId,
     required File file,
@@ -290,20 +288,53 @@ class MessagingController extends Notifier<MessagingState>
   }) async {
     final senderId = readCurrentUserId(ref);
     if (senderId == null) return;
-    final result = await _repo.sendImageMessage(
+    final pending = PendingMessage(
+      clientTag: uuidV4(),
       conversationId: conversationId,
       senderId: senderId,
-      clientTag: uuidV4(),
-      file: file,
+      body: '',
+      createdAt: DateTime.now(),
+      localImagePath: file.path,
       mime: mime,
-      width: width,
-      height: height,
     );
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
+    _addToOutbox(conversationId, pending);
+    await _dispatchImage(pending, file, width, height);
   }
 
-  /// Unsend (soft-delete) one of my messages. Optimistically swaps the bubble
-  /// for a tombstone, then persists; reverts if the server rejects.
+  Future<void> _dispatchImage(
+    PendingMessage pending,
+    File file,
+    int? width,
+    int? height,
+  ) async {
+    Either<Failure, void> result;
+    try {
+      result = await _repo
+          .sendImageMessage(
+            conversationId: pending.conversationId,
+            senderId: pending.senderId,
+            clientTag: pending.clientTag,
+            file: file,
+            mime: pending.mime!,
+            width: width,
+            height: height,
+          )
+          .timeout(const Duration(seconds: 45));
+    } on TimeoutException {
+      result = left(ServerFailure('Upload timed out'));
+    }
+    result.fold(
+      (_) => _updateOutbox(
+        pending.conversationId,
+        pending.clientTag,
+        failed: true,
+      ),
+      (_) {},
+    );
+  }
+
+  /// Unsend (soft-delete) one of my messages. Optimistic tombstone, reverts on
+  /// server rejection.
   Future<void> unsendMessage({
     required String conversationId,
     required String messageId,
@@ -357,12 +388,9 @@ class MessagingController extends Notifier<MessagingState>
     );
   }
 
-  /// Archive a conversation for the current viewer. Builders set
-  /// `builder_archived_at`; tradies set `trade_archived_at`. The other
-  /// participant still sees the thread until they archive their side
-  /// independently. Optimistically removes the row from the in-memory list
-  /// so the swipe-confirm feels instant; the realtime watch reconciles if
-  /// the server later disagrees.
+  /// Archive a conversation for the current viewer (per-side `*_archived_at`;
+  /// the other party still sees it until they archive too). Optimistically
+  /// drops it from the list; the realtime watch reconciles.
   Future<void> archiveConversation(String conversationId) async {
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     final remaining = state.conversations
@@ -381,9 +409,8 @@ class MessagingController extends Notifier<MessagingState>
 
   // ── State mutation helpers ──────────────────────────────────────────────────
 
-  /// Unions [incoming] server rows into the conversation's confirmed list
-  /// (dedup by id, sorted oldest→newest) and prunes any outbox twins whose
-  /// client_tag has now echoed back.
+  /// Unions [incoming] server rows into the confirmed list (dedup by id, sorted
+  /// oldest→newest) and prunes outbox twins whose client_tag has echoed back.
   void _mergeConfirmed(String conversationId, List<Message> incoming) {
     final byId = <String, Message>{
       for (final m in state.messagesFor(conversationId)) m.id: m,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,8 @@ import 'package:jobdun/features/messaging/presentation/state/thread_messages.dar
 class _MockRepo extends Mock implements MessageRepository {}
 
 void main() {
+  setUpAll(() => registerFallbackValue(File('fallback')));
+
   final base = DateTime(2026, 6, 8, 10);
 
   Message msg({
@@ -248,6 +251,50 @@ void main() {
         conversationId: 'c1',
         userId: 'me',
         emoji: '❤️',
+      ),
+    ).called(1);
+  });
+
+  test('sendImage shows an instant uploading preview + uploads', () async {
+    final repo = _MockRepo();
+    stubStreams(repo);
+    when(
+      () => repo.sendImageMessage(
+        conversationId: any(named: 'conversationId'),
+        senderId: any(named: 'senderId'),
+        clientTag: any(named: 'clientTag'),
+        file: any(named: 'file'),
+        mime: any(named: 'mime'),
+        width: any(named: 'width'),
+        height: any(named: 'height'),
+      ),
+    ).thenAnswer((_) async => right(null));
+
+    final tmp = File(
+      '${Directory.systemTemp.path}/msg_test_${DateTime.now().microsecondsSinceEpoch}.jpg',
+    )..writeAsBytesSync([1, 2, 3]);
+    addTearDown(() {
+      if (tmp.existsSync()) tmp.deleteSync();
+    });
+
+    final container = makeContainer(repo);
+    final ctrl = container.read(messagingControllerProvider.notifier);
+    await ctrl.sendImage(conversationId: 'c1', file: tmp, mime: 'image/jpeg');
+
+    final entry = container
+        .read(messagingControllerProvider)
+        .entriesFor('c1', 'me')
+        .single;
+    expect(entry.hasLocalImage, isTrue);
+    verify(
+      () => repo.sendImageMessage(
+        conversationId: 'c1',
+        senderId: 'me',
+        clientTag: any(named: 'clientTag'),
+        file: any(named: 'file'),
+        mime: 'image/jpeg',
+        width: any(named: 'width'),
+        height: any(named: 'height'),
       ),
     ).called(1);
   });

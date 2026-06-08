@@ -52,6 +52,29 @@ void main() {
       expect(entries.single.clientTag, 'tag-1');
     });
 
+    test('an uploading image renders as a local-image, sending entry', () {
+      final entries = buildThreadEntries(
+        confirmed: const [],
+        outbox: [
+          PendingMessage(
+            clientTag: 'tag-1',
+            conversationId: 'c1',
+            senderId: 'me',
+            body: '',
+            createdAt: t1,
+            localImagePath: '/tmp/site.jpg',
+            mime: 'image/jpeg',
+          ),
+        ],
+        otherLastReadAt: null,
+        me: 'me',
+      );
+
+      expect(entries.single.hasLocalImage, isTrue);
+      expect(entries.single.localImagePath, '/tmp/site.jpg');
+      expect(entries.single.status, MessageStatus.sending);
+    });
+
     test('a failed outbox message renders as failed', () {
       final entries = buildThreadEntries(
         confirmed: const [],

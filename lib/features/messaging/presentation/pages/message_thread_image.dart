@@ -52,6 +52,76 @@ class _ChatImage extends ConsumerWidget {
   }
 }
 
+// An optimistic image bubble: the on-device file with an uploading spinner (or a
+// tap-to-retry overlay if the upload failed) while it's still in the outbox.
+class _PendingChatImage extends StatelessWidget {
+  const _PendingChatImage({
+    required this.localPath,
+    required this.failed,
+    this.onRetry,
+  });
+
+  final String localPath;
+  final bool failed;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14.r),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 240.w),
+        child: AspectRatio(
+          aspectRatio: 1.3,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.file(File(localPath), fit: BoxFit.cover),
+              ColoredBox(color: Colors.black.withValues(alpha: 0.4)),
+              Center(
+                child: failed
+                    ? GestureDetector(
+                        onTap: onRetry,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.refresh,
+                              color: Colors.white, // intentional
+                              size: 28.r,
+                            ),
+                            Gap(4.h),
+                            Text(
+                              'Tap to retry',
+                              style: tt.labelSmall!.copyWith(
+                                color: Colors.white, // intentional
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        width: 26.r,
+                        height: 26.r,
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white, // intentional
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ImageError extends StatelessWidget {
   const _ImageError();
 

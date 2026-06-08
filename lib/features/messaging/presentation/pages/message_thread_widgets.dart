@@ -80,7 +80,13 @@ class _MessageBubble extends StatelessWidget {
               children: [
                 GestureDetector(
                   onLongPress: onLongPress,
-                  child: entry.hasImage && !isDeleted
+                  child: entry.hasLocalImage && !isDeleted
+                      ? _PendingChatImage(
+                          localPath: entry.localImagePath!,
+                          failed: entry.status == MessageStatus.failed,
+                          onRetry: onRetry,
+                        )
+                      : entry.hasImage && !isDeleted
                       ? _ChatImage(
                           path: entry.attachmentPath!,
                           width: entry.attachmentW,
@@ -144,7 +150,9 @@ class _MessageBubble extends StatelessWidget {
                 if (!isDeleted) ...[
                   // Failed (mine) → retry line; otherwise timestamp (+ "edited"
                   // marker) plus a status tick on my last-in-group message.
-                  if (isMine && isFailed)
+                  // Image uploads carry their own retry overlay, so skip the
+                  // text retry line for them.
+                  if (isMine && isFailed && !entry.hasLocalImage)
                     _RetryLine(onRetry: onRetry)
                   else if (lastInGroup) ...[
                     Gap(4.h),

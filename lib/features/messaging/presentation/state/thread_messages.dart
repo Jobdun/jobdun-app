@@ -46,6 +46,8 @@ class PendingMessage {
     required this.body,
     required this.createdAt,
     this.failed = false,
+    this.localImagePath,
+    this.mime,
   });
 
   final String clientTag;
@@ -54,6 +56,12 @@ class PendingMessage {
   final String body;
   final DateTime createdAt;
   final bool failed;
+  // Set for an optimistic image send: the on-device file path to preview while
+  // the upload is in flight, plus its mime for the upload.
+  final String? localImagePath;
+  final String? mime;
+
+  bool get isImage => localImagePath != null;
 
   PendingMessage copyWith({bool? failed}) => PendingMessage(
     clientTag: clientTag,
@@ -62,6 +70,8 @@ class PendingMessage {
     body: body,
     createdAt: createdAt,
     failed: failed ?? this.failed,
+    localImagePath: localImagePath,
+    mime: mime,
   );
 }
 
@@ -85,6 +95,7 @@ class ThreadEntry {
     this.attachmentMime,
     this.attachmentW,
     this.attachmentH,
+    this.localImagePath,
   });
 
   /// Stable identity for keys + grouping: the server id, or `pending:<tag>`.
@@ -111,9 +122,12 @@ class ThreadEntry {
   final String? attachmentMime;
   final int? attachmentW;
   final int? attachmentH;
+  // On-device path for an optimistic image still uploading. Null once confirmed.
+  final String? localImagePath;
 
   bool get hasImage =>
       attachmentPath != null && (attachmentMime?.startsWith('image/') ?? false);
+  bool get hasLocalImage => localImagePath != null;
 }
 
 /// Merges confirmed server messages with the optimistic outbox into one ordered
@@ -198,6 +212,7 @@ List<ThreadEntry> buildThreadEntries({
         status: p.failed ? MessageStatus.failed : MessageStatus.sending,
         isPending: true,
         clientTag: p.clientTag,
+        localImagePath: p.localImagePath,
       ),
     );
   }
