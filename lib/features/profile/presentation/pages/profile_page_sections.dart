@@ -2,8 +2,8 @@ part of 'profile_page.dart';
 
 // Profile header + role-specific (builder / trade) body sections, split into a
 // `part` so `profile_page.dart` stays under the file-size budget. They lean on
-// _InfoRow and the format helpers in profile_page_settings.dart — same library,
-// so the cross-part references resolve. No behaviour change.
+// _InfoRow and the format helpers in profile_page_rows.dart — same library, so
+// the cross-part references resolve.
 
 // ── Profile Header ─────────────────────────────────────────────────────────────
 
@@ -13,6 +13,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.displayName,
     required this.email,
     required this.role,
+    required this.isVerified,
     this.avatarUrl,
     this.isUploadingAvatar = false,
   });
@@ -21,6 +22,7 @@ class _ProfileHeader extends StatelessWidget {
   final String displayName;
   final String email;
   final UserRole? role;
+  final bool isVerified;
   final String? avatarUrl;
   final bool isUploadingAvatar;
 
@@ -39,37 +41,54 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Stack(
-            children: [
-              avatarUrl != null
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: avatarUrl!,
-                        width: 72.r,
-                        height: 72.r,
-                        fit: BoxFit.cover,
-                        placeholder: (_, _) =>
-                            AvatarBlock(initials: initials, size: 72),
-                        errorWidget: (_, _, _) =>
-                            AvatarBlock(initials: initials, size: 72),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isVerified ? c.action : c.border,
+                width: 2,
+              ),
+            ),
+            child: Stack(
+              children: [
+                avatarUrl != null
+                    ? ClipOval(
+                        child: CachedNetworkImage(
+                          imageUrl: avatarUrl!,
+                          width: 96.r,
+                          height: 96.r,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) => AvatarBlock(
+                            initials: initials,
+                            size: 96,
+                            circle: true,
+                          ),
+                          errorWidget: (_, _, _) => AvatarBlock(
+                            initials: initials,
+                            size: 96,
+                            circle: true,
+                          ),
+                        ),
+                      )
+                    : AvatarBlock(initials: initials, size: 96, circle: true),
+                if (isUploadingAvatar)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.black45,
+                        shape: BoxShape.circle,
                       ),
-                    )
-                  : AvatarBlock(initials: initials, size: 72),
-              if (isUploadingAvatar)
-                Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black45,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(
-                      color: Colors.white, // intentional: white-on-dark-overlay
-                      strokeWidth: 2,
+                      alignment: Alignment.center,
+                      child: const CircularProgressIndicator(
+                        color:
+                            Colors.white, // intentional: white-on-dark-overlay
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
           Gap(AppSpacing.md.w),
           Expanded(
