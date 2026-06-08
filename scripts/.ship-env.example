@@ -1,15 +1,16 @@
-# Copy this file to scripts/.ship-env and fill in the values.
+# Copy this file to scripts/.ship-env and fill in FIREBASE_APP_ID.
 # scripts/.ship-env is gitignored — your keys never get committed.
+#
+# Supabase + all other app keys are read automatically from .env at repo root
+# (the same file `flutter run` uses), so the only thing to set here is the
+# Firebase App ID.
 
-# Supabase creds (same ones you pass to `flutter run --dart-define`).
-# The URL below is the Jobdun mobile project; paste your anon key.
-SUPABASE_URL=https://zethpanvkfyijislxesn.supabase.co
-SUPABASE_ANON_KEY=paste_your_anon_key_here
-
-# Firebase App Distribution app id — from Firebase Console →
-# Project settings → your Android app → "App ID".
-# Looks like: 1:123456789012:android:abc123def456
+# Firebase Android App ID.
+#   Where: Firebase Console -> gear icon (Project settings) -> "Your apps"
+#          -> your Android app -> copy the "App ID".
+#   NOTE: this is NOT the project id. It looks like:
+#          1:123456789012:android:abc123def456
 FIREBASE_APP_ID=paste_your_firebase_android_app_id_here
 
-# Tester group you create in Firebase App Distribution (any name).
+# Tester group you created in App Distribution (default: boss).
 TESTER_GROUP=boss

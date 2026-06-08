@@ -24,16 +24,17 @@ else
   exit 1
 fi
 
-: "${SUPABASE_URL:?Set SUPABASE_URL in scripts/.ship-env}"
-: "${SUPABASE_ANON_KEY:?Set SUPABASE_ANON_KEY in scripts/.ship-env}"
 : "${FIREBASE_APP_ID:?Set FIREBASE_APP_ID in scripts/.ship-env}"
 TESTER_GROUP="${TESTER_GROUP:-boss}"
 RELEASE_NOTES="${1:-New test build}"
 
+# All app keys (Supabase, MapTiler, Sentry, Google sign-in...) come from .env —
+# the same file `flutter run --dart-define-from-file=.env` uses. Single source
+# of truth, so the test build matches the real app and no secrets get duplicated.
+[[ -f .env ]] || { echo "✗ Missing .env at repo root — the app's keys live there." >&2; exit 1; }
+
 echo "▶ Building release APK (this takes a couple of minutes)..."
-flutter build apk --release \
-  --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-  --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+flutter build apk --release --dart-define-from-file=.env
 
 APK="build/app/outputs/flutter-apk/app-release.apk"
 [[ -f "$APK" ]] || { echo "✗ Build did not produce $APK" >&2; exit 1; }
