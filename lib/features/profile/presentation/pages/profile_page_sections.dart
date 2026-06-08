@@ -117,6 +117,24 @@ class _ProfileHeader extends StatelessWidget {
                         ),
                       ),
                     ),
+                    Gap(8.w),
+                    GestureDetector(
+                      onTap: () => context.push('/settings'),
+                      child: Container(
+                        height: 36.h,
+                        width: 36.h,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: c.surfaceRaised,
+                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                        ),
+                        child: Icon(
+                          AppIcons.settings,
+                          size: AppIconSize.inline.r,
+                          color: c.text1,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 Gap(4.h),

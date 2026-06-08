@@ -307,6 +307,9 @@ abstract final class AppIcons {
   /// Dark-mode toggle.
   static const IconData moon = PhosphorIconsBold.moon;
 
+  /// Settings / preferences gear (profile header → /settings).
+  static const IconData settings = PhosphorIconsBold.gearSix;
+
   // ─── Misc / utility ───────────────────────────────────────────────────────
 
   /// Header notification bell.

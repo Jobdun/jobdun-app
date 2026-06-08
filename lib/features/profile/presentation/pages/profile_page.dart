@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,19 +8,15 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/field_label.dart';
-import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/j_offline_banner.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
-import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
@@ -35,7 +30,7 @@ import '../widgets/profile_availability_banner.dart';
 import '../widgets/profile_reviews_preview.dart';
 
 part 'profile_page_sections.dart';
-part 'profile_page_settings.dart';
+part 'profile_page_rows.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -91,27 +86,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: isBuilder
                     ? _BuilderProfile(profile: profileState.builderProfile)
                     : _TradeProfile(profile: profileState.tradeProfile),
-              ),
-            ),
-            SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
-            const SliverToBoxAdapter(child: _SettingsSection()),
-            // Dev-only preview/showcase links, relocated off the home feed so
-            // the real home layout can be evaluated while developing. The
-            // kDebugMode gate strips the whole block from release builds —
-            // exactly as it was gated on /home.
-            if (kDebugMode) ...[
-              SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
-              const SliverToBoxAdapter(child: _DevToolsCard()),
-            ],
-            SliverToBoxAdapter(child: Gap(AppSpacing.lg.h)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                child: JButton(
-                  label: 'SIGN OUT',
-                  variant: JButtonVariant.secondary,
-                  onPressed: () => showLogoutSheet(context, ref),
-                ),
               ),
             ),
             SliverToBoxAdapter(child: Gap(AppSpacing.xl.h)),

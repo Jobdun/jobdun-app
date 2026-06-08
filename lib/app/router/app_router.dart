@@ -34,6 +34,7 @@ import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
 import '../../features/verification/presentation/pages/verification_page.dart';
 import '../../features/verification/presentation/pages/verification_wizard_page.dart';
@@ -389,6 +390,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         builder: (_, _) => const NotificationsPage(),
       ),
+      GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
 
       // ── Legal (public — accessible before auth) ────────────────────────────
       GoRoute(
