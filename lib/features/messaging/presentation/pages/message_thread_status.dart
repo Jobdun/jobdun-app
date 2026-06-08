@@ -5,6 +5,51 @@ part of 'message_thread_page.dart';
 // pager. Split into a `part` so message_thread_page.dart + _widgets stay under
 // the file-size budget. Single-use, co-located with their caller.
 
+// Reaction chips under a bubble — one pill per distinct emoji, highlighted when
+// I'm one of the reactors. Display-only; long-press the bubble to change yours.
+class _ReactionChips extends StatelessWidget {
+  const _ReactionChips({required this.reactions});
+
+  final List<ReactionView> reactions;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Wrap(
+      spacing: 4.w,
+      runSpacing: 3.h,
+      children: [
+        for (final r in reactions)
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+            decoration: BoxDecoration(
+              color: r.mine ? c.action.withValues(alpha: 0.18) : c.surface,
+              borderRadius: BorderRadius.circular(100.r),
+              border: Border.all(color: r.mine ? c.action : c.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(r.emoji, style: const TextStyle(fontSize: 12)),
+                if (r.count > 1) ...[
+                  Gap(3.w),
+                  Text(
+                    '${r.count}',
+                    style: tt.labelSmall!.copyWith(
+                      color: c.text2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 // Tiny status glyph under your own last-in-group message.
 //   sending → clock · sent → single check · seen → orange double-check
 // (the counterparty's mini-avatar is the primary "Seen" signal; the double

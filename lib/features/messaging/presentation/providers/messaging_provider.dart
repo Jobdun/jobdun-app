@@ -13,12 +13,14 @@ import '../../data/datasources/message_remote_datasource.dart';
 import '../../data/repositories/message_repository_impl.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
+import '../../domain/entities/message_reaction.dart';
 import '../../domain/repositories/message_repository.dart';
 import '../../domain/usecases/get_conversations.dart';
 import '../../domain/usecases/get_messages.dart';
 import '../../domain/usecases/get_or_create_conversation.dart';
 import '../../domain/usecases/send_message.dart';
 import '../../domain/usecases/watch_messages.dart';
+import '../state/messaging_state.dart';
 import '../state/thread_messages.dart';
 
 // How many older messages a history page fetches.
@@ -74,6 +76,8 @@ class MessagingController extends Notifier<MessagingState>
   StreamSubscription<List<Conversation>>? _conversationsSub;
   final Map<String, StreamSubscription<List<Message>>> _messageSubs = {};
   final Map<String, StreamSubscription<Conversation>> _convRowSubs = {};
+  final Map<String, StreamSubscription<List<MessageReaction>>> _reactionSubs =
+      {};
   final Set<String> _loadingOlder = {};
 
   @override
@@ -138,6 +142,7 @@ class MessagingController extends Notifier<MessagingState>
       _setHasMore(conversationId, msgs.length >= _pageSize);
       _subscribeToMessages(conversationId);
       _subscribeToConversation(conversationId);
+      _subscribeToReactions(conversationId);
     });
   }
 
@@ -186,9 +191,61 @@ class MessagingController extends Notifier<MessagingState>
         }, onError: (_) {});
   }
 
+  void _subscribeToReactions(String conversationId) {
+    if (_reactionSubs.containsKey(conversationId)) return;
+    _reactionSubs[conversationId] = _repo
+        .watchReactions(conversationId)
+        .listen(
+          (reactions) => _setReactions(conversationId, reactions),
+          onError: (_) {},
+        );
+  }
+
   void unsubscribeMessages(String conversationId) {
     _messageSubs.remove(conversationId)?.cancel();
     _convRowSubs.remove(conversationId)?.cancel();
+    _reactionSubs.remove(conversationId)?.cancel();
+  }
+
+  /// Toggle my reaction on a message: a new emoji replaces my previous one, the
+  /// same emoji removes it. Optimistic; the realtime stream reconciles.
+  Future<void> toggleReaction({
+    required String conversationId,
+    required String messageId,
+    required String emoji,
+  }) async {
+    final me = readCurrentUserId(ref);
+    if (me == null) return;
+    final current = state.reactionsFor(conversationId);
+    final mineNow = current
+        .where((r) => r.messageId == messageId && r.userId == me)
+        .toList();
+    final removing = mineNow.isNotEmpty && mineNow.first.emoji == emoji;
+
+    final optimistic = current
+        .where((r) => !(r.messageId == messageId && r.userId == me))
+        .toList();
+    if (!removing) {
+      optimistic.add(
+        MessageReaction(
+          messageId: messageId,
+          conversationId: conversationId,
+          userId: me,
+          emoji: emoji,
+        ),
+      );
+    }
+    _setReactions(conversationId, optimistic);
+
+    final result = removing
+        ? await _repo.removeReaction(messageId: messageId, userId: me)
+        : await _repo.setReaction(
+            messageId: messageId,
+            conversationId: conversationId,
+            userId: me,
+            emoji: emoji,
+          );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 
   /// Optimistic send: shows an instant local bubble, inserts with a client_tag,
@@ -378,6 +435,12 @@ class MessagingController extends Notifier<MessagingState>
     state = state.copyWith(messagesByConvId: map);
   }
 
+  void _setReactions(String conversationId, List<MessageReaction> reactions) {
+    final map = Map<String, List<MessageReaction>>.from(state.reactionsByConvId)
+      ..[conversationId] = reactions;
+    state = state.copyWith(reactionsByConvId: map);
+  }
+
   void _addToOutbox(String conversationId, PendingMessage pending) {
     final outbox = Map<String, List<PendingMessage>>.from(state.outboxByConvId);
     outbox[conversationId] = [...state.outboxFor(conversationId), pending];
@@ -421,75 +484,11 @@ class MessagingController extends Notifier<MessagingState>
     for (final sub in _convRowSubs.values) {
       sub.cancel();
     }
+    for (final sub in _reactionSubs.values) {
+      sub.cancel();
+    }
     _messageSubs.clear();
     _convRowSubs.clear();
+    _reactionSubs.clear();
   }
-}
-
-class MessagingState {
-  const MessagingState({
-    this.conversations = const [],
-    this.messagesByConvId = const {},
-    this.outboxByConvId = const {},
-    this.otherLastReadByConvId = const {},
-    this.hasMoreByConvId = const {},
-    this.totalUnread = 0,
-    this.isLoading = false,
-    this.error,
-  });
-
-  final List<Conversation> conversations;
-  final Map<String, List<Message>> messagesByConvId;
-  final Map<String, List<PendingMessage>> outboxByConvId;
-  final Map<String, DateTime?> otherLastReadByConvId;
-  final Map<String, bool> hasMoreByConvId;
-  final int totalUnread;
-  final bool isLoading;
-  final String? error;
-
-  List<Message> messagesFor(String conversationId) =>
-      messagesByConvId[conversationId] ?? const [];
-
-  /// True once a history page has been fetched for [conversationId] (even if it
-  /// came back empty) — distinguishes "still loading" from "no messages yet".
-  bool isThreadLoaded(String conversationId) =>
-      messagesByConvId.containsKey(conversationId);
-
-  List<PendingMessage> outboxFor(String conversationId) =>
-      outboxByConvId[conversationId] ?? const [];
-
-  DateTime? otherLastReadFor(String conversationId) =>
-      otherLastReadByConvId[conversationId];
-
-  bool hasMoreFor(String conversationId) =>
-      hasMoreByConvId[conversationId] ?? false;
-
-  /// The merged, status-annotated render list for a conversation.
-  List<ThreadEntry> entriesFor(String conversationId, String? me) =>
-      buildThreadEntries(
-        confirmed: messagesFor(conversationId),
-        outbox: outboxFor(conversationId),
-        otherLastReadAt: otherLastReadFor(conversationId),
-        me: me,
-      );
-
-  MessagingState copyWith({
-    List<Conversation>? conversations,
-    Map<String, List<Message>>? messagesByConvId,
-    Map<String, List<PendingMessage>>? outboxByConvId,
-    Map<String, DateTime?>? otherLastReadByConvId,
-    Map<String, bool>? hasMoreByConvId,
-    int? totalUnread,
-    bool? isLoading,
-    String? error,
-  }) => MessagingState(
-    conversations: conversations ?? this.conversations,
-    messagesByConvId: messagesByConvId ?? this.messagesByConvId,
-    outboxByConvId: outboxByConvId ?? this.outboxByConvId,
-    otherLastReadByConvId: otherLastReadByConvId ?? this.otherLastReadByConvId,
-    hasMoreByConvId: hasMoreByConvId ?? this.hasMoreByConvId,
-    totalUnread: totalUnread ?? this.totalUnread,
-    isLoading: isLoading ?? this.isLoading,
-    error: error,
-  );
 }

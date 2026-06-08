@@ -4,6 +4,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
+import '../../domain/entities/message_reaction.dart';
 import '../../domain/repositories/message_repository.dart';
 import '../datasources/message_remote_datasource.dart';
 
@@ -89,6 +90,43 @@ class MessageRepositoryImpl implements MessageRepository {
       return left(ServerFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> setReaction({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+    required String emoji,
+  }) async {
+    try {
+      await _datasource.setReaction(
+        messageId: messageId,
+        conversationId: conversationId,
+        userId: userId,
+        emoji: emoji,
+      );
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> removeReaction({
+    required String messageId,
+    required String userId,
+  }) async {
+    try {
+      await _datasource.removeReaction(messageId: messageId, userId: userId);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Stream<List<MessageReaction>> watchReactions(String conversationId) =>
+      _datasource.watchReactions(conversationId);
 
   @override
   Future<Either<Failure, void>> markConversationRead({

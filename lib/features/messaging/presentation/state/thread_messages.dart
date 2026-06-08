@@ -1,4 +1,22 @@
 import '../../domain/entities/message.dart';
+import '../../domain/entities/message_reaction.dart';
+
+/// The 6 reactions offered in the long-press emoji row (Ken-locked).
+const kReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+/// A reaction summary for one emoji on one message: how many people reacted with
+/// it, and whether I'm one of them (drives the highlighted chip + toggle).
+class ReactionView {
+  const ReactionView({
+    required this.emoji,
+    required this.count,
+    required this.mine,
+  });
+
+  final String emoji;
+  final int count;
+  final bool mine;
+}
 
 /// Render-time status of a message in the thread. NOT a DB column — derived
 /// from where the message lives (outbox vs server) + the counterparty's read
@@ -62,6 +80,7 @@ class ThreadEntry {
     this.messageId,
     this.isDeleted = false,
     this.isEdited = false,
+    this.reactions = const [],
   });
 
   /// Stable identity for keys + grouping: the server id, or `pending:<tag>`.
@@ -81,6 +100,8 @@ class ThreadEntry {
   final bool isDeleted;
   // Edited after sending → show an "edited" marker.
   final bool isEdited;
+  // Reaction chips to render under the bubble (one per distinct emoji).
+  final List<ReactionView> reactions;
 }
 
 /// Merges confirmed server messages with the optimistic outbox into one ordered
@@ -93,7 +114,28 @@ List<ThreadEntry> buildThreadEntries({
   required List<PendingMessage> outbox,
   required DateTime? otherLastReadAt,
   required String? me,
+  List<MessageReaction> reactions = const [],
 }) {
+  // Group reactions by message, collapsing duplicate emojis into a count.
+  final reactionsByMsg = <String, List<MessageReaction>>{};
+  for (final r in reactions) {
+    (reactionsByMsg[r.messageId] ??= []).add(r);
+  }
+  List<ReactionView> reactionViewsFor(String messageId) {
+    final rs = reactionsByMsg[messageId];
+    if (rs == null || rs.isEmpty) return const [];
+    final counts = <String, int>{};
+    final mine = <String>{};
+    for (final r in rs) {
+      counts[r.emoji] = (counts[r.emoji] ?? 0) + 1;
+      if (me != null && r.userId == me) mine.add(r.emoji);
+    }
+    return [
+      for (final e in counts.entries)
+        ReactionView(emoji: e.key, count: e.value, mine: mine.contains(e.key)),
+    ];
+  }
+
   // Dedup confirmed rows by server id (historical page + live tail can overlap).
   final byId = <String, Message>{};
   for (final m in confirmed) {
@@ -123,6 +165,7 @@ List<ThreadEntry> buildThreadEntries({
         isPending: false,
         isDeleted: m.isDeleted,
         isEdited: m.isEdited,
+        reactions: m.isDeleted ? const [] : reactionViewsFor(m.id),
       ),
     );
   }

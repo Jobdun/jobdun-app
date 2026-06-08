@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jobdun/features/messaging/domain/entities/message.dart';
+import 'package:jobdun/features/messaging/domain/entities/message_reaction.dart';
 import 'package:jobdun/features/messaging/presentation/state/thread_messages.dart';
 
 Message _msg({
@@ -131,6 +132,35 @@ void main() {
 
       expect(entries.single.isDeleted, isTrue);
       expect(entries.single.messageId, 'm1');
+    });
+
+    test('reactions are grouped per message with count + mine', () {
+      final entries = buildThreadEntries(
+        confirmed: [_msg(id: 'm1', senderId: 'me', createdAt: t1)],
+        outbox: const [],
+        otherLastReadAt: null,
+        me: 'me',
+        reactions: const [
+          MessageReaction(
+            messageId: 'm1',
+            conversationId: 'c1',
+            userId: 'me',
+            emoji: '❤️',
+          ),
+          MessageReaction(
+            messageId: 'm1',
+            conversationId: 'c1',
+            userId: 'other',
+            emoji: '❤️',
+          ),
+        ],
+      );
+
+      final rx = entries.single.reactions;
+      expect(rx, hasLength(1));
+      expect(rx.single.emoji, '❤️');
+      expect(rx.single.count, 2);
+      expect(rx.single.mine, isTrue);
     });
 
     test('an edited message is flagged isEdited', () {

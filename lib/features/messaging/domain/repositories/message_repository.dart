@@ -3,6 +3,7 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/conversation.dart';
 import '../entities/message.dart';
+import '../entities/message_reaction.dart';
 
 abstract interface class MessageRepository {
   Future<Either<Failure, List<Conversation>>> getConversations(String userId);
@@ -23,6 +24,17 @@ abstract interface class MessageRepository {
     required String clientTag,
   });
   Future<Either<Failure, void>> softDeleteMessage(String messageId);
+  Future<Either<Failure, void>> setReaction({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+    required String emoji,
+  });
+  Future<Either<Failure, void>> removeReaction({
+    required String messageId,
+    required String userId,
+  });
+  Stream<List<MessageReaction>> watchReactions(String conversationId);
   Future<Either<Failure, void>> markConversationRead({
     required String conversationId,
     required String userId,

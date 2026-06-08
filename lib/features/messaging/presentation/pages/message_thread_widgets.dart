@@ -156,6 +156,10 @@ class _MessageBubble extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (entry.reactions.isNotEmpty) ...[
+                    Gap(3.h),
+                    _ReactionChips(reactions: entry.reactions),
+                  ],
                   if (isMine && showSeenAvatar) ...[
                     Gap(3.h),
                     AvatarBlock(

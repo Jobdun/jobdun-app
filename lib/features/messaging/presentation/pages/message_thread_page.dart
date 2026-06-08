@@ -136,16 +136,17 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
     // The realtime echo re-renders the list; scroll handled by the listener.
   }
 
-  // Long-press a bubble → action sheet (Copy / Unsend). Reply/React/Edit land
-  // in the next increments.
+  // Long-press a bubble → Messenger-style action sheet (emoji react row +
+  // Copy / Unsend). Edit lands in the next increment.
   Future<void> _showActions(ThreadEntry entry, bool isMine) async {
     HapticFeedback.mediumImpact();
-    final action = await showJSheet<_MessageAction>(
+    final result = await showJSheet<_SheetResult>(
       context: context,
       builder: (_) => _MessageActionsSheet(isMine: isMine),
     );
-    if (!mounted || action == null) return;
-    switch (action) {
+    if (!mounted || result == null) return;
+    final id = entry.messageId;
+    switch (result.action) {
       case _MessageAction.copy:
         await Clipboard.setData(ClipboardData(text: entry.body));
         if (mounted) {
@@ -157,11 +158,18 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
           );
         }
       case _MessageAction.unsend:
-        final id = entry.messageId;
         if (id != null) {
           await _messaging.unsendMessage(
             conversationId: _conversationId,
             messageId: id,
+          );
+        }
+      case _MessageAction.react:
+        if (id != null && result.emoji != null) {
+          await _messaging.toggleReaction(
+            conversationId: _conversationId,
+            messageId: id,
+            emoji: result.emoji!,
           );
         }
     }

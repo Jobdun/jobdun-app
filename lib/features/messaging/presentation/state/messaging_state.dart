@@ -1,0 +1,82 @@
+import '../../domain/entities/conversation.dart';
+import '../../domain/entities/message.dart';
+import '../../domain/entities/message_reaction.dart';
+import 'thread_messages.dart';
+
+/// Immutable state for [MessagingController]. Extracted from the controller file
+/// to keep both under the file-size budget (CLAUDE.md split recipe).
+class MessagingState {
+  const MessagingState({
+    this.conversations = const [],
+    this.messagesByConvId = const {},
+    this.outboxByConvId = const {},
+    this.otherLastReadByConvId = const {},
+    this.reactionsByConvId = const {},
+    this.hasMoreByConvId = const {},
+    this.totalUnread = 0,
+    this.isLoading = false,
+    this.error,
+  });
+
+  final List<Conversation> conversations;
+  final Map<String, List<Message>> messagesByConvId;
+  final Map<String, List<PendingMessage>> outboxByConvId;
+  final Map<String, DateTime?> otherLastReadByConvId;
+  final Map<String, List<MessageReaction>> reactionsByConvId;
+  final Map<String, bool> hasMoreByConvId;
+  final int totalUnread;
+  final bool isLoading;
+  final String? error;
+
+  List<Message> messagesFor(String conversationId) =>
+      messagesByConvId[conversationId] ?? const [];
+
+  /// True once a history page has been fetched for [conversationId] (even if it
+  /// came back empty) — distinguishes "still loading" from "no messages yet".
+  bool isThreadLoaded(String conversationId) =>
+      messagesByConvId.containsKey(conversationId);
+
+  List<PendingMessage> outboxFor(String conversationId) =>
+      outboxByConvId[conversationId] ?? const [];
+
+  DateTime? otherLastReadFor(String conversationId) =>
+      otherLastReadByConvId[conversationId];
+
+  List<MessageReaction> reactionsFor(String conversationId) =>
+      reactionsByConvId[conversationId] ?? const [];
+
+  bool hasMoreFor(String conversationId) =>
+      hasMoreByConvId[conversationId] ?? false;
+
+  /// The merged, status- and reaction-annotated render list for a conversation.
+  List<ThreadEntry> entriesFor(String conversationId, String? me) =>
+      buildThreadEntries(
+        confirmed: messagesFor(conversationId),
+        outbox: outboxFor(conversationId),
+        otherLastReadAt: otherLastReadFor(conversationId),
+        me: me,
+        reactions: reactionsFor(conversationId),
+      );
+
+  MessagingState copyWith({
+    List<Conversation>? conversations,
+    Map<String, List<Message>>? messagesByConvId,
+    Map<String, List<PendingMessage>>? outboxByConvId,
+    Map<String, DateTime?>? otherLastReadByConvId,
+    Map<String, List<MessageReaction>>? reactionsByConvId,
+    Map<String, bool>? hasMoreByConvId,
+    int? totalUnread,
+    bool? isLoading,
+    String? error,
+  }) => MessagingState(
+    conversations: conversations ?? this.conversations,
+    messagesByConvId: messagesByConvId ?? this.messagesByConvId,
+    outboxByConvId: outboxByConvId ?? this.outboxByConvId,
+    otherLastReadByConvId: otherLastReadByConvId ?? this.otherLastReadByConvId,
+    reactionsByConvId: reactionsByConvId ?? this.reactionsByConvId,
+    hasMoreByConvId: hasMoreByConvId ?? this.hasMoreByConvId,
+    totalUnread: totalUnread ?? this.totalUnread,
+    isLoading: isLoading ?? this.isLoading,
+    error: error,
+  );
+}

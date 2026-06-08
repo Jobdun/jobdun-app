@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
+import '../models/message_reaction_model.dart';
 
 abstract interface class MessageRemoteDataSource {
   Future<List<ConversationModel>> getConversations(String userId);
@@ -31,6 +32,23 @@ abstract interface class MessageRemoteDataSource {
   /// Soft-delete (unsend) a message — sets `deleted_at`. RLS limits this to the
   /// sender's own messages.
   Future<void> softDeleteMessage(String messageId);
+
+  /// Set (or switch) my reaction on a message. One per user per message.
+  Future<void> setReaction({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+    required String emoji,
+  });
+
+  /// Remove my reaction from a message (toggle off).
+  Future<void> removeReaction({
+    required String messageId,
+    required String userId,
+  });
+
+  /// Live reactions for every message in a conversation.
+  Stream<List<MessageReactionModel>> watchReactions(String conversationId);
   Future<void> markConversationRead({
     required String conversationId,
     required String userId,
@@ -174,6 +192,51 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
     } catch (e) {
       throw ServerException(e.toString());
     }
+  }
+
+  @override
+  Future<void> setReaction({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+    required String emoji,
+  }) async {
+    try {
+      // Upsert on the (message_id, user_id) PK → switching emoji replaces.
+      await _client.from('message_reactions').upsert({
+        'message_id': messageId,
+        'conversation_id': conversationId,
+        'user_id': userId,
+        'emoji': emoji,
+      }, onConflict: 'message_id,user_id');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> removeReaction({
+    required String messageId,
+    required String userId,
+  }) async {
+    try {
+      await _client
+          .from('message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('user_id', userId);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Stream<List<MessageReactionModel>> watchReactions(String conversationId) {
+    return _client
+        .from('message_reactions')
+        .stream(primaryKey: ['message_id', 'user_id'])
+        .eq('conversation_id', conversationId)
+        .map((rows) => rows.map(MessageReactionModel.fromJson).toList());
   }
 
   @override

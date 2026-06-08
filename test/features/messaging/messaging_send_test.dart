@@ -50,6 +50,9 @@ void main() {
     when(
       () => repo.watchConversation(any()),
     ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => repo.watchReactions(any()),
+    ).thenAnswer((_) => const Stream.empty());
   }
 
   void stubSend(_MockRepo repo, Either<Failure, void> result) {
@@ -203,10 +206,59 @@ void main() {
     },
   );
 
+  test('toggleReaction optimistically adds my reaction + persists', () async {
+    final repo = _MockRepo();
+    stubStreams(repo);
+    when(
+      () => repo.getMessages(
+        any(),
+        limit: any(named: 'limit'),
+        before: any(named: 'before'),
+      ),
+    ).thenAnswer((_) async => right([msg(id: 'm1', createdAt: base)]));
+    when(
+      () => repo.setReaction(
+        messageId: any(named: 'messageId'),
+        conversationId: any(named: 'conversationId'),
+        userId: any(named: 'userId'),
+        emoji: any(named: 'emoji'),
+      ),
+    ).thenAnswer((_) async => right(null));
+
+    final container = makeContainer(repo);
+    final ctrl = container.read(messagingControllerProvider.notifier);
+
+    await ctrl.loadMessages('c1');
+    await ctrl.toggleReaction(
+      conversationId: 'c1',
+      messageId: 'm1',
+      emoji: '❤️',
+    );
+
+    final entry = container
+        .read(messagingControllerProvider)
+        .entriesFor('c1', 'me')
+        .single;
+    expect(entry.reactions, hasLength(1));
+    expect(entry.reactions.single.emoji, '❤️');
+    expect(entry.reactions.single.mine, isTrue);
+    verify(
+      () => repo.setReaction(
+        messageId: 'm1',
+        conversationId: 'c1',
+        userId: 'me',
+        emoji: '❤️',
+      ),
+    ).called(1);
+  });
+
   test('Seen lights up when the counterparty read marker arrives', () async {
     final repo = _MockRepo();
     when(
       () => repo.watchMessages(any(), tailLimit: any(named: 'tailLimit')),
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => repo.watchReactions(any()),
     ).thenAnswer((_) => const Stream.empty());
     when(
       () => repo.getMessages(

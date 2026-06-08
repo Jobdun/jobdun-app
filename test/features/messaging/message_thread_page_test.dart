@@ -68,6 +68,9 @@ void main() {
       () => repo.watchConversation(any()),
     ).thenAnswer((_) => const Stream.empty());
     when(
+      () => repo.watchReactions(any()),
+    ).thenAnswer((_) => const Stream.empty());
+    when(
       () => repo.markConversationRead(
         conversationId: any(named: 'conversationId'),
         userId: any(named: 'userId'),
