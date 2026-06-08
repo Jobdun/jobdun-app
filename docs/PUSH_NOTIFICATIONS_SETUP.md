@@ -1,6 +1,14 @@
 # Push Notifications (#8) — LIVE
 
-**Updated:** 2026-06-09 · **Status: working end-to-end on `zethpanvkfyijislxesn` + Firebase `jobdun-627d2`.**
+**Updated:** 2026-06-09 · **Status: full program live on `zethpanvkfyijislxesn` + Firebase `jobdun-627d2`.**
+
+## Program (2026-06-09) — all live
+- **Central rail** (`20260609000006/000007`): one trigger on `notifications` INSERT → push, gated by `notification_preferences` (per-user, per-category). Any feature/admin just inserts a row.
+- **Producers** (`20260609000009/000010`): new **message** → push to the other party (verified e2e); **application received** → builder; **application status** (shortlisted/hired/rejected) → tradie.
+- **Admin broadcast** (`20260609000008` + `lib/admin/features/admin_broadcast/`): admin RPC `admin_broadcast(title,body,audience,data)` (All/builders/trades/single, audited) + a compose console. **Needs an admin redeploy** (`bash scripts/deploy-admin.sh`) to appear on jobdun-admin.pages.dev.
+- **Preferences** (`lib/features/profile/.../notification_settings_page.dart`, route `/settings/notifications`): per-category toggles.
+
+**Two follow-ups:** (1) `deploy-admin.sh` to publish the broadcast console; (2) the hardening below.
 
 ## ✅ What's live
 - **Client (Android, on the phone):** `firebase_core` + `firebase_messaging`, `google-services` gradle plugin, `android/app/google-services.json` (gitignored — re-fetch: `firebase apps:sdkconfig ANDROID 1:960216655470:android:ce72573aa8fa31d80ce87f`), `Firebase.initializeApp()`, and `lib/core/services/push_notifications.dart` registering the device's FCM token into `device_tokens` on sign-in/refresh.
