@@ -101,18 +101,18 @@ class AdminSidebar extends ConsumerWidget {
               collapsed: collapsed,
               onTap: () => context.go(AdminRoutes.audit),
             ),
-            // Roadmap surfaces — navigable placeholder pages, marked with a
-            // lock + Stage-1 milestone so the client sees what's coming.
+            // Live action — compose a push + in-app broadcast (push program
+            // Stream A). Took over the former REPORTS roadmap slot.
             _NavItem(
-              icon: AppIcons.warning,
-              iconActive: AppIcons.warning,
-              label: 'REPORTS',
-              isActive: activeRoute == AdminRoutes.reports,
+              icon: AppIcons.send,
+              iconActive: AppIcons.send,
+              label: 'BROADCAST',
+              isActive: activeRoute == AdminRoutes.broadcast,
               collapsed: collapsed,
-              comingSoon: true,
-              tooltip: 'Reports queue — ${AdminPhase.reports}',
-              onTap: () => context.go(AdminRoutes.reports),
+              onTap: () => context.go(AdminRoutes.broadcast),
             ),
+            // Roadmap surface — navigable placeholder page, marked with a lock
+            // + Stage-1 milestone so the client sees what's coming.
             _NavItem(
               icon: AppIcons.budget,
               iconActive: AppIcons.budget,

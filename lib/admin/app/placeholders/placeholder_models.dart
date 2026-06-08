@@ -73,14 +73,10 @@ abstract final class AdminPhase {
   static const String moderationWiring = 'Wiring in Phase 2 — moderation';
 
   // ── Stage 1 roadmap (docs/STAGE1_COMPLETION_PLAN.md) — placeholder pages ──
-  /// Reports queue milestone tag (nav tooltip + page eyebrow).
-  static const String reports = 'Stage 1 · M4 — moderation';
-
+  // (The REPORTS slot was repurposed into the live BROADCAST page — push
+  //  program Stream A — so its roadmap tags were removed.)
   /// Payments admin milestone tag.
   static const String payments = 'Stage 1 · M5 — payments rail';
-
-  /// Disabled-action tooltip on the Reports placeholder page.
-  static const String reportsWiring = 'Wiring in M4 — moderation';
 
   /// Disabled-action tooltip on the Payments placeholder page.
   static const String paymentsWiring = 'Wiring in M5 — payments rail';

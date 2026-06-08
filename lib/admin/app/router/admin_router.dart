@@ -6,12 +6,12 @@ import '../../features/admin_auth/domain/entities/admin_session.dart';
 import '../../features/admin_auth/presentation/pages/admin_login_page.dart';
 import '../../features/admin_auth/presentation/providers/admin_session_provider.dart';
 import '../../features/admin_audit/presentation/pages/admin_audit_page.dart';
+import '../../features/admin_broadcast/presentation/pages/admin_broadcast_page.dart';
 import '../../features/admin_shell/presentation/pages/admin_dashboard_page.dart';
 import '../../features/admin_jobs/domain/entities/admin_job_row.dart';
 import '../../features/admin_jobs/presentation/pages/admin_job_detail_page.dart';
 import '../../features/admin_jobs/presentation/pages/admin_jobs_page.dart';
 import '../../features/admin_payments/presentation/pages/admin_payments_page.dart';
-import '../../features/admin_reports/presentation/pages/admin_reports_page.dart';
 import '../../features/admin_user_detail/presentation/pages/admin_user_detail_page.dart';
 import '../../features/admin_users/presentation/pages/admin_users_page.dart';
 import '../../features/admin_verifications/presentation/pages/admin_verifications_page.dart';
@@ -97,9 +97,9 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
             _fadePage(state.pageKey, const AdminAuditPage()),
       ),
       GoRoute(
-        path: AdminRoutes.reports,
+        path: AdminRoutes.broadcast,
         pageBuilder: (context, state) =>
-            _fadePage(state.pageKey, const AdminReportsPage()),
+            _fadePage(state.pageKey, const AdminBroadcastPage()),
       ),
       GoRoute(
         path: AdminRoutes.payments,
