@@ -92,6 +92,7 @@ class ImageUploadService {
   static Future<File?> pickCropCompress({
     required ImageSource source,
     required ImageAspect aspect,
+    bool crop = true,
     double maxPickerSize = 2400,
     int minOutputWidth = 1080,
     int compressQuality = 80,
@@ -124,27 +125,34 @@ class ImageUploadService {
       );
     }
 
-    // 2. Crop. The image_cropper package shells out to native crop UIs on
-    // each platform; the colours here paint that native UI in the Jobdun
-    // palette so the hop out of the app feels seamless.
-    final cropped = await _runCropper(picked.path, aspect);
-    if (cropped == null) return null;
+    // 2. Crop (optional). The image_cropper package shells out to native crop
+    // UIs; the colours here paint that native UI in the Jobdun palette. Chat
+    // photos pass crop:false to skip it entirely — sending should feel instant,
+    // like a real messenger, and there's nothing to frame for a site photo.
+    final String sourceForCompress;
+    if (crop) {
+      final cropped = await _runCropper(picked.path, aspect);
+      if (cropped == null) return null;
+      sourceForCompress = cropped.path;
+    } else {
+      sourceForCompress = picked.path;
+    }
 
-    // 3. Compress to JPEG. Write next to the cropped temp file — image_cropper
-    // already drops CroppedFile in the OS temp dir, so we reuse that location
-    // and avoid taking a path_provider dependency just for getTemporaryDirectory.
-    final outPath = '${cropped.path}_c.jpg';
+    // 3. Compress to JPEG. Write next to the source temp file (image_picker /
+    // image_cropper both drop their output in the OS temp dir) so we avoid a
+    // path_provider dependency just for getTemporaryDirectory.
+    final outPath = '${sourceForCompress}_c.jpg';
     final compressed = await FlutterImageCompress.compressAndGetFile(
-      cropped.path,
+      sourceForCompress,
       outPath,
       quality: compressQuality,
       minWidth: minOutputWidth,
       format: CompressFormat.jpeg,
     );
     // If compression fails for any reason (rare — usually unsupported
-    // source format) fall back to the cropped file so the upload still
+    // source format) fall back to the source file so the upload still
     // succeeds rather than silently dropping the user's pick.
-    if (compressed == null) return File(cropped.path);
+    if (compressed == null) return File(sourceForCompress);
     return File(compressed.path);
   }
 

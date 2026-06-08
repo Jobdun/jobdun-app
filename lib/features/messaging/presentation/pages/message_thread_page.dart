@@ -195,6 +195,7 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       file = await ImageUploadService.pickCropCompress(
         source: source,
         aspect: ImageAspect.free,
+        crop: false, // chat photos send straight through — no crop screen
       );
     } on Exception {
       return;
