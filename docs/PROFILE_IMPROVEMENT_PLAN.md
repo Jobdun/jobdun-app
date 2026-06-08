@@ -234,3 +234,24 @@ Built TDD-first (tests written + watched fail before each implementation). Full 
 - Loading via `JSkeletonList`; images via `CachedNetworkImage` + `photo_view` Hero.
 - A11y: 48dp targets, ≥4.5:1 text contrast, reduced-motion branch on any entrance animation.
 ```
+
+---
+
+## 9b. P2–P5 — shipped (2026-06-09)
+
+Built TDD-where-logic-exists, design-system throughout. Full `validate.sh` green (design + file-size + arch + format + analyze + tests). Two migrations pushed live to `zethpanvkfyijislxesn`.
+
+| ID | What shipped | Files | Tests |
+|----|--------------|-------|-------|
+| S6 | Settings → dedicated `/settings` route + header gear; profile leads with credibility | `pages/settings_page.dart`, `pages/profile_page_rows.dart` (renamed from `_settings`), `app_router.dart`, `app_icons.dart` (+`settings`) | `settings_page_test.dart` |
+| S7 | 96dp avatar with a 2dp ring (orange when the role-appropriate verification passed) | `pages/profile_page_sections.dart` | covered by suite |
+| S8 | Incomplete-profile CTA — single highest-impact missing item + ADD NOW, no progress ring | `widgets/profile_incomplete_banner.dart` (pure `topTradeGap`/`topBuilderGap` + widget) | `profile_incomplete_banner_test.dart` (7) |
+| S10 | Service-area radius + crew-size rows in TRADE DETAILS | `pages/profile_page_trade.dart` | — |
+| S11 | Rating block: star bar + average + `(N reviews)`; hides when unrated | `widgets/profile_rating_block.dart` | `profile_rating_block_test.dart` (4) |
+| S13 | **Public builder profile** `/builders/:id` — company, ABN ✓, track record, reviews, verification; opened from a job's POSTED BY card | `pages/builder_public_profile_page.dart`, `app_router.dart`, `job_detail_page.dart` | `builder_public_profile_test.dart` (2) |
+| S14 | Builder reviews from tradies — migration mirrors the trade rating machinery onto `builder_profiles`; reviews block on the builder profile | `migrations/20260609000001_builder_reviews.sql`, `profile_page_sections.dart` | covered by suite |
+| S15 | Portfolio + reviews on the builder's applicant-detail screen; `PortfolioStrip` gains an explicit `urls` list | `widgets/portfolio_strip.dart`, `applications/.../applicant_detail_page.dart` | `portfolio_strip_test.dart` (+) |
+
+Also: `_TradeProfile` split into `profile_page_trade.dart` to stay under the 500-LOC ceiling.
+
+**Deferred:** P4 skills chips (S9 — marginal on the single-trade model), S12 "preview my public profile" affordance (now possible via S13), E1/E2 (notifier-load refactor). The #21a admin-moderation DB half is committed (`admin_set_user_status`/`admin_set_job_status` + `user_status`); admin-web wiring + push remain.

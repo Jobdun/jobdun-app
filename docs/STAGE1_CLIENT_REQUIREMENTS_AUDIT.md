@@ -30,7 +30,7 @@
 | 7 | Urgent job posting option | ✅ | `job_urgency` enum (`standard`/`urgent`) + badge. |
 | 8 | Push notifications for new jobs | ❌ | No push SDK, no device-token table, no new-job trigger. In-app centre only. |
 | 9 | Search trades by location / rating / availability | ✅ | `search_trades` RPC (bounding-box + haversine + rating + availability); `lib/features/discovery/` module; home builder mini-list + `/discovery` page; trade `OPEN FOR WORK` toggle. *(2026-06-04)* |
-| 10 | GPS / map view for nearby crews | 🟡 | Real map plots **jobs**; crew markers are the next fast-follow now that `search_trades` exists. |
+| 10 | GPS / map view for nearby crews | ✅ | `/discovery/map` plots real trade pins from `search_trades`; `/jobs/map` plots jobs. *(2026-06-09)* |
 | 11 | In-app messaging / chat | ✅ | Realtime Supabase `.stream()` threads + conversations. |
 | 12 | Photo / file uploads | ✅ | Pick/crop/compress pipeline, 5 storage buckets, zoom viewer. |
 | 13 | Availability calendar | 🟡 | Availability **filter** shipped (`is_available`/`available_from` + search filter + profile toggle, 2026-06-04). Full weekly `table_calendar` view still deferred. |
@@ -38,14 +38,16 @@
 | 15 | Scheduling calendar | ❌ | No scheduling feature; `table_calendar` unused. |
 | 16 | Timesheets / check in–out | ❌ | No code, no table. |
 | 17 | Trade earnings dashboard | ❌ | `fl_chart` declared but **unused**; no earnings/payments data. |
-| 18 | Quote request system | ❌ | No quote entity/table/flow. |
+| 18 | Quote request system | 🟡 | Trades attach a `quote_amount` on apply; builder sees each quote on the Applicants screen. No standalone builder-initiated request entity. *(2026-06-09)* |
 | 19 | Loyalty rewards / discounts | ❌ | Nothing. |
 | 20 | Referral system | ❌ | Nothing. |
-| 21 | Admin dashboard (users / jobs / payments) | 🟡 | Verifications fully actionable; users + jobs **view-only**; **payments absent**. |
-| 22 | Licence / insurance expiry reminders | 🟡 | Sweep function + notify exists but **not scheduled** (no pg_cron / cron edge fn). |
+| 21 | Admin dashboard (users / jobs / payments) | 🟡 | Verifications actionable; user/job moderation RPCs added (`admin_set_user_status`/`admin_set_job_status`, audited) — admin-web wiring + push pending; **payments absent**. *(2026-06-09)* |
+| 22 | Licence / insurance expiry reminders | ✅ | pg_cron schedules the expiry sweep daily + a 30-day advance warning (`notify_expiring_verifications`) — live on the DB. *(2026-06-09)* |
 | 23 | AI auto-match / smart recommendations | ❌ | Marked *future* by client; no recommendation code. |
 
-**Tally:** ✅ 11 done · 🟡 3 partial · ❌ 9 not started. *(Updated 2026-06-04: #9 done, #13 → partial via the availability filter.)*
+**Tally:** ✅ 13 done · 🟡 3 partial · ❌ 7 not started. *(Updated 2026-06-09: #10 ✅ crew map, #22 ✅ cron live, #18 → 🟡 quote-on-apply, #21 moderation DB added — admin-web wiring pending. Earlier 06-04: #9 done, #13 partial.)*
+
+> **2026-06-09 refresh:** scorecard above reflects this date; some gap-list prose further down still describes the 06-01 state. **Live on DB this session:** builder reviews from tradies (S14) + the #22 cron/advance-warning. Also shipped (mobile, committed): the profile P2–P5 credibility program — `/settings` route, incomplete-profile CTA, 96dp verified-ring avatar, rating block + review count, service-area/crew lines, and a **public builder profile** (`/builders/:id`) a tradie can vet before applying. The #21a admin-moderation **DB half** is committed (RPCs + `user_status`); admin-web wiring + push remain.
 
 ---
 

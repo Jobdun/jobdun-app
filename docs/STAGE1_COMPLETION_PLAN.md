@@ -10,6 +10,8 @@ This has two halves:
 
 Re-verified against the repo on 2026-06-01: 11 mobile feature modules, 8 admin modules, 45 migrations, 2 edge functions (`verify-abn`, `verify-licence`). All requirement-audit claims still hold.
 
+> **2026-06-09 progress.** Since this plan was written: **M1 shipped** (trade search #9 + crew map #10 via `lib/features/discovery/`). **Rail A laid** — pg_cron now schedules the expiry sweep + a 30-day advance warning, so **#22 is done (live)**. Builder reviews (S14) shipped + live; **public builder profile** (S13, `/builders/:id`) shipped, closing the surface-3 trust gap; applicant-detail enriched (S15). **#21a admin-moderation DB half** committed (`admin_set_user_status`/`admin_set_job_status` + `user_status`, audited) — admin-web wiring + push remain. **Rails B (push) and C (payments) are still un-laid** → #8, #17, and payments-admin remain blocked.
+
 ---
 
 ## Part 1 — Alignment Audit (foundation health)
