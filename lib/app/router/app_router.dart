@@ -248,6 +248,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (_, _) => const JobCreatePage(),
                   ),
+                  // Full-screen tradie jobs map over the shell (its own back
+                  // button). Fade + slight scale-up, matching /discovery/map.
+                  GoRoute(
+                    path: 'map',
+                    parentNavigatorKey: _rootNavigatorKey,
+                    pageBuilder: (context, state) => CustomTransitionPage<void>(
+                      key: state.pageKey,
+                      transitionDuration: const Duration(milliseconds: 200),
+                      reverseTransitionDuration: const Duration(
+                        milliseconds: 180,
+                      ),
+                      child: const JobsMapPage(),
+                      transitionsBuilder:
+                          (context, animation, secondary, child) {
+                            final curved = CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            );
+                            return FadeTransition(
+                              opacity: curved,
+                              child: ScaleTransition(
+                                scale: Tween<double>(
+                                  begin: 0.94,
+                                  end: 1,
+                                ).animate(curved),
+                                child: child,
+                              ),
+                            );
+                          },
+                    ),
+                  ),
                   GoRoute(
                     path: ':id',
                     // Full-screen detail — no bottom nav (matches the thread).

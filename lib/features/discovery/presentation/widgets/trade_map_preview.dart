@@ -41,8 +41,10 @@ class TradeMapPreview extends ConsumerWidget {
       label: 'Find a tradie on the map, ${pins.length} nearby',
       child: Material(
         color: c.card,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
         clipBehavior: Clip.antiAlias,
+        // `shape` carries both the radius and the border side. Do NOT also pass
+        // `borderRadius` — Material asserts they're mutually exclusive
+        // (!(shape != null && borderRadius != null)).
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card.r),
           side: BorderSide(color: c.border),

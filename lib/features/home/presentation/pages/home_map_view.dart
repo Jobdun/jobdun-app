@@ -69,12 +69,21 @@ class _MapView extends StatefulWidget {
     required this.jobs,
     required this.placeLabel,
     required this.onJobTap,
+    this.offline = false,
+    this.onBack,
   });
 
+  // The FULL feed (plottable + coordinate-less). Markers draw only the jobs
+  // with coordinates; the rest drive the "showing X of Y nearby" hint.
   final List<Job> jobs;
   // Suburb/state string used for the "NEAR <place> • 5 KM" radius chip.
   final String placeLabel;
   final ValueChanged<Job> onJobTap;
+  // True when the device is offline — tiles can't fetch, so show a pill.
+  final bool offline;
+  // When set, a back button shows top-left — used by the full-screen
+  // /jobs/map route so the user can return to home.
+  final VoidCallback? onBack;
 
   @override
   State<_MapView> createState() => _MapViewState();
@@ -315,6 +324,8 @@ class _MapViewState extends State<_MapView> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    // Plotted-vs-total drives the coverage hint + the "no pins yet" note.
+    final summary = JobMapData.summary(widget.jobs);
     return Stack(
       children: [
         FlutterMap(
@@ -371,13 +382,50 @@ class _MapViewState extends State<_MapView> {
           child: SafeArea(
             child: Padding(
               padding: EdgeInsets.fromLTRB(12.w, 12.h, 0, 0),
-              child: _RadiusChip(
-                placeLabel: widget.placeLabel,
-                radiusKm: _kSearchRadiusKm,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Back button (full-screen route only) sits left of the
+                  // radius chip — the easily-visible way back to home.
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.onBack != null) ...[
+                        _MapCircleButton(
+                          icon: AppIcons.back,
+                          semanticLabel: 'Back',
+                          onTap: widget.onBack!,
+                        ),
+                        Gap(10.w),
+                      ],
+                      _RadiusChip(
+                        placeLabel: widget.placeLabel,
+                        radiusKm: _kSearchRadiusKm,
+                      ),
+                    ],
+                  ),
+                  if (widget.offline) ...[Gap(8.h), const _MapOfflinePill()],
+                  // Only when some — but not all — jobs lack coordinates.
+                  // `nonePlotted` is handled by the centered note instead.
+                  if (summary.someDropped && !summary.nonePlotted) ...[
+                    Gap(8.h),
+                    _MapCoveragePill(
+                      plotted: summary.plotted,
+                      total: summary.total,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
         ),
+        // Jobs exist but none can be plotted — point the user to the list.
+        // IgnorePointer so the map stays pannable underneath.
+        if (summary.nonePlotted)
+          Positioned.fill(
+            child: IgnorePointer(child: Center(child: _MapNoPinsNote())),
+          ),
         // Top-right floating controls. SafeArea pushes them below the status
         // bar/notch; the Column gives the style chip and recenter button a
         // consistent 8.h gap so they never overlap each other.

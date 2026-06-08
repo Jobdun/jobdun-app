@@ -20,6 +20,19 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   const JobRemoteDataSourceImpl(this._client);
   final SupabaseClient _client;
 
+  // Trimmed feed projection (vs getBuilderJobs' full-row `.select()`). Public +
+  // const so a regression test can assert the geo columns stay in — they were
+  // once omitted, which left the tradie "jobs near you" map unable to plot any
+  // pin (every feed job arrived with null latitude/longitude). latitude /
+  // longitude / formatted_address / place_id are the post-MapTiler columns the
+  // map markers depend on.
+  static const String feedColumns =
+      'id, builder_id, title, description, suburb, state, postcode, '
+      'trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, '
+      'requires_verified, requires_white_card, application_count, view_count, '
+      'status, published_at, created_at, updated_at, '
+      'latitude, longitude, formatted_address, place_id';
+
   @override
   Future<List<JobModel>> getJobs({
     JobFilter? filter,
@@ -29,9 +42,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     try {
       var query = _client
           .from('jobs')
-          .select(
-            'id, builder_id, title, description, suburb, state, postcode, trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, requires_verified, requires_white_card, application_count, view_count, status, published_at, created_at, updated_at',
-          )
+          .select(feedColumns)
           .isFilter('deleted_at', null);
 
       if (filter != null && !filter.isEmpty) {
@@ -160,8 +171,9 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   Future<void> updateJobStatus(String id, JobStatus status) async {
     try {
       final update = <String, dynamic>{'status': status.dbValue};
-      if (status == JobStatus.open)
+      if (status == JobStatus.open) {
         update['published_at'] = DateTime.now().toIso8601String();
+      }
       await _client.from('jobs').update(update).eq('id', id);
     } catch (e) {
       throw ServerException(e.toString());

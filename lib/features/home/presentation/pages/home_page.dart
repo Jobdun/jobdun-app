@@ -28,9 +28,11 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../../../auth/presentation/widgets/onboarding_gate.dart';
 import '../widgets/profile_completeness_banner.dart';
+import '../../../../core/network/connectivity_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../jobs/presentation/pages/job_detail_page.dart';
+import '../../../jobs/presentation/pages/job_map_data.dart';
 import '../../../profile/domain/entities/builder_profile.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
@@ -42,6 +44,8 @@ part 'home_builder_bento.dart';
 part 'home_tradie_availability.dart';
 part 'home_map_view.dart';
 part 'home_map_widgets.dart';
+part 'home_map_overlays.dart';
+part 'jobs_map_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, this.fixedPreview = false});
@@ -59,10 +63,7 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-enum _ViewMode { list, map }
-
 class _HomePageState extends ConsumerState<HomePage> {
-  _ViewMode _viewMode = _ViewMode.list;
   bool _roleSheetShown = false;
   bool _roleCheckInflight = false;
 
@@ -239,17 +240,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     final isBuilder = authState.role == UserRole.builder;
 
-    final location = isBuilder
-        ? profileState.builderProfile?.displayLocation ?? 'Sydney, NSW'
-        : profileState.tradeProfile?.displayLocation ?? 'Parramatta, NSW';
-
     final feedJobs = jobsState.jobs.take(3).toList();
     final hasRealJobs = feedJobs.isNotEmpty;
 
+    // Tradies get a "VIEW MAP" FAB → the full-screen jobs map route.
     final showMapToggle = !isBuilder;
-    final jobsWithLocation = jobsState.jobs
-        .where((j) => j.hasLocation)
-        .toList();
 
     final isLightPreview = _previewBrightness == Brightness.light;
 
@@ -277,136 +272,121 @@ class _HomePageState extends ConsumerState<HomePage> {
               ],
             )
           : null,
+      // Tradies open the jobs map full-screen over the shell (its own back
+      // button) via /jobs/map — builders use the discovery map instead.
       floatingActionButton: showMapToggle
           ? FloatingActionButton(
               backgroundColor: c.action,
-              onPressed: () => setState(
-                () => _viewMode = _viewMode == _ViewMode.list
-                    ? _ViewMode.map
-                    : _ViewMode.list,
-              ),
+              onPressed: () => context.push('/jobs/map'),
               child: Icon(
-                _viewMode == _ViewMode.list ? AppIcons.map : AppIcons.gridView,
+                AppIcons.map,
                 color:
                     c.background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
                 size: AppIconSize.nav.r,
               ),
             )
           : null,
-      body: _viewMode == _ViewMode.map
-          ? _MapView(
-              jobs: jobsWithLocation,
-              placeLabel: location,
-              onJobTap: (j) => context.push(
-                '/jobs/${j.id}',
-                extra: JobDetailArgs.fromJob(j),
-              ),
-            )
-          : SafeArea(
-              child: CustomScrollView(
-                slivers: [
-                  // LinkedIn-style floating utility bar: scrolls away on
-                  // scroll-down, snaps back on scroll-up. Avatar → profile,
-                  // search → the jobs list (which owns search), bell →
-                  // notifications. `primary` is false in the debug A/B copy so
-                  // it doesn't double the status-bar inset under the debug AppBar.
-                  SliverAppBar(
-                    floating: true,
-                    snap: true,
-                    pinned: false,
-                    primary: !widget.fixedPreview,
-                    automaticallyImplyLeading: false,
-                    backgroundColor: c.card,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    titleSpacing: 0,
-                    toolbarHeight: 64.h,
-                    title: Padding(
-                      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
-                      child: JTopBar(
-                        displayName:
-                            (profileState.profile?.displayName ?? '')
-                                .trim()
-                                .isEmpty
-                            ? 'there'
-                            : profileState.profile!.displayName!.trim(),
-                        initials: _initials(profileState.profile?.displayName),
-                        roleLabel: isBuilder ? 'BUILDER' : 'TRADIE',
-                        avatarUrl: profileState.profile?.avatarUrl,
-                        onAvatarTap: () => context.go('/profile'),
-                        onNotificationsTap: () =>
-                            context.push('/notifications'),
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
-                  SliverToBoxAdapter(child: Gap(20.h)),
-                  // Builders get the bento-grid home (direction #02): post-job
-                  // hero + live stat tiles + tradies-nearby + quick actions.
-                  if (isBuilder)
-                    const SliverToBoxAdapter(child: _BuilderBentoGrid()),
-                  // Tradie home (direction E): availability bar spine + stats +
-                  // a list-primary "jobs near you" feed. The map is one tap away
-                  // via the list/map toggle FAB (showMapToggle).
-                  if (!isBuilder) ...[
-                    const SliverToBoxAdapter(child: _TradieAvailabilityBar()),
-                    SliverToBoxAdapter(
-                      child: _StatsRow(
-                        isBuilder: false,
-                        builderProfile: profileState.builderProfile,
-                        tradeProfile: profileState.tradeProfile,
-                        pendingCount: appsState.pendingIncomingCount,
-                        myAppsCount: appsState.myApplications.length,
-                        shortlistedCount: appsState.myApplications
-                            .where((a) => a.status.name == 'shortlisted')
-                            .length,
-                      ),
-                    ),
-                    SliverToBoxAdapter(child: Gap(24.h)),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                        child: Text(
-                          'JOBS NEAR YOU',
-                          style: tt.titleLarge!.copyWith(color: c.text1),
-                        ),
-                      ),
-                    ),
-                    if (hasRealJobs)
-                      SliverPadding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        sliver: JStaggeredSliverList(
-                          itemCount: feedJobs.length,
-                          itemBuilder: (_, i) {
-                            final j = feedJobs[i];
-                            return JobCard(
-                              title: j.title,
-                              description: j.description,
-                              rate: j.displayBudget,
-                              startDate: j.startDate != null
-                                  ? _fmtDate(j.startDate!)
-                                  : j.displayLocation,
-                              distanceKm: 0.0,
-                              isUrgent: j.urgency == JobUrgency.urgent,
-                              onTap: () => context.push(
-                                '/jobs/${j.id}',
-                                extra: JobDetailArgs.fromJob(j),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    else
-                      const SliverToBoxAdapter(child: _HomeJobsEmpty()),
-                  ],
-                  // Clear the map-toggle FAB so the last job card (and its
-                  // distance line) never scrolls underneath it. Only reserves
-                  // the extra space when the FAB is actually shown.
-                  SliverToBoxAdapter(child: Gap(showMapToggle ? 96.h : 24.h)),
-                ],
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // LinkedIn-style floating utility bar: scrolls away on
+            // scroll-down, snaps back on scroll-up. Avatar → profile,
+            // search → the jobs list (which owns search), bell →
+            // notifications. `primary` is false in the debug A/B copy so
+            // it doesn't double the status-bar inset under the debug AppBar.
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              pinned: false,
+              primary: !widget.fixedPreview,
+              automaticallyImplyLeading: false,
+              backgroundColor: c.card,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              titleSpacing: 0,
+              toolbarHeight: 64.h,
+              title: Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
+                child: JTopBar(
+                  displayName:
+                      (profileState.profile?.displayName ?? '').trim().isEmpty
+                      ? 'there'
+                      : profileState.profile!.displayName!.trim(),
+                  initials: _initials(profileState.profile?.displayName),
+                  roleLabel: isBuilder ? 'BUILDER' : 'TRADIE',
+                  avatarUrl: profileState.profile?.avatarUrl,
+                  onAvatarTap: () => context.go('/profile'),
+                  onNotificationsTap: () => context.push('/notifications'),
+                ),
               ),
             ),
+            const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
+            SliverToBoxAdapter(child: Gap(20.h)),
+            // Builders get the bento-grid home (direction #02): post-job
+            // hero + live stat tiles + tradies-nearby + quick actions.
+            if (isBuilder) const SliverToBoxAdapter(child: _BuilderBentoGrid()),
+            // Tradie home (direction E): availability bar spine + stats +
+            // a list-primary "jobs near you" feed. The map is one tap away
+            // via the list/map toggle FAB (showMapToggle).
+            if (!isBuilder) ...[
+              const SliverToBoxAdapter(child: _TradieAvailabilityBar()),
+              SliverToBoxAdapter(
+                child: _StatsRow(
+                  isBuilder: false,
+                  builderProfile: profileState.builderProfile,
+                  tradeProfile: profileState.tradeProfile,
+                  pendingCount: appsState.pendingIncomingCount,
+                  myAppsCount: appsState.myApplications.length,
+                  shortlistedCount: appsState.myApplications
+                      .where((a) => a.status.name == 'shortlisted')
+                      .length,
+                ),
+              ),
+              SliverToBoxAdapter(child: Gap(24.h)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                  child: Text(
+                    'JOBS NEAR YOU',
+                    style: tt.titleLarge!.copyWith(color: c.text1),
+                  ),
+                ),
+              ),
+              if (hasRealJobs)
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  sliver: JStaggeredSliverList(
+                    itemCount: feedJobs.length,
+                    itemBuilder: (_, i) {
+                      final j = feedJobs[i];
+                      return JobCard(
+                        title: j.title,
+                        description: j.description,
+                        rate: j.displayBudget,
+                        startDate: j.startDate != null
+                            ? _fmtDate(j.startDate!)
+                            : j.displayLocation,
+                        distanceKm: 0.0,
+                        isUrgent: j.urgency == JobUrgency.urgent,
+                        onTap: () => context.push(
+                          '/jobs/${j.id}',
+                          extra: JobDetailArgs.fromJob(j),
+                        ),
+                      );
+                    },
+                  ),
+                )
+              else
+                const SliverToBoxAdapter(child: _HomeJobsEmpty()),
+            ],
+            // Clear the map-toggle FAB so the last job card (and its
+            // distance line) never scrolls underneath it. Only reserves
+            // the extra space when the FAB is actually shown.
+            SliverToBoxAdapter(child: Gap(showMapToggle ? 96.h : 24.h)),
+          ],
+        ),
+      ),
     );
 
     // Live page renders as-is; the A/B copy re-renders the same scaffold under
