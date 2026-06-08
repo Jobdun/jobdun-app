@@ -51,9 +51,13 @@ client_*.plist
 .env.*
 !.env.example
 scripts/.ship-env
+scripts/.cloudflare-env
 *.local
 *.secret
 *.secrets
+
+# Wrangler / Cloudflare Pages local state + logs
+.wrangler/
 
 # Private keys, certificates, signing assets
 *.pem

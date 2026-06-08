@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +20,7 @@ import 'core/cache/hive_cache_store.dart';
 import 'core/cache/in_memory_cache_store.dart';
 import 'core/config/env.dart';
 import 'core/config/supabase_config.dart';
+import 'core/services/push_notifications.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +39,17 @@ Future<void> main() async {
   );
   await dotenv.load(fileName: '.env');
   await SupabaseConfig.initialize();
+
+  // Firebase (FCM). Fail-safe: a build without google-services.json (e.g. CI)
+  // or an init error must never block launch — push is best-effort. Token
+  // registration + refresh/auth listeners run in the background after init.
+  try {
+    await Firebase.initializeApp();
+    unawaited(PushNotifications.init());
+  } catch (e) {
+    debugPrint('Firebase/push init skipped: $e');
+  }
+
   final initialTheme = await loadSavedTheme();
 
   // Open the on-disk cache (Phase 2/2.5 — docs/CACHING_ARCHITECTURE.md),
