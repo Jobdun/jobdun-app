@@ -63,8 +63,12 @@ Deno.serve(async (req) => {
           },
         }),
       });
-      if (res.ok) sent++;
-      // 404/410 = stale token; a follow-up can prune device_tokens here.
+      if (res.ok) {
+        sent++;
+      } else if (res.status === 404 || res.status === 410) {
+        // Unregistered/stale token — prune it so we stop trying.
+        await supabase.from("device_tokens").delete().eq("token", token);
+      }
     }
     return json({ sent, total: tokens.length }, 200);
   } catch (e) {
