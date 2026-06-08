@@ -97,3 +97,6 @@ test/**/failures/
 
 # Brainstorming visual-companion artifacts
 .superpowers/
+
+# Firebase service-account keys (NEVER commit — secret private key)
+*firebase-adminsdk*.json
