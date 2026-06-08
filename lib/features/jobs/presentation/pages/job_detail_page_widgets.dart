@@ -118,3 +118,52 @@ class _DeleteConfirmSheet extends StatelessWidget {
     );
   }
 }
+
+// Bottom bar shown when the tradie has already applied — a non-interactive
+// "Applied" confirmation that replaces the apply button (re-applying would hit
+// the UNIQUE(job_id, trade_id) constraint and surface a raw error).
+class _AppliedBar extends StatelessWidget {
+  const _AppliedBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        border: Border(top: BorderSide(color: c.border)),
+      ),
+      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+      child: Container(
+        width: double.infinity,
+        height: 48.h,
+        decoration: BoxDecoration(
+          color: c.verifiedBg,
+          borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          border: Border.all(color: c.verified),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.successCircle,
+              size: AppIconSize.md.r,
+              color: c.verified,
+            ),
+            Gap(AppSpacing.sm.w),
+            Text(
+              AppStrings.respondedState,
+              style: tt.bodyLarge!.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: c.verifiedTx,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

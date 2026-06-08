@@ -361,3 +361,37 @@ class _VerifyGateSheet extends StatelessWidget {
     );
   }
 }
+
+// Shown in place of the rate field when the builder chose "request quotes":
+// tradies submit their own quote on apply. Flat surface card (MASTER: no shadow).
+class _QuoteModeNote extends StatelessWidget {
+  const _QuoteModeNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md.r),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.quote, size: AppIconSize.md.r, color: c.text3),
+          Gap(10.w),
+          Expanded(
+            child: Text(
+              'Tradies send their quotes when they apply. '
+              "You'll see each quote on the Applicants screen.",
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium!.copyWith(color: c.text2, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

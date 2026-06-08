@@ -466,34 +466,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                           ]),
                         )
                       else
-                        Container(
-                          padding: EdgeInsets.all(AppSpacing.md.r),
-                          decoration: BoxDecoration(
-                            color: c.surface,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.card.r,
-                            ),
-                            border: Border.all(color: c.border),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                AppIcons.quote,
-                                size: AppIconSize.md.r,
-                                color: c.text3,
-                              ),
-                              Gap(10.w),
-                              Expanded(
-                                child: Text(
-                                  'Tradies send their quotes when they apply. '
-                                  "You'll see each quote on the Applicants screen.",
-                                  style: Theme.of(context).textTheme.bodyMedium!
-                                      .copyWith(color: c.text2, height: 1.4),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const _QuoteModeNote(),
 
                       // ── Visibility ─────────────────────────────────────────
                       Gap(AppSpacing.xl.h),

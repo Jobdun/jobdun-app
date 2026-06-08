@@ -329,42 +329,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 ),
               )
             else if (applied)
-              Container(
-                decoration: BoxDecoration(
-                  color: c.card,
-                  border: Border(top: BorderSide(color: c.border)),
-                ),
-                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-                child: Container(
-                  width: double.infinity,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: c.verifiedBg,
-                    borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                    border: Border.all(color: c.verified),
-                  ),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        AppIcons.successCircle,
-                        size: AppIconSize.md.r,
-                        color: c.verified,
-                      ),
-                      Gap(AppSpacing.sm.w),
-                      Text(
-                        AppStrings.respondedState,
-                        style: tt.bodyLarge!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: c.verifiedTx,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
+              const _AppliedBar()
             else
               BottomActionBar(
                 primary: JButton(
