@@ -227,9 +227,9 @@ class _BuilderProfile extends ConsumerWidget {
     final registeredLocation = _formatRegisteredLocation(abrState, abrPostcode);
     final inBusinessSince = _formatInBusinessSince(abnRegisteredAt);
 
-    // Real stats only. Rating/reviews are phantom for builders (the rating
-    // trigger only updates trade_profiles), so we drop them — see
-    // docs/BUILDER_PROFILE_HOME_AUDIT.md. Jobs posted = real row count.
+    // Stats row stays jobs/hires/since (not rating). Builder rating + reviews
+    // from tradies now render below the details card — S14 (20260609000001)
+    // added the builder rating trigger. Jobs posted = real row count.
     final jobsPosted = ref
         .watch(builderJobsPostedCountProvider)
         .asData
@@ -339,6 +339,16 @@ class _BuilderProfile extends ConsumerWidget {
               ),
             ],
           ),
+          if (p?.id != null) ...[
+            Gap(AppSpacing.md.h),
+            ProfileRatingBlock(average: p!.averageRating, count: p.ratingCount),
+            if (p.ratingCount > 0) Gap(AppSpacing.sm.h),
+            ProfileReviewsPreview(
+              userId: p.id,
+              emptyMessage:
+                  'No reviews yet — tradies review you after a completed job.',
+            ),
+          ],
           Gap(12.h),
           if (p?.id != null)
             VerificationReceipts(
@@ -481,10 +491,7 @@ class _TradeProfile extends ConsumerWidget {
           ),
           if (p?.id != null) ...[
             Gap(AppSpacing.md.h),
-            ProfileRatingBlock(
-              average: p!.averageRating,
-              count: p.ratingCount,
-            ),
+            ProfileRatingBlock(average: p!.averageRating, count: p.ratingCount),
             if (p.ratingCount > 0) Gap(AppSpacing.sm.h),
             ProfileReviewsPreview(
               userId: p.id,
