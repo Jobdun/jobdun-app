@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
@@ -22,6 +23,8 @@ import '../../domain/usecases/send_message.dart';
 import '../../domain/usecases/watch_messages.dart';
 import '../state/messaging_state.dart';
 import '../state/thread_messages.dart';
+
+part 'messaging_reactions_part.dart';
 
 // How many older messages a history page fetches.
 const _pageSize = 30;
@@ -71,7 +74,7 @@ final messagingControllerProvider =
     );
 
 class MessagingController extends Notifier<MessagingState>
-    with AccountScoped<MessagingState> {
+    with AccountScoped<MessagingState>, _ReactionActions {
   late MessageRepository _repo;
   StreamSubscription<List<Conversation>>? _conversationsSub;
   final Map<String, StreamSubscription<List<Message>>> _messageSubs = {};
@@ -207,47 +210,6 @@ class MessagingController extends Notifier<MessagingState>
     _reactionSubs.remove(conversationId)?.cancel();
   }
 
-  /// Toggle my reaction on a message: a new emoji replaces my previous one, the
-  /// same emoji removes it. Optimistic; the realtime stream reconciles.
-  Future<void> toggleReaction({
-    required String conversationId,
-    required String messageId,
-    required String emoji,
-  }) async {
-    final me = readCurrentUserId(ref);
-    if (me == null) return;
-    final current = state.reactionsFor(conversationId);
-    final mineNow = current
-        .where((r) => r.messageId == messageId && r.userId == me)
-        .toList();
-    final removing = mineNow.isNotEmpty && mineNow.first.emoji == emoji;
-
-    final optimistic = current
-        .where((r) => !(r.messageId == messageId && r.userId == me))
-        .toList();
-    if (!removing) {
-      optimistic.add(
-        MessageReaction(
-          messageId: messageId,
-          conversationId: conversationId,
-          userId: me,
-          emoji: emoji,
-        ),
-      );
-    }
-    _setReactions(conversationId, optimistic);
-
-    final result = removing
-        ? await _repo.removeReaction(messageId: messageId, userId: me)
-        : await _repo.setReaction(
-            messageId: messageId,
-            conversationId: conversationId,
-            userId: me,
-            emoji: emoji,
-          );
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
-  }
-
   /// Optimistic send: shows an instant local bubble, inserts with a client_tag,
   /// then lets the realtime echo (matched by client_tag) confirm it. On
   /// failure/timeout the bubble flips to a retryable failed state.
@@ -315,6 +277,29 @@ class MessagingController extends Notifier<MessagingState>
       // Success: leave the outbox entry; the realtime echo prunes it by tag.
       (_) {},
     );
+  }
+
+  /// Upload + send an image message. The realtime echo renders the image once
+  /// the upload + insert complete (no optimistic preview in v1).
+  Future<void> sendImage({
+    required String conversationId,
+    required File file,
+    required String mime,
+    int? width,
+    int? height,
+  }) async {
+    final senderId = readCurrentUserId(ref);
+    if (senderId == null) return;
+    final result = await _repo.sendImageMessage(
+      conversationId: conversationId,
+      senderId: senderId,
+      clientTag: uuidV4(),
+      file: file,
+      mime: mime,
+      width: width,
+      height: height,
+    );
+    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 
   /// Unsend (soft-delete) one of my messages. Optimistically swaps the bubble
@@ -433,12 +418,6 @@ class MessagingController extends Notifier<MessagingState>
     final map = Map<String, List<Message>>.from(state.messagesByConvId)
       ..[conversationId] = msgs;
     state = state.copyWith(messagesByConvId: map);
-  }
-
-  void _setReactions(String conversationId, List<MessageReaction> reactions) {
-    final map = Map<String, List<MessageReaction>>.from(state.reactionsByConvId)
-      ..[conversationId] = reactions;
-    state = state.copyWith(reactionsByConvId: map);
   }
 
   void _addToOutbox(String conversationId, PendingMessage pending) {

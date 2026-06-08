@@ -80,50 +80,66 @@ class _MessageBubble extends StatelessWidget {
               children: [
                 GestureDetector(
                   onLongPress: onLongPress,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 14.w,
-                      vertical: 10.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: bubbleColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: isMine || !groupedWithPrev ? round : tight,
-                        topRight: !isMine || !groupedWithPrev ? round : tight,
-                        bottomLeft: isMine || lastInGroup ? round : tight,
-                        bottomRight: !isMine || lastInGroup ? round : tight,
-                      ),
-                      border: (isMine && !isDeleted)
-                          ? null
-                          : Border.all(color: c.border),
-                    ),
-                    child: isDeleted
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(AppIcons.trash, size: 14.r, color: c.text3),
-                              Gap(6.w),
-                              Text(
-                                'Message deleted',
-                                style: tt.bodyMedium!.copyWith(
-                                  color: c.text3,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            entry.body,
-                            style: tt.bodyLarge!.copyWith(
-                              fontWeight: FontWeight.w400,
-                              color: isMine
-                                  ? Colors
-                                        .white // intentional
-                                  : c.text1,
-                              height: 1.45,
-                            ),
+                  child: entry.hasImage && !isDeleted
+                      ? _ChatImage(
+                          path: entry.attachmentPath!,
+                          width: entry.attachmentW,
+                          height: entry.attachmentH,
+                        )
+                      : Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 10.h,
                           ),
-                  ),
+                          decoration: BoxDecoration(
+                            color: bubbleColor,
+                            borderRadius: BorderRadius.only(
+                              topLeft: isMine || !groupedWithPrev
+                                  ? round
+                                  : tight,
+                              topRight: !isMine || !groupedWithPrev
+                                  ? round
+                                  : tight,
+                              bottomLeft: isMine || lastInGroup ? round : tight,
+                              bottomRight: !isMine || lastInGroup
+                                  ? round
+                                  : tight,
+                            ),
+                            border: (isMine && !isDeleted)
+                                ? null
+                                : Border.all(color: c.border),
+                          ),
+                          child: isDeleted
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      AppIcons.trash,
+                                      size: 14.r,
+                                      color: c.text3,
+                                    ),
+                                    Gap(6.w),
+                                    Text(
+                                      'Message deleted',
+                                      style: tt.bodyMedium!.copyWith(
+                                        color: c.text3,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  entry.body,
+                                  style: tt.bodyLarge!.copyWith(
+                                    fontWeight: FontWeight.w400,
+                                    color: isMine
+                                        ? Colors
+                                              .white // intentional
+                                        : c.text1,
+                                    height: 1.45,
+                                  ),
+                                ),
+                        ),
                 ),
                 if (!isDeleted) ...[
                   // Failed (mine) → retry line; otherwise timestamp (+ "edited"

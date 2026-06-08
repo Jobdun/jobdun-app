@@ -11,6 +11,10 @@ class Message extends Equatable {
     this.deletedAt,
     this.editedAt,
     this.clientTag,
+    this.attachmentPath,
+    this.attachmentMime,
+    this.attachmentW,
+    this.attachmentH,
   });
 
   final String id;
@@ -25,10 +29,18 @@ class Message extends Equatable {
   // optimistic local bubble be matched to its server row (dedup by client_tag,
   // not by server id). Null for rows inserted before Phase A / server-only.
   final String? clientTag;
+  // Storage path in the `chat-attachments` bucket + its mime/dimensions.
+  // Null for plain text messages.
+  final String? attachmentPath;
+  final String? attachmentMime;
+  final int? attachmentW;
+  final int? attachmentH;
 
   bool get isRead => readAt != null;
   bool get isDeleted => deletedAt != null;
   bool get isEdited => editedAt != null;
+  bool get hasImage =>
+      attachmentPath != null && (attachmentMime?.startsWith('image/') ?? false);
 
   Message copyWith({
     String? body,
@@ -45,6 +57,10 @@ class Message extends Equatable {
     deletedAt: deletedAt ?? this.deletedAt,
     editedAt: editedAt ?? this.editedAt,
     clientTag: clientTag,
+    attachmentPath: attachmentPath,
+    attachmentMime: attachmentMime,
+    attachmentW: attachmentW,
+    attachmentH: attachmentH,
   );
 
   @override
@@ -56,5 +72,6 @@ class Message extends Equatable {
     body,
     deletedAt,
     editedAt,
+    attachmentPath,
   ];
 }

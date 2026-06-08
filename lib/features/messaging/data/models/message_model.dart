@@ -11,6 +11,10 @@ class MessageModel extends Message {
     super.deletedAt,
     super.editedAt,
     super.clientTag,
+    super.attachmentPath,
+    super.attachmentMime,
+    super.attachmentW,
+    super.attachmentH,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
@@ -19,6 +23,10 @@ class MessageModel extends Message {
     senderId: json['sender_id'] as String,
     body: json['body'] as String,
     clientTag: json['client_tag'] as String?,
+    attachmentPath: json['attachment_path'] as String?,
+    attachmentMime: json['attachment_mime'] as String?,
+    attachmentW: json['attachment_w'] as int?,
+    attachmentH: json['attachment_h'] as int?,
     readAt: json['read_at'] != null
         ? DateTime.parse(json['read_at'] as String)
         : null,

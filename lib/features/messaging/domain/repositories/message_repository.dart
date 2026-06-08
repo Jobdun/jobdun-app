@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/errors/failures.dart';
@@ -24,6 +26,16 @@ abstract interface class MessageRepository {
     required String clientTag,
   });
   Future<Either<Failure, void>> softDeleteMessage(String messageId);
+  Future<Either<Failure, void>> sendImageMessage({
+    required String conversationId,
+    required String senderId,
+    required String clientTag,
+    required File file,
+    required String mime,
+    int? width,
+    int? height,
+  });
+  Future<Either<Failure, String>> signedAttachmentUrl(String path);
   Future<Either<Failure, void>> setReaction({
     required String messageId,
     required String conversationId,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -86,6 +88,41 @@ class MessageRepositoryImpl implements MessageRepository {
     try {
       await _datasource.softDeleteMessage(messageId);
       return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> sendImageMessage({
+    required String conversationId,
+    required String senderId,
+    required String clientTag,
+    required File file,
+    required String mime,
+    int? width,
+    int? height,
+  }) async {
+    try {
+      await _datasource.sendImageMessage(
+        conversationId: conversationId,
+        senderId: senderId,
+        clientTag: clientTag,
+        file: file,
+        mime: mime,
+        width: width,
+        height: height,
+      );
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> signedAttachmentUrl(String path) async {
+    try {
+      return right(await _datasource.signedAttachmentUrl(path));
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }

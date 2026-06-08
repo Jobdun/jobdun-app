@@ -1,19 +1,25 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
+import 'package:photo_view/photo_view.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../../core/services/image_upload_service.dart';
 import '../../domain/entities/conversation_typing.dart';
+import '../providers/messaging_attachment_providers.dart';
 import '../providers/messaging_provider.dart';
 import '../providers/messaging_realtime_provider.dart';
 import '../state/thread_messages.dart';
@@ -21,6 +27,8 @@ import '../state/thread_messages.dart';
 part 'message_thread_widgets.dart';
 part 'message_thread_status.dart';
 part 'message_thread_actions.dart';
+part 'message_thread_input.dart';
+part 'message_thread_image.dart';
 
 // Passed via GoRouter extra when pushing /messages/:conversationId
 class ConversationArgs {
@@ -173,6 +181,40 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
           );
         }
     }
+  }
+
+  // Attach a photo: choose source → pick/crop/compress → upload + send.
+  Future<void> _pickAndSendImage() async {
+    final source = await showJSheet<ImageSource>(
+      context: context,
+      builder: (_) => const _ImageSourceSheet(),
+    );
+    if (source == null || !mounted) return;
+    File? file;
+    try {
+      file = await ImageUploadService.pickCropCompress(
+        source: source,
+        aspect: ImageAspect.free,
+      );
+    } on Exception {
+      return;
+    }
+    if (file == null || !mounted) return;
+    await _messaging.sendImage(
+      conversationId: _conversationId,
+      file: file,
+      mime: _mimeFor(file.path),
+    );
+  }
+
+  static String _mimeFor(String path) {
+    final ext = path.toLowerCase().split('.').last;
+    return switch (ext) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'heic' => 'image/heic',
+      _ => 'image/jpeg',
+    };
   }
 
   void _scrollToBottom() {
@@ -402,89 +444,11 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                 ),
               ),
 
-            // ── Input bar
-            Container(
-              decoration: BoxDecoration(
-                color: c.card,
-                border: Border(top: BorderSide(color: c.border)),
-              ),
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.md.w,
-                10.h,
-                AppSpacing.md.w,
-                10.h,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: c.surface,
-                        borderRadius: BorderRadius.circular(24.r),
-                        border: Border.all(color: c.border),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md.w,
-                        vertical: 4.h,
-                      ),
-                      child: TextField(
-                        controller: _textCtrl,
-                        style: tt.bodyLarge!.copyWith(color: c.text1),
-                        maxLines: null,
-                        // Text guardrail: hard cap input length; counter hidden
-                        // to keep the chat bar clean.
-                        maxLength: kMaxMessageLength,
-                        buildCounter:
-                            (
-                              _, {
-                              required currentLength,
-                              required isFocused,
-                              maxLength,
-                            }) => null,
-                        textCapitalization: TextCapitalization.sentences,
-                        onSubmitted: (_) => _send(),
-                        decoration: InputDecoration(
-                          hintText: 'Message…',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8.h),
-                          isDense: true,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Gap(10.w),
-                  // Active state: orange + white icon when there's text to
-                  // send, dimmed + disabled when the field is empty.
-                  ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _textCtrl,
-                    builder: (context, value, _) {
-                      final canSend = value.text.trim().isNotEmpty;
-                      return GestureDetector(
-                        key: const Key('thread-send'),
-                        onTap: canSend ? _send : null,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 42.r,
-                          height: 42.r,
-                          decoration: BoxDecoration(
-                            color: canSend ? c.action : c.surfaceRaised,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            AppIcons.send,
-                            size: AppIconSize.md.r,
-                            color: canSend ? c.onAction : c.text3,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+            // ── Input bar (composer extracted to a part to keep this file lean)
+            _ThreadComposer(
+              controller: _textCtrl,
+              onSend: _send,
+              onAttach: _pickAndSendImage,
             ),
           ],
         ),

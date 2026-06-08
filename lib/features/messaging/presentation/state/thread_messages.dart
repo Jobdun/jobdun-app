@@ -81,6 +81,10 @@ class ThreadEntry {
     this.isDeleted = false,
     this.isEdited = false,
     this.reactions = const [],
+    this.attachmentPath,
+    this.attachmentMime,
+    this.attachmentW,
+    this.attachmentH,
   });
 
   /// Stable identity for keys + grouping: the server id, or `pending:<tag>`.
@@ -102,6 +106,14 @@ class ThreadEntry {
   final bool isEdited;
   // Reaction chips to render under the bubble (one per distinct emoji).
   final List<ReactionView> reactions;
+  // Image/file attachment (Phase B). Null for plain text messages.
+  final String? attachmentPath;
+  final String? attachmentMime;
+  final int? attachmentW;
+  final int? attachmentH;
+
+  bool get hasImage =>
+      attachmentPath != null && (attachmentMime?.startsWith('image/') ?? false);
 }
 
 /// Merges confirmed server messages with the optimistic outbox into one ordered
@@ -166,6 +178,10 @@ List<ThreadEntry> buildThreadEntries({
         isDeleted: m.isDeleted,
         isEdited: m.isEdited,
         reactions: m.isDeleted ? const [] : reactionViewsFor(m.id),
+        attachmentPath: m.attachmentPath,
+        attachmentMime: m.attachmentMime,
+        attachmentW: m.attachmentW,
+        attachmentH: m.attachmentH,
       ),
     );
   }

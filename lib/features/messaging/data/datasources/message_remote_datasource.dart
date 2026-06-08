@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -32,6 +34,22 @@ abstract interface class MessageRemoteDataSource {
   /// Soft-delete (unsend) a message — sets `deleted_at`. RLS limits this to the
   /// sender's own messages.
   Future<void> softDeleteMessage(String messageId);
+
+  /// Upload an image to the `chat-attachments` bucket and insert a message row
+  /// referencing it (empty body). Storage RLS scopes by the conversation_id in
+  /// the object path.
+  Future<void> sendImageMessage({
+    required String conversationId,
+    required String senderId,
+    required String clientTag,
+    required File file,
+    required String mime,
+    int? width,
+    int? height,
+  });
+
+  /// A short-lived signed URL for a private attachment object.
+  Future<String> signedAttachmentUrl(String path);
 
   /// Set (or switch) my reaction on a message. One per user per message.
   Future<void> setReaction({
@@ -189,6 +207,52 @@ class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
           .from('messages')
           .update({'deleted_at': DateTime.now().toIso8601String()})
           .eq('id', messageId);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> sendImageMessage({
+    required String conversationId,
+    required String senderId,
+    required String clientTag,
+    required File file,
+    required String mime,
+    int? width,
+    int? height,
+  }) async {
+    try {
+      final ext = mime == 'image/jpeg' ? 'jpg' : mime.split('/').last;
+      final path = '$conversationId/$clientTag.$ext';
+      await _client.storage
+          .from('chat-attachments')
+          .upload(
+            path,
+            file,
+            fileOptions: FileOptions(contentType: mime, upsert: true),
+          );
+      await _client.from('messages').insert({
+        'conversation_id': conversationId,
+        'sender_id': senderId,
+        'body': '',
+        'client_tag': clientTag,
+        'attachment_path': path,
+        'attachment_mime': mime,
+        'attachment_w': ?width,
+        'attachment_h': ?height,
+      });
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<String> signedAttachmentUrl(String path) async {
+    try {
+      return await _client.storage
+          .from('chat-attachments')
+          .createSignedUrl(path, 3600);
     } catch (e) {
       throw ServerException(e.toString());
     }
