@@ -1,23 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/widgets/j_button.dart';
-import '../../../../../core/theme/app_icons.dart';
-import '../../../../app/placeholders/admin_placeholder_action.dart';
 import '../../../../app/placeholders/admin_status_tag.dart';
-import '../../../../app/placeholders/placeholder_models.dart';
+import '../providers/admin_user_detail_provider.dart';
 
-/// Moderation surface — tier, account state, open reports + the
-/// Suspend/Ban actions. **UI-only**: every value is a [placeholderDefault]
-/// and every action is disabled until Phase 2 (moderation) wires it.
-class AdminUserModerationCard extends StatelessWidget {
-  const AdminUserModerationCard({super.key});
+/// Moderation surface (#21a) — current account state + Suspend / Ban /
+/// Reactivate. Each action calls the audited `admin_set_user_status` RPC and
+/// refreshes the detail; the offered actions depend on the current status.
+class AdminUserModerationCard extends ConsumerStatefulWidget {
+  const AdminUserModerationCard({
+    super.key,
+    required this.userId,
+    required this.status,
+  });
+
+  final String userId;
+  final String status; // active | suspended | banned
+
+  @override
+  ConsumerState<AdminUserModerationCard> createState() =>
+      _AdminUserModerationCardState();
+}
+
+class _AdminUserModerationCardState
+    extends ConsumerState<AdminUserModerationCard> {
+  bool _busy = false;
+
+  Future<void> _set(String status) async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final res = await ref
+        .read(adminModerationProvider)
+        .setUserStatus(userId: widget.userId, status: status);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    res.fold(
+      (f) => messenger.showSnackBar(SnackBar(content: Text(f.message))),
+      (_) => messenger.showSnackBar(
+        SnackBar(content: Text('Account set to ${status.toUpperCase()}.')),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final status = widget.status;
 
     return Container(
       width: double.infinity,
@@ -30,56 +62,43 @@ class AdminUserModerationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('MODERATION', style: AdminText.cardLabel(c.text3)),
-              const Spacer(),
-              Text(
-                'PHASE 2 · NOT WIRED',
-                style: AdminText.eyebrow(c.text3).copyWith(letterSpacing: 1.2),
-              ),
-            ],
-          ),
+          Text('MODERATION', style: AdminText.cardLabel(c.text3)),
           const Gap(12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AdminStatusTag(
-                label: SubscriptionTier.placeholderDefault.label,
-                tooltip: 'Subscription tier — ${AdminPhase.billing}',
-              ),
-              AdminStatusTag(
-                label: UserModerationStatus.placeholderDefault.label,
-                tooltip: 'Moderation status — ${AdminPhase.moderation}',
-              ),
-              AdminStatusTag(
-                label: '—',
-                icon: AppIcons.warning,
-                tooltip: 'Open reports — ${AdminPhase.moderation}',
-              ),
-            ],
+          AdminStatusTag(
+            label: 'Account: ${status.toUpperCase()}',
+            tooltip: 'Current moderation status (admin_set_user_status)',
           ),
           const Gap(16),
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: const [
-              SizedBox(
-                width: 150,
-                child: AdminPlaceholderAction(
-                  label: 'SUSPEND',
-                  tooltip: AdminPhase.moderationWiring,
+            children: [
+              if (status != 'active')
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'REACTIVATE',
+                    onPressed: _busy ? null : () => _set('active'),
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: 150,
-                child: AdminPlaceholderAction(
-                  label: 'BAN',
-                  tooltip: AdminPhase.moderationWiring,
-                  variant: JButtonVariant.danger,
+              if (status != 'suspended')
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'SUSPEND',
+                    variant: JButtonVariant.secondary,
+                    onPressed: _busy ? null : () => _set('suspended'),
+                  ),
                 ),
-              ),
+              if (status != 'banned')
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'BAN',
+                    variant: JButtonVariant.danger,
+                    onPressed: _busy ? null : () => _set('banned'),
+                  ),
+                ),
             ],
           ),
         ],

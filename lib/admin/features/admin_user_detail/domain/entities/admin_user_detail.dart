@@ -10,6 +10,7 @@ class AdminUserDetail extends Equatable {
     required this.displayName,
     required this.role,
     required this.createdAt,
+    this.userStatus = 'active',
     this.avatarUrl,
     this.phone,
     this.phoneVerifiedAt,
@@ -26,6 +27,7 @@ class AdminUserDetail extends Equatable {
   final String displayName;
   final String role; // 'builder' | 'trade' | 'admin' | 'unknown'
   final DateTime createdAt;
+  final String userStatus; // active | suspended | banned (#21a moderation)
   final String? avatarUrl;
   final String? phone;
   final DateTime? phoneVerifiedAt;
@@ -45,6 +47,7 @@ class AdminUserDetail extends Equatable {
     displayName,
     role,
     createdAt,
+    userStatus,
     avatarUrl,
     phone,
     phoneVerifiedAt,

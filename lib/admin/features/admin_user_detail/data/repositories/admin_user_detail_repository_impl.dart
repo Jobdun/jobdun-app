@@ -49,6 +49,7 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
               ? (profile['display_name'] as String).trim()
               : '${(profile['id'] as String).substring(0, 8)}…',
           role: role,
+          userStatus: profile['user_status'] as String? ?? 'active',
           avatarUrl: profile['avatar_url'] as String?,
           phone: profile['phone'] as String?,
           phoneVerifiedAt: parseOpt(profile['phone_verified_at']),
@@ -80,7 +81,7 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
       // that still exist on the live schema.
       .select(
         'id, display_name, avatar_url, phone, phone_verified_at, '
-        'created_at, updated_at',
+        'created_at, updated_at, user_status',
       )
       .eq('id', userId)
       .maybeSingle();
@@ -190,5 +191,24 @@ class AdminUserDetailRepositoryImpl implements AdminUserDetailRepository {
       );
     }
     return result;
+  }
+
+  @override
+  Future<Either<Failure, Unit>> setUserStatus({
+    required String userId,
+    required String status,
+    String? reason,
+  }) async {
+    try {
+      await _client.rpc(
+        'admin_set_user_status',
+        params: {'p_user_id': userId, 'p_status': status, 'p_reason': reason},
+      );
+      return const Right(unit);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 }

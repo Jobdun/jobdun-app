@@ -79,7 +79,7 @@ class _DetailBody extends StatelessWidget {
           const Gap(16),
           AdminUserVerificationsCard(verifications: detail.verifications),
           const Gap(16),
-          const AdminUserModerationCard(),
+          AdminUserModerationCard(userId: detail.id, status: detail.userStatus),
           const Gap(40),
         ],
       ),
