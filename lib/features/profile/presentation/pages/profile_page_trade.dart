@@ -78,6 +78,18 @@ class _TradeProfile extends ConsumerWidget {
             label: 'ABOUT',
             addPrompt: 'Add a short bio so builders know you',
           ),
+          if (p != null) ...[
+            // P4 (S9): trade as a scannable chip. Single-trade for now —
+            // a multi-skill list needs a secondary_trades field (migration).
+            Gap(AppSpacing.md.h),
+            const FieldLabel('SKILLS'),
+            Gap(AppSpacing.sm.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [JChip(label: p.displayTrade)],
+            ),
+          ],
           Gap(AppSpacing.md.h),
           const FieldLabel('PORTFOLIO'),
           Gap(AppSpacing.sm.h),

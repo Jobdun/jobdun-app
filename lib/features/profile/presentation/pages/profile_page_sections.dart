@@ -268,6 +268,33 @@ class _BuilderProfile extends ConsumerWidget {
               ),
             ],
           ),
+          if (p?.id != null) ...[
+            Gap(AppSpacing.sm.h),
+            // S12: see exactly what a tradie sees before they apply.
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => context.push('/builders/${p!.id}'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    AppIcons.eyeOpen,
+                    size: AppIconSize.inline.r,
+                    color: c.action,
+                  ),
+                  Gap(6.w),
+                  Text(
+                    'PREVIEW PUBLIC PROFILE',
+                    style: Theme.of(context).textTheme.labelMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: c.action,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Gap(AppSpacing.md.h),
           // Own profile: always shown, with an Add prompt when empty so the
           // builder discovers the field. (addPrompt = owner mode.)
