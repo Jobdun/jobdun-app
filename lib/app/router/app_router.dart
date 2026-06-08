@@ -32,6 +32,7 @@ import '../../features/discovery/presentation/pages/discovery_map_page.dart';
 import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/profile/presentation/pages/builder_public_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
@@ -391,6 +392,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const NotificationsPage(),
       ),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+      GoRoute(
+        path: '/builders/:id',
+        builder: (_, state) =>
+            BuilderPublicProfilePage(builderId: state.pathParameters['id']!),
+      ),
 
       // ── Legal (public — accessible before auth) ────────────────────────────
       GoRoute(

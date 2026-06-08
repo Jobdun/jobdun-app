@@ -202,52 +202,73 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     // ── Posted by
                     FieldLabel('POSTED BY'),
                     Gap(AppSpacing.sm.h),
-                    Container(
-                      padding: EdgeInsets.all(14.r),
-                      decoration: BoxDecoration(
-                        color: c.card,
-                        borderRadius: BorderRadius.circular(AppRadius.card.r),
-                        border: Border.all(color: c.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44.r,
-                            height: 44.r,
-                            decoration: BoxDecoration(
-                              color: c.surfaceRaised,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: c.border),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              args.builderInitials ?? 'B',
-                              style: tt.titleLarge!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: c.text2,
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      // Tap through to the public builder profile (S13) —
+                      // company, ABN ✓, track record, reviews from tradies — so
+                      // a tradie can vet who they're applying to before they do.
+                      onTap: args.builderId == null
+                          ? null
+                          : () => context.push('/builders/${args.builderId}'),
+                      child: Container(
+                        padding: EdgeInsets.all(14.r),
+                        decoration: BoxDecoration(
+                          color: c.card,
+                          borderRadius: BorderRadius.circular(AppRadius.card.r),
+                          border: Border.all(color: c.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44.r,
+                              height: 44.r,
+                              decoration: BoxDecoration(
+                                color: c.surfaceRaised,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: c.border),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                args.builderInitials ?? 'B',
+                                style: tt.titleLarge!.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: c.text2,
+                                ),
                               ),
                             ),
-                          ),
-                          Gap(12.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  args.companyName ?? 'Builder',
-                                  style: tt.titleMedium!.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: c.text1,
+                            Gap(12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    args.companyName ?? 'Builder',
+                                    style: tt.titleMedium!.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: c.text1,
+                                    ),
                                   ),
-                                ),
-                                // TODO(core-loop): surface the real builder
-                                // rating + review count and a verified badge
-                                // once JobDetailArgs carries builder_profiles
-                                // data. No fabricated rating/badge until then.
-                              ],
+                                  if (args.builderId != null) ...[
+                                    Gap(2.h),
+                                    Text(
+                                      'View profile & reviews',
+                                      style: tt.bodySmall!.copyWith(
+                                        color: c.action,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            if (args.builderId != null)
+                              Icon(
+                                AppIcons.chevronRight,
+                                size: AppIconSize.inline.r,
+                                color: c.text3,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                     Gap(20.h),
