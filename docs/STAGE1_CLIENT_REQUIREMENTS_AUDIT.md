@@ -28,26 +28,40 @@
 | 5 | ID / licence / insurance verification badges | ✅* | ABN + state-licence auto-verified via edge fns; *insurance = manual upload only. |
 | 6 | Job posting system | ✅ | `jobs` table, create/edit/delete, feed, detail, map. |
 | 7 | Urgent job posting option | ✅ | `job_urgency` enum (`standard`/`urgent`) + badge. |
-| 8 | Push notifications for new jobs | ❌ | No push SDK, no device-token table, no new-job trigger. In-app centre only. |
+| 8 | Push notifications for new jobs | ✅ | FCM rail end-to-end: `device_tokens` + `push-send` edge fn + new-job fan-out + per-user prefs + message/application-status producers. *(2026-06-09)* |
 | 9 | Search trades by location / rating / availability | ✅ | `search_trades` RPC (bounding-box + haversine + rating + availability); `lib/features/discovery/` module; home builder mini-list + `/discovery` page; trade `OPEN FOR WORK` toggle. *(2026-06-04)* |
 | 10 | GPS / map view for nearby crews | ✅ | `/discovery/map` plots real trade pins from `search_trades`; `/jobs/map` plots jobs. *(2026-06-09)* |
 | 11 | In-app messaging / chat | ✅ | Realtime Supabase `.stream()` threads + conversations. |
 | 12 | Photo / file uploads | ✅ | Pick/crop/compress pipeline, 5 storage buckets, zoom viewer. |
-| 13 | Availability calendar | 🟡 | Availability **filter** shipped (`is_available`/`available_from` + search filter + profile toggle, 2026-06-04). Full weekly `table_calendar` view still deferred. |
+| 13 | Availability calendar | ✅ | Filter (2026-06-04) **+ weekly `table_calendar`**: trade blocks dates (`unavailable_dates`) at `/settings/availability`. *(2026-06-10, code; migration pending push)* |
 | 14 | Accept / decline job requests | ✅ | Application flow: shortlist/hire/reject + trade withdraw/decline. |
-| 15 | Scheduling calendar | ❌ | No scheduling feature; `table_calendar` unused. |
-| 16 | Timesheets / check in–out | ❌ | No code, no table. |
+| 15 | Scheduling calendar | ✅ | `bookings` table + `/schedule` (`table_calendar`); builder schedules a hired trade from the applicant screen; both see it. *(2026-06-10, code; migration pending push)* |
+| 16 | Timesheets / check in–out | ✅ | `timesheets` table; trade clocks on/off per job with best-effort GPS; both parties view entries. *(2026-06-10, code; migration pending push)* |
 | 17 | Trade earnings dashboard | ❌ | `fl_chart` declared but **unused**; no earnings/payments data. |
-| 18 | Quote request system | 🟡 | Trades attach a `quote_amount` on apply; builder sees each quote on the Applicants screen. No standalone builder-initiated request entity. *(2026-06-09)* |
+| 18 | Quote request system | ✅ | Trade quote-on-apply **+ standalone builder-initiated requests** (`quote_requests`): builder asks from the applicant screen, trade responds/declines in a `/quotes` inbox. *(2026-06-10, code; migration pending push. accept→invoice rides with payments)* |
 | 19 | Loyalty rewards / discounts | ❌ | Nothing. |
 | 20 | Referral system | ❌ | Nothing. |
-| 21 | Admin dashboard (users / jobs / payments) | 🟡 | Verifications actionable; user/job moderation RPCs added (`admin_set_user_status`/`admin_set_job_status`, audited) — admin-web wiring + push pending; **payments absent**. *(2026-06-09)* |
+| 21 | Admin dashboard (users / jobs / payments) | 🟡 | Verifications + **user AND job moderation** wired in admin-web (`admin_set_user_status`/`admin_set_job_status`); **broadcast console**; **payments-admin still absent** (Rail C). *(job-mod 2026-06-10)* |
 | 22 | Licence / insurance expiry reminders | ✅ | pg_cron schedules the expiry sweep daily + a 30-day advance warning (`notify_expiring_verifications`) — live on the DB. *(2026-06-09)* |
 | 23 | AI auto-match / smart recommendations | ❌ | Marked *future* by client; no recommendation code. |
 
-**Tally:** ✅ 13 done · 🟡 3 partial · ❌ 7 not started. *(Updated 2026-06-09: #10 ✅ crew map, #22 ✅ cron live, #18 → 🟡 quote-on-apply, #21 moderation DB added — admin-web wiring pending. Earlier 06-04: #9 done, #13 partial.)*
+**Tally:** ✅ 18 done · 🟡 1 partial · ❌ 4 not started. *(Updated 2026-06-10: the non-payment build — #13 calendar, #15 scheduling, #16 timesheets, #18 standalone quotes all ✅; #21 job-moderation wired. **Everything still open is payments-gated (#17 earnings, #19 loyalty, #20 referrals, #21 payments-admin) or client-deferred (#23 AI).** 06-09: #8 ✅ push rail; 06-04/09: #9/#10/#22/#13-filter.)*
 
-> **2026-06-09 refresh:** scorecard above reflects this date; some gap-list prose further down still describes the 06-01 state. **Live on DB this session:** builder reviews from tradies (S14) + the #22 cron/advance-warning. Also shipped (mobile, committed): the profile P2–P5 credibility program — `/settings` route, incomplete-profile CTA, 96dp verified-ring avatar, rating block + review count, service-area/crew lines, and a **public builder profile** (`/builders/:id`) a tradie can vet before applying. The #21a admin-moderation **DB half** is committed (RPCs + `user_status`); admin-web wiring + push remain.
+> **2026-06-10 — "finish all the needed, payments last" build** (branch `feat/stage1-finish-non-payment`, off `6a41283`). Built end-to-end (code) + TDD-tested (full suite 460 pass / 0 fail; arch 7/7; analyze clean):
+> - **#21 job moderation** → wired (`admin_set_job_status` in admin-web + CLOSE/CANCEL/REOPEN card).
+> - **#13 availability calendar** → `unavailable_dates` + `/settings/availability` `table_calendar`.
+> - **#18 standalone quote requests** → `lib/features/quotes/` (`quote_requests`), builder asks on applicant screen, trade `/quotes` inbox responds/declines.
+> - **#15 scheduling** → `lib/features/scheduling/` (`bookings`), `/schedule` calendar, builder schedules a hired trade.
+> - **#16 timesheets** → `lib/features/timesheets/` (`timesheets`), trade clocks on/off per job with GPS, both view.
+> ⚠️ **Not yet live:** 4 migrations (`20260610000001–04`) need `supabase db push`, and the branch is unmerged. Admin-web needs a `deploy-admin.sh` redeploy to surface the wired job-moderation card.
+
+> **2026-06-09 (post-push-merge) — what changed this merge.** The full push-notifications program landed on `main`/`develop` (commit `6a41283`):
+> - **#8 Push → ✅ end-to-end.** `firebase_messaging` ^16.3.0 + `lib/core/services/push_notifications.dart` (token registration), a `device_tokens` table + per-user `notification_preferences` (`…06`), the `push-send` edge function, and a **central push trigger** (`…07`) that fans new-job notifications out to matching trades (`…04`/`…05`). Plus **producers** for new messages (`…09`) and application-status changes (`…10`), and a mobile **notification-preferences screen** (`lib/features/profile/.../notification_settings_page.dart`).
+> - **#21 user moderation → wired in admin-web.** `admin_set_user_status` is now called from `admin_user_detail_repository_impl.dart`; job-moderation RPC (`admin_set_job_status`) exists but the admin jobs screen is still read-only.
+> - **Broadcast console (bonus, beyond the 23).** `lib/admin/features/admin_broadcast/*` + `…08_admin_broadcast.sql` — admin push + in-app announcements to targeted audiences.
+> - **Rails laid:** Rail B (push) ✅ and Rail A (scheduled runner) ✅. **Only Rail C (payments) remains un-laid.**
+
+> **2026-06-09 refresh:** **Live on DB this session:** builder reviews from tradies (S14) + the #22 cron/advance-warning. Also shipped (mobile, committed): the profile P2–P5 credibility program — `/settings` route, incomplete-profile CTA, 96dp verified-ring avatar, rating block + review count, service-area/crew lines, and a **public builder profile** (`/builders/:id`) a tradie can vet before applying.
 
 ---
 
@@ -57,27 +71,21 @@ This is the part you asked for: everything that still needs building before Stag
 
 ### A. Whole features with **zero code** (greenfield)
 
-1. **Push notifications for new jobs (#8)**
-   - No push SDK in `pubspec.yaml` (no `firebase_messaging`, no OneSignal, no Expo).
-   - No `device_tokens` / `push_tokens` table in any migration.
-   - The `notifications` table *exists* and the in-app notification centre works (`lib/features/notifications/`), but rows are only ever inserted by **verification events** (approve/reject/revoke/expire migrations). **Nothing inserts a notification when a job is posted.**
-   - **To build:** push SDK + token registration + token table → DB trigger/edge function on `jobs` insert that fans out to matching trades → push send.
+*Struck-through items have shipped since 2026-06-01 (date noted on each); the rest remain greenfield.*
 
-2. **Search trades by location / rating / availability (#9)**
-   - `JobFilter` (`lib/features/jobs/domain/entities/job_filter.dart`) filters **jobs** only, by `tradeType` / `status` / `searchQuery`. There is **no trade-directory search at all**.
-   - The home screen's "tradies nearby" list renders `TradieCard`s from `_TradieData` **sample data** (`lib/features/home/presentation/pages/home_sample_data.dart`) — not a real query.
-   - Foundations that *do* exist: `trade_profiles` carries `baseLatitude/baseLongitude`, `serviceRadiusKm`, and `averageRating`. **Missing:** an `availability` field entirely, plus a repository query + filter UI.
-   - **To build:** trade-search repository (geo + rating + availability), filter UI, results list backed by real data.
+1. ~~**Push notifications for new jobs (#8)**~~ — ✅ **DONE (2026-06-09).** Shipped end-to-end: `firebase_messaging` + `lib/core/services/push_notifications.dart` (token registration), `device_tokens` + `notification_preferences` tables (`…06`), the `push-send` edge function, and a central trigger (`…07`) that fans new-job/message/application-status notifications out to matching trades (`…04`/`…05`/`…09`/`…10`). See **"What's genuinely solid."**
 
-3. **Availability calendar (#13)** — `table_calendar` is in `pubspec.yaml` but has **0 usages** in `lib/`. No availability field on `trade_profiles`, no calendar screen.
+2. ~~**Search trades by location / rating / availability (#9)**~~ — ✅ **DONE (2026-06-04).** `search_trades` RPC (bounding-box + haversine + rating + availability) backs the `lib/features/discovery/` module, the home builder mini-list, and the `/discovery` page; trades toggle `OPEN FOR WORK`. The home sample-data list was replaced with the real query.
 
-4. **Scheduling calendar (#15)** — no scheduling feature, no booking/schedule table; `table_calendar` unused.
+3. ~~**Availability calendar (#13)**~~ — ✅ **DONE (2026-06-10).** Weekly `table_calendar` of blocked dates (`trade_profiles.unavailable_dates`) at `/settings/availability`, on top of the 06-04 filter.
 
-5. **Timesheets / check in–out (#16)** — no code, no `timesheets` table, no geo/clock capture.
+4. ~~**Scheduling calendar (#15)**~~ — ✅ **DONE (2026-06-10).** `bookings` table + `/schedule` calendar; builder schedules a hired trade from the applicant screen.
 
-6. **Trade earnings dashboard (#17)** — `fl_chart` is in `pubspec.yaml` but has **0 usages** in `lib/`. There is **no payment/earnings data anywhere** to chart (see cross-cutting gap below).
+5. ~~**Timesheets / check in–out (#16)**~~ — ✅ **DONE (2026-06-10).** `timesheets` table; trade clocks on/off per job with best-effort GPS.
 
-7. **Quote request system (#18)** — "quote" only appears in copy/icon names; no quote entity, table, or request flow.
+6. **Trade earnings dashboard (#17)** — `fl_chart` is in `pubspec.yaml` but has **0 usages** in `lib/`. There is **no payment/earnings data anywhere** to chart (see cross-cutting gap below). **Blocked on the payments rail.**
+
+7. ~~**Quote request system (#18)**~~ — ✅ **DONE (2026-06-10).** Standalone builder-initiated requests (`quote_requests`) + trade `/quotes` inbox, alongside the existing quote-on-apply. (accept→invoice rides with payments.)
 
 8. **Loyalty rewards / discounts (#19)** — nothing.
 
@@ -87,15 +95,15 @@ This is the part you asked for: everything that still needs building before Stag
 
 ### B. Partials that need finishing
 
-11. **GPS / map view for *nearby crews* (#10)** — `home_map_view.dart` is a real `flutter_map` map (key-less OSS tiles + `geolocator`), but its `MarkerLayer` plots **jobs** near the user (`_buildMarkers` iterates `jobs`, falling back to *synthesised sample jobs* when none are real). To satisfy "nearby **crews**," it needs crew/trade markers from real `trade_profiles` geo data.
+11. ~~**GPS / map view for *nearby crews* (#10)**~~ — ✅ **DONE (2026-06-09).** `/discovery/map` plots real trade pins from `search_trades`; `/jobs/map` plots jobs. Crew markers are sourced from live `trade_profiles` geo data.
 
-12. **Admin "manage payments" (#21)** — the admin web app (`lib/admin/`) covers Dashboard stats, Users, User detail, Jobs, Verifications, and an Audit log. But:
-    - **Users & Jobs are view-only** — no suspend/ban/edit/delete (admin repos have no `.update/.insert/.delete/.rpc` mutation calls). Only **Verifications** are actionable (`review_verification_document` + `revoke_verification` RPCs).
-    - **Payments management does not exist** because there is **no payment system** in the product at all.
-    - **To build:** user moderation actions (suspend/ban), job moderation, and — gated on a payments system existing — a payments admin surface.
+12. **Admin moderation + "manage payments" (#21)** — the admin web app (`lib/admin/`) covers Dashboard, Users, User detail, Jobs, Verifications, an Audit log, and (new) a **Broadcast console**. Remaining:
+    - **User moderation = ✅ wired** (suspend/ban/reactivate via `admin_set_user_status` + moderation card). **Verifications** also actionable.
+    - **Job moderation = ✅ wired (2026-06-10).** `admin_set_job_status` now called from `admin_jobs_repository_impl.dart`; the job-detail screen has a CLOSE / CANCEL / REOPEN card (`_JobModerationCard`).
+    - **Payments management = ❌** because there is **no payment system** in the product at all (blocked on Rail C). **This is the only remaining piece of #21.**
+    - **To build:** gated on a payments rail — a payments admin surface.
 
-13. **Licence / insurance expiry reminders (#22)** — `expire_stale_verifications()` exists (`supabase/migrations/20260531000004_…`), flips past-due licences to `expired` and notifies the holder. **But it is not scheduled** — the migration explicitly notes pg_cron is not installed and no scheduled edge function calls it, so nothing runs it. Also, it only fires *on/after* expiry; there is **no advance "expiring in 30 days" reminder**.
-    - **To build:** wire a schedule (enable pg_cron *or* a scheduled edge function) + add advance-warning notifications ahead of `expires_at`.
+13. ~~**Licence / insurance expiry reminders (#22)**~~ — ✅ **DONE (2026-06-09).** pg_cron schedules `expire_stale_verifications()` daily plus a 30-day advance warning (`notify_expiring_verifications`); both live on the DB. (Rail A laid.)
 
 ### C. Caveat on an otherwise-✅ item
 
@@ -107,9 +115,9 @@ This is the part you asked for: everything that still needs building before Stag
 
 These underpin several of the missing features and should be sequenced first:
 
-- **No payments rail.** No `payment`/`payout`/`invoice`/`transaction` tables, no Stripe/PayID integration. This blocks **#17 (earnings dashboard)** and the payments half of **#21 (admin)**. Quotes (#18) and loyalty/discounts (#19) also lean on it.
-- **No push delivery rail.** No push SDK, no device-token storage, no fan-out. Blocks **#8** and limits the usefulness of the existing in-app notification centre.
-- **No scheduled-job runner.** pg_cron is not installed and there is no scheduled edge function. Blocks **#22** (expiry sweep/reminders) and any future digest/match notifications.
+- **No payments rail. ← the only rail still missing.** No `payment`/`payout`/`invoice`/`transaction` tables, no Stripe/PayID integration. This blocks **#17 (earnings dashboard)** and the payments half of **#21 (admin)**. Quotes (#18) and loyalty/discounts (#19) also lean on it.
+- ~~No push delivery rail~~ — ✅ **LAID (2026-06-09).** `firebase_messaging` + `device_tokens` + `push-send` edge fn + central fan-out trigger now power **#8** and supercharge the in-app notification centre (now fed by new jobs, messages, and application-status changes).
+- ~~No scheduled-job runner~~ — ✅ **LAID (2026-06-09).** pg_cron runs the verification expiry sweep + a 30-day advance warning daily (**#22**); available for future digests/match jobs.
 
 ---
 
@@ -123,19 +131,22 @@ These underpin several of the missing features and should be sequenced first:
 - **Reviews** — submit/list/average, per-job uniqueness constraint.
 - **Verification** — the most mature subsystem: ABN + multi-state licence auto-verify edge functions, manual-upload fallback, admin review queue, revoke, badges. (See `docs/VERIFICATION_FLOW_AUDIT.md`.)
 - **Uploads** — `ImageUploadService` pick/crop/compress + 5 storage buckets + zoom viewer.
-- **Admin web** — read dashboards for users/jobs + full verification review workflow + audit log.
+- **Push & notifications** — FCM device-token rail (`lib/core/services/push_notifications.dart`) + `push-send` edge fn + per-user notification preferences; the in-app centre is fed by new-job fan-out, new messages, and application-status changes.
+- **Scheduled runner** — pg_cron runs the verification expiry sweep + a 30-day advance warning daily.
+- **Admin web** — read dashboards for users/jobs + full verification review workflow + audit log + **user moderation** (suspend/ban/reactivate) + a **broadcast console** (admin push + in-app announcements, `lib/admin/features/admin_broadcast/`).
 
 ---
 
-## Suggested build order for the gaps
+## Suggested build order for the *remaining* gaps
 
-1. **Trade search + availability (#9, #13, #10)** — highest product value; the data layer is half-there. Add `availability` to `trade_profiles`, build the geo/rating/availability query, replace the home sample list with it, and switch the map to crew markers.
-2. **Push rail → new-job notifications (#8)** — pick the SDK, add token storage, trigger on `jobs` insert.
-3. **Scheduled runner → expiry reminders (#22)** — enable pg_cron / scheduled edge fn; add advance-warning notices.
-4. **Admin moderation (#21, users/jobs)** — suspend/ban/edit actions on the existing read-only screens.
-5. **Payments rail → earnings dashboard (#17, payments admin)** — the big one; unblocks earnings, quotes, and loyalty.
-6. **Quotes (#18), scheduling/timesheets (#15, #16), loyalty (#19), referrals (#20)** — greenfield; sequence per client priority.
-7. **AI auto-match (#23)** — explicitly future; defer until match data accrues.
+*All **non-payment** Stage-1 work is now ✅ (2026-06-10): #8/#9/#10/#13/#15/#16/#18 + #21 moderation + #22. Everything left is gated on the payments decision, plus deferred AI.*
+
+1. **Rail C — Payments (decision-gated, the big unlock).** Pick the processor with the client (**Stripe Connect** recommended; Airwallex / PayID-PayTo as AU-local alternatives). Unblocks everything below — don't build until it's chosen.
+2. **#17 earnings dashboard + #21 payments-admin** — once Rail C exists (finally uses the declared `fl_chart`).
+3. **#19 loyalty + #20 referrals** — lean on payments / credits.
+4. **#23 AI auto-match** — client-deferred; defer until match/booking data accrues.
+
+> **Before any of this is live:** push the 4 pending migrations (`20260610000001–04`) and merge `feat/stage1-finish-non-payment`; redeploy admin-web for the job-moderation card.
 
 ---
 

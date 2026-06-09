@@ -8,9 +8,15 @@ This has two halves:
 - **Part 1 — Alignment audit:** is the current mobile + backend foundation sound enough to build the remaining features on? (Short answer: yes — gaps are *additive*, not *corrective*.)
 - **Parts 2–5 — Completion plan:** the 3 cross-cutting rails to lay first, then a step-by-step, repo-aligned build recipe for each gap, sequenced into milestones.
 
-Re-verified against the repo on 2026-06-01: 11 mobile feature modules, 8 admin modules, 45 migrations, 2 edge functions (`verify-abn`, `verify-licence`). All requirement-audit claims still hold.
+Re-verified against the repo on 2026-06-01 (counts refreshed 2026-06-09): **12 mobile feature modules, 10 admin modules, 65 migrations, 3 edge functions** (`verify-abn`, `verify-licence`, `push-send`). All requirement-audit claims still hold.
 
-> **2026-06-09 progress.** Since this plan was written: **M1 shipped** (trade search #9 + crew map #10 via `lib/features/discovery/`). **Rail A laid** — pg_cron now schedules the expiry sweep + a 30-day advance warning, so **#22 is done (live)**. Builder reviews (S14) shipped + live; **public builder profile** (S13, `/builders/:id`) shipped, closing the surface-3 trust gap; applicant-detail enriched (S15). **#21a admin-moderation DB half** committed (`admin_set_user_status`/`admin_set_job_status` + `user_status`, audited) — admin-web wiring + push remain. **Rails B (push) and C (payments) are still un-laid** → #8, #17, and payments-admin remain blocked.
+> **2026-06-09 progress (post-push-merge).** Since this plan was written:
+> - **M1 shipped** — trade search (#9) + crew map (#10) via `lib/features/discovery/`.
+> - **Rail A laid** — pg_cron schedules the expiry sweep + a 30-day advance warning, so **#22 is done (live)**.
+> - **Rail B laid → #8 done end-to-end.** `firebase_messaging` + `device_tokens` + `push-send` edge fn + a central trigger fanning new-job/message/application-status notifications to matching trades; mobile **notification-preferences** screen; a **broadcast console** (admin push + in-app announcements) as a bonus.
+> - **#21a admin moderation** — **user** moderation now **wired in admin-web** (`admin_set_user_status`); **job** moderation RPC (`admin_set_job_status`) exists but the admin jobs screen is still read-only (small wiring task).
+> - Builder reviews (S14), public builder profile (S13, `/builders/:id`), enriched applicant-detail (S15) all shipped.
+> - **Only Rail C (payments) remains un-laid** → #17 earnings and payments-admin (#21b) stay blocked. The `lib/admin/features/admin_payments/` page is a roadmap placeholder (phase M5).
 
 ---
 
@@ -22,7 +28,7 @@ Re-verified against the repo on 2026-06-01: 11 mobile feature modules, 8 admin m
 
 | Check | State | Evidence |
 |-------|-------|----------|
-| Feature-first Clean Architecture (data/domain/presentation per feature) | ✅ | All 11 modules under `lib/features/*` follow it |
+| Feature-first Clean Architecture (data/domain/presentation per feature) | ✅ | All 12 modules under `lib/features/*` follow it |
 | Domain purity (no Flutter/Supabase in `domain/`) | ✅ enforced | `scripts/check-architecture.sh` (7 checks) + CI |
 | Use-case-over-repo (auth is the documented exception → `data/services/`) | ✅ | per `CLAUDE.md` |
 | Riverpod 3 only — `Notifier`/`AsyncNotifier`, no Bloc/provider/GetIt | ✅ | state-mgmt rules in `CLAUDE.md` |
@@ -32,19 +38,19 @@ Re-verified against the repo on 2026-06-01: 11 mobile feature modules, 8 admin m
 
 **Verdict:** the app's skeleton is healthy and consistently applied. New features must follow the same per-feature layering (see the recipe in Part 4) and the design system — not invent new patterns.
 
-### 1.2 Backend — ✅ aligned, with 3 known infra gaps
+### 1.2 Backend — ✅ aligned, with 1 remaining infra gap (payments)
 
 | Check | State | Evidence |
 |-------|-------|----------|
-| RLS on all tables, users read/write own data, admin role-gated | ✅ | 45 migrations; `20260528000001_admin_read_policies.sql` |
+| RLS on all tables, users read/write own data, admin role-gated | ✅ | 65 migrations; `20260528000001_admin_read_policies.sql` |
 | `handle_new_user()` trigger seeds `profiles` on signup | ✅ | required-before-signup invariant |
 | JWT `user_role` claim hook + non-self-assignable admin | ✅ | `custom_access_token_hook`, `forbid_self_admin` |
 | Verification edge functions (rate-limit, circuit breaker, audit, per-state adapters) | ✅ mature | `verify-abn`, `verify-licence` |
-| **Payments rail** (tables / processor) | ❌ missing | no `payment/payout/invoice/transaction` tables |
-| **Push delivery rail** (SDK / device tokens / fan-out) | ❌ missing | no push SDK, no `device_tokens` table |
-| **Scheduled-job runner** (pg_cron / scheduled edge fn) | ❌ missing | `expire_stale_verifications()` exists but nothing runs it |
+| **Payments rail** (tables / processor) | ❌ missing | no `payment/payout/invoice/transaction` tables — **the only rail left** |
+| **Push delivery rail** (SDK / device tokens / fan-out) | ✅ laid *(2026-06-09)* | `firebase_messaging` + `device_tokens` + `push-send` edge fn + central fan-out trigger |
+| **Scheduled-job runner** (pg_cron / scheduled edge fn) | ✅ laid *(2026-06-09)* | pg_cron schedules the expiry sweep + 30-day advance warning |
 
-**Verdict:** the data layer and auth/verification subsystems are production-grade. The three missing pieces are **rails** — shared infrastructure that several gap-features depend on. Lay them first (Part 2) so features land cleanly on top instead of each one half-inventing its own.
+**Verdict:** the data layer and auth/verification subsystems are production-grade. Two of the three rails — push delivery and the scheduled runner — are now **laid**; **only the payments rail remains.** Lay it before #17/#21-payments (Part 2, Rail C) so those features land cleanly on top instead of half-inventing their own.
 
 ### 1.3 Foundation verdict
 
@@ -56,7 +62,8 @@ Nothing in the current setup needs *undoing* to finish Stage 1. Every remaining 
 
 These unblock multiple features; sequencing them first avoids rework.
 
-### Rail A — Scheduled-job runner *(unblocks #22; enables future digests/match jobs)*
+### Rail A — Scheduled-job runner *(unblocks #22; enables future digests/match jobs)* — ✅ DONE (2026-06-09)
+> Shipped as planned: pg_cron schedules `expire_stale_verifications()` daily + `notify_expiring_verifications` (30-day advance warning). The recipe below is retained for reference.
 - **Pick:** native **`pg_cron`** (free, in-database) over an external cron — least moving parts, no extra SDK. Supabase supports it as an extension.
 - **Steps:**
   1. Migration: `create extension if not exists pg_cron;`
@@ -64,7 +71,8 @@ These unblock multiple features; sequencing them first avoids rework.
   3. New SQL function `notify_expiring_verifications(days int)` → inserts advance-warning `notifications` rows for docs whose `expires_at` is within N days; schedule it daily too.
 - **Done when:** a past-due licence flips to `expired` overnight without manual SQL, and a "expires in 30 days" notification appears.
 
-### Rail B — Push delivery rail *(unblocks #8; supercharges the in-app notification centre)*
+### Rail B — Push delivery rail *(unblocks #8; supercharges the in-app notification centre)* — ✅ DONE (2026-06-09)
+> Shipped on **FCM** as recommended: `firebase_messaging` + `lib/core/services/push_notifications.dart` (token registration), `device_tokens` + `notification_preferences` tables, `push-send` edge function, and a central trigger fanning new-job/message/application-status notifications to matching trades. The recipe below is retained for reference.
 - **Pick:** **Firebase Cloud Messaging** (`firebase_messaging`) — free, first-class Flutter Android+iOS support. (OneSignal is the fallback if you want a console + segmentation without managing FCM keys; it has a free tier.)
 - **Steps:**
   1. Add `firebase_messaging` + platform config (google-services.json / APNs key). Register device token on login.
@@ -89,7 +97,8 @@ These unblock multiple features; sequencing them first avoids rework.
 
 Build order follows the requirements audit's value ranking. Each gap lists **DB → backend → mobile layers → design → tests**, following the repo's feature-first recipe (Part 4).
 
-### M1 · Trade search + availability + crew map  (#9, #13, #10) — *highest value, data half-there*
+### M1 · Trade search + availability + crew map  (#9, #13, #10) — ✅ DONE (2026-06-04 / 06-09)
+> Shipped: `search_trades` RPC + `lib/features/discovery/` module + home mini-list + `/discovery` page + `/discovery/map` crew pins; availability **filter** live. **Only #13's full weekly `table_calendar` view remains open** (see step 6). Recipe below retained for reference.
 
 1. **DB** — add availability to `trade_profiles`:
    - Migration: `is_available boolean not null default true`, `available_from date null` (pragmatic Stage-1 model). Optional follow-up: weekly-pattern table for `table_calendar`.
@@ -103,17 +112,16 @@ Build order follows the requirements audit's value ranking. Each gap lists **DB 
 5. **Tests** — RPC unit (mocktail repo), controller paging test, golden for the results card.
 6. **Done when:** a real geo+rating+availability search returns live trades, the home list and map both use it, and `table_calendar` is either wired to availability or removed from `pubspec`.
 
-### M2 · Scheduled runner → expiry reminders  (#22) — *Rail A*
-Build **Rail A** (Part 2). Then add the advance-warning function + schedule. Mobile side already renders `notifications`, so no UI work beyond copy. **Done when** expiry + 30-day-warning notifications fire on a schedule.
+### M2 · Scheduled runner → expiry reminders  (#22) — *Rail A* — ✅ DONE (2026-06-09)
+Shipped: pg_cron runs the expiry sweep + 30-day advance warning; the mobile notification centre renders both. No further work.
 
-### M3 · Push rail → new-job notifications  (#8) — *Rail B*
-Build **Rail B** (Part 2). Fan-out query reuses M1's geo/trade-type matching. **Done when** a posted job pushes to matching trades and writes the in-app row.
+### M3 · Push rail → new-job notifications  (#8) — *Rail B* — ✅ DONE (2026-06-09)
+Shipped: a posted job pushes to matching trades **and** writes the in-app row; producers also cover new messages + application-status changes; per-user prefs gate delivery. No further work.
 
-### M4 · Admin moderation — users & jobs  (#21, non-payments half)
-The `feat/admin-placeholder-scaffold` moderation card is **UI-only today** (no mutation calls). To make it real:
-1. **DB** — `user_status` enum (`active/suspended/banned`) on `profiles` (or a `moderation_actions` table) + admin-only RLS; SECURITY DEFINER RPCs `admin_set_user_status`, `admin_set_job_status` that also write to the existing `admin_actions` audit table.
-2. **Admin web** — add `.rpc(...)` mutations in `admin_users`/`admin_jobs` repos (currently read-only); wire the placeholder moderation card + a job-actions menu. Use `AdminText` tokens + `JButton.danger` (already in the admin design system).
-3. **Done when** an admin can suspend/ban a user and close a job, each landing in the audit log.
+### M4 · Admin moderation — users & jobs  (#21, non-payments half) — 🟡 user done, job pending
+- **DB — ✅ done.** `user_status` enum on `profiles` + SECURITY DEFINER RPCs `admin_set_user_status` **and** `admin_set_job_status`, both writing to the audit table (`…03_admin_moderation.sql`).
+- **Admin web — 🟡 half done.** **User** moderation is wired (`admin_set_user_status` in `admin_user_detail_repository_impl.dart` + moderation card). **Job** moderation is **not** wired — `admin_jobs_repository_impl.dart` is still read-only. → **remaining task:** add the `.rpc('admin_set_job_status', …)` call + a job-actions menu (close/restore) on the admin jobs screen, using `AdminText` + `JButton.danger`.
+- **Done when** an admin can also close/restore a job, landing in the audit log.
 
 ### M5 · Payments rail → earnings dashboard + payments admin  (#17, #21 payments) — *Rail C, the big one*
 Build **Rail C** (Part 2). Then:
@@ -162,17 +170,17 @@ Every new feature in M1–M7 must be built this way (this is what keeps you *ali
 
 ## Part 5 — Milestones & dependencies
 
-| Milestone | Delivers | Depends on | Rough size |
-|-----------|----------|-----------|-----------|
-| **M1** | Trade search + availability + crew map (#9,#13,#10) | — (data half-there) | M |
-| **M2** | Expiry reminders (#22) | Rail A | S |
-| **M3** | New-job push (#8) | Rail B + M1 matching | M |
-| **M4** | Admin user/job moderation (#21a) | — (placeholder exists) | S–M |
-| **M5** | Payments rail + earnings + payments-admin (#17,#21b) | Rail C | L |
-| **M6** | Quotes, scheduling, timesheets, loyalty, referrals (#18,#15,#16,#19,#20) | M5 (most) | L |
-| **M7** | AI auto-match (#23) | data accrual | deferred |
+| Milestone | Delivers | Status |
+|-----------|----------|:------:|
+| **M1** | Trade search + availability + crew map (#9,#13,#10) | ✅ done *(#13 full weekly calendar still open)* |
+| **M2** | Expiry reminders (#22) | ✅ done |
+| **M3** | New-job push (#8) + message/application producers + broadcast console | ✅ done |
+| **M4** | Admin moderation (#21a) | 🟡 user done; **job-moderation wiring left (S)** |
+| **M5** | Payments rail + earnings + payments-admin (#17,#21b) | ⛔ blocked on **Rail C** (decision-gated) |
+| **M6** | Quotes, scheduling, timesheets, loyalty, referrals (#18,#15,#16,#19,#20) | ❌ greenfield (most depend on M5) |
+| **M7** | AI auto-match (#23) | deferred |
 
-**Critical path for "Stage 1 functionally complete":** Rails A+B+C → M1 → M2 → M3 → M4 → M5 → M6. M1 and M4 can run in parallel with the rails since they need no new infra.
+**Critical path for "Stage 1 functionally complete":** ~~Rails A+B~~ ✅ + M1/M2/M3 ✅ → **finish M4 job-moderation (small)** → **Rail C — payments (needs a client decision on processor)** → M5 → M6. Everything left is gated on the payments decision plus greenfield modules; M4's job half is the one small loose end needing no new infra.
 
 ---
 
