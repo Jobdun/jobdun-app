@@ -48,6 +48,24 @@ class AdminJobsRepositoryImpl implements AdminJobsRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Unit>> setJobStatus({
+    required String jobId,
+    required String status,
+  }) async {
+    try {
+      await _client.rpc(
+        'admin_set_job_status',
+        params: {'p_job_id': jobId, 'p_status': status},
+      );
+      return const Right(unit);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
   AdminJobRow _toRow(Map<String, dynamic> r) {
     final builder = r['profiles'] as Map<String, dynamic>?;
     return AdminJobRow(

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
+import '../../../../../core/errors/failures.dart';
 import '../../data/repositories/admin_jobs_repository_impl.dart';
 import '../../domain/entities/admin_job_filter.dart';
 import '../../domain/entities/admin_job_row.dart';
@@ -65,4 +67,23 @@ class AdminJobsController extends Notifier<AdminJobsState> {
   }
 
   Future<void> refresh() async => pagingController.refresh();
+}
+
+/// #21a job moderation. Calls the audited `admin_set_job_status` RPC through the
+/// repo and returns the result; the caller refreshes the list / local view. Kept
+/// a thin seam (mirrors `AdminModeration`) so it's overridable + testable.
+final adminJobModerationProvider = Provider(AdminJobModeration.new);
+
+class AdminJobModeration {
+  AdminJobModeration(this._ref);
+  final Ref _ref;
+
+  Future<Either<Failure, Unit>> setJobStatus({
+    required String jobId,
+    required String status,
+  }) {
+    return _ref
+        .read(adminJobsRepositoryProvider)
+        .setJobStatus(jobId: jobId, status: status);
+  }
 }

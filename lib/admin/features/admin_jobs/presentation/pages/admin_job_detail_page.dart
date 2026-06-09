@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -6,14 +7,12 @@ import 'package:intl/intl.dart';
 import '../../../../../app/theme/app_colors.dart';
 import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/widgets/j_button.dart';
-import '../../../../../core/theme/app_icons.dart';
-import '../../../../app/placeholders/admin_placeholder_action.dart';
 import '../../../../app/placeholders/admin_status_tag.dart';
-import '../../../../app/placeholders/placeholder_models.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../../app/widgets/admin_empty_state.dart';
 import '../../../admin_shell/presentation/widgets/admin_scaffold.dart';
 import '../../domain/entities/admin_job_row.dart';
+import '../providers/admin_jobs_provider.dart';
 
 /// Read-only Phase-2 moderation surface for a single job.
 ///
@@ -70,7 +69,7 @@ class _DetailBody extends StatelessWidget {
           const Gap(24),
           _FactsCard(row: row),
           const Gap(16),
-          const _ModerationCard(),
+          _JobModerationCard(jobId: row.id, status: row.status),
           const Gap(40),
         ],
       ),
@@ -197,15 +196,52 @@ class _Fact extends StatelessWidget {
   }
 }
 
-/// Phase-2 moderation placeholder — muted tags + disabled actions. Nothing here
-/// is wired; the values are [JobModerationStatus.placeholderDefault] and an
-/// em-dash flag count, never invented numbers.
-class _ModerationCard extends StatelessWidget {
-  const _ModerationCard();
+/// Wired moderation (#21a) — current listing status + Close / Cancel / Reopen.
+/// Each action calls the audited `admin_set_job_status` RPC, updates the local
+/// status, refreshes the jobs list, and confirms via a snackbar. The offered
+/// actions depend on the current status (mirrors the user-moderation card).
+class _JobModerationCard extends ConsumerStatefulWidget {
+  const _JobModerationCard({required this.jobId, required this.status});
+
+  final String jobId;
+  final String status;
+
+  @override
+  ConsumerState<_JobModerationCard> createState() => _JobModerationCardState();
+}
+
+class _JobModerationCardState extends ConsumerState<_JobModerationCard> {
+  // A job is "taken down" when closed or cancelled — Reopen is offered then.
+  static const _down = {'closed', 'cancelled'};
+
+  late String _status = widget.status;
+  bool _busy = false;
+
+  Future<void> _set(String status) async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final res = await ref
+        .read(adminJobModerationProvider)
+        .setJobStatus(jobId: widget.jobId, status: status);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    res.fold(
+      (f) => messenger.showSnackBar(SnackBar(content: Text(f.message))),
+      (_) {
+        setState(() => _status = status);
+        ref.read(adminJobsProvider.notifier).refresh();
+        messenger.showSnackBar(
+          SnackBar(content: Text('Job set to ${status.toUpperCase()}.')),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final status = _status;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -217,52 +253,43 @@ class _ModerationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text('MODERATION', style: AdminText.cardLabel(c.text3)),
-              const Spacer(),
-              Text(
-                'PHASE 2 · NOT WIRED',
-                style: AdminText.eyebrow(c.text3).copyWith(letterSpacing: 1.2),
-              ),
-            ],
-          ),
+          Text('MODERATION', style: AdminText.cardLabel(c.text3)),
           const Gap(12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AdminStatusTag(
-                label: JobModerationStatus.placeholderDefault.label,
-                tooltip: 'Moderation status — ${AdminPhase.moderation}',
-              ),
-              AdminStatusTag(
-                label: '—',
-                icon: AppIcons.warning,
-                tooltip: 'Flags / reports — ${AdminPhase.moderation}',
-              ),
-            ],
+          AdminStatusTag(
+            label: 'Listing: ${status.toUpperCase()}',
+            tooltip: 'Current job status (admin_set_job_status)',
           ),
           const Gap(16),
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: const [
-              SizedBox(
-                width: 150,
-                child: AdminPlaceholderAction(
-                  label: 'HIDE',
-                  tooltip: AdminPhase.moderationWiring,
+            children: [
+              if (_down.contains(status))
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'REOPEN',
+                    onPressed: _busy ? null : () => _set('open'),
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: 150,
-                child: AdminPlaceholderAction(
-                  label: 'REMOVE',
-                  tooltip: AdminPhase.moderationWiring,
-                  variant: JButtonVariant.danger,
+              if (!_down.contains(status))
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'CLOSE',
+                    variant: JButtonVariant.secondary,
+                    onPressed: _busy ? null : () => _set('closed'),
+                  ),
                 ),
-              ),
+              if (status != 'cancelled')
+                SizedBox(
+                  width: 150,
+                  child: JButton(
+                    label: 'CANCEL',
+                    variant: JButtonVariant.danger,
+                    onPressed: _busy ? null : () => _set('cancelled'),
+                  ),
+                ),
             ],
           ),
         ],
