@@ -1,0 +1,11 @@
+# Cloudflare Pages security headers for the Jobdun admin console.
+# These are all safe for a Flutter/CanvasKit + Supabase app. A strict CSP and
+# COOP/COEP are a deliberate next step — added via CSP-Report-Only + a test pass
+# first (they can white-screen CanvasKit if set blind), then promoted to enforce.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Robots-Tag: noindex, nofollow
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

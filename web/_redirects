@@ -1,0 +1,5 @@
+# Cloudflare Pages SPA fallback — GoRouter handles routing client-side,
+# so every unknown path must serve index.html (200, not a redirect).
+# Real assets (main.dart.js, canvaskit, etc.) are served first; this is
+# only the fallback for paths that don't map to a file.
+/*  /index.html  200

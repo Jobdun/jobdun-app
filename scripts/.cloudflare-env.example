@@ -1,0 +1,19 @@
+# Copy this file to scripts/.cloudflare-env and paste your Cloudflare API token.
+# scripts/.cloudflare-env is gitignored — your token never gets committed.
+#
+# These creds deploy the ADMIN WEB app to Cloudflare Pages. They are deliberately
+# SEPARATE from the root .env, because .env is compiled into the Flutter app via
+# --dart-define-from-file (anything there ships inside the app bundle). A deploy
+# token must never end up inside the app.
+
+# Cloudflare Account ID — NOT a secret. Found in your dashboard URL
+# (dash.cloudflare.com/<account-id>) or Workers & Pages -> right sidebar.
+CLOUDFLARE_ACCOUNT_ID=your_account_id_here
+
+# Cloudflare API token. THIS IS A SECRET (shown only once on creation).
+#   Create at: https://dash.cloudflare.com/profile/api-tokens
+#   Custom Token -> Permissions: Account -> Cloudflare Pages -> Edit
+CLOUDFLARE_API_TOKEN=paste_your_api_token_here
+
+# Pages project name (created automatically on first deploy).
+CLOUDFLARE_PAGES_PROJECT=jobdun-admin
