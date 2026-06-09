@@ -32,6 +32,7 @@ class TradeProfile extends Equatable {
     this.ratingCount = 0,
     this.isAvailable = true,
     this.availableFrom,
+    this.unavailableDates = const [],
     this.deletedAt,
   });
 
@@ -75,6 +76,9 @@ class TradeProfile extends Equatable {
   final bool isAvailable;
   // When isAvailable is false, the date the trade becomes free again.
   final DateTime? availableFrom;
+  // Specific dates the trade has blocked off (booked / on leave), set via the
+  // availability calendar (#13). Date-only; builders see these on the profile.
+  final List<DateTime> unavailableDates;
   // Soft-delete timestamp. Repository default reads filter on
   // `deletedAt == null`; deleted rows stay around so references in
   // job_applications and reviews still resolve.

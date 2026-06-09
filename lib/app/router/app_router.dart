@@ -33,7 +33,12 @@ import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/builder_public_profile_page.dart';
+import '../../features/profile/presentation/pages/availability_calendar_page.dart';
 import '../../features/profile/presentation/pages/notification_settings_page.dart';
+import '../../features/quotes/presentation/pages/quote_requests_inbox_page.dart';
+import '../../features/scheduling/presentation/pages/schedule_page.dart';
+import '../../features/timesheets/presentation/pages/timesheet_args.dart';
+import '../../features/timesheets/presentation/pages/timesheet_page.dart';
 import '../../features/profile/presentation/pages/profile_edit_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
@@ -396,6 +401,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/notifications',
         builder: (_, _) => const NotificationSettingsPage(),
+      ),
+      GoRoute(
+        path: '/settings/availability',
+        builder: (_, _) => const AvailabilityCalendarPage(),
+      ),
+      GoRoute(
+        path: '/quotes',
+        builder: (_, _) => const QuoteRequestsInboxPage(),
+      ),
+      GoRoute(path: '/schedule', builder: (_, _) => const SchedulePage()),
+      GoRoute(
+        path: '/timesheets',
+        builder: (_, state) {
+          final extra = state.extra;
+          return extra is TimesheetArgs
+              ? TimesheetPage(args: extra)
+              : const SchedulePage();
+        },
       ),
       GoRoute(
         path: '/builders/:id',

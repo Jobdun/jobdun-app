@@ -18,6 +18,8 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../profile/presentation/widgets/portfolio_strip.dart';
 import '../../../profile/presentation/widgets/profile_rating_block.dart';
 import '../../../profile/presentation/widgets/profile_reviews_preview.dart';
+import '../../../quotes/presentation/widgets/quote_request_builder_card.dart';
+import '../../../scheduling/presentation/widgets/schedule_builder_card.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../domain/entities/job_application.dart';
@@ -152,6 +154,18 @@ class ApplicantDetailPage extends ConsumerWidget {
                       ),
                       Gap(AppSpacing.lg.h),
                       _QuoteBlock(app: app),
+                      Gap(AppSpacing.lg.h),
+                      QuoteRequestBuilderCard(
+                        jobId: app.jobId,
+                        tradeId: app.tradeId,
+                      ),
+                      if (app.status == ApplicationStatus.hired) ...[
+                        Gap(AppSpacing.lg.h),
+                        ScheduleBuilderCard(
+                          jobId: app.jobId,
+                          tradeId: app.tradeId,
+                        ),
+                      ],
                       if (profile != null) ...[
                         Gap(AppSpacing.lg.h),
                         _StatsStrip(profile: profile),

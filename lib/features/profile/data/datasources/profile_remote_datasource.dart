@@ -16,6 +16,7 @@ abstract interface class ProfileRemoteDataSource {
   Future<void> upsertBuilderProfile(BuilderProfileModel profile);
   Future<void> upsertTradeProfile(TradeProfileModel profile);
   Future<void> setTradeAvailability(String userId, bool isAvailable);
+  Future<void> setTradeUnavailableDates(String userId, List<DateTime> dates);
   Future<String> uploadAvatar(String userId, File file);
   Future<void> removeAvatar(String userId);
   Future<String> uploadTradeLicence(String userId, File file);
@@ -125,6 +126,26 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       await _client
           .from('trade_profiles')
           .update({'is_available': isAvailable})
+          .eq('id', userId);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  // Targeted write of the blocked-off calendar dates (#13) — a single-column
+  // update of the date[] so the calendar editor doesn't round-trip the row.
+  @override
+  Future<void> setTradeUnavailableDates(
+    String userId,
+    List<DateTime> dates,
+  ) async {
+    try {
+      final encoded = dates
+          .map((d) => d.toIso8601String().substring(0, 10))
+          .toList();
+      await _client
+          .from('trade_profiles')
+          .update({'unavailable_dates': encoded})
           .eq('id', userId);
     } catch (e) {
       throw ServerException(e.toString());

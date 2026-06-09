@@ -33,4 +33,34 @@ void main() {
     );
     expect(m.toJson()['is_available'], isFalse);
   });
+
+  test('fromJson parses unavailable_dates into date-only DateTimes', () {
+    final m = TradeProfileModel.fromJson({
+      'id': 't1',
+      'full_name': 'Bob',
+      'primary_trade': 'electrician',
+      'unavailable_dates': ['2026-06-15', '2026-06-20'],
+    });
+    expect(m.unavailableDates, [DateTime(2026, 6, 15), DateTime(2026, 6, 20)]);
+  });
+
+  test('fromJson defaults unavailableDates to empty when absent', () {
+    final m = TradeProfileModel.fromJson({
+      'id': 't1',
+      'full_name': 'Bob',
+      'primary_trade': 'electrician',
+    });
+    expect(m.unavailableDates, isEmpty);
+  });
+
+  test('toCacheMap round-trips unavailable_dates losslessly', () {
+    final m = TradeProfileModel.fromJson({
+      'id': 't1',
+      'full_name': 'Bob',
+      'primary_trade': 'electrician',
+      'unavailable_dates': ['2026-06-15'],
+    });
+    final back = TradeProfileModel.fromJson(m.toCacheMap());
+    expect(back.unavailableDates, [DateTime(2026, 6, 15)]);
+  });
 }

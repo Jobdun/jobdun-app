@@ -13,6 +13,7 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../providers/profile_provider.dart';
 
 /// Account settings — appearance, account, legal, (dev tools,) and sign out.
 ///
@@ -88,6 +89,27 @@ class SettingsPage extends ConsumerWidget {
                           label: 'Notifications',
                           onTap: () => context.push('/settings/notifications'),
                         ),
+                        _ActionRow(
+                          icon: AppIcons.calendar,
+                          label: 'Schedule',
+                          onTap: () => context.push('/schedule'),
+                        ),
+                        if (ref.watch(
+                          profileControllerProvider.select(
+                            (s) => s.tradeProfile != null,
+                          ),
+                        )) ...[
+                          _ActionRow(
+                            icon: AppIcons.calendar,
+                            label: 'Availability calendar',
+                            onTap: () => context.push('/settings/availability'),
+                          ),
+                          _ActionRow(
+                            icon: AppIcons.document,
+                            label: 'Quote requests',
+                            onTap: () => context.push('/quotes'),
+                          ),
+                        ],
                         _ActionRow(
                           icon: AppIcons.policy,
                           label: 'Privacy settings',

@@ -31,8 +31,22 @@ class TradeProfileModel extends TradeProfile {
     super.ratingCount,
     super.isAvailable,
     super.availableFrom,
+    super.unavailableDates,
     super.deletedAt,
   });
+
+  /// Parses a Postgres `date[]` (list of 'yyyy-MM-dd' strings) into date-only
+  /// DateTimes. Tolerates null / missing column (pre-migration rows).
+  static List<DateTime> _parseDates(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => DateTime.parse(e.toString()))
+        .map((d) => DateTime(d.year, d.month, d.day))
+        .toList();
+  }
+
+  static List<String> _encodeDates(List<DateTime> dates) =>
+      dates.map((d) => d.toIso8601String().substring(0, 10)).toList();
 
   factory TradeProfileModel.fromJson(Map<String, dynamic> json) =>
       TradeProfileModel(
@@ -70,6 +84,7 @@ class TradeProfileModel extends TradeProfile {
         availableFrom: json['available_from'] != null
             ? DateTime.parse(json['available_from'] as String)
             : null,
+        unavailableDates: _parseDates(json['unavailable_dates']),
         deletedAt: json['deleted_at'] != null
             ? DateTime.parse(json['deleted_at'] as String)
             : null,
@@ -137,6 +152,7 @@ class TradeProfileModel extends TradeProfile {
     'rating_count': ratingCount,
     'is_available': isAvailable,
     'available_from': availableFrom?.toIso8601String(),
+    'unavailable_dates': _encodeDates(unavailableDates),
     'deleted_at': deletedAt?.toIso8601String(),
   };
 }

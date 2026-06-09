@@ -251,6 +251,22 @@ class ProfileController extends Notifier<ProfileState>
     return true;
   }
 
+  /// Persist the trade's blocked-off calendar dates (#13) and refresh the
+  /// cached trade profile. Returns true on success so the calendar can roll
+  /// back its optimistic toggle on failure.
+  Future<bool> setTradeUnavailableDates(List<DateTime> dates) async {
+    final userId = readCurrentUserId(ref);
+    if (userId == null) return false;
+    final result = await _repo.setTradeUnavailableDates(userId, dates);
+    if (result.isLeft()) {
+      state = state.copyWith(error: result.fold((f) => f.message, (_) => null));
+      return false;
+    }
+    final refreshed = await _repo.getTradeProfile(userId);
+    refreshed.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
+    return true;
+  }
+
   Future<bool> uploadAvatar(File file) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return false;

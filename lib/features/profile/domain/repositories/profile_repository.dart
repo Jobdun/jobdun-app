@@ -20,6 +20,12 @@ abstract interface class ProfileRepository {
     String userId,
     bool isAvailable,
   );
+
+  // Replaces the trade's blocked-off calendar dates (#13) with [dates].
+  Future<Either<Failure, void>> setTradeUnavailableDates(
+    String userId,
+    List<DateTime> dates,
+  );
   Future<Either<Failure, String>> uploadAvatar(String userId, File file);
 
   // Clears profiles.avatar_url and deletes the avatar object from public-media.
