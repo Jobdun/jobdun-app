@@ -26,7 +26,6 @@ class _TradeProfile extends ConsumerWidget {
 
     final trade = _blank(p?.displayTrade);
     final location = _blank(p?.displayLocation);
-    final hasLicence = p?.hasLicence ?? false;
     // Verified flag derives from the new verifications table (the legacy
     // trade_profiles.is_verified column isn't written by the v2.1 wizard,
     // so reading it would leave this banner stuck on "Available for work"
@@ -71,6 +70,20 @@ class _TradeProfile extends ConsumerWidget {
           // Availability (real, from the profile) split from the verified
           // signal — see ProfileAvailabilityBanner.
           ProfileAvailabilityBanner(profile: p, isVerified: isVerified),
+          // U3.4: profile IS credibility — the receipts card leads, right
+          // under the availability banner, instead of hiding below reviews
+          // at the bottom of the scroll (page-override layout).
+          if (p?.id != null) ...[
+            Gap(AppSpacing.md.h),
+            VerificationReceipts(
+              userId: p!.id,
+              isOwner: true,
+              showAbnRow: false,
+              showLicenceRow: true,
+              showWhiteCardRow: true,
+              showInsuranceRow: true,
+            ),
+          ],
           Gap(AppSpacing.md.h),
           // Own profile: always shown with an Add prompt when empty.
           ProfileAboutSection(
@@ -101,11 +114,10 @@ class _TradeProfile extends ConsumerWidget {
             title: 'TRADE DETAILS',
             children: [
               _InfoRow(icon: AppIcons.licence, label: 'Trade', value: trade),
-              _InfoRow(
-                icon: AppIcons.document,
-                label: 'Licence',
-                value: hasLicence ? 'On file' : null,
-              ),
+              // U3.4: the self-declared "Licence: On file" row is gone — the
+              // receipts card above is the only licence statement on this
+              // page (it reflects the actual reviewed/verified state, not an
+              // honour-system profile flag).
               _InfoRow(
                 icon: AppIcons.location,
                 label: 'Base suburb',
@@ -148,14 +160,6 @@ class _TradeProfile extends ConsumerWidget {
               emptyMessage: 'No reviews yet — complete a job to earn one.',
             ),
           ],
-          Gap(12.h),
-          if (p?.id != null)
-            VerificationReceipts(
-              userId: p!.id,
-              isOwner: true,
-              showAbnRow: false,
-              showLicenceRow: true,
-            ),
         ],
       ),
     );

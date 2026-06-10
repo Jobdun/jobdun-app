@@ -12,7 +12,8 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
-import 'manual_upload_sheet.dart';
+import 'manual_doc_kind.dart';
+import 'manual_upload_controls.dart';
 
 const manualUploadStates = [
   'NSW',
@@ -39,10 +40,47 @@ const manualUploadTradeClasses = [
   'Gasfitter',
 ];
 
+/// U1.1: true when [kind] demands an expiry date the user hasn't picked yet.
+/// A credential stored without `expiry_date` can never flip
+/// `TradePublicCredential.isExpired`, so the badge would read "verified"
+/// forever — the sheet refuses the upload until a date exists.
+bool expiryMissing(ManualDocKind kind, DateTime? expiry) =>
+    kind.requiresExpiry && expiry == null;
+
+/// U1.2: map any pick/upload failure to a human-readable line. The raw error
+/// string goes to the verification funnel log; the user never sees it.
+String humanUploadError(Object e) {
+  final s = e.toString().toLowerCase();
+  if (s.contains('socketexception') ||
+      s.contains('timeout') ||
+      s.contains('failed host lookup') ||
+      s.contains('connection')) {
+    return "Couldn't upload — check your connection and try again.";
+  }
+  if (s.contains('413') ||
+      s.contains('payload too large') ||
+      s.contains('maximum allowed size') ||
+      s.contains('too large')) {
+    return 'That file is too big — keep it under 10 MB.';
+  }
+  if (s.contains('403') || s.contains('unauthorized') || s.contains('jwt')) {
+    return 'Upload was refused. Log out and back in, then retry.';
+  }
+  return 'Something went wrong. Try again in a minute.';
+}
+
+/// Derived issuer string for the kinds whose issuer is fixed or state-derived.
+/// Public liability is insurer-issued (free text), so the sheet passes the
+/// user-typed insurer through instead of calling this.
 String issuerFor(ManualDocKind kind, String? state) => switch (kind) {
   ManualDocKind.abnCertificate => 'Australian Business Register',
   ManualDocKind.tradeLicence =>
     state == null ? 'State regulator' : '$state Fair Trading',
+  ManualDocKind.whiteCard =>
+    state == null
+        ? 'Registered training organisation'
+        : '$state RTO / SafeWork',
+  ManualDocKind.publicLiability => 'Insurer',
 };
 
 /// Active body of the manual-upload sheet (form fields + file picker).
@@ -57,6 +95,8 @@ class ManualUploadActiveBody extends StatelessWidget {
     required this.tradeClass,
     required this.onTradeClassChanged,
     required this.expiry,
+    this.expiryError,
+    this.expiryRowKey,
     required this.onPickExpiry,
     required this.prefilledNumber,
     required this.pickedFile,
@@ -80,6 +120,15 @@ class ManualUploadActiveBody extends StatelessWidget {
   final ValueChanged<String> onTradeClassChanged;
 
   final DateTime? expiry;
+
+  /// U1.1: validation error for the expiry row (the date lives outside the
+  /// FormBuilder, so the sheet validates it explicitly on UPLOAD).
+  final String? expiryError;
+
+  /// Anchors `Scrollable.ensureVisible` so a failed expiry validation scrolls
+  /// the row back into view above the keyboard.
+  final Key? expiryRowKey;
+
   final VoidCallback onPickExpiry;
   final String? prefilledNumber;
   final File? pickedFile;
@@ -120,6 +169,11 @@ class ManualUploadActiveBody extends StatelessWidget {
                   onChanged: onStateChanged,
                 ),
                 Gap(12.h),
+              ],
+              // Trade class is licence-only (A3). A White Card has a state but
+              // is not filed under a class, so this is gated separately from
+              // [requiresState].
+              if (kind.requiresTradeClass) ...[
                 const _Label(text: 'TRADE CLASS'),
                 Gap(6.h),
                 _ChoiceDropdown(
@@ -129,11 +183,26 @@ class ManualUploadActiveBody extends StatelessWidget {
                 ),
                 Gap(12.h),
               ],
+              // Public liability is insurer-issued, so capture a free-text
+              // insurer name (the others derive their issuer from the state).
+              if (kind.requiresIssuer) ...[
+                const _Label(text: 'INSURER'),
+                Gap(6.h),
+                // U1.4: the eyebrow _Label above is the single label — passing
+                // label: here too rendered the field name twice.
+                JTextField(
+                  name: 'insurer',
+                  hint: 'e.g. CGU, QBE, Allianz',
+                  validator: (v) =>
+                      (v ?? '').trim().isEmpty ? 'Required' : null,
+                ),
+                Gap(12.h),
+              ],
               _Label(text: kind.numberLabel.toUpperCase()),
               Gap(6.h),
+              // U1.4: eyebrow above is the single label (see INSURER note).
               JTextField(
                 name: 'document_number',
-                label: kind.numberLabel,
                 hint: kind.numberHint,
                 keyboardType: kind == ManualDocKind.abnCertificate
                     ? TextInputType.number
@@ -148,7 +217,12 @@ class ManualUploadActiveBody extends StatelessWidget {
                 Gap(8.h),
                 const _Label(text: 'EXPIRES'),
                 Gap(6.h),
-                _ExpiryRow(expiry: expiry, onTap: onPickExpiry),
+                _ExpiryRow(
+                  key: expiryRowKey,
+                  expiry: expiry,
+                  errorText: expiryError,
+                  onTap: onPickExpiry,
+                ),
               ],
               Gap(8.h),
               Text(
@@ -162,14 +236,14 @@ class ManualUploadActiveBody extends StatelessWidget {
           ),
         ),
         Gap(16.h),
-        _AttestationCheckbox(
+        ManualUploadAttestationCheckbox(
           kind: kind,
           attested: attested,
           enabled: !uploading,
           onChanged: onAttestedChanged,
         ),
         Gap(12.h),
-        _PickerBlock(
+        ManualUploadPickerBlock(
           pickedFile: pickedFile,
           uploading: uploading,
           uploadEnabled: attested,
@@ -245,9 +319,18 @@ class _ChoiceDropdown extends StatelessWidget {
 }
 
 class _ExpiryRow extends StatelessWidget {
-  const _ExpiryRow({required this.expiry, required this.onTap});
+  const _ExpiryRow({
+    super.key,
+    required this.expiry,
+    required this.onTap,
+    this.errorText,
+  });
   final DateTime? expiry;
   final VoidCallback onTap;
+
+  /// U1.1: set when UPLOAD was pressed without a date — turns the border
+  /// urgent and renders the message beneath, mirroring JTextField's slot.
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -256,190 +339,41 @@ class _ExpiryRow extends StatelessWidget {
     final label = expiry == null
         ? 'Pick a date'
         : DateFormat('d MMM yyyy').format(expiry!);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: c.border),
-        ),
-        child: Row(
-          children: [
-            Icon(AppIcons.calendar, size: AppIconSize.md.r, color: c.text3),
-            Gap(10.w),
-            Text(
-              label,
-              style: tt.titleSmall!.copyWith(
-                color: expiry == null ? c.text3 : c.text1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PickerBlock extends StatelessWidget {
-  const _PickerBlock({
-    required this.pickedFile,
-    required this.uploading,
-    required this.uploadEnabled,
-    required this.onCamera,
-    required this.onGallery,
-    required this.onUpload,
-  });
-
-  final File? pickedFile;
-  final bool uploading;
-
-  /// False until the attestation checkbox is ticked — greys out the UPLOAD
-  /// button so the user can't bypass the attestation step by mashing tap.
-  final bool uploadEnabled;
-
-  final VoidCallback onCamera;
-  final VoidCallback onGallery;
-  final VoidCallback onUpload;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    if (pickedFile == null) {
-      return Row(
-        children: [
-          Expanded(
-            child: JButton(
-              label: 'CAMERA',
-              variant: JButtonVariant.secondary,
-              size: JButtonSize.standard,
-              onPressed: onCamera,
-            ),
-          ),
-          Gap(12.w),
-          Expanded(
-            child: JButton(
-              label: 'GALLERY',
-              variant: JButtonVariant.primary,
-              size: JButtonSize.standard,
-              onPressed: onGallery,
-            ),
-          ),
-        ],
-      );
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
+        InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8.r),
-          child: Image.file(
-            pickedFile!,
-            height: 180.h,
-            width: double.infinity,
-            fit: BoxFit.cover,
-          ),
-        ),
-        Gap(12.h),
-        Row(
-          children: [
-            Expanded(
-              child: JButton(
-                label: 'CHANGE',
-                variant: JButtonVariant.secondary,
-                size: JButtonSize.standard,
-                onPressed: uploading ? null : onGallery,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: errorText == null ? c.border : c.urgent,
+                width: errorText == null ? 1 : 1.5,
               ),
             ),
-            Gap(12.w),
-            Expanded(
-              child: JButton(
-                label: uploading ? 'UPLOADING…' : 'UPLOAD',
-                variant: JButtonVariant.primary,
-                size: JButtonSize.standard,
-                onPressed: (uploading || !uploadEnabled) ? null : onUpload,
-              ),
+            child: Row(
+              children: [
+                Icon(AppIcons.calendar, size: AppIconSize.md.r, color: c.text3),
+                Gap(10.w),
+                Text(
+                  label,
+                  style: tt.titleSmall!.copyWith(
+                    color: expiry == null ? c.text3 : c.text1,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        if (uploading) ...[
-          Gap(8.h),
-          LinearProgressIndicator(
-            backgroundColor: c.border,
-            valueColor: AlwaysStoppedAnimation<Color>(c.action),
           ),
+        ),
+        if (errorText != null) ...[
+          Gap(4.h),
+          Text(errorText!, style: tt.bodySmall!.copyWith(color: c.urgent)),
         ],
       ],
-    );
-  }
-}
-
-class _AttestationCheckbox extends StatelessWidget {
-  const _AttestationCheckbox({
-    required this.kind,
-    required this.attested,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final ManualDocKind kind;
-  final bool attested;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
-
-  String get _claim => switch (kind) {
-    ManualDocKind.abnCertificate =>
-      'I attest that I am authorised to act on behalf of the business this ABN '
-          'certificate identifies. False attestations may be referred to the '
-          'ATO and law enforcement.',
-    ManualDocKind.tradeLicence =>
-      'I attest that I am the licence holder named on this document and that '
-          'the licence is current. False attestations may be referred to the '
-          'state regulator and law enforcement.',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: enabled ? () => onChanged(!attested) : null,
-      borderRadius: BorderRadius.circular(8.r),
-      child: Container(
-        padding: EdgeInsets.all(12.r),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(
-            color: attested ? c.action : c.border,
-            width: attested ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(top: 2.h),
-              child: SizedBox(
-                width: 20.r,
-                height: 20.r,
-                child: Checkbox(
-                  value: attested,
-                  onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ),
-            Gap(10.w),
-            Expanded(
-              child: Text(_claim, style: tt.bodySmall!.copyWith(height: 1.45)),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -454,7 +388,24 @@ class ManualUploadDoneBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(AppIcons.verified, size: AppIconSize.feature.r, color: c.verified),
+        // U1.7: land the peak-end moment — 180ms ease scale/fade, no bounce
+        // (MASTER motion rules). Static icon read as "nothing happened".
+        // Ticker-driven (not flutter_animate) so widget tests never trip on
+        // a pending Timer at teardown.
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          child: Icon(
+            AppIcons.verified,
+            size: AppIconSize.feature.r,
+            color: c.verified,
+          ),
+          builder: (_, t, child) => Opacity(
+            opacity: t,
+            child: Transform.scale(scale: 0.7 + 0.3 * t, child: child),
+          ),
+        ),
         Gap(12.h),
         SizedBox(
           width: double.infinity,

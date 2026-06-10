@@ -180,8 +180,8 @@ void main() {
   );
 
   testWidgets(
-    'B5: a trade with a pending licence doc gets the "under review" snackbar '
-    'instead of a second upload sheet (reverify==false)',
+    'a trade with a pending licence doc sees the credentials list with the '
+    'licence row "Under review" — no auto-opened sheet',
     (tester) async {
       final h = harness(
         reverify: false,
@@ -191,41 +191,33 @@ void main() {
       );
       await tester.pumpWidget(h.widget);
       h.router.push('/wizard');
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
 
-      expect(find.textContaining('Already under review'), findsOneWidget);
-      // The manual upload sheet (its title) must NOT have opened.
+      // The credentials list renders (not the old single-sheet flow).
+      expect(find.text('Your credentials'), findsOneWidget);
+      expect(find.textContaining('Under review'), findsWidgets);
+      // The manual upload sheet (its title) must NOT have auto-opened.
       expect(find.text('Upload your trade licence'), findsNothing);
     },
   );
 
   testWidgets(
-    'reverify==true on an already-verified trade lets them redo — the manual '
-    'sheet still opens despite the verified row',
+    'an already-verified trade is NOT short-circuited — the credentials list '
+    'still renders so they can add other credentials',
     (tester) async {
       final h = harness(
-        reverify: true,
+        reverify: false,
         role: UserRole.trade,
         verifs: [_verifiedLicence()],
       );
       await tester.pumpWidget(h.widget);
       h.router.push('/wizard');
-      await tester.pump(); // build wizard
-      await tester.pump(); // resolve verifications future
-      await tester.pump(); // post-frame opens the sheet
-      // Can't pumpAndSettle: the trade wizard renders an intentional perpetual
-      // CircularProgressIndicator under the sheet (one-frame placeholder), so
-      // settle never completes. Advance the sheet's open animation with fixed
-      // pumps instead — mirrors the B5 test above.
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
+      // No "already verified" pop — trades manage a multi-credential list now.
       expect(find.text("You're already verified."), findsNothing);
-      // Sheet opened — its title appears.
-      expect(find.text('Upload your trade licence'), findsOneWidget);
+      expect(find.text('Your credentials'), findsOneWidget);
+      expect(find.text('White Card'), findsOneWidget);
     },
   );
 }

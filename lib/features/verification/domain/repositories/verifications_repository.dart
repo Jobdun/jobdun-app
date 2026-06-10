@@ -2,6 +2,7 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/builder_public_verification.dart';
+import '../entities/trade_public_credential.dart';
 import '../entities/verification.dart';
 
 /// Contract for the API-first verification state machine (the `verifications`
@@ -15,6 +16,12 @@ abstract interface class VerificationsRepository {
   /// RPC — never the raw row. Returns 0..N verified credentials.
   Future<Either<Failure, List<BuilderPublicVerification>>>
   getPublicVerification(String userId);
+
+  /// Minimized counterparty projection of a tradie's APPROVED supplementary
+  /// credentials (White Card, public liability). Reads the
+  /// `get_trade_public_credentials` RPC — never the owner-only document rows.
+  Future<Either<Failure, List<TradePublicCredential>>>
+  getTradePublicCredentials(String userId);
 
   Future<Either<Failure, VerifyResult>> verifyAbn(String abn);
 
