@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jobdun — Top 5 Navigation Systems (Heatmap-Ranked)</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0F172A;--surface:#1E293B;--raised:#334155;--cta:#F97316;--t1:#F1F5F9;--t2:#94A3B8;--t3:#64748B;--ok:#22C55E;--warn:#F59E0B;--bad:#EF4444;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'Open Sans',sans-serif;padding:32px 20px 80px;max-width:1280px;margin:0 auto}
+h1{font-family:Oswald;font-size:34px;letter-spacing:.5px;text-transform:uppercase}
+.sub{color:var(--t2);margin:10px 0 6px;max-width:860px;line-height:1.6}
+.legend{display:flex;gap:18px;margin:18px 0 8px;font-size:13px;color:var(--t2)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.toggle{margin:14px 0 30px;font-size:14px;color:var(--t1);user-select:none;cursor:pointer;background:var(--surface);border:1px solid var(--raised);padding:10px 16px;border-radius:6px;display:inline-block;font-family:Oswald;letter-spacing:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px}
+.card{background:var(--surface);border:1px solid var(--raised);border-radius:8px;padding:22px}
+.rank{font-family:Oswald;font-size:13px;letter-spacing:2px;color:var(--cta)}
+h2{font-family:Oswald;font-size:22px;margin:4px 0 2px;text-transform:uppercase}
+.bench{font-size:12px;color:var(--t3);margin-bottom:14px}
+.phone{position:relative;width:270px;height:380px;margin:0 auto;background:#0B1120;border:2px solid var(--raised);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+.heat{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:9;
+ background:radial-gradient(circle at 78% 108%, rgba(34,197,94,.45) 0 38%, rgba(245,158,11,.35) 38% 62%, rgba(239,68,68,.32) 62% 100%)}
+body.showheat .heat{opacity:1}
+.top{background:#111A2E;border-bottom:1px solid var(--raised);padding:10px 12px;display:flex;align-items:center;gap:8px;font-size:11px}
+.av{width:24px;height:24px;border-radius:50%;background:var(--cta);color:#0F172A;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:10px}
+.ring{box-shadow:0 0 0 2px #0B1120,0 0 0 4px var(--ok)}
+.grow{flex:1}
+.bell{color:var(--t2)}
+.body{flex:1;display:flex;align-items:center;justify-content:center;color:#243049;font-family:Oswald;font-size:13px;letter-spacing:2px}
+.bar{background:#111A2E;border-top:1px solid var(--raised);display:flex;padding:7px 4px 12px}
+.tab{flex:1;text-align:center;color:var(--t3);font-size:8.5px;font-weight:600}
+.tab .i{font-size:15px;display:block;margin-bottom:2px}
+.tab.on{color:var(--cta)}
+.float{position:absolute;left:14px;right:14px;bottom:12px;background:#111A2E;border:1px solid var(--raised);border-radius:30px;display:flex;padding:8px 6px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.cta-mid{width:46px;height:46px;border-radius:50%;background:var(--cta);color:#0F172A;font-family:Oswald;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:-22px 4px 0;border:3px solid #0B1120;text-align:center;line-height:1.1}
+.seg{display:flex;gap:4px;background:var(--surface);border-radius:6px;padding:3px;font-size:9px}
+.seg span{padding:3px 8px;border-radius:4px;color:var(--t2)}
+.seg .on{background:var(--cta);color:#0F172A;font-weight:700}
+.big .tab .i{font-size:19px}.big .tab{font-size:10px}
+.score{display:flex;gap:8px;margin:16px 0 10px;flex-wrap:wrap}
+.pill{font-size:11px;padding:4px 10px;border-radius:4px;font-weight:700;font-family:Oswald;letter-spacing:.8px}
+.g{background:rgba(34,197,94,.15);color:var(--ok)}.a{background:rgba(245,158,11,.15);color:var(--warn)}.r{background:rgba(239,68,68,.15);color:var(--bad)}
+ul{margin:8px 0 0 18px;color:var(--t2);font-size:13.5px;line-height:1.65}
+.verdict{margin-top:40px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.35);border-radius:8px;padding:24px}
+.verdict h2{color:var(--cta)}
+.src{margin-top:30px;font-size:12px;color:var(--t3);line-height:1.7}
+a{color:var(--cta)}
+</style></head>
+<body>
+<h1>Jobdun · Top 5 Navigation Systems</h1>
+<p class="sub">Ranked against one-handed thumb-zone research (Hoober: ~49% of users grip one-handed; ~75% of interactions are thumb-driven — bottom-centre is the <b>natural</b> zone, screen top is the <b>stretch/red</b> zone) and Fitts's law (bigger + closer = faster). Audience lens: gloved hands, sunlight, on-site, one hand on a ladder.</p>
+<div class="legend"><span><span class="dot" style="background:var(--ok)"></span>Natural reach</span><span><span class="dot" style="background:var(--warn)"></span>Stretch</span><span><span class="dot" style="background:var(--bad)"></span>Hard / regrip</span></div>
+<label class="toggle"><input type="checkbox" onchange="document.body.classList.toggle('showheat')"> SHOW THUMB HEATMAP</label>
+
+<div class="grid">
+
+<div class="card"><div class="rank">#1 · RECOMMENDED</div><h2>Floating Pill Dock</h2><div class="bench">Seen in: Arc Search, Airbnb '25 exploration, Phantom — the 2025-26 silhouette</div>
+<div class="phone"><div class="heat"></div>
+ <div class="top"><span style="font-family:Oswald;letter-spacing:1px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT · FULL BLEED</div>
+ <div class="float"><div class="tab on"><span class="i">⌂</span>Home</div><div class="tab"><span class="i">⌕</span>Find</div><div class="tab"><span class="i">▤</span>Applied</div><div class="tab"><span class="i">✉</span>Msgs</div><div class="tab"><span class="i"><span class="av ring" style="margin:0 auto">K</span></span>You</div></div>
+</div>
+<div class="score"><span class="pill g">THUMB 10/10</span><span class="pill g">GLOVE 9/10</span><span class="pill g">MODERN 10/10</span></div>
+<ul><li><b>Avatar moves INTO the dock</b> — account sheet opens from the green zone, killing the top-right red-zone stretch entirely</li><li>Detached pill + full-bleed content = most modern silhouette; content scrolls behind it</li><li>Top bar shrinks to wordmark + bell (low-frequency targets belong in the red zone)</li><li>Keeps your existing 4 work tabs + Schedule swaps in for trades via role logic</li></ul></div>
+
+<div class="card"><div class="rank">#2</div><h2>Centre Action Bar</h2><div class="bench">Seen in: Airtasker (AU-proven), Instagram, Uber Driver</div>
+<div class="phone"><div class="heat"></div>
+ <div class="top"><span class="av">K</span><span style="margin-left:4px">G'day, Ken</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT</div>
+ <div class="bar"><div class="tab on"><span class="i">⌂</span>Home</div><div class="tab"><span class="i">⌕</span>Find</div><div class="cta-mid">ON<br>SITE</div><div class="tab"><span class="i">✉</span>Msgs</div><div class="tab"><span class="i">📅</span>Sched</div></div>
+</div>
+<div class="score"><span class="pill g">THUMB 9/10</span><span class="pill g">GLOVE 10/10</span><span class="pill a">MODERN 7/10</span></div>
+<ul><li>The #1 daily action lives at the <b>exact centre of the green zone</b>: tradie = AVAILABLE toggle, builder = POST JOB</li><li>Biggest single target on screen — best gloves story of all five</li><li>Risk: centre button eats a tab slot; Applied moves to Home or Find</li></ul></div>
+
+<div class="card"><div class="rank">#3</div><h2>Big-Three Work Bar</h2><div class="bench">Seen in: WhatsApp ethos, ServiceM8 field apps — fewer, huge targets</div>
+<div class="phone"><div class="heat"></div>
+ <div class="top"><div class="seg"><span class="on">Jobs</span><span>Applied</span><span>Saved</span></div><span class="grow"></span><span class="av">K</span></div>
+ <div class="body">CONTENT</div>
+ <div class="bar big"><div class="tab on"><span class="i">🛠</span>WORK</div><div class="tab"><span class="i">✉</span>MESSAGES</div><div class="tab"><span class="i">📅</span>SCHEDULE</div></div>
+</div>
+<div class="score"><span class="pill g">THUMB 9/10</span><span class="pill g">GLOVE 10/10</span><span class="pill a">MODERN 8/10</span></div>
+<ul><li>Only 3 destinations → each target is ~33% wider (Fitts's law: fastest, most error-proof bar)</li><li>Sections within "Work" move to a top segmented strip (amber zone — fine for occasional switching)</li><li>Risk: two-level navigation; Find vs Applied now needs a second tap</li></ul></div>
+
+<div class="card"><div class="rank">#4</div><h2>Adaptive Dock + More-Sheet</h2><div class="bench">Seen in: Revolut, banking super-apps — scales with feature growth</div>
+<div class="phone"><div class="heat"></div>
+ <div class="top"><span style="font-family:Oswald;letter-spacing:1px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT</div>
+ <div class="bar"><div class="tab on"><span class="i">⌂</span>Home</div><div class="tab"><span class="i">⌕</span>Find</div><div class="tab"><span class="i">✉</span>Msgs</div><div class="tab"><span class="i">▦</span>More</div></div>
+</div>
+<div class="score"><span class="pill g">THUMB 9/10</span><span class="pill a">GLOVE 8/10</span><span class="pill a">MODERN 8/10</span></div>
+<ul><li>"More" opens a thumb-zone grid sheet: Schedule, Credentials, Account, Settings — every future feature gets a home without re-architecting</li><li>Pragmatic if Stage-2 adds timesheets, quotes, invoices…</li><li>Risk: hides Schedule one tap deep — weakens your differentiator</li></ul></div>
+
+<div class="card"><div class="rank">#5</div><h2>Consolidated Top Command</h2><div class="bench">Seen in: LinkedIn's 2025 unified-top-bar experiment, X desktop-parity</div>
+<div class="phone"><div class="heat"></div>
+ <div class="top"><span class="av">K</span><div class="seg" style="margin-left:6px"><span class="on">Home</span><span>Find</span><span>Msgs</span><span>Sched</span></div></div>
+ <div class="body" style="flex-direction:column;gap:8px">CONTENT · NO BOTTOM BAR</div>
+</div>
+<div class="score"><span class="pill r">THUMB 4/10</span><span class="pill r">GLOVE 4/10</span><span class="pill g">MODERN 9/10</span></div>
+<ul><li>Maximum content space — zero bottom chrome</li><li>Included for completeness: it's where LinkedIn is heading, but <b>every primary target lands in the red zone</b></li><li>Wrong for gloves + one-handed site use — fails the heatmap outright</li></ul></div>
+
+</div>
+
+
+<h1 style="margin-top:56px;font-size:28px">Top 5 · Top Bars</h1>
+<p class="sub">Same heatmap, inverted rule: the top of the screen is the <b>red zone</b>, so a great top bar is <b>glanceable, not tappable</b> — status and context live here free of charge; primary actions up here cost a regrip. Every option below assumes the avatar/account moved into the bottom dock (#1 above), which frees the top bar from its worst job.</p>
+
+<div class="grid">
+
+<div class="card"><div class="rank">#1 · RECOMMENDED</div><h2>Status Command Bar</h2><div class="bench">Seen in: Uber Driver (earnings strip), banking apps — the red zone as a dashboard</div>
+<div class="phone" style="height:200px"><div class="heat"></div>
+ <div class="top"><span class="pill g" style="font-size:8px;padding:3px 7px">● AVAILABLE</span><span style="margin-left:6px;color:var(--t2);font-size:9px">3 jobs near you</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT</div>
+</div>
+<div class="score"><span class="pill g">RED-ZONE COST 0</span><span class="pill g">GLANCE VALUE 10/10</span></div>
+<ul><li><b>Zero required taps up top</b> — availability state + live context are read, not pressed (the only target is the low-frequency bell)</li><li>Tradie: AVAILABLE/OFF pill mirrors the Schedule tab state · Builder: open-jobs + new-applicants count</li><li>Turns the most unreachable strip of glass into the most informative one</li></ul></div>
+
+<div class="card"><div class="rank">#2</div><h2>Context Strip (minimal)</h2><div class="bench">Seen in: Arc, Things 3 — chrome disappears, content leads</div>
+<div class="phone" style="height:200px"><div class="heat"></div>
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:12px">FIND JOBS</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT · BAR HIDES ON SCROLL</div>
+</div>
+<div class="score"><span class="pill g">RED-ZONE COST 0</span><span class="pill a">GLANCE VALUE 6/10</span></div>
+<ul><li>Screen title + bell, nothing else; collapses away on scroll for full-bleed content</li><li>The safest, quietest option — pairs with any bottom bar</li><li>Leaves glance value on the table vs #1</li></ul></div>
+
+<div class="card"><div class="rank">#3</div><h2>Greeting Identity Bar</h2><div class="bench">Your current bar — warm, personal, role-aware</div>
+<div class="phone" style="height:200px"><div class="heat"></div>
+ <div class="top"><span class="av">K</span><span style="margin-left:5px;font-size:10px">G'day, Ken <span style="color:var(--cta);font-size:8px;font-family:Oswald;letter-spacing:1px"> TRADIE</span></span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT</div>
+</div>
+<div class="score"><span class="pill a">RED-ZONE COST LOW</span><span class="pill a">GLANCE VALUE 5/10</span></div>
+<ul><li>Personality is real value — but the greeting goes stale by the second session</li><li>With the avatar duplicated in the dock, the top avatar becomes decorative; fine on Home only</li><li>Keep for Home, drop elsewhere — it earns its height once per day</li></ul></div>
+
+<div class="card"><div class="rank">#4</div><h2>Segmented Context Tabs</h2><div class="bench">Seen in: M3 secondary tabs — Applied: Active/Archived · Find: List/Map</div>
+<div class="phone" style="height:200px"><div class="heat"></div>
+ <div class="top"><div class="seg"><span class="on">List</span><span>Map</span></div><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="body">CONTENT</div>
+</div>
+<div class="score"><span class="pill a">RED-ZONE COST MED</span><span class="pill g">GLANCE VALUE 8/10</span></div>
+<ul><li>Right tool for sub-views <i>within</i> a tab — occasional switching tolerates the amber/red stretch</li><li>Not a global pattern: use per-screen where a screen genuinely has two faces</li><li>Never put primary navigation here (that was option #5's mistake below)</li></ul></div>
+
+<div class="card"><div class="rank">#5</div><h2>Search-First Bar</h2><div class="bench">Seen in: SEEK, Indeed, Google Maps — the incumbent job-app default</div>
+<div class="phone" style="height:200px"><div class="heat"></div>
+ <div class="top"><div style="flex:1;background:var(--surface);border:1px solid var(--raised);border-radius:16px;padding:5px 10px;color:var(--t3);font-size:9px">⌕ Search jobs, suburb…</div><span class="bell" style="margin-left:8px">🔔</span></div>
+ <div class="body">CONTENT</div>
+</div>
+<div class="score"><span class="pill r">RED-ZONE COST HIGH</span><span class="pill a">GLANCE VALUE 5/10</span></div>
+<ul><li>A permanent red-zone <b>primary action</b> — exactly what the heatmap says not to do</li><li>And it duplicates the Find tab's own search; copying SEEK here means inheriting SEEK's friction</li><li>Included as the benchmark to beat, not an option to pick</li></ul></div>
+
+</div>
+<div class="verdict"><h2>Verdict</h2>
+<p class="sub" style="margin-top:8px"><b>Pairing: Floating Pill Dock (bottom) + Status Command Bar (top).</b> Bottom owns every tap (all five targets in the green zone, avatar included); top owns every glance (availability state, live counts, bell). That split — act low, read high — is the whole heatmap lesson in one sentence, and no AU job platform does both today.</p>
+<p class="sub" style="margin-top:8px"><b>#1 Floating Pill Dock</b> detail: it keeps everything you shipped today (4 work tabs + Schedule + account sheet) but relocates the avatar from the worst spot on the screen (top-right red zone) into the best (bottom dock), and gives Jobdun the most current visual silhouette of the five. <b>#2 Centre Action Bar</b> is the bold alternative if you want the AVAILABLE/POST JOB action to define the product. They can combine later: a floating dock <i>with</i> a centre action is a natural v2.</p></div>
+
+<p class="src">Research: Hoober — <a href="https://www.uxmatters.com/mt/archives/2013/02/how-do-users-really-hold-mobile-devices.php">How Do Users Really Hold Mobile Devices</a> (49% one-handed) · <a href="https://www.nngroup.com/articles/thumb-zone/">NN/g thumb-zone</a> · Fitts's law target sizing · M3 navigation-bar spec (3–5 destinations) · ui-ux-pro-max UX DB (44px targets, 8px spacing) · LinkedIn top-bar experiment (Social Media Today, 2025).</p>
+<script></script>
+</body></html>

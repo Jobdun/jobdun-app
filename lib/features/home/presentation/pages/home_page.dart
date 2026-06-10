@@ -19,7 +19,6 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
-import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
@@ -27,6 +26,7 @@ import '../../../applications/presentation/providers/applications_provider.dart'
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../../../auth/presentation/widgets/onboarding_gate.dart';
+import '../widgets/home_status_bar.dart';
 import '../widgets/profile_completeness_banner.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
@@ -308,15 +308,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               toolbarHeight: 64.h,
               title: Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
-                child: JTopBar(
-                  displayName:
-                      (profileState.profile?.displayName ?? '').trim().isEmpty
-                      ? 'there'
-                      : profileState.profile!.displayName!.trim(),
-                  initials: _initials(profileState.profile?.displayName),
-                  roleLabel: isBuilder ? 'BUILDER' : 'TRADIE',
-                  avatarUrl: profileState.profile?.avatarUrl,
-                  onAvatarTap: () => context.go('/profile'),
+                child: HomeStatusBar(
                   onNotificationsTap: () => context.push('/notifications'),
                 ),
               ),
@@ -407,23 +399,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: scaffold,
       ),
     );
-  }
-
-  // First letters of the first two name words, e.g. "Ken Garcia" → "KG".
-  // Falls back to a single brand letter for not-yet-named accounts (the
-  // onboarding sheet collects the name, so this is rarely shown).
-  static String _initials(String? name) {
-    final parts = (name ?? '')
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return 'J';
-    var out = '';
-    for (final p in parts) {
-      if (out.length < 2) out += p[0];
-    }
-    return out.toUpperCase();
   }
 
   static String _fmtDate(DateTime d) {

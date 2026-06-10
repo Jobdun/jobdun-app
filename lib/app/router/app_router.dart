@@ -357,18 +357,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // Tab 4 — Profile
+          // Tab 4 — Schedule (trade only; builders get a 4-tab bar and this
+          // branch is simply never navigated to). Option A nav: the Profile
+          // tab is gone — account access moved to the avatar → account sheet.
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/profile',
-                builder: (_, _) => const ProfilePage(),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (_, _) => const ProfileEditPage(),
-                  ),
-                ],
+                path: '/schedule',
+                builder: (_, _) =>
+                    const AvailabilityCalendarPage(showBack: false),
               ),
             ],
           ),
@@ -376,6 +373,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Full-screen (no bottom nav) ────────────────────────────────────────
+      // Option A nav: /profile left the tab shell — it's pushed above it from
+      // the account sheet (and deep links), with system back to return.
+      GoRoute(
+        path: '/profile',
+        builder: (_, _) => const ProfilePage(),
+        routes: [
+          GoRoute(path: 'edit', builder: (_, _) => const ProfileEditPage()),
+        ],
+      ),
       GoRoute(
         path: '/verification',
         builder: (_, _) => const VerificationPage(),

@@ -13,6 +13,7 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../../../auth/presentation/widgets/delete_account_sheet.dart';
 import '../providers/profile_provider.dart';
 
 /// Account settings — appearance, account, legal, (dev tools,) and sign out.
@@ -162,6 +163,15 @@ class SettingsPage extends ConsumerWidget {
                       label: 'SIGN OUT',
                       variant: JButtonVariant.secondary,
                       onPressed: () => showLogoutSheet(context, ref),
+                    ),
+                    Gap(AppSpacing.sm.h),
+                    // Play policy: in-app account deletion. Deliberately at
+                    // the bottom of Settings (hidden-but-findable convention)
+                    // rather than on the high-frequency account sheet.
+                    JButton(
+                      label: 'DELETE ACCOUNT',
+                      variant: JButtonVariant.danger,
+                      onPressed: () => showDeleteAccountSheet(context, ref),
                     ),
                   ],
                 ),
