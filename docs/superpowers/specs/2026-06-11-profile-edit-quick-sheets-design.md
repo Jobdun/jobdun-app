@@ -1,7 +1,11 @@
 # Profile Edit — Quick-Edit Sheets (Setup B)
 
 **Date:** 2026-06-11
-**Status:** Approved (user picked Setup B over A/spoke-pages and C/inline-autosave)
+**Status:** Implemented 2026-06-11 (plan: `docs/superpowers/plans/2026-06-11-profile-edit-quick-sheets.md`).
+Implementation note: the dirty guard uses a scoped willPop callback
+(`WillPopScope`, registered from first build) instead of `PopScope` —
+modal_bottom_sheet's drag-dismiss bypasses `PopScope` and snapshots its
+close-veto at route build. Verified by widget test.
 **Branch:** feat/trade-credentials-trust-layer (or successor)
 
 ## Context

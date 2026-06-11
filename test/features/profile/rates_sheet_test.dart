@@ -71,6 +71,35 @@ void main() {
     verifyNever(() => repo.patchTradeProfile(any(), any()));
   });
 
+  testWidgets('dirty drag-down surfaces discard confirm; KEEP EDITING stays', (
+    tester,
+  ) async {
+    await openSheet(tester);
+
+    await tester.enterText(find.byType(TextField).at(0), '70');
+    await tester.pump();
+
+    // Drag the sheet down by its header (outside the scrollable body) far
+    // enough to cross the dismiss threshold. The dirty guard must intercept
+    // (scoped willPop → confirm sheet).
+    await tester.drag(find.text('RATES'), const Offset(0, 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard your changes?'), findsOneWidget);
+    await tester.tap(find.text('KEEP EDITING'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RatesSheet), findsOneWidget);
+    verifyNever(() => repo.patchTradeProfile(any(), any()));
+
+    // DISCARD CHANGES actually closes the sheet.
+    await tester.drag(find.text('RATES'), const Offset(0, 500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('DISCARD CHANGES'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RatesSheet), findsNothing);
+  });
+
   testWidgets('valid rates patch only the three rate columns and pop', (
     tester,
   ) async {
