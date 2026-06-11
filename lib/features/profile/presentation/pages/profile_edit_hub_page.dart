@@ -85,7 +85,7 @@ class ProfileEditHubPage extends ConsumerWidget {
       ],
       _HubRowSpec(
         icon: AppIcons.location,
-        label: isBuilder ? 'Service location' : 'Location & service area',
+        label: isBuilder ? 'Service location' : 'Base location',
         value: area,
         section: ProfileSection.location,
       ),

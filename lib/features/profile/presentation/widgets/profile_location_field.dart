@@ -5,7 +5,6 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../core/config/env.dart';
-import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/services/places_service.dart';
 import '../../../../core/widgets/inputs/j_place_field.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
@@ -104,14 +103,14 @@ bool get kPlacesEnabled {
 class ProfileLocationField extends StatelessWidget {
   const ProfileLocationField({
     super.key,
-    required this.label,
     required this.legacyInitial,
     required this.placeInitial,
   });
 
-  /// Uppercase Oswald label rendered above the field. Trade=`BASE LOCATION`,
-  /// builder=`SERVICE LOCATION`.
-  final String label;
+  // No label of its own: the quick-edit Location sheet (sole caller since the
+  // long form was deleted) already titles the surface — the previous
+  // FieldLabel + JPlaceField-internal label stacked the same words three
+  // times under the sheet title.
 
   /// Suburb / state / postcode preload from the existing profile row. Used
   /// only in the legacy 3-field branch — the MapTiler branch derives initial
@@ -126,88 +125,70 @@ class ProfileLocationField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return kPlacesEnabled
-        ? _PlaceBranch(label: label, initialValue: placeInitial)
-        : _LegacyBranch(label: label, initial: legacyInitial);
+        ? _PlaceBranch(initialValue: placeInitial)
+        : _LegacyBranch(initial: legacyInitial);
   }
 }
 
 class _PlaceBranch extends StatelessWidget {
-  const _PlaceBranch({required this.label, required this.initialValue});
+  const _PlaceBranch({required this.initialValue});
 
-  final String label;
   final JPlaceResult? initialValue;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FieldLabel(label),
-        Gap(8.h),
-        JPlaceField(
-          name: 'place',
-          label: label,
-          initialValue: initialValue,
-          validator: (value) =>
-              value == null ? 'Pick a suburb to continue.' : null,
-        ),
-      ],
+    return JPlaceField(
+      name: 'place',
+      initialValue: initialValue,
+      validator: (value) => value == null ? 'Pick a suburb to continue.' : null,
     );
   }
 }
 
 class _LegacyBranch extends StatelessWidget {
-  const _LegacyBranch({required this.label, required this.initial});
+  const _LegacyBranch({required this.initial});
 
-  final String label;
   final ({String? suburb, String? state, String? postcode}) initial;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FieldLabel(label),
-        Gap(8.h),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 4,
-              child: JTextField(
-                name: 'suburb',
-                hint: 'Suburb',
-                initialValue: initial.suburb,
-                validator: FormBuilderValidators.required(
-                  errorText: 'Suburb is required.',
-                ),
-              ),
+        Expanded(
+          flex: 4,
+          child: JTextField(
+            name: 'suburb',
+            hint: 'Suburb',
+            initialValue: initial.suburb,
+            validator: FormBuilderValidators.required(
+              errorText: 'Suburb is required.',
             ),
-            Gap(10.w),
-            Expanded(
-              flex: 2,
-              child: JTextField(
-                name: 'state',
-                hint: 'State',
-                initialValue: initial.state,
-              ),
+          ),
+        ),
+        Gap(10.w),
+        Expanded(
+          flex: 2,
+          child: JTextField(
+            name: 'state',
+            hint: 'State',
+            initialValue: initial.state,
+          ),
+        ),
+        Gap(10.w),
+        Expanded(
+          flex: 3,
+          child: JTextField(
+            name: 'postcode',
+            hint: 'Postcode',
+            initialValue: initial.postcode,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: FormBuilderValidators.match(
+              RegExp(r'^\d{3,4}$'),
+              errorText: 'AU postcode (3 or 4 digits).',
             ),
-            Gap(10.w),
-            Expanded(
-              flex: 3,
-              child: JTextField(
-                name: 'postcode',
-                hint: 'Postcode',
-                initialValue: initial.postcode,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: FormBuilderValidators.match(
-                  RegExp(r'^\d{3,4}$'),
-                  errorText: 'AU postcode (3 or 4 digits).',
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

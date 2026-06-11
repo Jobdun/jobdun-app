@@ -106,8 +106,10 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
         ref.watch(authControllerProvider.select((s) => s.role)) ==
         UserRole.builder;
 
+    // One title only — the sheet header names the field, so the inner widget
+    // renders no label of its own (it used to stack the same words 3×).
     return EditSheetScaffold(
-      title: isBuilder ? 'Service location' : 'Location & service area',
+      title: isBuilder ? 'Service location' : 'Base location',
       isDirty: _dirty,
       isSaving: _saving,
       error: _error,
@@ -123,7 +125,6 @@ class _LocationSheetState extends ConsumerState<LocationSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ProfileLocationField(
-              label: isBuilder ? 'SERVICE LOCATION' : 'BASE LOCATION',
               legacyInitial: (
                 suburb: isBuilder ? bp?.serviceSuburb : tp?.baseSuburb,
                 state: isBuilder ? bp?.serviceState : tp?.baseState,
