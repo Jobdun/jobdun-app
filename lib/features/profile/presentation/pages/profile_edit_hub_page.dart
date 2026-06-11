@@ -12,6 +12,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/edit_sheets/identity_sheet.dart';
 import '../widgets/edit_sheets/rates_sheet.dart';
+import '../widgets/edit_sheets/trade_details_sheet.dart';
 
 /// Edit-profile hub (setup B, 2026-06-11): section rows with current values
 /// and amber "missing" flags — the hub doubles as a completeness checklist.
@@ -189,6 +190,10 @@ class _HubRow extends StatelessWidget {
           ProfileSection.identity => showJSheet<bool>(
             context: context,
             builder: (_) => const IdentitySheet(),
+          ),
+          ProfileSection.tradeDetails => showJSheet<bool>(
+            context: context,
+            builder: (_) => const TradeDetailsSheet(),
           ),
           ProfileSection.rates => showJSheet<bool>(
             context: context,
