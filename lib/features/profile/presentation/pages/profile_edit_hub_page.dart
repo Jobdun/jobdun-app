@@ -10,6 +10,7 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/edit_sheets/business_details_sheet.dart';
 import '../widgets/edit_sheets/identity_sheet.dart';
 import '../widgets/edit_sheets/rates_sheet.dart';
 import '../widgets/edit_sheets/trade_details_sheet.dart';
@@ -194,6 +195,10 @@ class _HubRow extends StatelessWidget {
           ProfileSection.tradeDetails => showJSheet<bool>(
             context: context,
             builder: (_) => const TradeDetailsSheet(),
+          ),
+          ProfileSection.business => showJSheet<bool>(
+            context: context,
+            builder: (_) => const BusinessDetailsSheet(),
           ),
           ProfileSection.rates => showJSheet<bool>(
             context: context,
