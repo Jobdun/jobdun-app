@@ -64,9 +64,13 @@ void main() {
       container.read(profileControllerProvider).tradeProfile?.about,
       'Brickie, 10 yrs',
     );
-    final captured =
-        verify(() => repo.patchTradeProfile('u1', captureAny())).captured;
-    expect((captured.single as TradeProfilePatch).about, const Some('Brickie, 10 yrs'));
+    final captured = verify(
+      () => repo.patchTradeProfile('u1', captureAny()),
+    ).captured;
+    expect(
+      (captured.single as TradeProfilePatch).about,
+      const Some('Brickie, 10 yrs'),
+    );
     verifyNever(() => repo.getBuilderProfile(any()));
     verifyNever(() => repo.getProfile(any()));
   });

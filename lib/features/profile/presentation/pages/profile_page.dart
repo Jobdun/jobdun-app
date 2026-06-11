@@ -108,25 +108,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: CustomScrollView(
           slivers: [
             if (!isOnline) const SliverToBoxAdapter(child: JOfflineBanner()),
-            // /profile is a pushed route since the Option A nav (no Profile
-            // tab) — gesture-back works, but a visible affordance is required.
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(4.w, 4.h, 0, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // No back button by request (2026-06-11): /profile is reached
+            // from the account sheet; gesture/system back covers the return.
+            SliverToBoxAdapter(child: Gap(AppSpacing.sm.h)),
             SliverToBoxAdapter(
               child: _ProfileHeader(
                 initials: initials,

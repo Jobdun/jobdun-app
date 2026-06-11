@@ -19,12 +19,12 @@ import '../widgets/edit_sheets/trade_details_sheet.dart';
 /// Edit-profile hub (setup B, 2026-06-11): section rows with current values
 /// and amber "missing" flags — the hub doubles as a completeness checklist.
 /// Rows open quick-edit sheets that save ONLY their section's columns
-/// (TradeProfilePatch et al.); About opens a full-screen editor. Sections not
-/// yet converted still push the legacy form (removed in the final task of
-/// docs/superpowers/plans/2026-06-11-profile-edit-quick-sheets.md).
+/// (TradeProfilePatch et al. — partial saves, so untouched sections can never
+/// be null-wiped); About opens a full-screen editor at /profile/edit/about.
 
 /// Which quick-edit surface a hub row opens.
 enum ProfileSection { identity, tradeDetails, rates, business, location, about }
+
 class ProfileEditHubPage extends ConsumerWidget {
   const ProfileEditHubPage({super.key});
 
@@ -61,7 +61,6 @@ class ProfileEditHubPage extends ConsumerWidget {
         label: 'Identity & photo',
         value: name,
         section: ProfileSection.identity,
-        legacyFocus: 'identity',
       ),
       if (isBuilder)
         _HubRowSpec(
@@ -69,7 +68,6 @@ class ProfileEditHubPage extends ConsumerWidget {
           label: 'Business details',
           value: business,
           section: ProfileSection.business,
-          legacyFocus: 'role',
         )
       else ...[
         _HubRowSpec(
@@ -77,14 +75,12 @@ class ProfileEditHubPage extends ConsumerWidget {
           label: 'Trade & experience',
           value: trade,
           section: ProfileSection.tradeDetails,
-          legacyFocus: 'role',
         ),
         _HubRowSpec(
           icon: AppIcons.budget,
           label: 'Rates',
           value: rates,
           section: ProfileSection.rates,
-          legacyFocus: 'role',
         ),
       ],
       _HubRowSpec(
@@ -92,14 +88,12 @@ class ProfileEditHubPage extends ConsumerWidget {
         label: isBuilder ? 'Service location' : 'Location & service area',
         value: area,
         section: ProfileSection.location,
-        legacyFocus: 'common',
       ),
       _HubRowSpec(
         icon: AppIcons.document,
         label: 'About',
         value: about,
         section: ProfileSection.about,
-        legacyFocus: 'common',
       ),
     ];
 
@@ -154,7 +148,6 @@ class _HubRowSpec {
     required this.label,
     required this.value,
     required this.section,
-    required this.legacyFocus,
   });
 
   final IconData icon;
@@ -165,10 +158,6 @@ class _HubRowSpec {
 
   /// Which quick-edit sheet/page the row opens.
   final ProfileSection section;
-
-  /// Scroll anchor for sections still on the legacy form — deleted once the
-  /// last sheet lands (plan Task 11).
-  final String legacyFocus;
 }
 
 class _HubRow extends StatelessWidget {
@@ -209,7 +198,7 @@ class _HubRow extends StatelessWidget {
             context: context,
             builder: (_) => const RatesSheet(),
           ),
-          _ => context.push('/profile/edit/form?focus=${spec.legacyFocus}'),
+          ProfileSection.about => context.push('/profile/edit/about'),
         },
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),

@@ -39,7 +39,8 @@ import '../../features/quotes/presentation/pages/quote_requests_inbox_page.dart'
 import '../../features/scheduling/presentation/pages/schedule_page.dart';
 import '../../features/timesheets/presentation/pages/timesheet_args.dart';
 import '../../features/timesheets/presentation/pages/timesheet_page.dart';
-import '../../features/profile/presentation/pages/profile_edit_page.dart';
+import '../../features/profile/presentation/pages/about_edit_page.dart';
+import '../../features/profile/presentation/pages/profile_edit_hub_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
@@ -379,7 +380,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         builder: (_, _) => const ProfilePage(),
         routes: [
-          GoRoute(path: 'edit', builder: (_, _) => const ProfileEditPage()),
+          // Quick-edit hub (2026-06-11): /profile/edit is the section hub;
+          // rows open quick-edit sheets in place. About is the one
+          // full-screen editor (long text).
+          GoRoute(
+            path: 'edit',
+            builder: (_, _) => const ProfileEditHubPage(),
+            routes: [
+              GoRoute(path: 'about', builder: (_, _) => const AboutEditPage()),
+            ],
+          ),
         ],
       ),
       GoRoute(

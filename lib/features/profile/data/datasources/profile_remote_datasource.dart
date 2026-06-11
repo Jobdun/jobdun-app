@@ -14,9 +14,6 @@ abstract interface class ProfileRemoteDataSource {
   Future<UserProfileModel> getProfile(String userId);
   Future<BuilderProfileModel?> getBuilderProfile(String userId);
   Future<TradeProfileModel?> getTradeProfile(String userId);
-  Future<void> updateProfile(UserProfileModel profile);
-  Future<void> upsertBuilderProfile(BuilderProfileModel profile);
-  Future<void> upsertTradeProfile(TradeProfileModel profile);
   Future<void> patchUserProfile(String userId, UserProfilePatch patch);
   Future<void> patchTradeProfile(String userId, TradeProfilePatch patch);
   Future<void> patchBuilderProfile(String userId, BuilderProfilePatch patch);
@@ -94,36 +91,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   }
 
   @override
-  Future<void> updateProfile(UserProfileModel profile) async {
-    try {
-      await _client
-          .from('profiles')
-          .update(profile.toJson())
-          .eq('id', profile.id);
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
-
-  @override
-  Future<void> upsertBuilderProfile(BuilderProfileModel profile) async {
-    try {
-      await _client.from('builder_profiles').upsert(profile.toJson());
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
-
-  @override
-  Future<void> upsertTradeProfile(TradeProfileModel profile) async {
-    try {
-      await _client.from('trade_profiles').upsert(profile.toJson());
-    } catch (e) {
-      throw ServerException(e.toString());
-    }
-  }
-
-  @override
   Future<void> patchUserProfile(String userId, UserProfilePatch patch) async {
     try {
       await _client
@@ -142,9 +109,10 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<void> patchTradeProfile(String userId, TradeProfilePatch patch) async {
     try {
-      await _client
-          .from('trade_profiles')
-          .upsert({'id': userId, ...tradeProfilePatchColumns(patch)});
+      await _client.from('trade_profiles').upsert({
+        'id': userId,
+        ...tradeProfilePatchColumns(patch),
+      });
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -156,9 +124,10 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     BuilderProfilePatch patch,
   ) async {
     try {
-      await _client
-          .from('builder_profiles')
-          .upsert({'id': userId, ...builderProfilePatchColumns(patch)});
+      await _client.from('builder_profiles').upsert({
+        'id': userId,
+        ...builderProfilePatchColumns(patch),
+      });
     } catch (e) {
       throw ServerException(e.toString());
     }

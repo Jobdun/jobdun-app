@@ -69,9 +69,7 @@ class _BusinessDetailsSheetState extends ConsumerState<BusinessDetailsSheet> {
             contactPhone: Some(
               _nullIfBlank(values['contact_phone'] as String?),
             ),
-            yearsInBusiness: Some(
-              _parseIntOrNull(values['years_in_business']),
-            ),
+            yearsInBusiness: Some(_parseIntOrNull(values['years_in_business'])),
             website: Some(_nullIfBlank(values['website'] as String?)),
           ),
         );
@@ -149,7 +147,10 @@ class _BusinessDetailsSheetState extends ConsumerState<BusinessDetailsSheet> {
               validator: FormBuilderValidators.compose([
                 FormBuilderValidators.integer(errorText: 'Whole numbers only.'),
                 FormBuilderValidators.min(0, errorText: 'Must be 0 or more.'),
-                FormBuilderValidators.max(60, errorText: 'Must be 60 or fewer.'),
+                FormBuilderValidators.max(
+                  60,
+                  errorText: 'Must be 60 or fewer.',
+                ),
               ]),
             ),
             Gap(AppSpacing.md.h),

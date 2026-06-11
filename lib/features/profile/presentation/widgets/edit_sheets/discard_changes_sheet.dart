@@ -22,9 +22,9 @@ Future<bool> showDiscardChangesSheet(BuildContext context) async {
           children: [
             Text(
               'Discard your changes?',
-              style: Theme.of(sheetCtx).textTheme.headlineSmall!.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                sheetCtx,
+              ).textTheme.headlineSmall!.copyWith(fontWeight: FontWeight.w700),
             ),
             Gap(8.h),
             Text(

@@ -9,8 +9,8 @@ import 'package:fpdart/fpdart.dart' show Some;
 import 'package:gap/gap.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../../core/config/supabase_config.dart';
 import '../../../../../core/design/colors.dart';
+import '../../../../../core/providers/current_user_provider.dart';
 import '../../../../../core/design/widgets/field_label.dart';
 import '../../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../../core/services/image_upload_service.dart';
@@ -42,12 +42,7 @@ class _IdentitySheetState extends ConsumerState<IdentitySheet> {
 
   /// Fresh sign-ups land here with an empty profile row; fall back to the
   /// name they typed at sign-up (auth.users.user_metadata.full_name).
-  String? get _metadataFullName {
-    final raw =
-        SupabaseConfig.client.auth.currentUser?.userMetadata?['full_name'];
-    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
-    return null;
-  }
+  String? get _metadataFullName => ref.read(signupFullNameProvider);
 
   Future<void> _pickAvatar() async {
     final hasAvatar =

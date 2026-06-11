@@ -12,10 +12,6 @@ abstract interface class ProfileRepository {
   Future<Either<Failure, UserProfile>> getProfile(String userId);
   Future<Either<Failure, BuilderProfile?>> getBuilderProfile(String userId);
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId);
-  Future<Either<Failure, void>> updateProfile(UserProfile profile);
-  Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile);
-  Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile);
-
   // Partial updates — only columns set on the patch are written. Empty
   // patches resolve to success without touching the network.
   Future<Either<Failure, void>> patchUserProfile(

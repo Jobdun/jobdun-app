@@ -1,8 +1,8 @@
 // Tests for the state-management refactor (Sprint M1).
 //
 // Covers the high-risk changes from docs/STATE_MANAGEMENT_AUDIT.md:
-//   • ProfileController.saveProfile now routes through ProfileRepository
-//     (the repo-bypass fix) — verifies the right model fields land in upsert.
+//   • (2026-06-11) ProfileController.saveProfile + the upsert path were
+//     deleted with the legacy form — see profile_save_patches_test.dart.
 //   • The three previously-stub controllers (Notifications, Reviews,
 //     Verification) actually call their repos and update state correctly.
 //   • OAuthService throws StateError when GOOGLE_WEB_CLIENT_ID is missing
@@ -22,7 +22,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:jobdun/core/errors/failures.dart';
 import 'package:jobdun/core/providers/current_user_provider.dart';
 
-import 'package:jobdun/features/auth/domain/entities/user_role.dart';
 import 'package:jobdun/features/auth/data/services/oauth_service.dart';
 
 import 'package:jobdun/features/notifications/domain/entities/app_notification.dart';
@@ -32,10 +31,7 @@ import 'package:jobdun/features/notifications/presentation/providers/notificatio
 import 'package:jobdun/features/profile/data/models/builder_profile_model.dart';
 import 'package:jobdun/features/profile/data/models/trade_profile_model.dart';
 import 'package:jobdun/features/profile/data/models/user_profile_model.dart';
-import 'package:jobdun/features/profile/domain/entities/builder_profile.dart';
-import 'package:jobdun/features/profile/domain/entities/trade_profile.dart';
 import 'package:jobdun/features/profile/domain/repositories/profile_repository.dart';
-import 'package:jobdun/features/profile/presentation/providers/profile_provider.dart';
 
 import 'package:jobdun/features/reviews/domain/entities/review.dart';
 import 'package:jobdun/features/reviews/domain/repositories/review_repository.dart';
@@ -74,200 +70,10 @@ void main() {
     registerFallbackValue(const UserProfileModel(id: 'fallback'));
   });
 
-  // ── ProfileController.saveProfile — the repo-bypass fix ─────────────────────
-  group('ProfileController.saveProfile', () {
-    late MockProfileRepository mockRepo;
-    late ProviderContainer container;
-
-    setUp(() {
-      mockRepo = MockProfileRepository();
-      container = ProviderContainer(
-        overrides: [
-          profileRepositoryProvider.overrideWithValue(mockRepo),
-          currentUserIdSyncProvider.overrideWithValue('user-1'),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      // Stub the reload-after-save path (saveProfile awaits loadProfile).
-      when(
-        () => mockRepo.getProfile(any()),
-      ).thenAnswer((_) async => Right(const UserProfileModel(id: 'user-1')));
-      when(
-        () => mockRepo.getBuilderProfile(any()),
-      ).thenAnswer((_) async => const Right(null));
-      when(
-        () => mockRepo.getTradeProfile(any()),
-      ).thenAnswer((_) async => const Right(null));
-    });
-
-    test(
-      'BUILDER path: routes through upsertBuilderProfile (no direct Supabase)',
-      () async {
-        when(
-          () => mockRepo.updateProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-        when(
-          () => mockRepo.upsertBuilderProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-
-        // Seed state.profile so the updateProfile branch fires.
-        final controller = container.read(profileControllerProvider.notifier);
-        controller.state = const ProfileState(
-          profile: UserProfileModel(id: 'user-1', displayName: 'Old Name'),
-        );
-
-        final ok = await controller.saveProfile(
-          role: UserRole.builder,
-          displayName: 'Acme Builders Pty',
-          suburb: 'Parramatta',
-          auState: 'NSW',
-          postcode: '2150',
-          about: 'We build stuff.',
-          companyName: 'Acme Builders Pty',
-          abn: '12345678901',
-          contactName: 'Ken',
-          contactPhone: '+61400000000',
-          yearsInBusiness: 7,
-          website: 'https://acme.example',
-        );
-
-        expect(ok, isTrue);
-
-        // Verify the upsert was called with the right shape.
-        final captured =
-            verify(
-                  () => mockRepo.upsertBuilderProfile(captureAny()),
-                ).captured.single
-                as BuilderProfile;
-        expect(captured.id, 'user-1');
-        expect(captured.companyName, 'Acme Builders Pty');
-        expect(captured.abn, '12345678901');
-        expect(captured.serviceSuburb, 'Parramatta');
-        expect(captured.serviceState, 'NSW');
-        expect(captured.servicePostcode, '2150');
-        expect(captured.yearsInBusiness, 7);
-
-        // And that we did NOT touch trade_profiles.
-        verifyNever(() => mockRepo.upsertTradeProfile(any()));
-      },
-    );
-
-    test(
-      'TRADE path: routes through upsertTradeProfile incl. tradeOther',
-      () async {
-        when(
-          () => mockRepo.updateProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-        when(
-          () => mockRepo.upsertTradeProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-
-        final controller = container.read(profileControllerProvider.notifier);
-        controller.state = const ProfileState(
-          profile: UserProfileModel(id: 'user-1', displayName: 'Old Name'),
-        );
-
-        final ok = await controller.saveProfile(
-          role: UserRole.trade,
-          displayName: 'Tom the Builder',
-          suburb: 'Bondi',
-          auState: 'NSW',
-          postcode: '2026',
-          about: 'Decking specialist.',
-          fullName: 'Tom the Builder',
-          primaryTrade: 'other',
-          tradeOther: 'Decking',
-          yearsExperience: 12,
-          hourlyRateMin: 80,
-          hourlyRateMax: 110,
-          hourlyRateVisible: true,
-        );
-
-        expect(ok, isTrue);
-
-        final captured =
-            verify(
-                  () => mockRepo.upsertTradeProfile(captureAny()),
-                ).captured.single
-                as TradeProfile;
-        expect(captured.id, 'user-1');
-        expect(captured.fullName, 'Tom the Builder');
-        expect(captured.primaryTrade, 'other');
-        expect(captured.tradeOther, 'Decking');
-        expect(captured.baseSuburb, 'Bondi');
-        expect(captured.yearsExperience, 12);
-        expect(captured.hourlyRateMin, 80);
-
-        verifyNever(() => mockRepo.upsertBuilderProfile(any()));
-      },
-    );
-
-    test(
-      'TRADE path: clears tradeOther when primaryTrade != "other"',
-      () async {
-        when(
-          () => mockRepo.updateProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-        when(
-          () => mockRepo.upsertTradeProfile(any()),
-        ).thenAnswer((_) async => const Right(null));
-
-        final controller = container.read(profileControllerProvider.notifier);
-        controller.state = const ProfileState(
-          profile: UserProfileModel(id: 'user-1'),
-        );
-
-        await controller.saveProfile(
-          role: UserRole.trade,
-          displayName: 'Tom',
-          suburb: 'Bondi',
-          auState: 'NSW',
-          postcode: '2026',
-          about: null,
-          fullName: 'Tom',
-          primaryTrade: 'electrician',
-          tradeOther: 'leftover text — should be discarded',
-        );
-
-        final captured =
-            verify(
-                  () => mockRepo.upsertTradeProfile(captureAny()),
-                ).captured.single
-                as TradeProfile;
-        expect(captured.primaryTrade, 'electrician');
-        expect(captured.tradeOther, isNull);
-      },
-    );
-
-    test('returns false + sets error when repo upsert fails', () async {
-      when(
-        () => mockRepo.updateProfile(any()),
-      ).thenAnswer((_) async => const Right(null));
-      when(
-        () => mockRepo.upsertBuilderProfile(any()),
-      ).thenAnswer((_) async => const Left(ServerFailure('RLS denied')));
-
-      final controller = container.read(profileControllerProvider.notifier);
-      controller.state = const ProfileState(
-        profile: UserProfileModel(id: 'user-1'),
-      );
-
-      final ok = await controller.saveProfile(
-        role: UserRole.builder,
-        displayName: 'Acme',
-        suburb: 'Sydney',
-        auState: 'NSW',
-        postcode: '2000',
-        about: null,
-        companyName: 'Acme',
-      );
-
-      expect(ok, isFalse);
-      expect(controller.state.error, contains('RLS denied'));
-      expect(controller.state.isLoading, isFalse);
-    });
-  });
+  // ProfileController.saveProfile was deleted with the legacy long-form
+  // editor (2026-06-11, quick-edit sheets). Its repo-bypass coverage moved to
+  // test/features/profile/profile_save_patches_test.dart (savePatches) and
+  // profile_patch_mappers_test.dart (column-map / null-wipe semantics).
 
   // ── NotificationsController — newly unstubbed ───────────────────────────────
   group('NotificationsController', () {

@@ -99,38 +99,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateProfile(UserProfile profile) async {
-    try {
-      await _datasource.updateProfile(profile as UserProfileModel);
-      return right(null);
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> upsertBuilderProfile(
-    BuilderProfile profile,
-  ) async {
-    try {
-      await _datasource.upsertBuilderProfile(profile as BuilderProfileModel);
-      return right(null);
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile) async {
-    try {
-      await _datasource.upsertTradeProfile(profile as TradeProfileModel);
-      return right(null);
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
   Future<Either<Failure, void>> patchUserProfile(
     String userId,
     UserProfilePatch patch,

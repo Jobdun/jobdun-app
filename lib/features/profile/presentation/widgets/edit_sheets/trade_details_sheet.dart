@@ -154,7 +154,10 @@ class _TradeDetailsSheetState extends ConsumerState<TradeDetailsSheet> {
               validator: FormBuilderValidators.compose([
                 FormBuilderValidators.integer(errorText: 'Whole numbers only.'),
                 FormBuilderValidators.min(0, errorText: 'Must be 0 or more.'),
-                FormBuilderValidators.max(60, errorText: 'Must be 60 or fewer.'),
+                FormBuilderValidators.max(
+                  60,
+                  errorText: 'Must be 60 or fewer.',
+                ),
               ]),
             ),
             Gap(AppSpacing.md.h),

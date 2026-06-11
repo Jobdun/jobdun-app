@@ -125,7 +125,10 @@ class _RatesSheetState extends ConsumerState<RatesSheet> {
                       if (max == null) return 'Numbers only.';
                       if (max < 0) return 'Must be 0 or more.';
                       final minStr =
-                          _formKey.currentState?.fields['hourly_rate_min']?.value
+                          _formKey
+                                  .currentState
+                                  ?.fields['hourly_rate_min']
+                                  ?.value
                               as String?;
                       final min = double.tryParse(minStr ?? '');
                       if (min != null && max < min) return 'Must be ≥ min.';
