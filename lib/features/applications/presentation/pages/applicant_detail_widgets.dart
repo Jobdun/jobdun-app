@@ -8,14 +8,17 @@ class _DetailHeader extends StatelessWidget {
   const _DetailHeader({
     required this.app,
     required this.profile,
-    required this.hasLicence,
-    required this.hasAbn,
+    required this.licenceVerif,
+    required this.abnVerif,
   });
 
   final JobApplication app;
   final TradeProfile? profile;
-  final bool hasLicence;
-  final bool hasAbn;
+
+  /// Verified licence / ABN rows (null = not verified or still loading).
+  /// Full rows, not booleans, so the chips can show provenance on tap (U2).
+  final Verification? licenceVerif;
+  final Verification? abnVerif;
 
   @override
   Widget build(BuildContext context) {
@@ -74,10 +77,29 @@ class _DetailHeader extends StatelessWidget {
                 runSpacing: 6.h,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (hasLicence) const _VBadge('Licence'),
-                  if (hasAbn) const _VBadge('ABN'),
-                  if (!hasLicence && !hasAbn && app.tradeIsVerified == true)
-                    const _VBadge('Verified'),
+                  if (licenceVerif != null)
+                    TrustChip(
+                      label: 'Licence',
+                      state: TrustChipState.verified,
+                      onTap: () => _openLicenceDetail(context, licenceVerif!),
+                    ),
+                  if (abnVerif != null)
+                    TrustChip(
+                      label: 'ABN',
+                      state: TrustChipState.verified,
+                      onTap: () => _openAbnDetail(context, abnVerif!),
+                    ),
+                  if (licenceVerif == null &&
+                      abnVerif == null &&
+                      app.tradeIsVerified == true)
+                    // Legacy flag only — no row to show provenance from.
+                    const TrustChip(
+                      label: 'Verified',
+                      state: TrustChipState.verified,
+                    ),
+                  // Approved White Card / public liability — counterparty trust
+                  // signals from the supplementary-credentials projection.
+                  TradeCredentialBadges(userId: app.tradeId),
                   if (rating != null && ratingCount > 0)
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -85,7 +107,7 @@ class _DetailHeader extends StatelessWidget {
                         Icon(
                           AppIcons.starFilled,
                           size: AppIconSize.micro.r,
-                          color: c.warning,
+                          color: c.star,
                         ),
                         Gap(3.w),
                         Text(
@@ -107,41 +129,58 @@ class _DetailHeader extends StatelessWidget {
   }
 }
 
-class _VBadge extends StatelessWidget {
-  const _VBadge(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
-      decoration: BoxDecoration(
-        color: c.verifiedBg,
-        borderRadius: BorderRadius.circular(AppRadius.chip.r),
+// U2.2: provenance sheets for the licence/ABN chips — the same honesty the
+// receipts card shows ("as at" snapshot date, register checked, expiry).
+void _openLicenceDetail(BuildContext context, Verification v) {
+  final state = v.licenceState;
+  final asAt = v.detailCapturedAt ?? v.verifiedAt;
+  showCredentialDetailSheet(
+    context,
+    title: 'Trade licence',
+    blurb:
+        'Licence to carry out regulated trade work, checked against the '
+        'public register.',
+    rows: [
+      (
+        icon: AppIcons.verified,
+        text: state == null || state.isEmpty
+            ? "Checked against the state regulator's public register"
+            : "Checked against $state Fair Trading's public register",
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            AppIcons.verified,
-            size: AppIconSize.micro.r,
-            color: c.verifiedTx,
-          ),
-          Gap(3.w),
-          Text(
-            label.toUpperCase(),
-            style: tt.labelSmall!.copyWith(
-              letterSpacing: 0.4,
-              color: c.verifiedTx,
-            ),
-          ),
-        ],
+      if ((v.licenceTradeClass ?? '').isNotEmpty)
+        (icon: AppIcons.licence, text: v.licenceTradeClass!),
+      if (asAt != null)
+        (icon: AppIcons.calendar, text: 'As at ${StringUtils.fmtDate(asAt)}'),
+      if (v.expiresAt != null)
+        (
+          icon: AppIcons.clock,
+          text: 'Expires ${StringUtils.fmtDate(v.expiresAt!)}',
+        ),
+    ],
+  );
+}
+
+void _openAbnDetail(BuildContext context, Verification v) {
+  final asAt = v.detailCapturedAt ?? v.verifiedAt;
+  showCredentialDetailSheet(
+    context,
+    title: 'Business (ABN)',
+    blurb:
+        'Active Australian Business Number, checked against the '
+        'Australian Business Register.',
+    rows: [
+      (
+        icon: AppIcons.verified,
+        text: 'Checked against the Australian Business Register',
       ),
-    );
-  }
+      if ((v.abnEntityName ?? '').trim().isNotEmpty)
+        (icon: AppIcons.building, text: v.abnEntityName!.trim()),
+      if (v.gstRegistered == true)
+        (icon: AppIcons.check, text: 'GST registered'),
+      if (asAt != null)
+        (icon: AppIcons.calendar, text: 'As at ${StringUtils.fmtDate(asAt)}'),
+    ],
+  );
 }
 
 // "Their quote · this job" vs the builder's budget.

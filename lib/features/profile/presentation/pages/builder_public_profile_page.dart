@@ -28,7 +28,7 @@ final builderPublicProfileProvider = FutureProvider.autoDispose
     .family<BuilderProfile?, String>((ref, builderId) async {
       final res = await ref
           .read(profileRepositoryProvider)
-          .getBuilderProfile(builderId);
+          .getBuilderPublicProfile(builderId);
       return res.fold((_) => null, (p) => p);
     });
 

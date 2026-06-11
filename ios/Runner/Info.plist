@@ -54,6 +54,18 @@
 	     intentionally specific so iOS users see a clear reason in the permission
 	     dialog. No NSLocationAlwaysAndWhenInUseUsageDescription because Jobdun
 	     does NOT use background location. -->
+		<!-- App Store gate G3 (app-store-review-check): every capability the app
+		     touches needs a specific purpose string — image_picker uses both the
+		     camera and the photo library (avatars, portfolio, verification docs).
+		     Missing strings = ITMS-90683 upload rejection + runtime crash. -->
+		<key>NSCameraUsageDescription</key>
+		<string>Jobdun uses your camera to photograph licences, White Cards, and insurance documents for verification, and to add photos to your portfolio.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Jobdun accesses your photo library so you can upload existing photos of your credentials, portfolio work, and profile picture.</string>
+		<!-- G7: HTTPS-only (Supabase TLS) — standard exempt encryption, so App
+		     Store Connect never blocks a build asking the export question. -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Jobdun uses your location to show jobs and tradies near you on the map and to suggest nearby addresses when you set your service area.</string>
 		<key>UIApplicationSceneManifest</key>

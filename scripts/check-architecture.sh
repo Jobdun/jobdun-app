@@ -97,10 +97,8 @@ echo ""
 # justified in docs/CLEAN_ARCHITECTURE_AUDIT.md → "Remaining minor items".
 # Adding here without documenting = drift; revisit on next architecture pass.
 ARCH_SUPABASE_ALLOWLIST=(
-  # profile_edit_page reads auth.currentUser.userMetadata['full_name'] for the
-  # register-time form prefill — a different concern from the userId pattern.
-  # Slated for the next register-draft refactor.
-  "lib/features/profile/presentation/pages/profile_edit_page.dart"
+  # (empty — profile_edit_page's userMetadata read was retired with the legacy
+  # form on 2026-06-11; the prefill now routes through signupFullNameProvider.)
 )
 echo -e "${BOLD}[3/7] Supabase isolation${RESET}"
 raw_supabase=$(
@@ -108,9 +106,11 @@ raw_supabase=$(
   | grep -vE "/(data/(datasources|services|legal_acceptance)|presentation/providers)/" \
   || true
 )
-# Strip allowlisted file paths.
+# Strip allowlisted file paths. (${arr[@]:-} keeps bash 3.2 + set -u happy
+# when the allowlist is empty.)
 supabase_violations="$raw_supabase"
-for allow in "${ARCH_SUPABASE_ALLOWLIST[@]}"; do
+for allow in "${ARCH_SUPABASE_ALLOWLIST[@]:-}"; do
+  [ -n "$allow" ] || continue
   supabase_violations=$(echo "$supabase_violations" | grep -v "^${allow}:" || true)
 done
 grep_check "no SupabaseConfig.client outside data/ + providers/" "$supabase_violations"

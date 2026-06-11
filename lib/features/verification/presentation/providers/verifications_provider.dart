@@ -5,10 +5,12 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/verifications_remote_datasource.dart';
 import '../../data/repositories/verifications_repository_impl.dart';
 import '../../domain/entities/builder_public_verification.dart';
+import '../../domain/entities/trade_public_credential.dart';
 import '../../domain/entities/verification.dart';
 import '../../domain/repositories/verifications_repository.dart';
 import '../../domain/usecases/get_builder_public_verification.dart';
 import '../../domain/usecases/get_my_verifications.dart';
+import '../../domain/usecases/get_trade_public_credentials.dart';
 import '../../domain/usecases/invoke_verify_abn.dart';
 import '../../domain/usecases/invoke_verify_licence.dart';
 
@@ -40,6 +42,10 @@ final getBuilderPublicVerificationUseCaseProvider = Provider(
       GetBuilderPublicVerification(ref.read(verificationsRepositoryProvider)),
 );
 
+final getTradePublicCredentialsUseCaseProvider = Provider(
+  (ref) => GetTradePublicCredentials(ref.read(verificationsRepositoryProvider)),
+);
+
 // ── Per-user verifications (FutureProvider.family) ────────────────────────────
 final verificationsForUserProvider =
     FutureProvider.family<List<Verification>, String>((ref, userId) async {
@@ -66,6 +72,20 @@ final builderPublicVerificationProvider =
     ) async {
       final result = await ref
           .read(getBuilderPublicVerificationUseCaseProvider)
+          .call(userId);
+      return result.fold((f) => throw Exception(f.message), (rows) => rows);
+    });
+
+// ── Trade supplementary credentials projection (White Card / public liability)
+// Reads the get_trade_public_credentials RPC for a tradie — the approved-only
+// trust badges a builder sees on the hire screen. Returns 0..N credentials.
+final tradePublicCredentialsProvider =
+    FutureProvider.family<List<TradePublicCredential>, String>((
+      ref,
+      userId,
+    ) async {
+      final result = await ref
+          .read(getTradePublicCredentialsUseCaseProvider)
           .call(userId);
       return result.fold((f) => throw Exception(f.message), (rows) => rows);
     });

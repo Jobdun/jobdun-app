@@ -57,7 +57,10 @@ class _Body extends ConsumerWidget {
     final c = context.c;
     final items = state.filteredItems;
     final pending = items.where((i) => i.status == 'pending').toList();
-    final reviewed = items.where((i) => i.status != 'pending').toList();
+    // U4.4: history is reference, not work — cap the render until real
+    // pagination is needed (provider already sorts it newest-first).
+    final allReviewed = items.where((i) => i.status != 'pending').toList();
+    final reviewed = allReviewed.take(50).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -96,7 +99,7 @@ class _Body extends ConsumerWidget {
                     const Gap(24),
                     _SectionHeader(
                       title: 'REVIEWED',
-                      count: reviewed.length,
+                      count: allReviewed.length,
                       accent: c.text3,
                     ),
                     const Gap(8),
@@ -106,6 +109,14 @@ class _Body extends ConsumerWidget {
                         onTap: () => _openSheet(context, i),
                       ),
                     ),
+                    if (allReviewed.length > reviewed.length) ...[
+                      const Gap(4),
+                      Text(
+                        'Showing latest ${reviewed.length} of '
+                        '${allReviewed.length}',
+                        style: AdminText.caption(c.text3),
+                      ),
+                    ],
                   ],
                 ),
         ),
@@ -148,6 +159,8 @@ class _FilterRow extends StatelessWidget {
     AdminVerificationKindFilter.all => 'All',
     AdminVerificationKindFilter.tradeLicence => 'Trade Licence',
     AdminVerificationKindFilter.builderAbn => 'Builder ABN',
+    AdminVerificationKindFilter.whiteCard => 'White Card',
+    AdminVerificationKindFilter.publicLiability => 'Insurance',
     AdminVerificationKindFilter.other => 'Other',
   };
 }

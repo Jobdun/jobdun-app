@@ -157,13 +157,17 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 
 # App launcher icon — regenerate with: dart run flutter_launcher_icons
-# Source is a full-bleed orange square + white hammer-J; the OS masks the
-# corners. A proper Android adaptive icon (transparent-J foreground + orange
-# background) can be added once a transparent-PNG export is available.
+# Full-bleed source for legacy launchers; adaptive layers (Play gate 3) use
+# the transparent hammer-J foreground (rendered from jobdun-icon-foreground.svg,
+# glyph scaled to the 66/108 safe zone) over the brand-orange background, plus
+# a monochrome layer for Android 13+ themed icons.
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/jobdun-icon.png"
+  adaptive_icon_background: "#F97316"
+  adaptive_icon_foreground: "assets/icon/jobdun-icon-foreground.png"
+  adaptive_icon_monochrome: "assets/icon/jobdun-icon-foreground.png"
   remove_alpha_ios: true
   min_sdk_android: 21
 

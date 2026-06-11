@@ -36,7 +36,7 @@ class JPlaceField extends ConsumerStatefulWidget {
   const JPlaceField({
     super.key,
     required this.name,
-    required this.label,
+    this.label,
     this.initialValue,
     this.hint = 'Search suburb, postcode or address',
     this.validator,
@@ -45,7 +45,11 @@ class JPlaceField extends ConsumerStatefulWidget {
   });
 
   final String name;
-  final String label;
+
+  /// Rendered above the input. Pass null when the surrounding surface
+  /// already names the field (e.g. a quick-edit sheet whose title is the
+  /// label) — a duplicate stacked label reads as a rendering bug.
+  final String? label;
   final JPlaceResult? initialValue;
   final String? hint;
   final String? Function(JPlaceResult?)? validator;
@@ -238,13 +242,15 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.label,
-              style: tt.labelMedium!.copyWith(
-                color: widget.enabled ? c.text2 : c.text3,
+            if (widget.label != null) ...[
+              Text(
+                widget.label!,
+                style: tt.labelMedium!.copyWith(
+                  color: widget.enabled ? c.text2 : c.text3,
+                ),
               ),
-            ),
-            Gap(8.h),
+              Gap(8.h),
+            ],
             _JPlaceInputBox(
               controller: _controller,
               focusNode: _focusNode,

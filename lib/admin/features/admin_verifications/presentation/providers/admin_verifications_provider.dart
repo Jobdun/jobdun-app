@@ -6,11 +6,19 @@ import '../../../../../core/config/supabase_config.dart';
 /// Coarse classification used by the admin queue chips. Maps from the
 /// `verification_documents.doc_type` value to a role-scoped audience so
 /// reviewers can triage by who-uploaded-what without reading every row.
-enum AdminVerificationKind { tradeLicence, builderAbn, other }
+enum AdminVerificationKind {
+  tradeLicence,
+  builderAbn,
+  whiteCard,
+  publicLiability,
+  other,
+}
 
 AdminVerificationKind _kindForDocType(String docType) => switch (docType) {
   'trade_licence' => AdminVerificationKind.tradeLicence,
   'abn_certificate' => AdminVerificationKind.builderAbn,
+  'white_card' => AdminVerificationKind.whiteCard,
+  'public_liability' => AdminVerificationKind.publicLiability,
   _ => AdminVerificationKind.other,
 };
 
@@ -101,29 +109,53 @@ class AdminVerificationsState {
     filter: filter ?? this.filter,
   );
 
-  /// Items after the active chip filter.
-  List<AdminVerificationItem> get filteredItems => switch (filter) {
-    AdminVerificationKindFilter.all => items,
-    AdminVerificationKindFilter.tradeLicence =>
-      items.where((i) => i.kind == AdminVerificationKind.tradeLicence).toList(),
-    AdminVerificationKindFilter.builderAbn =>
-      items.where((i) => i.kind == AdminVerificationKind.builderAbn).toList(),
-    AdminVerificationKindFilter.other =>
-      items.where((i) => i.kind == AdminVerificationKind.other).toList(),
-  };
+  /// Items after the active chip filter, triage-sorted (U4.2): pending
+  /// oldest-first — the 24 h SLA makes the oldest doc the most urgent —
+  /// then reviewed history newest-first.
+  List<AdminVerificationItem> get filteredItems {
+    final filtered = filter == _filterAll
+        ? List<AdminVerificationItem>.of(items)
+        : items.where((i) => i.kind == _kindFor(filter)).toList();
+    filtered.sort((a, b) {
+      final aPending = a.status == 'pending';
+      final bPending = b.status == 'pending';
+      if (aPending != bPending) return aPending ? -1 : 1;
+      return aPending
+          ? a.submittedAt.compareTo(b.submittedAt) // oldest pending first
+          : b.submittedAt.compareTo(a.submittedAt); // newest reviewed first
+    });
+    return filtered;
+  }
 
-  int countFor(AdminVerificationKindFilter f) => switch (f) {
-    AdminVerificationKindFilter.all => items.length,
+  int countFor(AdminVerificationKindFilter f) => f == _filterAll
+      ? items.length
+      : items.where((i) => i.kind == _kindFor(f)).length;
+
+  static const _filterAll = AdminVerificationKindFilter.all;
+
+  // Each non-"all" filter maps 1:1 to a row kind.
+  static AdminVerificationKind _kindFor(
+    AdminVerificationKindFilter f,
+  ) => switch (f) {
+    AdminVerificationKindFilter.all => AdminVerificationKind.other,
     AdminVerificationKindFilter.tradeLicence =>
-      items.where((i) => i.kind == AdminVerificationKind.tradeLicence).length,
-    AdminVerificationKindFilter.builderAbn =>
-      items.where((i) => i.kind == AdminVerificationKind.builderAbn).length,
-    AdminVerificationKindFilter.other =>
-      items.where((i) => i.kind == AdminVerificationKind.other).length,
+      AdminVerificationKind.tradeLicence,
+    AdminVerificationKindFilter.builderAbn => AdminVerificationKind.builderAbn,
+    AdminVerificationKindFilter.whiteCard => AdminVerificationKind.whiteCard,
+    AdminVerificationKindFilter.publicLiability =>
+      AdminVerificationKind.publicLiability,
+    AdminVerificationKindFilter.other => AdminVerificationKind.other,
   };
 }
 
-enum AdminVerificationKindFilter { all, tradeLicence, builderAbn, other }
+enum AdminVerificationKindFilter {
+  all,
+  tradeLicence,
+  builderAbn,
+  whiteCard,
+  publicLiability,
+  other,
+}
 
 final adminVerificationsProvider =
     AsyncNotifierProvider<

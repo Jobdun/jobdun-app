@@ -100,3 +100,7 @@ test/**/failures/
 
 # Firebase service-account keys (NEVER commit — secret private key)
 *firebase-adminsdk*.json
+
+# Android release signing — NEVER commit. Backup drill: docs/RELEASE_SIGNING.md
+android/key.properties
+android/upload-keystore.jks

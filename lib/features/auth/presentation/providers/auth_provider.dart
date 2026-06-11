@@ -10,6 +10,7 @@ import '../../../../core/errors/error_messages.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/sentry_reporter.dart';
 import '../../data/services/email_auth_service.dart';
+import '../../data/services/account_deletion_service.dart';
 import '../../data/services/oauth_service.dart';
 import '../../data/services/phone_auth_service.dart';
 import '../../data/services/role_resolver.dart';
@@ -445,5 +446,18 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
       await _email.signOut();
     }
     state = const AuthState();
+  }
+
+  // ── Account deletion (Play policy) ─────────────────────────────────────────
+
+  /// Deletes the signed-in user's account via the `delete_my_account` RPC,
+  /// then clears local auth state. Rethrows on failure so the Settings
+  /// confirm sheet can show a "contact support" error instead of silently
+  /// half-deleting.
+  Future<void> deleteAccount() async {
+    await AccountDeletionService(SupabaseConfig.client).deleteMyAccount();
+    // Server-side the user (and their session) is gone; reset local state
+    // through the normal sign-out path so the router redirects to login.
+    await signOut();
   }
 }

@@ -11,7 +11,7 @@ class SupabaseConfig {
   // Used as `emailRedirectTo` on signUp / resend so the verification email
   // bounces tappers back into the app instead of a localhost web page.
   // Hosted Supabase project must allowlist this exact URL.
-  static const String authRedirectUrl = 'com.example.jobdun://login-callback/';
+  static const String authRedirectUrl = 'au.com.jobdun.app://login-callback/';
 
   static bool get isConfigured => AppEnv.isSupabaseConfigured;
   static bool get isInitialized => _initialized;

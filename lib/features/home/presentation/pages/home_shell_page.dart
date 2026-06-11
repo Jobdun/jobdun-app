@@ -11,6 +11,9 @@ import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/theme/app_icon_theme.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/widgets/account_sheet.dart';
+import '../../../../core/design/widgets/avatar_block.dart';
 
 class HomeShellPage extends ConsumerWidget {
   const HomeShellPage({super.key, required this.navigationShell});
@@ -32,6 +35,8 @@ class HomeShellPage extends ConsumerWidget {
     final tabs = TabSpec.forRole(role);
 
     return Scaffold(
+      // Content scrolls behind the floating dock (dock is visually detached).
+      extendBody: true,
       body: Column(
         children: [
           if (!isOnline) const JOfflineBanner(),
@@ -143,17 +148,20 @@ class TabSpec {
         shortLabel: 'Messages',
         semanticsLabel: 'Messages',
       ),
-      const TabSpec(
-        outlineIcon: AppIcons.profileOutline,
-        filledIcon: AppIcons.profileFilled,
-        shortLabel: 'Profile',
-        semanticsLabel: 'My profile',
-      ),
+      // Floating-dock nav (heatmap pairing, 2026-06-11): four work tabs;
+      // the dock's 5th slot is the avatar (account sheet), NOT a branch.
+      // Schedule stays routable (/schedule) via the home status pill and the
+      // account sheet — M3 caps nav destinations at 5 and the avatar earns
+      // the slot (it is the highest-frequency non-work target).
     ];
   }
 }
 
-class _BottomNav extends StatelessWidget {
+/// Floating pill dock (heatmap pairing): detached bar, four work tabs +
+/// the avatar as the 5th item (opens the account sheet — a button, not a
+/// tab). Flat per MASTER: border for edge definition, no shadow. M3: ≤5
+/// destinations, labelled, ≥48dp targets; HIG: persistent, ≥44pt, safe-area.
+class _BottomNav extends ConsumerWidget {
   const _BottomNav({
     required this.tabs,
     required this.currentIndex,
@@ -165,69 +173,116 @@ class _BottomNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    final profile = ref.watch(
+      profileControllerProvider.select((s) => s.profile),
+    );
+    final name = (profile?.displayName ?? '').trim();
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.background,
-        border: Border(top: BorderSide(color: c.border, width: 1)),
-      ),
-      child: SafeArea(
-        top: false,
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 10.h),
+        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(28.r),
+          border: Border.all(color: c.border),
+        ),
         child: Row(
-          children: List.generate(tabs.length, (i) {
-            final tab = tabs[i];
-            final isActive = i == currentIndex;
-            final tintColor = isActive ? c.action : c.text3;
-
-            return Expanded(
+          children: [
+            for (var i = 0; i < tabs.length; i++)
+              Expanded(child: _dockTab(context, tt, c, i)),
+            Expanded(
               child: Semantics(
-                label: tab.semanticsLabel,
-                selected: isActive,
+                label: 'Account and settings',
                 button: true,
                 child: InkWell(
+                  borderRadius: BorderRadius.circular(24.r),
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    onTap(i);
+                    showAccountSheet(context);
                   },
                   child: Padding(
-                    padding: EdgeInsets.only(top: 10.h, bottom: 12.h),
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        AnimatedSwitcher(
-                          duration: AppIconTheme.fillDuration,
-                          switchInCurve: AppIconTheme.fillCurve,
-                          transitionBuilder: (child, anim) =>
-                              FadeTransition(opacity: anim, child: child),
-                          child: Icon(
-                            isActive ? tab.filledIcon : tab.outlineIcon,
-                            key: ValueKey<bool>(isActive),
-                            size: AppIconTheme.navSize,
-                            color: tintColor,
-                          ),
+                        AvatarBlock(
+                          initials: name.isEmpty ? '?' : name[0].toUpperCase(),
+                          imageUrl: profile?.avatarUrl,
+                          size: 24,
+                          circle: true,
                         ),
-                        Gap(4.h),
+                        Gap(3.h),
                         Text(
-                          tab.shortLabel,
+                          'You',
                           style: tt.labelSmall!.copyWith(
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.2,
-                            color: tintColor,
+                            color: c.text3,
                           ),
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-            );
-          }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dockTab(BuildContext context, TextTheme tt, JColors c, int i) {
+    final tab = tabs[i];
+    final isActive = i == currentIndex;
+    final tintColor = isActive ? c.action : c.text3;
+    return Semantics(
+      label: tab.semanticsLabel,
+      selected: isActive,
+      button: true,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24.r),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap(i);
+        },
+        child: Padding(
+          padding: EdgeInsets.only(top: 7.h, bottom: 8.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: AppIconTheme.fillDuration,
+                switchInCurve: AppIconTheme.fillCurve,
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: Icon(
+                  isActive ? tab.filledIcon : tab.outlineIcon,
+                  key: ValueKey<bool>(isActive),
+                  size: AppIconTheme.navSize,
+                  color: tintColor,
+                ),
+              ),
+              Gap(4.h),
+              Text(
+                tab.shortLabel,
+                style: tt.labelSmall!.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: tintColor,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

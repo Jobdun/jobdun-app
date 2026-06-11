@@ -1,26 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/errors/sentry_reporter.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
-import '../../../auth/domain/entities/user_role.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
-import '../../data/models/builder_profile_model.dart';
-import '../../data/models/trade_profile_model.dart';
-import '../../data/models/user_profile_model.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../../domain/entities/profile_patches.dart';
 import '../../domain/usecases/get_profile.dart';
-import '../../domain/usecases/update_profile.dart';
+import '../../domain/usecases/patch_profile_section.dart';
 import '../../domain/usecases/upload_avatar.dart';
 
 // ── Data layer providers (public so tests can override) ───────────────────────
@@ -43,8 +38,16 @@ final getProfileUseCaseProvider = Provider(
   (ref) => GetProfile(ref.read(profileRepositoryProvider)),
 );
 
-final updateProfileUseCaseProvider = Provider(
-  (ref) => UpdateProfile(ref.read(profileRepositoryProvider)),
+final patchUserProfileUseCaseProvider = Provider(
+  (ref) => PatchUserProfile(ref.read(profileRepositoryProvider)),
+);
+
+final patchTradeProfileUseCaseProvider = Provider(
+  (ref) => PatchTradeProfile(ref.read(profileRepositoryProvider)),
+);
+
+final patchBuilderProfileUseCaseProvider = Provider(
+  (ref) => PatchBuilderProfile(ref.read(profileRepositoryProvider)),
 );
 
 final uploadAvatarUseCaseProvider = Provider(
@@ -100,139 +103,61 @@ class ProfileController extends Notifier<ProfileState>
     state = state.copyWith(isLoading: false);
   }
 
-  // Partial upsert from /profile/edit form values. Routes through the repo
-  // upsert methods (not direct Supabase) so the data-layer contract stays the
-  // single source of truth — see audit fix in docs/STATE_MANAGEMENT_AUDIT.md.
-  Future<bool> saveProfile({
-    required UserRole role,
-    required String displayName,
-    required String suburb,
-    required String? auState,
-    required String? postcode,
-    required String? about,
-    // Place-picker extras — set when the user picks via JPlaceField (Phase 3+).
-    // Null on legacy 3-field submissions; toJson() emits them only when set
-    // so writes don't fail pre-migration.
-    String? formattedAddress,
-    String? placeId,
-    double? latitude,
-    double? longitude,
-    // Builder-only
-    String? companyName,
-    String? abn,
-    String? contactName,
-    String? contactPhone,
-    int? yearsInBusiness,
-    String? website,
-    // Trade-only
-    String? fullName,
-    String? primaryTrade,
-    String? tradeOther,
-    int? yearsExperience,
-    double? hourlyRateMin,
-    double? hourlyRateMax,
-    bool? hourlyRateVisible,
-    bool? isAvailable,
-    DateTime? availableFrom,
+  /// Section save for the quick-edit sheets: writes only the columns set on
+  /// the supplied patches, then refreshes just the touched tables (house
+  /// pattern from setTradeAvailability). Sheets own their button spinner;
+  /// failures land in state.error like every other mutation here.
+  Future<bool> savePatches({
+    UserProfilePatch? user,
+    TradeProfilePatch? trade,
+    BuilderProfilePatch? builder,
   }) async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return false;
+    state = state.copyWith(error: null);
 
-    state = state.copyWith(isLoading: true, error: null);
-
-    String? nullIfBlank(String? s) =>
-        (s == null || s.trim().isEmpty) ? null : s.trim();
-
-    try {
-      // Update display_name on the shared profile row first. Construct a
-      // UserProfileModel directly (no entity-level copyWith yet) so the
-      // data-source cast in updateProfile() lands on the right type.
-      final existingProfile = state.profile;
-      if (existingProfile != null) {
-        final updated = UserProfileModel(
-          id: existingProfile.id,
-          displayName: displayName.trim(),
-          email: existingProfile.email,
-          phone: existingProfile.phone,
-          phoneVerifiedAt: existingProfile.phoneVerifiedAt,
-          avatarUrl: existingProfile.avatarUrl,
-          createdAt: existingProfile.createdAt,
-          updatedAt: existingProfile.updatedAt,
-        );
-        final r = await ref.read(updateProfileUseCaseProvider).call(updated);
-        r.fold((f) => throw Exception(f.message), (_) {});
+    if (user != null) {
+      final r = await ref
+          .read(patchUserProfileUseCaseProvider)
+          .call(userId, user);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
       }
-
-      if (role == UserRole.builder) {
-        final existing = state.builderProfile;
-        final upserted = BuilderProfileModel(
-          id: userId,
-          companyName: companyName?.trim() ?? existing?.companyName ?? '',
-          abn: nullIfBlank(abn),
-          contactName: nullIfBlank(contactName),
-          contactPhone: nullIfBlank(contactPhone),
-          about: nullIfBlank(about),
-          website: nullIfBlank(website),
-          yearsInBusiness: yearsInBusiness,
-          serviceSuburb: nullIfBlank(suburb),
-          serviceState: nullIfBlank(auState),
-          servicePostcode: nullIfBlank(postcode),
-          serviceFormattedAddress: nullIfBlank(formattedAddress),
-          servicePlaceId: nullIfBlank(placeId),
-          serviceLatitude: latitude,
-          serviceLongitude: longitude,
-        );
-        final r = await _repo.upsertBuilderProfile(upserted);
-        r.fold((f) => throw Exception(f.message), (_) {});
-      } else if (role == UserRole.trade) {
-        final existing = state.tradeProfile;
-        final upserted = TradeProfileModel(
-          id: userId,
-          fullName: fullName?.trim() ?? existing?.fullName ?? '',
-          primaryTrade: primaryTrade ?? existing?.primaryTrade ?? '',
-          tradeOther: primaryTrade == 'other' ? nullIfBlank(tradeOther) : null,
-          baseSuburb: nullIfBlank(suburb),
-          baseState: nullIfBlank(auState),
-          basePostcode: nullIfBlank(postcode),
-          baseFormattedAddress: nullIfBlank(formattedAddress),
-          basePlaceId: nullIfBlank(placeId),
-          baseLatitude: latitude,
-          baseLongitude: longitude,
-          about: nullIfBlank(about),
-          yearsExperience: yearsExperience,
-          hourlyRateMin: hourlyRateMin,
-          hourlyRateMax: hourlyRateMax,
-          hourlyRateVisible:
-              hourlyRateVisible ?? existing?.hourlyRateVisible ?? true,
-          isAvailable: isAvailable ?? existing?.isAvailable ?? true,
-          // Available now ⇒ no "free from" date; otherwise keep the chosen one.
-          availableFrom: (isAvailable ?? existing?.isAvailable ?? true)
-              ? null
-              : (availableFrom ?? existing?.availableFrom),
-        );
-        final r = await _repo.upsertTradeProfile(upserted);
-        r.fold((f) => throw Exception(f.message), (_) {});
-      }
-
-      // Reload so home + profile screens get fresh values.
-      await loadProfile();
-      state = state.copyWith(isLoading: false);
-      return true;
-    } catch (e, st) {
-      assert(() {
-        debugPrint('[ProfileController] saveProfile: $e\n$st');
-        return true;
-      }());
-      unawaited(
-        SentryReporter.reportError(
-          e,
-          stackTrace: st,
-          tags: {'feature': 'profile', 'action': 'saveProfile'},
-        ),
-      );
-      state = state.copyWith(isLoading: false, error: e.toString());
-      return false;
     }
+    if (trade != null) {
+      final r = await ref
+          .read(patchTradeProfileUseCaseProvider)
+          .call(userId, trade);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
+      }
+    }
+    if (builder != null) {
+      final r = await ref
+          .read(patchBuilderProfileUseCaseProvider)
+          .call(userId, builder);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
+      }
+    }
+
+    // Targeted refresh — only re-read what we wrote.
+    if (user != null) {
+      final r = await ref.read(getProfileUseCaseProvider).call(userId);
+      r.fold((_) {}, (p) => state = state.copyWith(profile: p));
+    }
+    if (trade != null) {
+      final r = await _repo.getTradeProfile(userId);
+      r.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
+    }
+    if (builder != null) {
+      final r = await _repo.getBuilderProfile(userId);
+      r.fold((_) {}, (bp) => state = state.copyWith(builderProfile: bp));
+    }
+    return true;
   }
 
   /// Persist the trade's "open for work" status from the home availability bar

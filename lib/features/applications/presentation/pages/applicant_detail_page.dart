@@ -22,6 +22,9 @@ import '../../../quotes/presentation/widgets/quote_request_builder_card.dart';
 import '../../../scheduling/presentation/widgets/schedule_builder_card.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
+import '../../../verification/presentation/widgets/credential_detail_sheet.dart';
+import '../../../verification/presentation/widgets/trade_credential_badges.dart';
+import '../../../verification/presentation/widgets/trust_chip.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
 import 'job_applicants_args.dart';
@@ -38,6 +41,20 @@ final _tradeProfileProvider = FutureProvider.autoDispose
           .getTradeProfile(userId);
       return res.fold((_) => null, (p) => p);
     });
+
+/// First verified row of [kind], or null. Loading/error read as null — the
+/// chips simply don't render until the data lands.
+Verification? _firstVerified(
+  AsyncValue<List<Verification>> ver,
+  VerificationKind kind,
+) {
+  final rows = ver.asData?.value;
+  if (rows == null) return null;
+  for (final v in rows) {
+    if (v.kind == kind && v.isVerified) return v;
+  }
+  return null;
+}
 
 /// Applicant detail (design depths "1 + 2"): who they are, ✓verification,
 /// rating, their quote for this job, about + stats, availability, and a bottom
@@ -85,15 +102,10 @@ class ApplicantDetailPage extends ConsumerWidget {
     final app = args.application;
     final profile = ref.watch(_tradeProfileProvider(app.tradeId)).asData?.value;
     final ver = ref.watch(verificationsForUserProvider(app.tradeId));
-    final hasLicence = ver.maybeWhen(
-      data: (r) =>
-          r.any((v) => v.kind == VerificationKind.licence && v.isVerified),
-      orElse: () => false,
-    );
-    final hasAbn = ver.maybeWhen(
-      data: (r) => r.any((v) => v.kind == VerificationKind.abn && v.isVerified),
-      orElse: () => false,
-    );
+    // U2: pass the full rows (not booleans) so the header chips can open a
+    // provenance sheet with the register/as-at/expiry detail.
+    final licenceVerif = _firstVerified(ver, VerificationKind.licence);
+    final abnVerif = _firstVerified(ver, VerificationKind.abn);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -149,8 +161,8 @@ class ApplicantDetailPage extends ConsumerWidget {
                       _DetailHeader(
                         app: app,
                         profile: profile,
-                        hasLicence: hasLicence,
-                        hasAbn: hasAbn,
+                        licenceVerif: licenceVerif,
+                        abnVerif: abnVerif,
                       ),
                       Gap(AppSpacing.lg.h),
                       _QuoteBlock(app: app),
