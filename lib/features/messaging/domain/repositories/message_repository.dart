@@ -79,6 +79,11 @@ abstract interface class MessageRepository {
     required String conversationId,
   });
   Future<Either<Failure, void>> reportUser({required ReportSubmission report});
+  Future<Either<Failure, bool>> amIBlocking(String blockedId);
+  Future<Either<Failure, void>> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  });
   Stream<List<Conversation>> watchConversations(String userId);
   Stream<List<Message>> watchMessages(String conversationId, {int tailLimit});
   Stream<Conversation> watchConversation(String conversationId);

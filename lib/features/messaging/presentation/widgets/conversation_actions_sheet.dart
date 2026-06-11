@@ -7,7 +7,15 @@ import '../../../../core/design/colors.dart';
 
 /// What the user picked on the long-press conversation sheet; the inbox page
 /// performs the action (same contract as the thread's message-actions sheet).
-enum ConversationAction { pin, markUnread, mute, archive, block, report }
+enum ConversationAction {
+  pin,
+  markUnread,
+  mute,
+  archive,
+  block,
+  unblock,
+  report,
+}
 
 /// Long-press actions for an inbox conversation (Phase D, revised 2026-06-12:
 /// replaced the left/right swipe panes — five squeezed swipe labels were hard
@@ -18,12 +26,19 @@ class ConversationActionsSheet extends StatelessWidget {
     required this.otherName,
     required this.isPinned,
     required this.isMuted,
+    this.isBlocked = false,
+    this.canUnblock = false,
     this.jobTitle,
   });
 
   final String otherName;
   final bool isPinned;
   final bool isMuted;
+
+  /// Frozen thread: pin/unread/mute are pointless, BLOCK flips to UNBLOCK
+  /// (only when the viewer is the blocker — [canUnblock]).
+  final bool isBlocked;
+  final bool canUnblock;
   final String? jobTitle;
 
   @override
@@ -61,21 +76,24 @@ class ConversationActionsSheet extends StatelessWidget {
             ),
           ),
           Gap(8.h),
-          _ActionRow(
-            icon: isPinned ? AppIcons.pinFilled : AppIcons.pin,
-            label: isPinned ? 'UNPIN' : 'PIN TO TOP',
-            onTap: () => Navigator.pop(context, ConversationAction.pin),
-          ),
-          _ActionRow(
-            icon: AppIcons.email,
-            label: 'MARK AS UNREAD',
-            onTap: () => Navigator.pop(context, ConversationAction.markUnread),
-          ),
-          _ActionRow(
-            icon: isMuted ? AppIcons.muteFilled : AppIcons.mute,
-            label: isMuted ? 'UNMUTE' : 'MUTE',
-            onTap: () => Navigator.pop(context, ConversationAction.mute),
-          ),
+          if (!isBlocked) ...[
+            _ActionRow(
+              icon: isPinned ? AppIcons.pinFilled : AppIcons.pin,
+              label: isPinned ? 'UNPIN' : 'PIN TO TOP',
+              onTap: () => Navigator.pop(context, ConversationAction.pin),
+            ),
+            _ActionRow(
+              icon: AppIcons.email,
+              label: 'MARK AS UNREAD',
+              onTap: () =>
+                  Navigator.pop(context, ConversationAction.markUnread),
+            ),
+            _ActionRow(
+              icon: isMuted ? AppIcons.muteFilled : AppIcons.mute,
+              label: isMuted ? 'UNMUTE' : 'MUTE',
+              onTap: () => Navigator.pop(context, ConversationAction.mute),
+            ),
+          ],
           _ActionRow(
             icon: AppIcons.archive,
             label: 'ARCHIVE',
@@ -85,12 +103,19 @@ class ConversationActionsSheet extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
             child: Divider(height: 1, color: c.border),
           ),
-          _ActionRow(
-            icon: AppIcons.block,
-            label: 'BLOCK ${otherName.toUpperCase()}',
-            destructive: true,
-            onTap: () => Navigator.pop(context, ConversationAction.block),
-          ),
+          if (isBlocked && canUnblock)
+            _ActionRow(
+              icon: AppIcons.block,
+              label: 'UNBLOCK ${otherName.toUpperCase()}',
+              onTap: () => Navigator.pop(context, ConversationAction.unblock),
+            )
+          else if (!isBlocked)
+            _ActionRow(
+              icon: AppIcons.block,
+              label: 'BLOCK ${otherName.toUpperCase()}',
+              destructive: true,
+              onTap: () => Navigator.pop(context, ConversationAction.block),
+            ),
           _ActionRow(
             icon: AppIcons.warning,
             label: 'REPORT',

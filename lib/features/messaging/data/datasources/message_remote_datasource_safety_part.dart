@@ -97,6 +97,56 @@ mixin _InboxSafetyRemote {
           'details': report.details,
       });
     } catch (e) {
+      // One pending report per (reporter, conversation) — the unique index
+      // from 20260612000001 turns queue-flooding into a friendly no-op.
+      final msg = e.toString();
+      if (msg.contains('reports_one_pending_per_conversation') ||
+          msg.contains('23505')) {
+        throw const ServerException(
+          "You've already reported this conversation — our team is "
+          'reviewing it.',
+        );
+      }
+      throw ServerException(msg);
+    }
+  }
+
+  /// Whether I currently block [blockedId] (RLS only shows my own rows, so
+  /// this can't leak the reverse direction).
+  Future<bool> amIBlocking(String blockedId) async {
+    try {
+      final rows = await _client
+          .from('blocks')
+          .select('blocked_id')
+          .eq('blocked_id', blockedId)
+          .limit(1);
+      return (rows as List).isNotEmpty;
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  /// Reverses [blockUser]: removes my block row and, only if one actually
+  /// existed, unfreezes the conversation. The returning select makes the
+  /// status restore conditional so the non-blocker can't unfreeze a thread
+  /// the OTHER side blocked.
+  Future<void> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  }) async {
+    try {
+      final deleted = await _client
+          .from('blocks')
+          .delete()
+          .eq('blocked_id', blockedId)
+          .select('blocked_id');
+      if ((deleted as List).isNotEmpty) {
+        await _client
+            .from('conversations')
+            .update({'status': 'active'})
+            .eq('id', conversationId);
+      }
+    } catch (e) {
       throw ServerException(e.toString());
     }
   }

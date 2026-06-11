@@ -107,4 +107,38 @@ void main() {
     expect(ok, isTrue);
     expect(c.read(inboxSafetyControllerProvider).error, isNull);
   });
+
+  test('unblockUser reverses the block and refreshes the inbox', () async {
+    when(
+      () => repo.unblockUser(
+        blockedId: any(named: 'blockedId'),
+        conversationId: any(named: 'conversationId'),
+      ),
+    ).thenAnswer((_) async => right(null));
+    when(
+      () => repo.getConversations('me'),
+    ).thenAnswer((_) async => right(const []));
+
+    final c = makeContainer();
+    final ok = await c
+        .read(inboxSafetyControllerProvider.notifier)
+        .unblockUser(blockedId: 'them', conversationId: 'c1');
+
+    expect(ok, isTrue);
+    verify(
+      () => repo.unblockUser(blockedId: 'them', conversationId: 'c1'),
+    ).called(1);
+    verify(() => repo.getConversations('me')).called(1);
+  });
+
+  test('amIBlocking degrades to false on failure', () async {
+    when(
+      () => repo.amIBlocking(any()),
+    ).thenAnswer((_) async => left(const ServerFailure('offline')));
+    final c = makeContainer();
+    final mine = await c
+        .read(inboxSafetyControllerProvider.notifier)
+        .amIBlocking('them');
+    expect(mine, isFalse);
+  });
 }

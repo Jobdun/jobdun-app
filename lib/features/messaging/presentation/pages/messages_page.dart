@@ -15,6 +15,7 @@ import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../domain/entities/conversation.dart';
+import '../providers/inbox_safety_provider.dart';
 import '../providers/messaging_provider.dart';
 import '../widgets/block_confirmation_sheet.dart';
 import '../widgets/conversation_actions_sheet.dart';
@@ -204,6 +205,16 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
   Future<void> _showActionsSheet(Conversation conv, String userId) async {
     final pinned = conv.isPinnedFor(userId);
     final muted = conv.isMutedFor(userId);
+    final blocked = conv.status == ConversationStatus.blocked;
+    final otherId = conv.builderId == userId ? conv.tradeId : conv.builderId;
+    // Frozen thread: only the blocker gets UNBLOCK (the check can't leak the
+    // reverse direction — RLS shows each side only their own block rows).
+    final canUnblock =
+        blocked &&
+        await ref
+            .read(inboxSafetyControllerProvider.notifier)
+            .amIBlocking(otherId);
+    if (!mounted) return;
     final action = await showJSheet<ConversationAction>(
       context: context,
       backgroundColor: context.c.card,
@@ -212,6 +223,8 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
         jobTitle: conv.jobTitle,
         isPinned: pinned,
         isMuted: muted,
+        isBlocked: blocked,
+        canUnblock: canUnblock,
       ),
     );
     if (action == null || !mounted) return;
@@ -228,6 +241,10 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
         await ctrl.archiveConversation(conv.id);
       case ConversationAction.block:
         _showBlockSheet(conv, userId);
+      case ConversationAction.unblock:
+        await ref
+            .read(inboxSafetyControllerProvider.notifier)
+            .unblockUser(blockedId: otherId, conversationId: conv.id);
       case ConversationAction.report:
         _showReportSheet(conv, userId);
     }

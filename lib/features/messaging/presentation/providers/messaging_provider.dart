@@ -171,7 +171,16 @@ class MessagingController extends Notifier<MessagingState>
           final updated = Map<String, DateTime?>.from(
             state.otherLastReadByConvId,
           )..[conversationId] = conv.otherLastReadAtFor(me);
-          state = state.copyWith(otherLastReadByConvId: updated);
+          // Track the frozen state live so the thread can lock its composer
+          // the moment either side blocks (guardrail, 2026-06-12).
+          final blocked = Set<String>.from(state.blockedConvIds);
+          conv.status == ConversationStatus.blocked
+              ? blocked.add(conversationId)
+              : blocked.remove(conversationId);
+          state = state.copyWith(
+            otherLastReadByConvId: updated,
+            blockedConvIds: blocked,
+          );
         }, onError: (_) {});
   }
 

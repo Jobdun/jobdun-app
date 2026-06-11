@@ -101,6 +101,11 @@ abstract interface class MessageRemoteDataSource {
     required String conversationId,
   });
   Future<void> reportUser(ReportSubmission report);
+  Future<bool> amIBlocking(String blockedId);
+  Future<void> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  });
 
   Stream<List<ConversationModel>> watchConversations(String userId);
 

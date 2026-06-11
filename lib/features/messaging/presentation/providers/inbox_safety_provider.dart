@@ -4,6 +4,7 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/report_submission.dart';
 import '../../domain/usecases/block_user.dart';
 import '../../domain/usecases/report_user.dart';
+import '../../domain/usecases/unblock_user.dart';
 import 'messaging_provider.dart';
 
 // Block + report (Phase D safety) — separate controller so
@@ -16,6 +17,10 @@ final blockUserUseCaseProvider = Provider(
 
 final reportUserUseCaseProvider = Provider(
   (ref) => ReportUser(ref.read(messageRepositoryProvider)),
+);
+
+final unblockUserUseCaseProvider = Provider(
+  (ref) => UnblockUser(ref.read(messageRepositoryProvider)),
 );
 
 class InboxSafetyState {
@@ -53,6 +58,35 @@ class InboxSafetyController extends Notifier<InboxSafetyState> {
           blockedId: blockedId,
           conversationId: conversationId,
         );
+    state = result.fold(
+      (f) => state.copyWith(isLoading: false, error: f.message),
+      (_) => const InboxSafetyState(),
+    );
+    if (result.isRight()) {
+      await ref.read(messagingControllerProvider.notifier).refreshInbox();
+    }
+    return result.isRight();
+  }
+
+  /// Whether I am the one blocking [otherId] — decides if the long-press
+  /// sheet on a frozen thread offers UNBLOCK. Errors degrade to false.
+  Future<bool> amIBlocking(String otherId) async {
+    final result = await ref
+        .read(messageRepositoryProvider)
+        .amIBlocking(otherId);
+    return result.fold((_) => false, (v) => v);
+  }
+
+  /// Reverses a block (delete my row + unfreeze the thread server-side) and
+  /// refreshes the inbox in place.
+  Future<bool> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await ref
+        .read(unblockUserUseCaseProvider)
+        .call(blockedId: blockedId, conversationId: conversationId);
     state = result.fold(
       (f) => state.copyWith(isLoading: false, error: f.message),
       (_) => const InboxSafetyState(),

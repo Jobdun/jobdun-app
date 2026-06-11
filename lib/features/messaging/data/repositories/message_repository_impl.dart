@@ -284,6 +284,31 @@ class MessageRepositoryImpl implements MessageRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> amIBlocking(String blockedId) async {
+    try {
+      return right(await _datasource.amIBlocking(blockedId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  }) async {
+    try {
+      await _datasource.unblockUser(
+        blockedId: blockedId,
+        conversationId: conversationId,
+      );
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Stream<List<Conversation>> watchConversations(String userId) =>
       _datasource.watchConversations(userId);
 

@@ -13,6 +13,7 @@ class MessagingState {
     this.otherLastReadByConvId = const {},
     this.reactionsByConvId = const {},
     this.hasMoreByConvId = const {},
+    this.blockedConvIds = const {},
     this.totalUnread = 0,
     this.isLoading = false,
     this.error,
@@ -25,6 +26,11 @@ class MessagingState {
   final Map<String, DateTime?> otherLastReadByConvId;
   final Map<String, List<MessageReaction>> reactionsByConvId;
   final Map<String, bool> hasMoreByConvId;
+
+  /// Conversations frozen by a block (either side) — drives the thread's
+  /// composer lockout. Fed by the per-thread conversation watch.
+  final Set<String> blockedConvIds;
+
   final int totalUnread;
   final bool isLoading;
   final String? error;
@@ -81,6 +87,7 @@ class MessagingState {
     Map<String, DateTime?>? otherLastReadByConvId,
     Map<String, List<MessageReaction>>? reactionsByConvId,
     Map<String, bool>? hasMoreByConvId,
+    Set<String>? blockedConvIds,
     int? totalUnread,
     bool? isLoading,
     String? error,
@@ -92,6 +99,7 @@ class MessagingState {
     otherLastReadByConvId: otherLastReadByConvId ?? this.otherLastReadByConvId,
     reactionsByConvId: reactionsByConvId ?? this.reactionsByConvId,
     hasMoreByConvId: hasMoreByConvId ?? this.hasMoreByConvId,
+    blockedConvIds: blockedConvIds ?? this.blockedConvIds,
     totalUnread: totalUnread ?? this.totalUnread,
     isLoading: isLoading ?? this.isLoading,
     error: error,
