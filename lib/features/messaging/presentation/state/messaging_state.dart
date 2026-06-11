@@ -16,6 +16,7 @@ class MessagingState {
     this.totalUnread = 0,
     this.isLoading = false,
     this.error,
+    this.searchQuery = '',
   });
 
   final List<Conversation> conversations;
@@ -27,6 +28,21 @@ class MessagingState {
   final int totalUnread;
   final bool isLoading;
   final String? error;
+
+  /// Phase D inbox search — client-side filter over name + preview (D-1).
+  final String searchQuery;
+
+  /// What the inbox list renders: all conversations, or the live-filtered
+  /// subset while a search query is active.
+  List<Conversation> get filteredConversations {
+    if (searchQuery.isEmpty) return conversations;
+    final q = searchQuery.toLowerCase();
+    return conversations.where((c) {
+      final name = (c.otherUserDisplayName ?? '').toLowerCase();
+      final preview = (c.lastMessagePreview ?? '').toLowerCase();
+      return name.contains(q) || preview.contains(q);
+    }).toList();
+  }
 
   List<Message> messagesFor(String conversationId) =>
       messagesByConvId[conversationId] ?? const [];
@@ -68,6 +84,7 @@ class MessagingState {
     int? totalUnread,
     bool? isLoading,
     String? error,
+    String? searchQuery,
   }) => MessagingState(
     conversations: conversations ?? this.conversations,
     messagesByConvId: messagesByConvId ?? this.messagesByConvId,
@@ -78,5 +95,6 @@ class MessagingState {
     totalUnread: totalUnread ?? this.totalUnread,
     isLoading: isLoading ?? this.isLoading,
     error: error,
+    searchQuery: searchQuery ?? this.searchQuery,
   );
 }
