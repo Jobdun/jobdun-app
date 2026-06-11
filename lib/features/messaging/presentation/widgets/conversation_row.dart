@@ -18,6 +18,7 @@ class ConversationRow extends StatelessWidget {
     required this.time,
     required this.unreadCount,
     required this.onTap,
+    this.onLongPress,
     this.jobTitle,
     this.avatarUrl,
     this.isPinned = false,
@@ -36,6 +37,7 @@ class ConversationRow extends StatelessWidget {
   final String? jobTitle;
   final String? avatarUrl;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,7 @@ class ConversationRow extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
         child: Row(

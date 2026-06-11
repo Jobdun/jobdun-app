@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
@@ -18,6 +17,7 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../domain/entities/conversation.dart';
 import '../providers/messaging_provider.dart';
 import '../widgets/block_confirmation_sheet.dart';
+import '../widgets/conversation_actions_sheet.dart';
 import '../widgets/conversation_row.dart';
 import '../widgets/inbox_search_bar.dart';
 import '../widgets/report_sheet.dart';
@@ -171,6 +171,10 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                           unreadCount: unread,
                           jobTitle: conv.jobTitle,
                           avatarUrl: conv.otherUserAvatarUrl,
+                          onLongPress: () {
+                            HapticFeedback.mediumImpact();
+                            _showActionsSheet(conv, userId);
+                          },
                           onTap: () => context.push(
                             '/messages/${conv.id}',
                             extra: ConversationArgs(
@@ -187,101 +191,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                             ),
                           ),
                         );
-                        final pinned = conv.isPinnedFor(userId);
-                        final muted = conv.isMutedFor(userId);
-                        return Slidable(
-                          key: ValueKey('convo-${conv.id}'),
-                          // Power tools on the left (D-11): pin + mark-unread.
-                          startActionPane: ActionPane(
-                            motion: const DrawerMotion(),
-                            extentRatio: 0.44,
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  ref
-                                      .read(
-                                        messagingControllerProvider.notifier,
-                                      )
-                                      .pinConversation(conv.id, pin: !pinned);
-                                },
-                                backgroundColor: c.available,
-                                foregroundColor: c.text1,
-                                icon: pinned
-                                    ? AppIcons.pinFilled
-                                    : AppIcons.pin,
-                                label: pinned ? 'UNPIN' : 'PIN',
-                                autoClose: true,
-                              ),
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  ref
-                                      .read(
-                                        messagingControllerProvider.notifier,
-                                      )
-                                      .markConversationUnread(conv.id);
-                                },
-                                backgroundColor: c.surfaceRaised,
-                                foregroundColor: c.text1,
-                                icon: AppIcons.email,
-                                label: 'UNREAD',
-                                autoClose: true,
-                              ),
-                            ],
-                          ),
-                          // Removal + safety on the right: mute, archive, block.
-                          endActionPane: ActionPane(
-                            motion: const DrawerMotion(),
-                            extentRatio: 0.56,
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  ref
-                                      .read(
-                                        messagingControllerProvider.notifier,
-                                      )
-                                      .muteConversation(conv.id, mute: !muted);
-                                },
-                                backgroundColor: c.surfaceRaised,
-                                foregroundColor: c.text1,
-                                icon: muted
-                                    ? AppIcons.muteFilled
-                                    : AppIcons.mute,
-                                label: muted ? 'UNMUTE' : 'MUTE',
-                                autoClose: true,
-                              ),
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  ref
-                                      .read(
-                                        messagingControllerProvider.notifier,
-                                      )
-                                      .archiveConversation(conv.id);
-                                },
-                                backgroundColor: c.surfaceRaised,
-                                foregroundColor: c.text1,
-                                icon: AppIcons.archive,
-                                label: 'ARCHIVE',
-                                autoClose: true,
-                              ),
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  _showBlockSheet(conv, userId);
-                                },
-                                backgroundColor: c.urgent,
-                                foregroundColor: c.text1,
-                                icon: AppIcons.block,
-                                label: 'BLOCK',
-                                autoClose: true,
-                              ),
-                            ],
-                          ),
-                          child: row,
-                        );
+                        return row;
                       },
                     ),
             ),
@@ -289,6 +199,38 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _showActionsSheet(Conversation conv, String userId) async {
+    final pinned = conv.isPinnedFor(userId);
+    final muted = conv.isMutedFor(userId);
+    final action = await showJSheet<ConversationAction>(
+      context: context,
+      backgroundColor: context.c.card,
+      builder: (_) => ConversationActionsSheet(
+        otherName: conv.otherUserDisplayName ?? 'Unknown',
+        jobTitle: conv.jobTitle,
+        isPinned: pinned,
+        isMuted: muted,
+      ),
+    );
+    if (action == null || !mounted) return;
+    HapticFeedback.lightImpact();
+    final ctrl = ref.read(messagingControllerProvider.notifier);
+    switch (action) {
+      case ConversationAction.pin:
+        await ctrl.pinConversation(conv.id, pin: !pinned);
+      case ConversationAction.markUnread:
+        await ctrl.markConversationUnread(conv.id);
+      case ConversationAction.mute:
+        await ctrl.muteConversation(conv.id, mute: !muted);
+      case ConversationAction.archive:
+        await ctrl.archiveConversation(conv.id);
+      case ConversationAction.block:
+        _showBlockSheet(conv, userId);
+      case ConversationAction.report:
+        _showReportSheet(conv, userId);
+    }
   }
 
   void _showBlockSheet(Conversation conv, String userId) {
