@@ -76,7 +76,7 @@ class TradeMapPreview extends ConsumerWidget {
                               urlTemplate: DiscoveryMapData.cartoVoyagerUrl,
                               subdomains: DiscoveryMapData.cartoSubdomains,
                               retinaMode: RetinaMode.isHighDensity(context),
-                              userAgentPackageName: 'com.example.jobdun',
+                              userAgentPackageName: 'au.com.jobdun.app',
                             ),
                             MarkerLayer(
                               markers: [

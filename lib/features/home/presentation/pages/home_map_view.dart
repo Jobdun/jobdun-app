@@ -332,7 +332,7 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
               urlTemplate: _style.urlTemplate,
               subdomains: _style.subdomains,
               retinaMode: RetinaMode.isHighDensity(context),
-              userAgentPackageName: 'com.example.jobdun',
+              userAgentPackageName: 'au.com.jobdun.app',
             ),
             // Search-radius circle drawn under the markers so pins sit on top.
             // Uses meters for the radius so it scales with the zoom level —

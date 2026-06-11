@@ -172,7 +172,7 @@ class _DiscoveryMapPageState extends ConsumerState<DiscoveryMapPage> {
                 urlTemplate: DiscoveryMapData.cartoVoyagerUrl,
                 subdomains: DiscoveryMapData.cartoSubdomains,
                 retinaMode: RetinaMode.isHighDensity(context),
-                userAgentPackageName: 'com.example.jobdun',
+                userAgentPackageName: 'au.com.jobdun.app',
               ),
               CircleLayer(
                 circles: [
