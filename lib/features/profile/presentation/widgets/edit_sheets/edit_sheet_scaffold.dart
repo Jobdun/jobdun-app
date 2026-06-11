@@ -44,8 +44,9 @@ class EditSheetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    // ignore: deprecated_member_use — see class doc: the modal package's
-    // drag veto only works through scoped willPop callbacks.
+    // Deliberate legacy API — see class doc: the modal package's drag veto
+    // only works through scoped willPop callbacks, PopScope is bypassed.
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async {
         if (!isDirty) return true;
