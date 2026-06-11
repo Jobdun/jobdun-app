@@ -111,8 +111,8 @@ Writes are safe since today's patch-based saves only emit real columns (the lega
 
 1. ~~**M1 — P0 column pins**~~ — ✅ **APPLIED LIVE 2026-06-11** (`20260611000002_pin_trust_columns.sql`): column-allowlist GRANTs on `trade_profiles`/`builder_profiles` (is_verified, rating aggregates, timestamps, deleted_at now server-only), `verification_documents` client UPDATE narrowed to `deleted_at`, ABN pin-once-verified trigger. Verified on a fresh dump: `is_verified` in zero client grants; rollback in `supabase/rollbacks/`.
 2. ~~**M2 — FK indexes + delete rules**~~ — ✅ **APPLIED LIVE 2026-06-11** (`20260611000003_fk_indexes_delete_rules.sql`): 15 FK indexes, 3 audit-actor FKs → ON DELETE SET NULL.
-3. **P1 PII visibility model** — 10-minute decision (Option 1 vs 2), then its migration. **← the only remaining security item.**
-4. **P2 phantom columns** — decide real-counters vs strip-from-UI.
+3. ~~**P1 PII visibility model**~~ — ✅ **APPLIED LIVE 2026-06-11** (`20260611000004_pii_visibility_split.sql`, Option 1): public storefront views `trade_profiles_public` / `builder_profiles_public` (coords rounded to 2 dp ≈ 1.1 km, rates NULLed when hidden, no contact/legal-address columns); base-table SELECT now own-row + relationship-scoped (application / conversation / booking / quote request); `search_trades` SECURITY DEFINER with sanitised output (same signature). App: `/builders/:id` reads the public view via `getBuilderPublicProfile` — the only pre-relationship read site. **F-RLS-03 CLOSED.** Rollback in `supabase/rollbacks/`.
+4. **P2 phantom columns** — decide real-counters vs strip-from-UI. **← the only open item, cosmetic.**
 
 ---
 
