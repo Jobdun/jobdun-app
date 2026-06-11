@@ -27,7 +27,11 @@ double? _parseDoubleOrNull(Object? v) {
 /// Builder-only fields: contact name, verified-locked company name + ABN,
 /// years in business, website.
 class _BuilderFields extends StatelessWidget {
-  const _BuilderFields({required this.bp, required this.fallbackName});
+  const _BuilderFields({
+    super.key,
+    required this.bp,
+    required this.fallbackName,
+  });
 
   final BuilderProfile? bp;
 
@@ -112,6 +116,7 @@ class _BuilderFields extends StatelessWidget {
 /// rate range, and the rate-visibility toggle.
 class _TradeFields extends StatelessWidget {
   const _TradeFields({
+    super.key,
     required this.tp,
     required this.metadataFullName,
     required this.tradeSlug,
@@ -277,6 +282,7 @@ class _AvailabilityFields extends StatelessWidget {
 /// and the about blurb.
 class _CommonFields extends StatelessWidget {
   const _CommonFields({
+    super.key,
     required this.isBuilder,
     required this.displayNameInitial,
     required this.bp,

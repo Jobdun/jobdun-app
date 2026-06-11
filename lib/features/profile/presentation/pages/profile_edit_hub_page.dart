@@ -10,6 +10,7 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/edit_sheets/identity_sheet.dart';
 import '../widgets/edit_sheets/rates_sheet.dart';
 
 /// Edit-profile hub (setup B, 2026-06-11): section rows with current values
@@ -185,6 +186,10 @@ class _HubRow extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.card.r),
         onTap: () => switch (spec.section) {
+          ProfileSection.identity => showJSheet<bool>(
+            context: context,
+            builder: (_) => const IdentitySheet(),
+          ),
           ProfileSection.rates => showJSheet<bool>(
             context: context,
             builder: (_) => const RatesSheet(),

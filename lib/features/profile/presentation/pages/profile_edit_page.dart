@@ -36,7 +36,11 @@ part 'profile_edit_widgets.dart';
 part 'profile_edit_form_fields.dart';
 
 class ProfileEditPage extends ConsumerStatefulWidget {
-  const ProfileEditPage({super.key});
+  const ProfileEditPage({super.key, this.focus});
+
+  /// Section anchor from the edit hub ('identity' / 'role' / 'common') —
+  /// the form auto-scrolls there after first render. Null = top.
+  final String? focus;
 
   @override
   ConsumerState<ProfileEditPage> createState() => _ProfileEditPageState();
@@ -44,6 +48,32 @@ class ProfileEditPage extends ConsumerStatefulWidget {
 
 class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   final _formKey = GlobalKey<FormBuilderState>();
+  // Hub focus anchors — Scrollable.ensureVisible targets per section.
+  final _identityKey = GlobalKey();
+  final _roleKey = GlobalKey();
+  final _commonKey = GlobalKey();
+  bool _focusApplied = false;
+
+  void _applyFocus() {
+    if (_focusApplied || widget.focus == null) return;
+    final key = switch (widget.focus) {
+      'role' => _roleKey,
+      'common' => _commonKey,
+      _ => _identityKey,
+    };
+    final ctx = key.currentContext;
+    if (ctx == null) return; // form not built yet — retry next frame
+    _focusApplied = true;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 200),
+      alignment: 0.05,
+    );
+  }
+
+  // Unsaved-changes guard: flips on first form edit; the system back gesture
+  // and the app-bar back both route through PopScope → discard confirm.
+  bool _dirty = false;
 
   // Trade picker is state-managed (not a FormBuilder field) — validated in
   // _save alongside the FormBuilder validators.
@@ -298,8 +328,62 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     }
   }
 
+  // Discard-changes confirm (unsaved-guard): KEEP EDITING holds the safe
+  // prominent slot; DISCARD pops for real by clearing the dirty flag first.
+  void _confirmDiscard() {
+    showJSheet<void>(
+      context: context,
+      builder: (sheetCtx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Discard your changes?',
+                style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Gap(8.h),
+              Text(
+                "You've edited your profile but haven't saved.",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              Gap(16.h),
+              SizedBox(
+                width: double.infinity,
+                child: JButton(
+                  label: 'KEEP EDITING',
+                  variant: JButtonVariant.primary,
+                  onPressed: () => Navigator.of(sheetCtx).pop(),
+                ),
+              ),
+              Gap(8.h),
+              SizedBox(
+                width: double.infinity,
+                child: JButton(
+                  label: 'DISCARD CHANGES',
+                  variant: JButtonVariant.secondary,
+                  onPressed: () {
+                    Navigator.of(sheetCtx).pop();
+                    setState(() => _dirty = false);
+                    context.pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyFocus());
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
@@ -320,178 +404,195 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     final initialLoadFailed =
         !isInitialLoading && profile == null && _readyToRender;
 
-    return Scaffold(
-      backgroundColor: c.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── App bar
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(4.w, 8.h, 20.w, 12.h),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
-                    ),
-                  ),
-                  const Expanded(
-                    child: PageHeader(
-                      eyebrow: 'EDIT PROFILE',
-                      title: 'Your details',
-                      size: PageHeaderSize.sub,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: c.border),
-
-            if (isInitialLoading)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      Gap(AppSpacing.md.h),
-                      Text(
-                        'Loading your profile…',
-                        style: tt.bodyMedium!.copyWith(color: c.text2),
+    return PopScope(
+      // Dirty form → intercept the pop (back gesture, predictive back, and
+      // the app-bar arrow via maybePop) and confirm before discarding edits.
+      canPop: !_dirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmDiscard();
+      },
+      child: Scaffold(
+        backgroundColor: c.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ── App bar
+              Container(
+                color: c.card,
+                padding: EdgeInsets.fromLTRB(4.w, 8.h, 20.w, 12.h),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: Icon(
+                        AppIcons.back,
+                        size: AppIconSize.md.r,
+                        color: c.text1,
                       ),
-                    ],
-                  ),
+                    ),
+                    const Expanded(
+                      child: PageHeader(
+                        eyebrow: 'EDIT PROFILE',
+                        title: 'Your details',
+                        size: PageHeaderSize.sub,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            else if (initialLoadFailed)
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.w),
+              ),
+              Divider(height: 1, color: c.border),
+
+              if (isInitialLoading)
+                Expanded(
+                  child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          AppIcons.urgent,
-                          size: AppIconSize.feature.r,
-                          color: c.urgent,
-                        ),
-                        Gap(AppSpacing.sm.h),
+                        const CircularProgressIndicator(),
+                        Gap(AppSpacing.md.h),
                         Text(
-                          "Couldn't load your profile",
-                          style: tt.titleMedium!.copyWith(color: c.text1),
+                          'Loading your profile…',
+                          style: tt.bodyMedium!.copyWith(color: c.text2),
                         ),
-                        Gap(4.h),
-                        Text(
-                          profileState.error ??
-                              'Check your connection and try again.',
-                          textAlign: TextAlign.center,
-                          style: tt.bodySmall!.copyWith(color: c.text2),
-                        ),
-                        Gap(AppSpacing.lg.h),
-                        SizedBox(
-                          width: 180.w,
-                          child: JButton(
-                            label: 'RETRY',
-                            isLoading: profileState.isLoading,
-                            onPressed: profileState.isLoading
+                      ],
+                    ),
+                  ),
+                )
+              else if (initialLoadFailed)
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 32.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            AppIcons.urgent,
+                            size: AppIconSize.feature.r,
+                            color: c.urgent,
+                          ),
+                          Gap(AppSpacing.sm.h),
+                          Text(
+                            "Couldn't load your profile",
+                            style: tt.titleMedium!.copyWith(color: c.text1),
+                          ),
+                          Gap(4.h),
+                          Text(
+                            profileState.error ??
+                                'Check your connection and try again.',
+                            textAlign: TextAlign.center,
+                            style: tt.bodySmall!.copyWith(color: c.text2),
+                          ),
+                          Gap(AppSpacing.lg.h),
+                          SizedBox(
+                            width: 180.w,
+                            child: JButton(
+                              label: 'RETRY',
+                              isLoading: profileState.isLoading,
+                              onPressed: profileState.isLoading
+                                  ? null
+                                  : () => ref
+                                        .read(
+                                          profileControllerProvider.notifier,
+                                        )
+                                        .loadProfile(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else ...[
+                Expanded(
+                  child: FormBuilder(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    onChanged: () {
+                      if (!_dirty) setState(() => _dirty = true);
+                    },
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(
+                        20.w,
+                        20.h,
+                        20.w,
+                        AppSpacing.lg.h,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProfileEditAvatarHeader(
+                            key: _identityKey,
+                            avatarUrl: profile?.avatarUrl,
+                            initials: StringUtils.initials(
+                              profile?.displayName ?? '?',
+                            ),
+                            isUploading: profileState.isUploadingAvatar,
+                            cacheGeneration: _avatarCacheGen,
+                            errorMessage: _avatarError,
+                            onTap: profileState.isUploadingAvatar
                                 ? null
-                                : () => ref
-                                      .read(profileControllerProvider.notifier)
-                                      .loadProfile(),
+                                : _pickAvatar,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              )
-            else ...[
-              Expanded(
-                child: FormBuilder(
-                  key: _formKey,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      20.w,
-                      20.h,
-                      20.w,
-                      AppSpacing.lg.h,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ProfileEditAvatarHeader(
-                          avatarUrl: profile?.avatarUrl,
-                          initials: StringUtils.initials(
-                            profile?.displayName ?? '?',
-                          ),
-                          isUploading: profileState.isUploadingAvatar,
-                          cacheGeneration: _avatarCacheGen,
-                          errorMessage: _avatarError,
-                          onTap: profileState.isUploadingAvatar
-                              ? null
-                              : _pickAvatar,
-                        ),
-                        Gap(AppSpacing.lg.h),
-                        if (isBuilder)
-                          _BuilderFields(
-                            bp: bp,
-                            fallbackName:
+                          Gap(AppSpacing.lg.h),
+                          if (isBuilder)
+                            _BuilderFields(
+                              key: _roleKey,
+                              bp: bp,
+                              fallbackName:
+                                  profile?.displayName ?? _metadataFullName,
+                            )
+                          else
+                            _TradeFields(
+                              key: _roleKey,
+                              tp: tp,
+                              metadataFullName: _metadataFullName,
+                              tradeSlug: _tradeSlug,
+                              tradeOther: _tradeOther,
+                              onPickTrade: _pickTrade,
+                              showTradeError: _showTradeError,
+                              formKey: _formKey,
+                              hourlyRateVisible: _hourlyRateVisible ?? true,
+                              onRateVisibilityChanged: (v) =>
+                                  setState(() => _hourlyRateVisible = v),
+                            ),
+                          _CommonFields(
+                            key: _commonKey,
+                            isBuilder: isBuilder,
+                            displayNameInitial:
                                 profile?.displayName ?? _metadataFullName,
-                          )
-                        else
-                          _TradeFields(
+                            bp: bp,
                             tp: tp,
-                            metadataFullName: _metadataFullName,
-                            tradeSlug: _tradeSlug,
-                            tradeOther: _tradeOther,
-                            onPickTrade: _pickTrade,
-                            showTradeError: _showTradeError,
-                            formKey: _formKey,
-                            hourlyRateVisible: _hourlyRateVisible ?? true,
-                            onRateVisibilityChanged: (v) =>
-                                setState(() => _hourlyRateVisible = v),
                           ),
-                        _CommonFields(
-                          isBuilder: isBuilder,
-                          displayNameInitial:
-                              profile?.displayName ?? _metadataFullName,
-                          bp: bp,
-                          tp: tp,
-                        ),
-                        _VerificationSection(
-                          isBuilder: isBuilder,
-                          phoneVerified: profile?.isPhoneVerified ?? false,
-                          hasLicence: tp?.hasLicence ?? false,
-                        ),
-                      ],
+                          _VerificationSection(
+                            isBuilder: isBuilder,
+                            phoneVerified: profile?.isPhoneVerified ?? false,
+                            hasLicence: tp?.hasLicence ?? false,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              if (_saveError != null)
-                _SaveErrorBanner(
-                  message: _saveError!,
-                  onDismiss: () => setState(() => _saveError = null),
+                if (_saveError != null)
+                  _SaveErrorBanner(
+                    message: _saveError!,
+                    onDismiss: () => setState(() => _saveError = null),
+                  ),
+                BottomActionBar(
+                  primary: JButton(
+                    // JButton swaps content to spinner-only when isLoading
+                    // is true (j_button.dart:67), so passing a "SAVING..."
+                    // label here is dead — stick to a single stable label.
+                    label: 'SAVE CHANGES',
+                    isLoading: isSaving,
+                    onPressed: isSaving ? null : _save,
+                  ),
                 ),
-              BottomActionBar(
-                primary: JButton(
-                  // JButton swaps content to spinner-only when isLoading
-                  // is true (j_button.dart:67), so passing a "SAVING..."
-                  // label here is dead — stick to a single stable label.
-                  label: 'SAVE CHANGES',
-                  isLoading: isSaving,
-                  onPressed: isSaving ? null : _save,
-                ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
