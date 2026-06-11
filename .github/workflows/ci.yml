@@ -16,6 +16,11 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          # Pinned to the version the repo is developed against. Floating
+          # `stable` broke 2026-06-11: Flutter 3.44 made IconData final,
+          # which phosphor_flutter 2.1.0 can't compile against. Bump this
+          # together with a local SDK + phosphor upgrade, not implicitly.
+          flutter-version: 3.41.7
           channel: stable
           cache: true
 
