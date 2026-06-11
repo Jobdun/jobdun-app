@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jobdun — Top 5 Homepage Architectures (Research-Ranked)</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0F172A;--surface:#1E293B;--raised:#334155;--cta:#F97316;--t1:#F1F5F9;--t2:#94A3B8;--t3:#64748B;--ok:#22C55E;--warn:#F59E0B;--bad:#EF4444;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'Open Sans',sans-serif;padding:32px 20px 80px;max-width:1280px;margin:0 auto}
+h1{font-family:Oswald;font-size:34px;text-transform:uppercase}
+.sub{color:var(--t2);margin:10px 0 26px;max-width:880px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px}
+.card{background:var(--surface);border:1px solid var(--raised);border-radius:8px;padding:22px}
+.rank{font-family:Oswald;font-size:13px;letter-spacing:2px;color:var(--cta)}
+h2{font-family:Oswald;font-size:22px;margin:4px 0 2px;text-transform:uppercase}
+.bench{font-size:12px;color:var(--t3);margin-bottom:14px}
+.phone{position:relative;width:270px;height:430px;margin:0 auto;background:#0B1120;border:2px solid var(--raised);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;font-size:9px}
+.top{background:#111A2E;border-bottom:1px solid var(--raised);padding:8px 10px;display:flex;align-items:center;gap:6px}
+.pillg{background:rgba(34,197,94,.18);color:var(--ok);font-family:Oswald;font-size:8px;padding:3px 8px;border-radius:10px;letter-spacing:.8px}
+.grow{flex:1}.bell{color:var(--t2)}
+.sec{padding:8px 10px}
+.h{font-family:Oswald;font-size:9px;letter-spacing:1.5px;color:var(--t1);display:flex}
+.h .lnk{margin-left:auto;color:var(--cta);font-weight:700}
+.job{background:var(--surface);border:1px solid var(--raised);border-radius:6px;padding:7px 8px;margin-top:6px}
+.job b{display:block;color:var(--t1);font-size:9.5px}
+.job span{color:var(--t3);font-size:8px}
+.hero{background:rgba(249,115,22,.10);border:1px solid rgba(249,115,22,.4);border-radius:8px;padding:9px;margin-top:6px}
+.hero b{color:var(--cta);font-family:Oswald;letter-spacing:.5px;font-size:10px}
+.hero span{color:var(--t2);font-size:8px;display:block;margin-top:2px}
+.strip{display:flex;gap:6px;margin-top:6px}
+.strip div{flex:1;background:var(--surface);border:1px solid var(--raised);border-radius:6px;padding:5px;text-align:center}
+.strip b{display:block;font-family:Oswald;font-size:11px;color:var(--t1)}
+.strip span{font-size:7px;color:var(--t3);letter-spacing:.5px}
+.map{height:130px;background:linear-gradient(135deg,#13203A,#0E1830);border-bottom:1px solid var(--raised);position:relative}
+.pin{position:absolute;width:14px;height:14px;border-radius:50% 50% 50% 0;background:var(--cta);transform:rotate(-45deg)}
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.bento div{background:var(--surface);border:1px solid var(--raised);border-radius:6px;padding:8px;min-height:44px}
+.bento b{font-family:Oswald;color:var(--t1);font-size:10px;display:block}
+.bento span{color:var(--t3);font-size:7.5px}
+.brief{border-left:3px solid var(--cta);padding:6px 8px;background:var(--surface);border-radius:4px;margin-top:6px;color:var(--t2);font-size:8.5px;line-height:1.5}
+.dock{margin:auto 12px 10px;background:#111A2E;border:1px solid var(--raised);border-radius:22px;display:flex;padding:6px 4px}
+.dock div{flex:1;text-align:center;color:var(--t3);font-size:7px}
+.dock .on{color:var(--cta)}
+.score{display:flex;gap:8px;margin:16px 0 10px;flex-wrap:wrap}
+.pill{font-size:11px;padding:4px 10px;border-radius:4px;font-weight:700;font-family:Oswald;letter-spacing:.8px}
+.g{background:rgba(34,197,94,.15);color:var(--ok)}.a{background:rgba(245,158,11,.15);color:var(--warn)}.r{background:rgba(239,68,68,.15);color:var(--bad)}
+ul{margin:8px 0 0 18px;color:var(--t2);font-size:13.5px;line-height:1.65}
+.verdict{margin-top:40px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.35);border-radius:8px;padding:24px}
+.verdict h2{color:var(--cta)}
+.src{margin-top:30px;font-size:12px;color:var(--t3);line-height:1.7}
+a{color:var(--cta)}
+</style></head>
+<body>
+<h1>Jobdun · Top 5 Homepage Architectures</h1>
+<p class="sub">Tradie home shown (builder variant noted per option). Research lens: NN/g — a mobile homepage is a <b>springboard, not a dashboard-dump</b>; time-to-first-job is the metric that matters on a marketplace; first screenful carries ~80% of attention (F-pattern); one owner per piece of state. Current pain (from the live audit): banner + availability bar + 3 stat tiles push the first job below the fold on small phones.</p>
+
+<div class="grid">
+
+<div class="card"><div class="rank">#1 · RECOMMENDED</div><h2>Action Deck</h2><div class="bench">Seen in: Uber Driver, DoorDash Dasher — "what's my situation, what's next"</div>
+<div class="phone">
+ <div class="top"><span class="pillg">● AVAILABLE</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="hero"><b>NEXT: SHORTLISTED · DECK BUILD</b><span>Penrith · awaiting builder · quote $2,400 sent</span></div>
+  <div class="strip"><div><b>3</b><span>APPLIED</span></div><div><b>1</b><span>SHORTLIST</span></div><div><b>4.8</b><span>RATING</span></div></div>
+  <div class="h" style="margin-top:10px">JOBS NEAR YOU<span class="lnk">MAP →</span></div>
+  <div class="job"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown · starts Mon</span></div>
+  <div class="job"><b>Deck + pergola build</b><span>Quote · Penrith · flexible</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>⌕</div><div>▤</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-JOB 9/10</span><span class="pill g">GLANCE 9/10</span><span class="pill a">BUILD M</span></div>
+<ul><li><b>One hero card = your live situation</b> (shortlisted app, booked job, or pending quote) — the thing a tradie actually opens the app to check</li><li>Stats compress to a micro-strip (one row, tappable); jobs feed starts inside the first screenful</li><li>Completeness banner appears only while incomplete, then that space belongs to work</li><li>Builder variant: hero = "3 new applicants on Deck Build" + POST JOB strip</li></ul></div>
+
+<div class="card"><div class="rank">#2</div><h2>Feed-First</h2><div class="bench">Seen in: SEEK, Indeed — the proven marketplace default, done leaner</div>
+<div class="phone">
+ <div class="top"><span class="pillg">● AVAILABLE</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="h">JOBS NEAR YOU<span class="lnk">MAP →</span></div>
+  <div class="job"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown · starts Mon</span></div>
+  <div class="job"><b>Deck + pergola build</b><span>Quote · Penrith · flexible</span></div>
+  <div class="job"><b>Fit-off, 14 units</b><span>$60/hr · Parramatta · urgent</span></div>
+  <div class="job" style="border-color:rgba(249,115,22,.4)"><b style="color:var(--cta)">1 SHORTLIST WAITING →</b><span>inline status card rides IN the feed</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>⌕</div><div>▤</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-JOB 10/10</span><span class="pill a">GLANCE 6/10</span><span class="pill g">BUILD S</span></div>
+<ul><li>Jobs at pixel one — nothing precedes the feed; status/stats become inline cards <i>within</i> it</li><li>Cheapest to build from where the code is today</li><li>Risk: home becomes a clone of the Find tab — two tabs, one job</li></ul></div>
+
+<div class="card"><div class="rank">#3</div><h2>Map-First Split</h2><div class="bench">Seen in: hipages discovery, Uber rider — spatial "near me" first</div>
+<div class="phone">
+ <div class="top"><span class="pillg">● AVAILABLE</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="map"><div class="pin" style="top:38px;left:70px"></div><div class="pin" style="top:74px;left:150px"></div><div class="pin" style="top:50px;left:200px"></div></div>
+ <div class="sec">
+  <div class="h">3 JOBS WITHIN 25 KM<span class="lnk">LIST →</span></div>
+  <div class="job"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown · 8.2 km</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>⌕</div><div>▤</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-JOB 8/10</span><span class="pill g">GLANCE 8/10</span><span class="pill r">BUILD L</span></div>
+<ul><li>"Near you" becomes literal — the strongest geographic story of the five</li><li>Requires the real distance query (the feed currently has none — we just stopped faking it) + live map on home = battery/perf cost every open</li><li>Best deferred until geo-matching is a real backend feature</li></ul></div>
+
+<div class="card"><div class="rank">#4</div><h2>Bento Command</h2><div class="bench">Seen in: your builder home today, Revolut — glanceable tile dashboard</div>
+<div class="phone">
+ <div class="top"><span class="pillg">● AVAILABLE</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="bento"><div><b>NEXT JOB</b><span>Deck build · Mon</span></div><div><b>3 APPLIED</b><span>1 shortlisted</span></div><div><b>SCHEDULE</b><span>4 days open</span></div><div><b>$2.4K</b><span>quoted this wk</span></div></div>
+  <div class="h" style="margin-top:10px">JOBS NEAR YOU<span class="lnk">MAP →</span></div>
+  <div class="job"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>⌕</div><div>▤</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill a">TIME-TO-JOB 6/10</span><span class="pill g">GLANCE 10/10</span><span class="pill a">BUILD M</span></div>
+<ul><li>Role symmetry: tradie home finally matches the builder bento — one mental model</li><li>Best glance value of the five; weakest job liquidity (tiles eat the first screenful — the exact below-the-fold problem, prettier)</li><li>Right answer if Jobdun's centre of gravity shifts from "find work" to "run my trade business" (Stage 2+)</li></ul></div>
+
+<div class="card"><div class="rank">#5</div><h2>Daily Brief</h2><div class="bench">Seen in: 2026 AI-brief pattern (Gmail summaries, LinkedIn coach) — novel, unproven for trades</div>
+<div class="phone">
+ <div class="top"><span class="pillg">● AVAILABLE</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="h">G'DAY KEN — TUESDAY</div>
+  <div class="brief">3 new carpentry jobs near Penrith overnight · your Deck Build quote is still unanswered (nudge?) · White Card expires in 26 days — renew</div>
+  <div class="h" style="margin-top:10px">JOBS NEAR YOU<span class="lnk">MAP →</span></div>
+  <div class="job"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown</span></div>
+  <div class="job"><b>Deck + pergola build</b><span>Quote · Penrith</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>⌕</div><div>▤</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill a">TIME-TO-JOB 7/10</span><span class="pill g">GLANCE 9/10</span><span class="pill r">BUILD L</span></div>
+<ul><li>The most differentiated: a foreman's morning rundown, not a dashboard — every line is a deep link</li><li>Needs real aggregation logic (and honesty discipline: no data, no line — never pad the brief)</li><li>Pairs naturally with #1 later; not a v1 foundation on its own</li></ul></div>
+
+</div>
+
+
+<h1 style="margin-top:56px;font-size:28px">Builder Home · Top 5</h1>
+<p class="sub">Five structurally different shapes (taste rule: different <i>architectures</i>, not re-skins). A builder opens the app for two jobs only — <b>"who applied?"</b> and <b>"post the next one"</b> — so the ranking metric is time-to-decision. Sample data is illustrative.</p>
+
+<div class="grid">
+
+<div class="card"><div class="rank">#1 · RECOMMENDED</div><h2>Builder Action Deck</h2><div class="bench">Twin of the shipped tradie deck — one mental model across roles</div>
+<div class="phone">
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:11px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="hero"><b>NEXT: 3 NEW APPLICANTS · DECK BUILD</b><span>2 verified · oldest waiting 26 h</span></div>
+  <div class="job" style="background:var(--cta);border:none;text-align:center;padding:10px"><b style="color:#0F172A;font-family:Oswald;letter-spacing:1px">+ POST A JOB</b></div>
+  <div class="strip"><div><b>2</b><span>ACTIVE</span></div><div><b>7</b><span>APPLICANTS</span></div><div><b>12</b><span>POSTED</span></div></div>
+  <div class="h" style="margin-top:10px">YOUR LISTINGS<span class="lnk">SEE ALL →</span></div>
+  <div class="job"><b>Deck + pergola build</b><span>3 applicants · open 4 days</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>▤</div><div>👥</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-DECISION 9/10</span><span class="pill g">SYMMETRY 10/10</span><span class="pill g">BUILD S–M</span></div>
+<ul><li>Hero = the decision waiting on you, with trust context (verified count) + an aging nudge</li><li>POST A JOB as a full-width orange bar — the #1 action, unburied from the bento</li><li>Reuses the live <code>HomeActionDeck</code> skeleton — mostly data wiring</li></ul></div>
+
+<div class="card"><div class="rank">#2</div><h2>Applicant Inbox</h2><div class="bench">Seen in: Uber driver requests, recruiter inboxes — pure triage</div>
+<div class="phone">
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:11px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="h">NEW APPLICANTS<span class="lnk">ALL →</span></div>
+  <div class="job"><b>Mick T · Carpenter ✓LICENCE</b><span>Deck Build · $2,400 quote · 2 h ago</span></div>
+  <div class="job"><b>Sarah K · Carpenter ✓WHITE CARD</b><span>Deck Build · $2,650 quote · 8 h ago</span></div>
+  <div class="job"><b>Dave R · Labourer</b><span>Fit-off · no quote · 1 d ago</span></div>
+  <div class="job" style="text-align:center"><b style="color:var(--cta)">+ POST A JOB</b></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>▤</div><div>👥</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-DECISION 10/10</span><span class="pill a">GLANCE 6/10</span><span class="pill a">BUILD M</span></div>
+<ul><li>Home IS the queue — newest applicants across all jobs, trust chips inline, swipe to shortlist</li><li>Fastest triage of the five; zero overview (no per-job picture)</li><li>The natural evolution of #1's hero once applicant volume grows</li></ul></div>
+
+<div class="card"><div class="rank">#3</div><h2>Pipeline Board</h2><div class="bench">Seen in: ATS tools (Greenhouse), LinkedIn Recruiter — funnel per job</div>
+<div class="phone">
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:11px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="h">HIRING PIPELINE</div>
+  <div class="job"><b>Deck + pergola build</b><span style="color:var(--warn)">3 NEW</span> <span>· 2 shortlisted · 0 hired</span></div>
+  <div class="job"><b>Fit-off, 14 units</b><span style="color:var(--warn)">1 NEW</span> <span>· 1 shortlisted · 1 hired</span></div>
+  <div class="job"><b>Reno — bathroom strip</b><span>· closed · hired Mick T</span></div>
+  <div class="job" style="text-align:center"><b style="color:var(--cta)">+ POST A JOB</b></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>▤</div><div>👥</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill g">TIME-TO-DECISION 8/10</span><span class="pill g">GLANCE 9/10</span><span class="pill a">BUILD M</span></div>
+<ul><li>One row per job, stage counts as the spine — the full hiring picture in three lines</li><li>Best for builders running several listings at once</li><li>Slower for the single-job small builder — a funnel of one is ceremony</li></ul></div>
+
+<div class="card"><div class="rank">#4</div><h2>Bento+ (refine what exists)</h2><div class="bench">Your current builder home, hierarchy-fixed — smallest delta</div>
+<div class="phone">
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:11px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="bento"><div style="grid-column:1/3;background:var(--cta)"><b style="color:#0F172A">+ POST A JOB</b><span style="color:#0F172A">takes 2 minutes</span></div><div><b>7 APPLICANTS</b><span>3 new today</span></div><div><b>2 ACTIVE</b><span>1 closing soon</span></div></div>
+  <div class="h" style="margin-top:10px">TRADIES NEARBY</div>
+  <div class="job"><b>4 carpenters within 25 km</b><span>2 available this week</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>▤</div><div>👥</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill a">TIME-TO-DECISION 7/10</span><span class="pill g">GLANCE 9/10</span><span class="pill g">BUILD S</span></div>
+<ul><li>Keeps the bento you have; POST A JOB becomes the dominant double-width tile, counts go live</li><li>Cheapest change; no new mental model for existing testers</li><li>Doesn't surface the waiting decision — applicants stay a number, not a name</li></ul></div>
+
+<div class="card"><div class="rank">#5</div><h2>Project Command</h2><div class="bench">Seen in: ServiceM8, Buildertrend — run-the-build view (Stage 2)</div>
+<div class="phone">
+ <div class="top"><span style="font-family:Oswald;letter-spacing:2px;font-size:11px">JOBDUN</span><span class="grow"></span><span class="bell">🔔</span></div>
+ <div class="sec">
+  <div class="h">ACTIVE BUILDS</div>
+  <div class="job"><b>Deck build · Mick T</b><span>starts Mon · timesheet pending · quote accepted</span></div>
+  <div class="job"><b>Fit-off · Sarah K</b><span>day 3 of 9 · on schedule</span></div>
+  <div class="h" style="margin-top:10px">HIRING</div>
+  <div class="job"><b>1 listing open</b><span>3 applicants waiting</span></div>
+ </div>
+ <div class="dock"><div class="on">⌂</div><div>▤</div><div>👥</div><div>✉</div><div>◉</div></div>
+</div>
+<div class="score"><span class="pill a">TIME-TO-DECISION 6/10</span><span class="pill g">GLANCE 8/10</span><span class="pill r">BUILD L</span></div>
+<ul><li>Centre of gravity shifts from hiring to running hired crews — schedule, timesheets, quotes surfaced</li><li>The right home AFTER product-market fit, when repeat builders manage multiple crews</li><li>Premature today: hiring is still the daily job</li></ul></div>
+
+</div>
+
+<div class="verdict"><h2>Verdict</h2>
+<p class="sub" style="margin-top:8px;margin-bottom:8px"><b>#1 Action Deck</b> is the recommendation: it keeps the status pill + dock you just shipped, fixes the audited below-the-fold problem by compressing stats to a micro-strip, and leads with the one thing a tradie opens the app for — <i>"where do I stand right now?"</i> — before the feed. <b>#2 Feed-First</b> is the budget path (smallest delta, proven pattern) if you want jobs-at-pixel-one this week. #3 and #5 are the right *second* moves once geo-matching and aggregation data exist; #4 fits a Stage-2 "run your business" pivot. Recommended build order: ship #1, fold in #5's brief line-items as the data matures. <b>Builder:</b> #1 Builder Action Deck now (reuses the live tradie skeleton), evolve its hero into #2’s Applicant Inbox as volume grows; #5 Project Command is Stage 2.</p></div>
+
+<p class="src">Research: <a href="https://www.nngroup.com/articles/homepage-design-principles/">NN/g homepage principles</a> · F-pattern scanning studies · <a href="https://www.nngroup.com/articles/thumb-zone/">thumb-zone</a> (dock/pill carried over from the nav study) · Uber Driver / SEEK / hipages benchmark patterns · ui-ux-pro-max UX DB (loading, hierarchy, touch targets).</p>
+</body></html>

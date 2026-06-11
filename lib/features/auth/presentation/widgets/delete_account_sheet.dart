@@ -73,7 +73,11 @@ class _DeleteAccountSheetBodyState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(AppIcons.warning, size: AppIconSize.feature.r, color: c.urgent),
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
             Gap(12.h),
             Text(
               'Delete your account?',
@@ -90,23 +94,24 @@ class _DeleteAccountSheetBodyState
               Text(_error!, style: tt.bodySmall!.copyWith(color: c.urgent)),
             ],
             Gap(20.h),
+            // Safe action holds the prominent first slot; the destructive one
+            // sits below it — the standard accidental-tap guard (the old
+            // order nearly cost a real account).
             SizedBox(
               width: double.infinity,
               child: JButton(
-                label: _deleting ? 'DELETING…' : 'DELETE MY ACCOUNT',
-                variant: JButtonVariant.danger,
-                onPressed: _deleting ? null : _confirm,
+                label: 'KEEP MY ACCOUNT',
+                variant: JButtonVariant.primary,
+                onPressed: _deleting ? null : () => Navigator.of(context).pop(),
               ),
             ),
             Gap(8.h),
             SizedBox(
               width: double.infinity,
               child: JButton(
-                label: 'KEEP MY ACCOUNT',
-                variant: JButtonVariant.secondary,
-                onPressed: _deleting
-                    ? null
-                    : () => Navigator.of(context).pop(),
+                label: _deleting ? 'DELETING…' : 'DELETE MY ACCOUNT',
+                variant: JButtonVariant.danger,
+                onPressed: _deleting ? null : _confirm,
               ),
             ),
           ],

@@ -36,7 +36,7 @@ class HomeStatusBar extends ConsumerWidget {
         if (isTrade)
           _AvailabilityPill(
             available: available ?? true,
-            onTap: () => context.push('/schedule'),
+            onTap: () => context.go('/schedule'),
           )
         else
           Text(

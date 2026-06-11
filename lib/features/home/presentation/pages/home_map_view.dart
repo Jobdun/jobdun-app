@@ -104,7 +104,10 @@ enum _LocationStatus {
   error,
 }
 
-class _MapViewState extends State<_MapView> {
+class _MapViewState extends State<_MapView> with _MapPinSync {
+  @override
+  MapController get _mapController => _controller;
+
   static const _sydney = LatLng(-33.8688, 151.2093);
 
   final MapController _controller = MapController();
@@ -260,35 +263,12 @@ class _MapViewState extends State<_MapView> {
   // CircleLayer always has something to anchor on.
   LatLng get _radiusCenter => _userLocation ?? _sydney;
 
-  // Real Supabase jobs only — no sample pins. An empty feed renders the radius
-  // circle + the user's location marker with no job pins (a valid empty state).
-  List<Job> get _effectiveJobs => widget.jobs;
-
-  List<Marker> _buildMarkers(Color pinColor) {
+  // Job pins moved to the _MapPinSync mixin (home_map_pins.dart): price-
+  // bearing pins + clustering + carousel sync (map verdict #1+#2). This
+  // builds only the user-position dot — solid white with brand-orange ring,
+  // clearly distinct from the labelled job pins.
+  List<Marker> _buildUserMarker(Color pinColor) {
     return [
-      for (final job in _effectiveJobs)
-        if (job.latitude != null && job.longitude != null)
-          Marker(
-            point: LatLng(job.latitude!, job.longitude!),
-            // Aspect matches the pin glyph's cropped viewBox (900×1140 ≈ 0.79)
-            // so the brand pin isn't squashed. bottomCenter anchors the tip
-            // on the exact coordinate.
-            width: 44,
-            height: 56,
-            alignment: Alignment.bottomCenter,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => widget.onJobTap(job),
-              child: SvgPicture.asset(
-                'lib/core/assets/map-pin-jobdun.svg',
-                width: 44,
-                height: 56,
-              ),
-            ),
-          ),
-      // User position — solid white dot with brand-orange ring. Clearly
-      // distinct from the orange job pins above so the user can tell
-      // "where I am" from "what's around me" at a glance.
       if (_userLocation != null)
         Marker(
           point: _userLocation!,
@@ -330,14 +310,16 @@ class _MapViewState extends State<_MapView> {
       children: [
         FlutterMap(
           mapController: _controller,
-          options: const MapOptions(
+          options: MapOptions(
             initialCenter: _sydney,
             // Zoom 12 frames the 5 km search radius cleanly without clipping
             // the outer ring on a typical phone viewport.
             initialZoom: 12,
             minZoom: 3,
             maxZoom: 18,
-            interactionOptions: InteractionOptions(
+            // Re-cluster pins when the zoom level meaningfully changes.
+            onPositionChanged: (camera, _) => _trackZoom(camera.zoom),
+            interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
             ),
           ),
@@ -367,13 +349,26 @@ class _MapViewState extends State<_MapView> {
                 ),
               ],
             ),
-            MarkerLayer(markers: _buildMarkers(c.action)),
-            RichAttributionWidget(
-              alignment: AttributionAlignment.bottomLeft,
-              attributions: _attributionsFor(_style),
+            MarkerLayer(
+              markers: [
+                ..._buildJobMarkers(context),
+                ..._buildUserMarker(c.action),
+              ],
+            ),
+            // Attribution lifts above the card carousel when it's showing —
+            // otherwise the expanded credits panel (Voyager/CARTO) renders
+            // underneath the cards.
+            Padding(
+              padding: EdgeInsets.only(bottom: _plottable.isEmpty ? 0 : 112.h),
+              child: RichAttributionWidget(
+                alignment: AttributionAlignment.bottomLeft,
+                attributions: _attributionsFor(_style),
+              ),
             ),
           ],
         ),
+        // Bottom card carousel (verdict #1): swipe ↔ pin selection sync.
+        if (_plottable.isNotEmpty) _buildJobCarousel(context),
         // Top-left radius chip — tells the user exactly what they're looking
         // at: the suburb name and the search radius the pins are filtered by.
         Positioned(
@@ -474,7 +469,8 @@ class _MapViewState extends State<_MapView> {
           Positioned(
             left: 12.w,
             right: 12.w,
-            bottom: 12.h,
+            // Clears the card carousel when it's showing.
+            bottom: _plottable.isEmpty ? 12.h : 122.h,
             child: _LocationStatusBanner(
               status: _locationStatus,
               onRetry: _initLocation,
