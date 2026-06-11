@@ -1,0 +1,2 @@
+-- DOWN for 20260611000008. Run manually only: re-apply the get_inbox body
+-- from supabase/migrations/20260604000004_get_inbox_company_name.sql.
