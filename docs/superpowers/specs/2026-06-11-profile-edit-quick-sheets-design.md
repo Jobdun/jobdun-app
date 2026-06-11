@@ -64,10 +64,14 @@ shape as existing `UpdateProfile`. Controller calls use cases (layer rule).
 
 ### 4. Controller
 
-`ProfileController` gains one public method, `saveSection(SectionPatch payload)`
-(typed payload wrapping which-table + patch; respects the ≤4-named-params rule),
-returning per-action `AsyncValue<void>`. On success it applies the patch to in-memory
-state via `copyWith` — no refetch. Sheet-local loading/error state lives in the sheet.
+`ProfileController` gains one public method,
+`savePatches({UserProfilePatch? user, TradeProfilePatch? trade, BuilderProfilePatch? builder})`
+(3 named params, within the ≤4 rule; covers the Identity sheet's two-table save in one call),
+returning `bool` like its sibling mutations. On success it refreshes **only the
+patched table** via the existing repo getters + `state.copyWith(...)` (house
+pattern from `setTradeAvailability`; entities have no copyWith so applying the
+patch client-side isn't available). Sheet-local loading/error state lives in
+the sheet.
 
 ### 5. Presentation — sheets
 
@@ -77,11 +81,16 @@ state via `copyWith` — no refetch. Sheet-local loading/error state lives in th
 | Sheet | Role | Fields | Patches |
 |---|---|---|---|
 | Identity & photo | both | avatar (existing picker on top), display_name; tradie also full_name | profiles (+ trade_profiles for full_name) |
-| Trade & experience | tradie | primary_trade (+ trade_other), years_experience, crew_size | trade_profiles |
+| Trade & experience | tradie | primary_trade (+ trade_other), years_experience, availability (is_available + available_from — lived in the old form's trade section) | trade_profiles |
 | Rates | tradie | hourly_rate_min/max (cross-field max ≥ min), hourly_rate_visible toggle | trade_profiles |
-| Business details | builder | company_name, abn, years_in_business, website, contact_name, contact_phone | builder_profiles |
-| Location | both | suburb/state/postcode + geocode fields (existing `profile_location_field`), service_radius_km (tradie) | role table |
+| Business details | builder | company_name, abn (verified-lock preserved), years_in_business, website, contact_name, contact_phone | builder_profiles |
+| Location | both | suburb/state/postcode + geocode fields (existing `profile_location_field`) | role table |
 | About | both | full-screen page `/profile/edit/about`, multiline + char count | role table |
+
+Amendments vs the first draft (2026-06-11, during planning): `crew_size` and
+`service_radius_km` dropped — the old form never edited them (YAGNI);
+availability moved into the Trade & experience sheet so deleting the form
+doesn't orphan `available_from`.
 
 Validation: existing FormBuilder validators move verbatim into each sheet.
 
