@@ -19,7 +19,9 @@ import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
+import '../../domain/entities/profile_patches.dart';
 import '../../domain/usecases/get_profile.dart';
+import '../../domain/usecases/patch_profile_section.dart';
 import '../../domain/usecases/update_profile.dart';
 import '../../domain/usecases/upload_avatar.dart';
 
@@ -45,6 +47,18 @@ final getProfileUseCaseProvider = Provider(
 
 final updateProfileUseCaseProvider = Provider(
   (ref) => UpdateProfile(ref.read(profileRepositoryProvider)),
+);
+
+final patchUserProfileUseCaseProvider = Provider(
+  (ref) => PatchUserProfile(ref.read(profileRepositoryProvider)),
+);
+
+final patchTradeProfileUseCaseProvider = Provider(
+  (ref) => PatchTradeProfile(ref.read(profileRepositoryProvider)),
+);
+
+final patchBuilderProfileUseCaseProvider = Provider(
+  (ref) => PatchBuilderProfile(ref.read(profileRepositoryProvider)),
 );
 
 final uploadAvatarUseCaseProvider = Provider(
@@ -233,6 +247,63 @@ class ProfileController extends Notifier<ProfileState>
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
+  }
+
+  /// Section save for the quick-edit sheets: writes only the columns set on
+  /// the supplied patches, then refreshes just the touched tables (house
+  /// pattern from setTradeAvailability). Sheets own their button spinner;
+  /// failures land in state.error like every other mutation here.
+  Future<bool> savePatches({
+    UserProfilePatch? user,
+    TradeProfilePatch? trade,
+    BuilderProfilePatch? builder,
+  }) async {
+    final userId = readCurrentUserId(ref);
+    if (userId == null) return false;
+    state = state.copyWith(error: null);
+
+    if (user != null) {
+      final r = await ref
+          .read(patchUserProfileUseCaseProvider)
+          .call(userId, user);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
+      }
+    }
+    if (trade != null) {
+      final r = await ref
+          .read(patchTradeProfileUseCaseProvider)
+          .call(userId, trade);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
+      }
+    }
+    if (builder != null) {
+      final r = await ref
+          .read(patchBuilderProfileUseCaseProvider)
+          .call(userId, builder);
+      if (r.isLeft()) {
+        state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+        return false;
+      }
+    }
+
+    // Targeted refresh — only re-read what we wrote.
+    if (user != null) {
+      final r = await ref.read(getProfileUseCaseProvider).call(userId);
+      r.fold((_) {}, (p) => state = state.copyWith(profile: p));
+    }
+    if (trade != null) {
+      final r = await _repo.getTradeProfile(userId);
+      r.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
+    }
+    if (builder != null) {
+      final r = await _repo.getBuilderProfile(userId);
+      r.fold((_) {}, (bp) => state = state.copyWith(builderProfile: bp));
+    }
+    return true;
   }
 
   /// Persist the trade's "open for work" status from the home availability bar
