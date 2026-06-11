@@ -108,6 +108,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: CustomScrollView(
           slivers: [
             if (!isOnline) const SliverToBoxAdapter(child: JOfflineBanner()),
+            // /profile is a pushed route above the tab shell — gesture/system
+            // back works, but a visible affordance is required (restored by
+            // request 2026-06-11 after a brief removal the same day).
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(4.w, 4.h, 0, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => context.pop(),
+                    tooltip: 'Back',
+                    icon: Icon(
+                      AppIcons.back,
+                      size: AppIconSize.md.r,
+                      color: c.text1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             SliverToBoxAdapter(
               child: _ProfileHeader(
                 initials: initials,

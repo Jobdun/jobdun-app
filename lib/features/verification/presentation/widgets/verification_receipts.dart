@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -9,11 +7,14 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/theme/app_icons.dart';
+import '../../domain/entities/trade_public_credential.dart';
 import '../../domain/entities/verification.dart';
 import '../../domain/entities/verification_document.dart' as docs;
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
 import 'manual_upload_sheet.dart';
+import 'receipt_cta_link.dart';
+import 'receipt_row.dart';
 
 /// "What's been checked" receipts panel. Lives on the profile page.
 ///
@@ -29,6 +30,8 @@ class VerificationReceipts extends ConsumerWidget {
     required this.isOwner,
     this.showAbnRow = true,
     required this.showLicenceRow,
+    this.showWhiteCardRow = false,
+    this.showInsuranceRow = false,
   });
 
   /// The profile being viewed (own or someone else's).
@@ -44,6 +47,12 @@ class VerificationReceipts extends ConsumerWidget {
   /// Trades verify a licence. Builders skip licence. Caller decides.
   final bool showLicenceRow;
 
+  /// Trades can add a White Card (construction induction). Trust signal only.
+  final bool showWhiteCardRow;
+
+  /// Trades can add public-liability insurance. Trust signal only.
+  final bool showInsuranceRow;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(verificationsForUserProvider(userId));
@@ -53,13 +62,13 @@ class VerificationReceipts extends ConsumerWidget {
         child: JCard(
           title: 'WHAT\'S BEEN CHECKED',
           children: const [
-            _ReceiptRow(
+            ReceiptRow(
               icon: AppIcons.clock,
               label: 'Loading…',
               sub: 'Checking your records',
               isVerified: false,
             ),
-            _ReceiptRow(
+            ReceiptRow(
               icon: AppIcons.clock,
               label: 'Loading…',
               sub: 'Checking your records',
@@ -71,7 +80,7 @@ class VerificationReceipts extends ConsumerWidget {
       error: (e, _) => JCard(
         title: 'WHAT\'S BEEN CHECKED',
         children: [
-          _ReceiptRow(
+          ReceiptRow(
             icon: AppIcons.closeCircle,
             label: 'Couldn\'t load verification status',
             sub: '$e',
@@ -100,6 +109,13 @@ class VerificationReceipts extends ConsumerWidget {
         ? ref.watch(verificationControllerProvider).documents
         : const <docs.VerificationDocument>[];
 
+    // White Card / public liability never create a `verifications` row, so a
+    // counterparty reads their APPROVED state from the minimized projection.
+    final publicCreds = (!isOwner && (showWhiteCardRow || showInsuranceRow))
+        ? (ref.watch(tradePublicCredentialsProvider(userId)).asData?.value ??
+              const <TradePublicCredential>[])
+        : const <TradePublicCredential>[];
+
     return JCard(
       title: 'WHAT\'S BEEN CHECKED',
       children: [
@@ -121,7 +137,66 @@ class VerificationReceipts extends ConsumerWidget {
             docType: docs.DocType.tradeLicence,
             uploaded: uploaded,
           ),
+        if (showWhiteCardRow)
+          _buildSupplementaryRow(
+            context: context,
+            label: 'White Card',
+            docType: docs.DocType.whiteCard,
+            uploaded: uploaded,
+            publicCreds: publicCreds,
+          ),
+        if (showInsuranceRow)
+          _buildSupplementaryRow(
+            context: context,
+            label: 'Public liability',
+            docType: docs.DocType.publicLiability,
+            uploaded: uploaded,
+            publicCreds: publicCreds,
+          ),
       ],
+    );
+  }
+
+  /// White Card / public liability are supplementary credentials: they have no
+  /// `verifications` row, so the owner derives status from their uploaded docs
+  /// while a counterparty sees only the APPROVED projection (owner-RLS hides
+  /// pending / rejected docs). Counterparty rows are positive-only — nothing
+  /// renders until a reviewer approves.
+  Widget _buildSupplementaryRow({
+    required BuildContext context,
+    required String label,
+    required docs.DocType docType,
+    required List<docs.VerificationDocument> uploaded,
+    required List<TradePublicCredential> publicCreds,
+  }) {
+    if (isOwner) {
+      return _buildRow(
+        context: context,
+        label: label,
+        verified: null,
+        verifiedSub: '',
+        docType: docType,
+        uploaded: uploaded,
+      );
+    }
+    TradePublicCredential? cred;
+    for (final c in publicCreds) {
+      if (c.docType == docType) {
+        cred = c;
+        break;
+      }
+    }
+    if (cred == null) return const SizedBox.shrink();
+    final expires = cred.expiresAt != null
+        ? ' · expires ${DateFormat('d MMM yyyy').format(cred.expiresAt!)}'
+        : '';
+    return ReceiptRow(
+      icon: cred.isExpired ? AppIcons.clock : AppIcons.verified,
+      label: label,
+      sub: cred.isExpired
+          ? 'Expired$expires'
+          : 'Verified by document review$expires',
+      isVerified: !cred.isExpired,
     );
   }
 
@@ -134,7 +209,7 @@ class VerificationReceipts extends ConsumerWidget {
     required List<docs.VerificationDocument> uploaded,
   }) {
     if (verified != null) {
-      return _ReceiptRow(
+      return ReceiptRow(
         icon: AppIcons.verified,
         label: label,
         sub: verifiedSub,
@@ -148,7 +223,27 @@ class VerificationReceipts extends ConsumerWidget {
       docs.VerificationStatus.approved,
     );
     if (approved != null) {
-      return _ReceiptRow(
+      // U5.2: an approved doc whose expiry has passed is a lapsed badge —
+      // say so and offer the renewal, instead of falling back to "not
+      // verified" with no explanation.
+      if (approved.isExpired) {
+        return _expiredRow(context, label, docType, approved.expiryDate);
+      }
+      // U5.1: inside the 30-day renewal window — owner-only nudge; the
+      // public badge stays verified until it actually lapses.
+      if (_expiresSoon(approved.expiryDate)) {
+        return ReceiptRow(
+          icon: AppIcons.clock,
+          iconColor: context.c.warning,
+          label: label,
+          sub:
+              'Expires ${_fmtDate(approved.expiryDate!)} — upload a renewal '
+              'to keep your badge',
+          isVerified: false,
+          cta: isOwner ? _renewalCta(context, docType) : null,
+        );
+      }
+      return ReceiptRow(
         icon: AppIcons.verified,
         label: label,
         sub:
@@ -163,7 +258,7 @@ class VerificationReceipts extends ConsumerWidget {
       docs.VerificationStatus.pending,
     );
     if (pending != null) {
-      return _ReceiptRow(
+      return ReceiptRow(
         icon: AppIcons.clock,
         label: label,
         sub:
@@ -172,14 +267,81 @@ class VerificationReceipts extends ConsumerWidget {
         isVerified: false,
       );
     }
-    return _ReceiptRow(
-      icon: AppIcons.closeCircle,
+    // U5.2: the expiry sweep flips lapsed docs to status=expired — keep the
+    // "why" visible for the owner instead of a bare empty row.
+    final expired = _findDoc(
+      uploaded,
+      docType,
+      docs.VerificationStatus.expired,
+    );
+    if (expired != null && isOwner) {
+      return _expiredRow(context, label, docType, expired.expiryDate);
+    }
+    // U3.1: a never-attempted credential is an opportunity, not a failure —
+    // the owner gets an add-affordance glyph + the payoff the badge buys.
+    // Counterparties keep the muted factual "Not yet verified".
+    return ReceiptRow(
+      icon: isOwner ? AppIcons.addCircle : AppIcons.closeCircle,
       label: label,
-      sub: 'Not yet verified',
+      sub: isOwner ? _payoffCopy(docType) : 'Not yet verified',
       isVerified: false,
       cta: isOwner ? _ownerCtas(context, docType) : null,
     );
   }
+
+  // U5: lapsed-credential row — honest about the consequence (the badge is
+  // gone from builder view) with the renewal as the next step.
+  Widget _expiredRow(
+    BuildContext context,
+    String label,
+    docs.DocType docType,
+    DateTime? expiry,
+  ) {
+    final when = expiry == null ? '' : ' on ${_fmtDate(expiry)}';
+    return ReceiptRow(
+      icon: AppIcons.clock,
+      label: label,
+      sub: 'Expired$when — builders no longer see this badge',
+      isVerified: false,
+      cta: isOwner ? _renewalCta(context, docType) : null,
+    );
+  }
+
+  static bool _expiresSoon(DateTime? expiry) {
+    if (expiry == null) return false;
+    final now = DateTime.now();
+    return !expiry.isBefore(now) &&
+        expiry.difference(now) <= const Duration(days: 30);
+  }
+
+  static String _fmtDate(DateTime d) => DateFormat('d MMM yyyy').format(d);
+
+  static Widget _renewalCta(BuildContext context, docs.DocType docType) {
+    final kind = switch (docType) {
+      docs.DocType.tradeLicence => ManualDocKind.tradeLicence,
+      docs.DocType.whiteCard => ManualDocKind.whiteCard,
+      docs.DocType.publicLiability => ManualDocKind.publicLiability,
+      _ => ManualDocKind.abnCertificate,
+    };
+    return ReceiptCtaLink(
+      label: 'Upload a new one →',
+      onTap: () => showManualUploadSheet(context: context, kind: kind),
+    );
+  }
+
+  // What the builder actually sees once this credential is approved — shown
+  // on the owner's empty rows so the upload effort has a visible reward.
+  static String _payoffCopy(docs.DocType docType) => switch (docType) {
+    docs.DocType.abnCertificate =>
+      'Shows tradies a verified-business badge on your job posts',
+    docs.DocType.tradeLicence =>
+      'Shows builders a LICENCE badge on your applications',
+    docs.DocType.whiteCard =>
+      "Proves you're site-ready — shown as a badge to builders",
+    docs.DocType.publicLiability =>
+      'Shows as INSURED on every application you send',
+    _ => 'Adds a verified badge to your profile',
+  };
 
   // B5: this CTA only renders in the "no doc at all" branch of `_buildRow`
   // (verified / approved / pending are all handled before it), so a user with
@@ -187,50 +349,45 @@ class VerificationReceipts extends ConsumerWidget {
   // affordance — they can't open a second sheet from here. Keep that ordering
   // intact; it's the guard against duplicate pending uploads on this surface.
   static Widget _ownerCtas(BuildContext context, docs.DocType docType) {
-    final manualKind = docType == docs.DocType.tradeLicence
-        ? ManualDocKind.tradeLicence
-        : ManualDocKind.abnCertificate;
-    // For trades, the wizard route now collapses to the manual sheet
-    // anyway, and "about a minute" is an auto-path promise we can't keep
-    // (a human reviews uploads, usually within 24 h). Show one honest CTA
-    // that opens the sheet directly. Builders keep the wizard CTA because
-    // their ABR auto-path IS live and IS roughly a minute.
-    final tt = Theme.of(context).textTheme;
-    if (docType == docs.DocType.tradeLicence) {
-      return InkWell(
-        onTap: () => showManualUploadSheet(context: context, kind: manualKind),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 6.h),
-          child: Text(
-            'Upload your licence →',
-            style: tt.bodyMedium!.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.c.action,
+    // ABN keeps the wizard CTA — its ABR auto-path IS live (roughly a minute) —
+    // with a manual upload fallback beneath it.
+    if (docType == docs.DocType.abnCertificate) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _wizardCta(context),
+          ReceiptCtaLink(
+            label: 'Or upload a document →',
+            muted: true,
+            underline: true,
+            onTap: () => showManualUploadSheet(
+              context: context,
+              kind: ManualDocKind.abnCertificate,
             ),
           ),
-        ),
+        ],
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _wizardCta(context),
-        InkWell(
-          onTap: () =>
-              showManualUploadSheet(context: context, kind: manualKind),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 4.h),
-            child: Text(
-              'Or upload a document →',
-              style: tt.bodySmall!.copyWith(
-                color: context.c.text3,
-                decoration: TextDecoration.underline,
-                decorationColor: context.c.text3,
-              ),
-            ),
-          ),
-        ),
-      ],
+    // Every other kind is manual-review only — a human reviews the upload,
+    // usually within 24 h — so show one honest CTA that opens the sheet.
+    final (kind, label) = switch (docType) {
+      docs.DocType.tradeLicence => (
+        ManualDocKind.tradeLicence,
+        'Upload your licence →',
+      ),
+      docs.DocType.whiteCard => (
+        ManualDocKind.whiteCard,
+        'Upload your White Card →',
+      ),
+      docs.DocType.publicLiability => (
+        ManualDocKind.publicLiability,
+        'Add your insurance →',
+      ),
+      _ => (ManualDocKind.tradeLicence, 'Upload a document →'),
+    };
+    return ReceiptCtaLink(
+      label: label,
+      onTap: () => showManualUploadSheet(context: context, kind: kind),
     );
   }
 
@@ -287,24 +444,15 @@ class VerificationReceipts extends ConsumerWidget {
   // ABN CTA used to dead-end on a "you're already verified" snackbar.
   static Widget _reverifyCta(BuildContext context, docs.DocType docType) {
     final isLicence = docType == docs.DocType.tradeLicence;
-    final tt = Theme.of(context).textTheme;
-    return InkWell(
+    return ReceiptCtaLink(
+      label: 'Re-verify →',
+      muted: true,
       onTap: () => isLicence
           ? showManualUploadSheet(
               context: context,
               kind: ManualDocKind.tradeLicence,
             )
           : context.push('/verification/wizard?reverify=1'),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 6.h),
-        child: Text(
-          'Re-verify →',
-          style: tt.bodySmall!.copyWith(
-            fontWeight: FontWeight.w600,
-            color: context.c.text3,
-          ),
-        ),
-      ),
     );
   }
 
@@ -318,72 +466,9 @@ class VerificationReceipts extends ConsumerWidget {
   }
 
   static Widget _wizardCta(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return InkWell(
+    return ReceiptCtaLink(
+      label: 'Verify in about a minute →',
       onTap: () => context.push('/verification/wizard'),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 6.h),
-        child: Text(
-          'Verify in about a minute →',
-          style: tt.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            color: context.c.action,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReceiptRow extends StatelessWidget {
-  const _ReceiptRow({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.isVerified,
-    this.cta,
-  });
-
-  final IconData icon;
-  final String label;
-  final String sub;
-  final bool isVerified;
-  final Widget? cta;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: AppIconSize.md.r,
-            color: isVerified ? c.verified : c.text3,
-          ),
-          Gap(12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: tt.titleSmall!.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: c.text1,
-                  ),
-                ),
-                Gap(2.h),
-                Text(sub, style: tt.bodySmall),
-                ?cta,
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

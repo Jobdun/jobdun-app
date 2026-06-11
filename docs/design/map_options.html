@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jobdun — Top 5 Map Experiences (Research-Ranked)</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0F172A;--surface:#1E293B;--raised:#334155;--cta:#F97316;--t1:#F1F5F9;--t2:#94A3B8;--t3:#64748B;--ok:#22C55E;--warn:#F59E0B;--bad:#EF4444;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:'Open Sans',sans-serif;padding:32px 20px 80px;max-width:1280px;margin:0 auto}
+h1{font-family:Oswald;font-size:34px;text-transform:uppercase}
+.sub{color:var(--t2);margin:10px 0 26px;max-width:880px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:28px}
+.card{background:var(--surface);border:1px solid var(--raised);border-radius:8px;padding:22px}
+.rank{font-family:Oswald;font-size:13px;letter-spacing:2px;color:var(--cta)}
+h2{font-family:Oswald;font-size:22px;margin:4px 0 2px;text-transform:uppercase}
+.bench{font-size:12px;color:var(--t3);margin-bottom:14px}
+.phone{position:relative;width:270px;height:430px;margin:0 auto;background:#0B1120;border:2px solid var(--raised);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;font-size:9px}
+.mapbg{flex:1;background:linear-gradient(135deg,#15233F 0%,#0E1830 55%,#13203A 100%);position:relative}
+.road{position:absolute;background:#243049}
+.pricepin{position:absolute;background:#0B1120;border:1.5px solid var(--cta);color:var(--cta);font-family:Oswald;font-size:8.5px;padding:2px 6px;border-radius:10px;font-weight:700}
+.pricepin.sel{background:var(--cta);color:#0F172A}
+.clu{position:absolute;background:var(--cta);color:#0F172A;font-family:Oswald;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px}
+.dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--ok);border:2px solid #0B1120}
+.ring{position:absolute;border:1.5px dashed rgba(249,115,22,.55);border-radius:50%}
+.carousel{position:absolute;left:0;right:0;bottom:10px;display:flex;gap:8px;padding:0 10px;overflow:hidden}
+.ccard{min-width:170px;background:#111A2E;border:1px solid var(--raised);border-radius:8px;padding:8px}
+.ccard.sel{border-color:var(--cta)}
+.ccard b{display:block;color:var(--t1);font-size:9.5px}
+.ccard span{color:var(--t3);font-size:8px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#111A2E;border-top:1px solid var(--raised);border-radius:14px 14px 0 0;padding:8px 10px}
+.handle{width:34px;height:4px;background:var(--raised);border-radius:2px;margin:0 auto 8px}
+.row{background:var(--surface);border:1px solid var(--raised);border-radius:6px;padding:6px 8px;margin-top:6px}
+.row b{display:block;color:var(--t1);font-size:9.5px}
+.row span{color:var(--t3);font-size:8px}
+.chipbar{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:6px}
+.chip{background:#111A2E;border:1px solid var(--raised);border-radius:14px;padding:4px 9px;color:var(--t2);font-size:8px;font-family:Oswald;letter-spacing:.5px}
+.chip.on{background:var(--cta);color:#0F172A;border-color:var(--cta)}
+.score{display:flex;gap:8px;margin:16px 0 10px;flex-wrap:wrap}
+.pill{font-size:11px;padding:4px 10px;border-radius:4px;font-weight:700;font-family:Oswald;letter-spacing:.8px}
+.g{background:rgba(34,197,94,.15);color:var(--ok)}.a{background:rgba(245,158,11,.15);color:var(--warn)}.r{background:rgba(239,68,68,.15);color:var(--bad)}
+ul{margin:8px 0 0 18px;color:var(--t2);font-size:13.5px;line-height:1.65}
+.verdict{margin-top:40px;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.35);border-radius:8px;padding:24px}
+.verdict h2{color:var(--cta)}
+.src{margin-top:30px;font-size:12px;color:var(--t3);line-height:1.7}
+a{color:var(--cta)}
+</style></head>
+<body>
+<h1>Jobdun · Top 5 Map Experiences</h1>
+<p class="sub">What's there today: <code>flutter_map</code> + raster tiles, identical generic pins, tap-a-pin → jump straight to the detail page. That's the 2015 pattern — no preview before commitment, no information in the pin, no clustering, nothing in the thumb zone. The modern bar (Airbnb / Zillow / Google Maps 2025-26): <b>the pin carries information, selection previews before navigating, and browsing happens in the bottom third of the screen.</b></p>
+
+<div class="grid">
+
+<div class="card"><div class="rank">#1 · RECOMMENDED</div><h2>Card-Carousel Sync</h2><div class="bench">Seen in: Airbnb, Zillow, Rightmove — the marketplace-map standard</div>
+<div class="phone">
+ <div class="mapbg">
+  <div class="road" style="top:60px;left:0;right:0;height:3px;transform:rotate(-7deg)"></div>
+  <div class="road" style="top:0;bottom:0;left:110px;width:3px;transform:rotate(12deg)"></div>
+  <div class="pricepin" style="top:64px;left:38px">$55/hr</div>
+  <div class="pricepin sel" style="top:120px;left:138px">$2.4k</div>
+  <div class="pricepin" style="top:40px;left:185px">QUOTE</div>
+  <div class="carousel">
+   <div class="ccard sel"><b>Deck + pergola build</b><span>Quote · Penrith · starts Mon</span></div>
+   <div class="ccard"><b>Framing carpenter</b><span>$55/hr · Blacktown</span></div>
+  </div>
+ </div>
+</div>
+<div class="score"><span class="pill g">BROWSE SPEED 10/10</span><span class="pill g">THUMB 9/10</span><span class="pill a">BUILD M</span></div>
+<ul><li><b>Swipe the carousel ↔ pins highlight; tap a pin ↔ carousel snaps</b> — preview before committing to a detail page (kills the tap-roulette of generic pins)</li><li>Cards live in the thumb zone; the map is for eyes, the bottom is for hands — same act-low/read-high split as the dock</li><li>Pure flutter_map + PageView wiring — no new packages</li></ul></div>
+
+<div class="card"><div class="rank">#2</div><h2>Price-Pin + Cluster Layer</h2><div class="bench">Seen in: Zillow, Domain.com.au — the pin IS the information</div>
+<div class="phone">
+ <div class="mapbg">
+  <div class="road" style="top:90px;left:0;right:0;height:3px;transform:rotate(5deg)"></div>
+  <div class="clu" style="top:40px;left:50px">7</div>
+  <div class="pricepin" style="top:120px;left:60px">$55/hr</div>
+  <div class="pricepin" style="top:170px;left:150px">$60/hr</div>
+  <div class="pricepin" style="top:80px;left:190px">URGENT</div>
+  <div class="chipbar" style="top:auto;bottom:12px"><div class="chip on">CARPENTRY</div><div class="chip">ALL TRADES</div><div class="chip">URGENT</div></div>
+ </div>
+</div>
+<div class="score"><span class="pill g">SCAN VALUE 10/10</span><span class="pill a">THUMB 7/10</span><span class="pill a">BUILD M</span></div>
+<ul><li>Pins show <b>rate / QUOTE / URGENT</b> instead of identical droplets — the map answers "is it worth tapping?" from a glance</li><li>Clusters ("7") collapse dense suburbs at zoom-out — no pin soup as supply grows</li><li>Filter chips ride the bottom edge (thumb zone), not the top</li><li>Combines naturally with #1 — they're one build apart</li></ul></div>
+
+<div class="card"><div class="rank">#3</div><h2>Sheet-Over-Map Hybrid</h2><div class="bench">Seen in: Google Maps explore, Apple Maps — list and map, one surface</div>
+<div class="phone">
+ <div class="mapbg">
+  <div class="pricepin" style="top:50px;left:60px">$55/hr</div>
+  <div class="pricepin" style="top:90px;left:170px">$2.4k</div>
+  <div class="sheet" style="height:46%">
+   <div class="handle"></div>
+   <div style="font-family:Oswald;letter-spacing:1px;color:var(--t1)">3 JOBS IN VIEW</div>
+   <div class="row"><b>Deck + pergola build</b><span>Quote · Penrith · 2 applicants</span></div>
+   <div class="row"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown</span></div>
+  </div>
+ </div>
+</div>
+<div class="score"><span class="pill g">BROWSE SPEED 9/10</span><span class="pill g">THUMB 9/10</span><span class="pill r">BUILD L</span></div>
+<ul><li>Draggable sheet: peek (count) → half (list synced to viewport) → full (pure list) — kills the list/map mode toggle entirely</li><li>"N JOBS IN VIEW" updates as the map pans — search-the-map behaviour</li><li>Heaviest gesture engineering of the five (sheet ↔ map gesture arbitration)</li></ul></div>
+
+<div class="card"><div class="rank">#4</div><h2>Service-Radius Dial</h2><div class="bench">No benchmark does this — built on your trade_profiles.service_radius_km</div>
+<div class="phone">
+ <div class="mapbg">
+  <div class="ring" style="top:60px;left:35px;width:200px;height:200px"></div>
+  <div class="dot" style="top:155px;left:130px"></div>
+  <div class="pricepin" style="top:100px;left:80px">$55/hr</div>
+  <div class="pricepin" style="top:200px;left:170px">$60/hr</div>
+  <div class="pricepin" style="top:30px;left:200px;opacity:.35">$48/hr</div>
+  <div class="sheet" style="height:16%">
+   <div class="handle"></div>
+   <div style="font-family:Oswald;letter-spacing:1px;color:var(--t1)">WITHIN 25 KM OF PENRITH <span style="color:var(--cta)">· ADJUST</span></div>
+  </div>
+ </div>
+</div>
+<div class="score"><span class="pill g">DIFFERENTIATION 10/10</span><span class="pill a">SCAN 7/10</span><span class="pill a">BUILD M</span></div>
+<ul><li>Your actual service ring drawn on the map — jobs outside it fade; drag the ring edge to grow/shrink the radius and it <b>writes back to the profile</b></li><li>Makes the existing service_radius_km field tangible instead of a buried form number</li><li>The most "tradie tool" of the five; weaker as a pure browse surface — best layered onto #1/#2</li></ul></div>
+
+<div class="card"><div class="rank">#5</div><h2>Map-as-Filter (anti-map)</h2><div class="bench">Seen in: SEEK (no map at all) — the honest fallback</div>
+<div class="phone">
+ <div class="mapbg" style="flex:0 0 120px">
+  <div class="pricepin" style="top:40px;left:90px">3 JOBS</div>
+  <div class="chipbar"><div class="chip on">25 KM · PENRITH ▾</div></div>
+ </div>
+ <div style="padding:8px 10px">
+  <div class="row"><b>Framing carpenter — 2 wks</b><span>$55/hr · Blacktown · 8 km</span></div>
+  <div class="row"><b>Deck + pergola build</b><span>Quote · Penrith · 3 km</span></div>
+  <div class="row"><b>Fit-off, 14 units</b><span>$60/hr · Parramatta · 19 km</span></div>
+ </div>
+</div>
+<div class="score"><span class="pill g">BUILD S</span><span class="pill g">ONE-HANDED 10/10</span><span class="pill r">WOW 4/10</span></div>
+<ul><li>The map demotes to a tappable header strip + a "25 KM · PENRITH" filter chip; the list does the work with real distances per row</li><li>Honest option if analytics show the map is browsed rarely — a list with distances beats a map nobody pans</li><li>Cheapest; also the least modern-feeling — include it as the control, not the goal</li></ul></div>
+
+</div>
+
+<div class="verdict"><h2>Verdict</h2>
+<p class="sub" style="margin-top:8px;margin-bottom:0"><b>Ship #1 + #2 together as one slice</b> — price-bearing pins with clustering, synced to a bottom card carousel. That's the full modern marketplace map (Airbnb mechanics, Zillow pins) and it needs no new packages, just flutter_map marker widgets + a PageView. <b>#4 Service-Radius Dial layers on top afterwards</b> as the genuinely differentiated tradie feature no competitor has. #3 is the long-term destination if the map becomes the primary browse surface; #5 is the honest fallback if it doesn't. One data prerequisite for all of them: real distance/geo on jobs (the feed currently has none — we removed the fake "0.0 km" rather than lie).</p></div>
+
+<p class="src">Research: Airbnb/Zillow map-list sync patterns · <a href="https://www.nngroup.com/articles/thumb-zone/">NN/g thumb-zone</a> (carousel/chips bottom, not top) · marker-clustering UX (Google Maps Platform guidance) · pin-information density (Zillow/Domain price pins) · current code: flutter_map 7, generic Markers → direct detail push (home_map_view.dart).</p>
+</body></html>

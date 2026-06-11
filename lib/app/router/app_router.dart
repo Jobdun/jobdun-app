@@ -39,7 +39,8 @@ import '../../features/quotes/presentation/pages/quote_requests_inbox_page.dart'
 import '../../features/scheduling/presentation/pages/schedule_page.dart';
 import '../../features/timesheets/presentation/pages/timesheet_args.dart';
 import '../../features/timesheets/presentation/pages/timesheet_page.dart';
-import '../../features/profile/presentation/pages/profile_edit_page.dart';
+import '../../features/profile/presentation/pages/about_edit_page.dart';
+import '../../features/profile/presentation/pages/profile_edit_hub_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/reviews/presentation/pages/reviews_page.dart';
@@ -357,18 +358,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // Tab 4 — Profile
+          // Tab 4 — Schedule (trade only; builders get a 4-tab bar and this
+          // branch is simply never navigated to). Option A nav: the Profile
+          // tab is gone — account access moved to the avatar → account sheet.
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/profile',
-                builder: (_, _) => const ProfilePage(),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (_, _) => const ProfileEditPage(),
-                  ),
-                ],
+                path: '/schedule',
+                builder: (_, _) =>
+                    const AvailabilityCalendarPage(showBack: false),
               ),
             ],
           ),
@@ -376,6 +374,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Full-screen (no bottom nav) ────────────────────────────────────────
+      // Option A nav: /profile left the tab shell — it's pushed above it from
+      // the account sheet (and deep links), with system back to return.
+      GoRoute(
+        path: '/profile',
+        builder: (_, _) => const ProfilePage(),
+        routes: [
+          // Quick-edit hub (2026-06-11): /profile/edit is the section hub;
+          // rows open quick-edit sheets in place. About is the one
+          // full-screen editor (long text).
+          GoRoute(
+            path: 'edit',
+            builder: (_, _) => const ProfileEditHubPage(),
+            routes: [
+              GoRoute(path: 'about', builder: (_, _) => const AboutEditPage()),
+            ],
+          ),
+        ],
+      ),
       GoRoute(
         path: '/verification',
         builder: (_, _) => const VerificationPage(),

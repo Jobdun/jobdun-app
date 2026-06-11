@@ -23,6 +23,18 @@ final currentUserIdProvider = StreamProvider<String?>((ref) async* {
 /// `ProviderScope(overrides: [currentUserIdSyncProvider.overrideWithValue('uid')])`.
 String? readCurrentUserId(Ref ref) => ref.read(currentUserIdSyncProvider);
 
+/// Sign-up metadata fallback name (auth.users.user_metadata.full_name) — set
+/// by register_page at account creation. Used to prefill name fields for
+/// fresh accounts whose profile row is still empty. Overridable in tests so
+/// presentation code never touches SupabaseConfig directly.
+final signupFullNameProvider = Provider<String?>((ref) {
+  if (!SupabaseConfig.isInitialized) return null;
+  final raw =
+      SupabaseConfig.client.auth.currentUser?.userMetadata?['full_name'];
+  if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+  return null;
+});
+
 /// Overridable provider that returns the current user ID synchronously.
 /// In production it watches the stream provider so it always caches the
 /// freshest value. In tests, override it.

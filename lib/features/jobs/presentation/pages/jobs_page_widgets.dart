@@ -167,7 +167,7 @@ class _SavedJobsList extends StatelessWidget {
             startDate: j.startDate != null
                 ? StringUtils.fmtDate(j.startDate!)
                 : j.displayLocation,
-            distanceKm: 0.0,
+            distanceKm: null,
             isUrgent: j.urgency == JobUrgency.urgent,
             onTap: () =>
                 context.push('/jobs/${j.id}', extra: JobDetailArgs.fromJob(j)),

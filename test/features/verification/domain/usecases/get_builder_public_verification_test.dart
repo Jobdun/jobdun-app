@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:jobdun/core/errors/failures.dart';
 import 'package:jobdun/features/verification/domain/entities/builder_public_verification.dart';
+import 'package:jobdun/features/verification/domain/entities/trade_public_credential.dart';
 import 'package:jobdun/features/verification/domain/entities/verification.dart';
 import 'package:jobdun/features/verification/domain/repositories/verifications_repository.dart';
 import 'package:jobdun/features/verification/domain/usecases/get_builder_public_verification.dart';
@@ -17,6 +18,10 @@ class _FakeRepo implements VerificationsRepository {
     lastUserId = userId;
     return right(_rows);
   }
+
+  @override
+  Future<Either<Failure, List<TradePublicCredential>>>
+  getTradePublicCredentials(String userId) async => right(const []);
 
   @override
   Future<Either<Failure, List<Verification>>> getForUser(String userId) async =>

@@ -16,7 +16,11 @@ import 'availability_calendar_logic.dart';
 /// `trade_profiles.unavailable_dates`. Builders read those dates on the trade's
 /// profile. Reached from Settings → Availability calendar (trade accounts).
 class AvailabilityCalendarPage extends ConsumerStatefulWidget {
-  const AvailabilityCalendarPage({super.key});
+  const AvailabilityCalendarPage({super.key, this.showBack = true});
+
+  /// False when hosted as the Schedule tab root (Option A nav) — a tab root
+  /// has nothing to pop, so the back arrow would be dead chrome.
+  final bool showBack;
 
   @override
   ConsumerState<AvailabilityCalendarPage> createState() =>
@@ -84,14 +88,17 @@ class _AvailabilityCalendarPageState
               padding: EdgeInsets.fromLTRB(4.w, AppSpacing.sm.h, 20.w, 12.h),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
-                    ),
-                  ),
+                  if (widget.showBack)
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: Icon(
+                        AppIcons.back,
+                        size: AppIconSize.md.r,
+                        color: c.text1,
+                      ),
+                    )
+                  else
+                    Gap(16.w),
                   const Expanded(
                     child: PageHeader(
                       title: 'Availability',

@@ -98,6 +98,23 @@ Dashboard chart colors:
 - `c.surfaceRaised` fill, `AppIcons.edit` + "EDIT" text, 36dp height
 - No ghost/outline version
 
+### Quick-Edit Sheets (2026-06-11, Setup B)
+- `/profile/edit` is a hub of section rows (current value preview + amber
+  MISSING flag). Each row opens a `showJSheet` quick-edit sheet built on
+  `EditSheetScaffold` (`presentation/widgets/edit_sheets/`): all-caps title +
+  ✕, scrollable body above the keyboard, inline error line, all-caps SAVE.
+- Sheets save **only their section's columns** via `TradeProfilePatch` /
+  `BuilderProfilePatch` / `UserProfilePatch` (fpdart `Option` semantics —
+  untouched sections can never be null-wiped).
+- **About is the one full-screen editor** (`/profile/edit/about`) — long text
+  + keyboard inside a sheet is cramped.
+- Dirty guard: scoped willPop callback (legacy `WillPopScope`, deliberately —
+  see `edit_sheet_scaffold.dart` header) → KEEP EDITING / DISCARD CHANGES
+  confirm on drag-down, barrier tap, ✕, and system back.
+- The long form (`profile_edit_page.dart`) is deleted; do not reintroduce a
+  multi-section form. New profile fields go into the matching sheet.
+- `/profile` has **no back button** — account-sheet entry + system back.
+
 ### Avatar Picker (Sprint P1.1)
 - Tap the avatar on `/profile/edit` → `showJSheet` with three rows:
   `TAKE PHOTO` / `PICK FROM GALLERY` / `REMOVE` (`REMOVE` only when an avatar exists, uses `c.urgent` label).

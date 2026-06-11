@@ -4,16 +4,34 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../entities/builder_profile.dart';
+import '../entities/profile_patches.dart';
 import '../entities/trade_profile.dart';
 import '../entities/user_profile.dart';
 
 abstract interface class ProfileRepository {
   Future<Either<Failure, UserProfile>> getProfile(String userId);
   Future<Either<Failure, BuilderProfile?>> getBuilderProfile(String userId);
+
+  // Front-of-card storefront view of ANOTHER builder (no contact details,
+  // coordinates rounded). Use for pre-relationship surfaces like /builders/:id.
+  Future<Either<Failure, BuilderProfile?>> getBuilderPublicProfile(
+    String userId,
+  );
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId);
-  Future<Either<Failure, void>> updateProfile(UserProfile profile);
-  Future<Either<Failure, void>> upsertBuilderProfile(BuilderProfile profile);
-  Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile);
+  // Partial updates — only columns set on the patch are written. Empty
+  // patches resolve to success without touching the network.
+  Future<Either<Failure, void>> patchUserProfile(
+    String userId,
+    UserProfilePatch patch,
+  );
+  Future<Either<Failure, void>> patchTradeProfile(
+    String userId,
+    TradeProfilePatch patch,
+  );
+  Future<Either<Failure, void>> patchBuilderProfile(
+    String userId,
+    BuilderProfilePatch patch,
+  );
 
   // Single-column "open for work" toggle for the trade's home availability bar.
   Future<Either<Failure, void>> setTradeAvailability(

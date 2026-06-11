@@ -14,7 +14,7 @@ class JobCard extends StatelessWidget {
     required this.description,
     required this.rate,
     required this.startDate,
-    required this.distanceKm,
+    this.distanceKm,
     required this.isUrgent,
     this.onTap,
     this.onApply,
@@ -25,7 +25,10 @@ class JobCard extends StatelessWidget {
   final String description;
   final String rate;
   final String startDate;
-  final double distanceKm;
+
+  /// Null = distance unknown (home mini-feed has no geo query) — the chip
+  /// hides instead of lying with a hardcoded "0.0 km".
+  final double? distanceKm;
   final bool isUrgent;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
@@ -138,13 +141,14 @@ class JobCard extends StatelessWidget {
                       const Spacer(),
                       // Distance is metadata, not a CTA — neutral text, not
                       // orange (MASTER §54: orange is CTA/critical only).
-                      _MetaCol(
-                        label: 'Distance',
-                        value: '${distanceKm.toStringAsFixed(1)} km',
-                        c: c,
-                        tt: tt,
-                        align: CrossAxisAlignment.end,
-                      ),
+                      if (distanceKm != null)
+                        _MetaCol(
+                          label: 'Distance',
+                          value: '${distanceKm!.toStringAsFixed(1)} km',
+                          c: c,
+                          tt: tt,
+                          align: CrossAxisAlignment.end,
+                        ),
                     ],
                   ),
                   if (posterVerificationStatus !=

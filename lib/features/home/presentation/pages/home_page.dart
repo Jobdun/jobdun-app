@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
@@ -14,12 +13,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
-import '../../../../app/theme/app_typography.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
-import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
-import '../../../../core/design/widgets/j_top_bar.dart';
 import '../../../../core/design/widgets/job_card.dart';
 import '../../../../core/services/ftue_service.dart';
 import '../../../../core/services/profile_analytics.dart';
@@ -27,14 +23,19 @@ import '../../../applications/presentation/providers/applications_provider.dart'
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../../../auth/presentation/widgets/onboarding_gate.dart';
+import '../../../../core/design/widgets/map/j_map_carousel.dart';
+import '../../../../core/design/widgets/map/j_map_cluster_bubble.dart';
+import '../../../../core/design/widgets/map/j_map_price_pin.dart';
+import '../../../../core/utils/map_clustering.dart';
+import '../widgets/deck_strip.dart';
+import '../widgets/home_action_deck.dart';
+import '../widgets/home_status_bar.dart';
 import '../widgets/profile_completeness_banner.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
 import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../jobs/presentation/pages/job_detail_page.dart';
 import '../../../jobs/presentation/pages/job_map_data.dart';
-import '../../../profile/domain/entities/builder_profile.dart';
-import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../discovery/presentation/providers/discovery_provider.dart';
 import '../../../discovery/presentation/widgets/trade_map_preview.dart';
@@ -45,6 +46,7 @@ part 'home_tradie_availability.dart';
 part 'home_map_view.dart';
 part 'home_map_widgets.dart';
 part 'home_map_overlays.dart';
+part 'home_map_pins.dart';
 part 'jobs_map_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -243,9 +245,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final feedJobs = jobsState.jobs.take(3).toList();
     final hasRealJobs = feedJobs.isNotEmpty;
 
-    // Tradies get a "VIEW MAP" FAB → the full-screen jobs map route.
-    final showMapToggle = !isBuilder;
-
     final isLightPreview = _previewBrightness == Brightness.light;
 
     final scaffold = Scaffold(
@@ -272,20 +271,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               ],
             )
           : null,
-      // Tradies open the jobs map full-screen over the shell (its own back
-      // button) via /jobs/map — builders use the discovery map instead.
-      floatingActionButton: showMapToggle
-          ? FloatingActionButton(
-              backgroundColor: c.action,
-              onPressed: () => context.push('/jobs/map'),
-              child: Icon(
-                AppIcons.map,
-                color:
-                    c.background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
-                size: AppIconSize.nav.r,
-              ),
-            )
-          : null,
+      // The old map FAB is gone: it collided with the floating dock (two
+      // pieces of floating chrome fighting for the same corner). Map access
+      // moved inline into the JOBS NEAR YOU header, where the job-hunting
+      // eye already is.
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -308,15 +297,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               toolbarHeight: 64.h,
               title: Padding(
                 padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
-                child: JTopBar(
-                  displayName:
-                      (profileState.profile?.displayName ?? '').trim().isEmpty
-                      ? 'there'
-                      : profileState.profile!.displayName!.trim(),
-                  initials: _initials(profileState.profile?.displayName),
-                  roleLabel: isBuilder ? 'BUILDER' : 'TRADIE',
-                  avatarUrl: profileState.profile?.avatarUrl,
-                  onAvatarTap: () => context.go('/profile'),
+                child: HomeStatusBar(
                   onNotificationsTap: () => context.push('/notifications'),
                 ),
               ),
@@ -331,25 +312,33 @@ class _HomePageState extends ConsumerState<HomePage> {
             // via the list/map toggle FAB (showMapToggle).
             if (!isBuilder) ...[
               const SliverToBoxAdapter(child: _TradieAvailabilityBar()),
+              // Action Deck (#1, 2026-06-11): hero "where do I stand" card +
+              // one-row micro-strip — replaces the three big stat tiles that
+              // pushed the first job below the fold.
+              SliverToBoxAdapter(child: Gap(12.h)),
               SliverToBoxAdapter(
-                child: _StatsRow(
-                  isBuilder: false,
-                  builderProfile: profileState.builderProfile,
-                  tradeProfile: profileState.tradeProfile,
-                  pendingCount: appsState.pendingIncomingCount,
-                  myAppsCount: appsState.myApplications.length,
-                  shortlistedCount: appsState.myApplications
-                      .where((a) => a.status.name == 'shortlisted')
-                      .length,
+                child: HomeActionDeck(
+                  applications: appsState.myApplications,
+                  rating: profileState.tradeProfile?.averageRating,
                 ),
               ),
               SliverToBoxAdapter(child: Gap(24.h)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
-                  child: Text(
-                    'JOBS NEAR YOU',
-                    style: tt.titleLarge!.copyWith(color: c.text1),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'JOBS NEAR YOU',
+                          style: tt.titleLarge!.copyWith(color: c.text1),
+                        ),
+                      ),
+                      _HomeFeedLink(
+                        label: 'MAP →',
+                        onTap: () => context.push('/jobs/map'),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -367,7 +356,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         startDate: j.startDate != null
                             ? _fmtDate(j.startDate!)
                             : j.displayLocation,
-                        distanceKm: 0.0,
+                        distanceKm: null,
                         isUrgent: j.urgency == JobUrgency.urgent,
                         onTap: () => context.push(
                           '/jobs/${j.id}',
@@ -379,11 +368,18 @@ class _HomePageState extends ConsumerState<HomePage> {
                 )
               else
                 const SliverToBoxAdapter(child: _HomeJobsEmpty()),
+              if (hasRealJobs)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: _HomeFeedLink(
+                      label: 'SEE ALL JOBS →',
+                      onTap: () => context.go('/jobs'),
+                    ),
+                  ),
+                ),
             ],
-            // Clear the map-toggle FAB so the last job card (and its
-            // distance line) never scrolls underneath it. Only reserves
-            // the extra space when the FAB is actually shown.
-            SliverToBoxAdapter(child: Gap(showMapToggle ? 96.h : 24.h)),
+            SliverToBoxAdapter(child: Gap(24.h)),
           ],
         ),
       ),
@@ -409,23 +405,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // First letters of the first two name words, e.g. "Ken Garcia" → "KG".
-  // Falls back to a single brand letter for not-yet-named accounts (the
-  // onboarding sheet collects the name, so this is rarely shown).
-  static String _initials(String? name) {
-    final parts = (name ?? '')
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return 'J';
-    var out = '';
-    for (final p in parts) {
-      if (out.length < 2) out += p[0];
-    }
-    return out.toUpperCase();
-  }
-
   static String _fmtDate(DateTime d) {
     final now = DateTime.now();
     final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
@@ -448,4 +427,40 @@ class _HomePageState extends ConsumerState<HomePage> {
     'Nov',
     'Dec',
   ];
+}
+
+/// Inline feed action link (MAP →, SEE ALL JOBS →) — 48dp hit target per
+/// MASTER a11y floor; replaces the removed map FAB which collided with the
+/// floating dock.
+class _HomeFeedLink extends StatelessWidget {
+  const _HomeFeedLink({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: 44.h),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 10.h),
+            child: Text(
+              label,
+              style: tt.bodyMedium!.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: c.actionInk,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -13,6 +13,7 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
+import '../../../auth/presentation/widgets/delete_account_sheet.dart';
 import '../providers/profile_provider.dart';
 
 /// Account settings — appearance, account, legal, (dev tools,) and sign out.
@@ -92,7 +93,7 @@ class SettingsPage extends ConsumerWidget {
                         _ActionRow(
                           icon: AppIcons.calendar,
                           label: 'Schedule',
-                          onTap: () => context.push('/schedule'),
+                          onTap: () => context.go('/schedule'),
                         ),
                         if (ref.watch(
                           profileControllerProvider.select(
@@ -162,6 +163,34 @@ class SettingsPage extends ConsumerWidget {
                       label: 'SIGN OUT',
                       variant: JButtonVariant.secondary,
                       onPressed: () => showLogoutSheet(context, ref),
+                    ),
+                    // Play/Apple-required account deletion: findable but
+                    // deliberately quiet and FAR from SIGN OUT — a prominent
+                    // danger button adjacent to a routine action invites
+                    // accidental taps (user nearly deleted their account).
+                    Gap(AppSpacing.xl.h),
+                    Center(
+                      child: InkWell(
+                        onTap: () => showDeleteAccountSheet(context, ref),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: 44.h),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 12.h,
+                              horizontal: 16.w,
+                            ),
+                            child: Text(
+                              'Delete my account',
+                              style: Theme.of(context).textTheme.bodySmall!
+                                  .copyWith(
+                                    color: context.c.text3,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: context.c.text3,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

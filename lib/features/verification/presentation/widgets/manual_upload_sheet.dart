@@ -17,38 +17,14 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../domain/entities/verification_document.dart';
 import '../providers/verification_provider.dart';
 import '../providers/verifications_provider.dart';
+import 'manual_doc_kind.dart';
 import 'manual_upload_form.dart';
 import 'manual_upload_priming.dart';
 
-/// Tight, role-scoped surface for the manual-upload sheet. Only the two real
-/// fallback shapes are exposed — anything else (white card, PI, etc.) belongs
-/// in a different upload UI when it ships.
-enum ManualDocKind { abnCertificate, tradeLicence }
-
-extension ManualDocKindX on ManualDocKind {
-  DocType get docType => switch (this) {
-    ManualDocKind.abnCertificate => DocType.abnCertificate,
-    ManualDocKind.tradeLicence => DocType.tradeLicence,
-  };
-
-  String get sheetTitle => switch (this) {
-    ManualDocKind.abnCertificate => 'Upload your ABN certificate',
-    ManualDocKind.tradeLicence => 'Upload your trade licence',
-  };
-
-  String get numberLabel => switch (this) {
-    ManualDocKind.abnCertificate => 'ABN',
-    ManualDocKind.tradeLicence => 'Licence number',
-  };
-
-  String get numberHint => switch (this) {
-    ManualDocKind.abnCertificate => '11 digits',
-    ManualDocKind.tradeLicence => 'e.g. EL-12345',
-  };
-
-  bool get requiresState => this == ManualDocKind.tradeLicence;
-  bool get requiresExpiry => this == ManualDocKind.tradeLicence;
-}
+// `ManualDocKind` + its per-kind config now live in `manual_doc_kind.dart`
+// (pure logic, unit-tested in isolation). Re-exported here so the many callers
+// that import the sheet keep resolving the enum without churn.
+export 'manual_doc_kind.dart';
 
 /// Opens the manual-upload bottom sheet. Returns `true` when the user
 /// successfully submitted a document, `false` (or `null` from a swipe-dismiss)
@@ -102,6 +78,10 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
   String _state = 'NSW';
   String _tradeClass = manualUploadTradeClasses.first;
   DateTime? _expiry;
+  // U1.1: expiry lives outside the FormBuilder, so the sheet validates it
+  // explicitly on UPLOAD. The key anchors scroll-back-to-error.
+  String? _expiryError;
+  final GlobalKey _expiryRowKey = GlobalKey();
 
   @override
   void initState() {
@@ -123,8 +103,17 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
       setState(() => _pickedFile = file);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      // U1.2: human copy to the user; the raw error goes to the funnel log.
+      setState(() => _error = humanUploadError(e));
+      _logRawError('manual_upload_pick_failed', e);
     }
+  }
+
+  // Fire-and-forget diagnostics so support can see what the user couldn't.
+  void _logRawError(String step, Object e) {
+    ref
+        .read(verificationFunnelLoggerProvider.notifier)
+        .log(step, metadata: {'kind': widget.kind.name, 'error': e.toString()});
   }
 
   Future<void> _upload() async {
@@ -132,6 +121,23 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     final file = _pickedFile;
     if (userId == null || file == null) return;
     if (!_attested) return; // Defensive — UI already blocks this path.
+    // U1.1: refuse a lapsing credential without an expiry date — the public
+    // badge's "expired" flip depends on it. Scroll the row back into view so
+    // the error is never hidden behind the keyboard.
+    if (expiryMissing(widget.kind, _expiry)) {
+      setState(() {
+        _expiryError = "Required — this date drives your badge's expiry";
+      });
+      final ctx = _expiryRowKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 200),
+          alignment: 0.2,
+        );
+      }
+      return;
+    }
     // F2: mirror the auto-path phone gate. Both edge functions refuse to mint
     // a verified row without a verified phone (the identity anchor); the manual
     // path must hold the same bar. Read the verified state off the profile
@@ -147,10 +153,11 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     final form = _formKey.currentState;
     if (form == null || !form.saveAndValidate()) return;
     final number = (form.value['document_number'] as String? ?? '').trim();
-    final issuer = issuerFor(
-      widget.kind,
-      widget.kind.requiresState ? _state : null,
-    );
+    // Public liability captures a free-text insurer; the others derive their
+    // issuer from the state (licence / white card) or are fixed (ABN → ABR).
+    final issuer = widget.kind.requiresIssuer
+        ? (form.value['insurer'] as String? ?? '').trim()
+        : issuerFor(widget.kind, widget.kind.requiresState ? _state : null);
 
     setState(() {
       _uploading = true;
@@ -200,8 +207,10 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
       if (!mounted) return;
       setState(() {
         _uploading = false;
-        _error = e.toString();
+        // U1.2: human copy to the user; raw error to the funnel log.
+        _error = humanUploadError(e);
       });
+      _logRawError('manual_upload_failed', e);
     }
   }
 
@@ -231,7 +240,12 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
       firstDate: now,
       lastDate: DateTime(now.year + 20),
     );
-    if (picked != null) setState(() => _expiry = picked);
+    if (picked != null) {
+      setState(() {
+        _expiry = picked;
+        _expiryError = null; // U1.1: picking a date clears the block.
+      });
+    }
   }
 
   @override
@@ -293,6 +307,8 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                 tradeClass: _tradeClass,
                 onTradeClassChanged: (v) => setState(() => _tradeClass = v),
                 expiry: _expiry,
+                expiryError: _expiryError,
+                expiryRowKey: _expiryRowKey,
                 onPickExpiry: _onPickExpiry,
                 prefilledNumber: widget.prefilledNumber,
                 pickedFile: _pickedFile,

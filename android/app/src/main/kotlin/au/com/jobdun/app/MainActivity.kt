@@ -1,4 +1,4 @@
-package com.example.jobdun
+package au.com.jobdun.app
 
 import io.flutter.embedding.android.FlutterActivity
 

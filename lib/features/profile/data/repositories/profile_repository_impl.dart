@@ -6,6 +6,7 @@ import '../../../../core/cache/cache_store.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/builder_profile.dart';
+import '../../domain/entities/profile_patches.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -74,6 +75,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Either<Failure, BuilderProfile?>> getBuilderPublicProfile(
+    String userId,
+  ) async {
+    // No cache: public storefront views are transient vetting reads.
+    try {
+      return right(await _datasource.getBuilderPublicProfile(userId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId) async {
     final key = _tradeProfileKey(userId);
     try {
@@ -98,21 +111,13 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, void>> updateProfile(UserProfile profile) async {
-    try {
-      await _datasource.updateProfile(profile as UserProfileModel);
-      return right(null);
-    } on ServerException catch (e) {
-      return left(ServerFailure(e.message));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> upsertBuilderProfile(
-    BuilderProfile profile,
+  Future<Either<Failure, void>> patchUserProfile(
+    String userId,
+    UserProfilePatch patch,
   ) async {
+    if (patch.isEmpty) return right(null);
     try {
-      await _datasource.upsertBuilderProfile(profile as BuilderProfileModel);
+      await _datasource.patchUserProfile(userId, patch);
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
@@ -120,9 +125,27 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile) async {
+  Future<Either<Failure, void>> patchTradeProfile(
+    String userId,
+    TradeProfilePatch patch,
+  ) async {
+    if (patch.isEmpty) return right(null);
     try {
-      await _datasource.upsertTradeProfile(profile as TradeProfileModel);
+      await _datasource.patchTradeProfile(userId, patch);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> patchBuilderProfile(
+    String userId,
+    BuilderProfilePatch patch,
+  ) async {
+    if (patch.isEmpty) return right(null);
+    try {
+      await _datasource.patchBuilderProfile(userId, patch);
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));

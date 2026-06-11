@@ -34,12 +34,19 @@ class _RadiusChip extends StatelessWidget {
         children: [
           Icon(AppIcons.location, size: AppIconSize.inline.r, color: c.action),
           Gap(6.w),
-          Text(
-            'NEAR $shortPlace',
-            style: tt.labelSmall!.copyWith(
-              color: c.text1,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
+          // Capped + ellipsized so a long place name can never run under the
+          // top-right control column on narrow screens.
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 140.w),
+            child: Text(
+              'NEAR $shortPlace',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tt.labelSmall!.copyWith(
+                color: c.text1,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
             ),
           ),
           Gap(8.w),
@@ -73,31 +80,27 @@ class _MapStyleButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            color: c.surface,
-            border: Border.all(color: c.border, width: 1),
-            borderRadius: BorderRadius.circular(2.r),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                AppIcons.mapLayer,
-                size: AppIconSize.inline.r,
-                color: c.action,
-              ),
-              Gap(6.w),
-              Text(
-                current.label,
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: c.text1,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ],
+        // Icon-only (2026-06-11): the style NAME ("VOYAGER") made the button
+        // wide enough to collide with a long place chip ("NEAR MANILA…") on
+        // narrow screens. The layers glyph alone is the convention (Google
+        // Maps); the style sheet it opens still names every option.
+        child: Semantics(
+          label: 'Map style: ${current.label}. Opens style picker.',
+          button: true,
+          child: Container(
+            width: 40.r,
+            height: 40.r,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: c.surface,
+              border: Border.all(color: c.border, width: 1),
+              borderRadius: BorderRadius.circular(2.r),
+            ),
+            child: Icon(
+              AppIcons.mapLayer,
+              size: AppIconSize.md.r,
+              color: c.action,
+            ),
           ),
         ),
       ),
