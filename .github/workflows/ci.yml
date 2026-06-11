@@ -67,4 +67,8 @@ jobs:
             echo "::error::SUPABASE_TOKEN secret is not set — add it in Settings → Secrets to enable this job."
             exit 1
           fi
+          # `--linked` reads the project ref from supabase/.temp (gitignored;
+          # written by `supabase link` locally) — recreate it for CI.
+          mkdir -p supabase/.temp
+          echo "zethpanvkfyijislxesn" > supabase/.temp/project-ref
           bash scripts/schema-diff.sh
