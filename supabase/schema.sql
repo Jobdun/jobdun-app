@@ -375,6 +375,31 @@ END; $$;
 ALTER FUNCTION "public"."bookings_touch_updated_at"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."builder_profiles_pin_verified_abn"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF auth.uid() = new.id
+     AND new.abn IS DISTINCT FROM old.abn
+     AND EXISTS (
+       SELECT 1 FROM public.verifications v
+        WHERE v.user_id = new.id
+          AND v.kind = 'abn'
+          AND v.status = 'verified'
+     )
+  THEN
+    RAISE EXCEPTION 'ABN is locked after ABR verification. Contact support to change.'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN new;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."builder_profiles_pin_verified_abn"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."custom_access_token"("event" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2600,6 +2625,10 @@ CREATE INDEX "hidden_jobs_user_id_idx" ON "public"."hidden_jobs" USING "btree" (
 
 
 
+CREATE INDEX "idx_bookings_job_id" ON "public"."bookings" USING "btree" ("job_id");
+
+
+
 CREATE INDEX "idx_builder_profiles_active" ON "public"."builder_profiles" USING "btree" ("id") WHERE ("deleted_at" IS NULL);
 
 
@@ -2608,7 +2637,47 @@ CREATE INDEX "idx_builder_profiles_service_latlng" ON "public"."builder_profiles
 
 
 
+CREATE INDEX "idx_conversations_last_sender" ON "public"."conversations" USING "btree" ("last_message_sender_id");
+
+
+
+CREATE INDEX "idx_hidden_jobs_job_id" ON "public"."hidden_jobs" USING "btree" ("job_id");
+
+
+
+CREATE INDEX "idx_jobs_hired_trade_id" ON "public"."jobs" USING "btree" ("hired_trade_id");
+
+
+
 CREATE INDEX "idx_legal_acceptances_user" ON "public"."legal_acceptances" USING "btree" ("user_id", "document_type");
+
+
+
+CREATE INDEX "idx_message_reactions_user" ON "public"."message_reactions" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_mvr_resolved_by" ON "public"."manual_verification_requests" USING "btree" ("resolved_by");
+
+
+
+CREATE INDEX "idx_mvr_user_id" ON "public"."manual_verification_requests" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_mvr_verification_id" ON "public"."manual_verification_requests" USING "btree" ("verification_id");
+
+
+
+CREATE INDEX "idx_reviews_reviewer_id" ON "public"."reviews" USING "btree" ("reviewer_id");
+
+
+
+CREATE INDEX "idx_saved_jobs_job_id" ON "public"."saved_jobs" USING "btree" ("job_id");
+
+
+
+CREATE INDEX "idx_timesheets_builder_id" ON "public"."timesheets" USING "btree" ("builder_id");
 
 
 
@@ -2617,6 +2686,22 @@ CREATE INDEX "idx_trade_profiles_active" ON "public"."trade_profiles" USING "btr
 
 
 CREATE INDEX "idx_trade_profiles_base_latlng" ON "public"."trade_profiles" USING "btree" ("base_latitude", "base_longitude");
+
+
+
+CREATE INDEX "idx_ure_changed_by" ON "public"."user_role_events" USING "btree" ("changed_by");
+
+
+
+CREATE INDEX "idx_vd_reviewed_by" ON "public"."verification_documents" USING "btree" ("reviewed_by");
+
+
+
+CREATE INDEX "idx_verification_events_actor" ON "public"."verification_events" USING "btree" ("actor_id");
+
+
+
+CREATE INDEX "idx_vfe_user_id" ON "public"."verification_funnel_events" USING "btree" ("user_id");
 
 
 
@@ -2757,6 +2842,10 @@ CREATE OR REPLACE TRIGGER "applications_updated_at" BEFORE UPDATE ON "public"."a
 
 
 CREATE OR REPLACE TRIGGER "bookings_touch_updated_at_trg" BEFORE UPDATE ON "public"."bookings" FOR EACH ROW EXECUTE FUNCTION "public"."bookings_touch_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "builder_profiles_pin_verified_abn_trg" BEFORE UPDATE ON "public"."builder_profiles" FOR EACH ROW EXECUTE FUNCTION "public"."builder_profiles_pin_verified_abn"();
 
 
 
@@ -2936,7 +3025,7 @@ ALTER TABLE ONLY "public"."legal_acceptances"
 
 
 ALTER TABLE ONLY "public"."manual_verification_requests"
-    ADD CONSTRAINT "manual_verification_requests_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "public"."profiles"("id");
+    ADD CONSTRAINT "manual_verification_requests_resolved_by_fkey" FOREIGN KEY ("resolved_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
@@ -3051,7 +3140,7 @@ ALTER TABLE ONLY "public"."trade_profiles"
 
 
 ALTER TABLE ONLY "public"."user_role_events"
-    ADD CONSTRAINT "user_role_events_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "user_role_events_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -3076,7 +3165,7 @@ ALTER TABLE ONLY "public"."verification_documents"
 
 
 ALTER TABLE ONLY "public"."verification_events"
-    ADD CONSTRAINT "verification_events_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id");
+    ADD CONSTRAINT "verification_events_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
@@ -3623,6 +3712,12 @@ GRANT ALL ON FUNCTION "public"."bookings_touch_updated_at"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "anon";
+GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."custom_access_token"("event" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."custom_access_token"("event" "jsonb") TO "service_role";
 GRANT ALL ON FUNCTION "public"."custom_access_token"("event" "jsonb") TO "supabase_auth_admin";
@@ -3849,8 +3944,68 @@ GRANT ALL ON TABLE "public"."bookings" TO "service_role";
 
 
 GRANT ALL ON TABLE "public"."builder_profiles" TO "anon";
-GRANT ALL ON TABLE "public"."builder_profiles" TO "authenticated";
+GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."builder_profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."builder_profiles" TO "service_role";
+
+
+
+GRANT INSERT("id"),UPDATE("id") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("company_name"),UPDATE("company_name") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("abn"),UPDATE("abn") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("contact_name"),UPDATE("contact_name") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("contact_phone"),UPDATE("contact_phone") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("about"),UPDATE("about") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("website"),UPDATE("website") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("years_in_business"),UPDATE("years_in_business") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_suburb"),UPDATE("service_suburb") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_state"),UPDATE("service_state") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_postcode"),UPDATE("service_postcode") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_formatted_address"),UPDATE("service_formatted_address") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_place_id"),UPDATE("service_place_id") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_latitude"),UPDATE("service_latitude") ON TABLE "public"."builder_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_longitude"),UPDATE("service_longitude") ON TABLE "public"."builder_profiles" TO "authenticated";
 
 
 
@@ -3927,8 +4082,100 @@ GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
 
 GRANT ALL ON TABLE "public"."trade_profiles" TO "anon";
-GRANT ALL ON TABLE "public"."trade_profiles" TO "authenticated";
+GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."trade_profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."trade_profiles" TO "service_role";
+
+
+
+GRANT INSERT("id"),UPDATE("id") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("full_name"),UPDATE("full_name") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("primary_trade"),UPDATE("primary_trade") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("portfolio_urls"),UPDATE("portfolio_urls") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("years_experience"),UPDATE("years_experience") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("trade_other"),UPDATE("trade_other") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("about"),UPDATE("about") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_suburb"),UPDATE("base_suburb") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_state"),UPDATE("base_state") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_postcode"),UPDATE("base_postcode") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("licence_url"),UPDATE("licence_url") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("crew_size"),UPDATE("crew_size") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("hourly_rate_min"),UPDATE("hourly_rate_min") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("hourly_rate_max"),UPDATE("hourly_rate_max") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("hourly_rate_visible"),UPDATE("hourly_rate_visible") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("service_radius_km"),UPDATE("service_radius_km") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_formatted_address"),UPDATE("base_formatted_address") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_place_id"),UPDATE("base_place_id") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_latitude"),UPDATE("base_latitude") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("base_longitude"),UPDATE("base_longitude") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("is_available"),UPDATE("is_available") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("available_from"),UPDATE("available_from") ON TABLE "public"."trade_profiles" TO "authenticated";
+
+
+
+GRANT INSERT("unavailable_dates"),UPDATE("unavailable_dates") ON TABLE "public"."trade_profiles" TO "authenticated";
 
 
 
@@ -3993,8 +4240,12 @@ GRANT ALL ON TABLE "public"."user_role_events" TO "service_role";
 
 
 GRANT ALL ON TABLE "public"."verification_documents" TO "anon";
-GRANT ALL ON TABLE "public"."verification_documents" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."verification_documents" TO "authenticated";
 GRANT ALL ON TABLE "public"."verification_documents" TO "service_role";
+
+
+
+GRANT UPDATE("deleted_at") ON TABLE "public"."verification_documents" TO "authenticated";
 
 
 

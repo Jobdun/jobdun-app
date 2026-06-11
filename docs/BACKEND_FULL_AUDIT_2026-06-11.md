@@ -109,12 +109,10 @@ Writes are safe since today's patch-based saves only emit real columns (the lega
 
 ## Recommended fix order
 
-1. **M1 — P0 column-pin triggers** (no product decision needed, no app change).
-2. **M2 — P1 FK indexes + P2 SET NULL delete rules** (pure DDL, zero risk).
-3. **P1 PII visibility model** — 10-minute decision (Option 1 vs 2), then its migration.
+1. ~~**M1 — P0 column pins**~~ — ✅ **APPLIED LIVE 2026-06-11** (`20260611000002_pin_trust_columns.sql`): column-allowlist GRANTs on `trade_profiles`/`builder_profiles` (is_verified, rating aggregates, timestamps, deleted_at now server-only), `verification_documents` client UPDATE narrowed to `deleted_at`, ABN pin-once-verified trigger. Verified on a fresh dump: `is_verified` in zero client grants; rollback in `supabase/rollbacks/`.
+2. ~~**M2 — FK indexes + delete rules**~~ — ✅ **APPLIED LIVE 2026-06-11** (`20260611000003_fk_indexes_delete_rules.sql`): 15 FK indexes, 3 audit-actor FKs → ON DELETE SET NULL.
+3. **P1 PII visibility model** — 10-minute decision (Option 1 vs 2), then its migration. **← the only remaining security item.**
 4. **P2 phantom columns** — decide real-counters vs strip-from-UI.
-
-M1+M2 are written-and-pushed-in-one-sitting safe. Item 3 is the only one that can change app behaviour and deserves a deliberate call.
 
 ---
 
