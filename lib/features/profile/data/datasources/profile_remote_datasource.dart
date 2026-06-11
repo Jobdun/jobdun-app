@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart' hide StorageException;
 
 import '../../../../core/errors/exceptions.dart';
+import '../../domain/entities/profile_patches.dart';
 import '../models/builder_profile_model.dart';
+import '../models/profile_patch_mappers.dart';
 import '../models/trade_profile_model.dart';
 import '../models/user_profile_model.dart';
 
@@ -15,6 +17,9 @@ abstract interface class ProfileRemoteDataSource {
   Future<void> updateProfile(UserProfileModel profile);
   Future<void> upsertBuilderProfile(BuilderProfileModel profile);
   Future<void> upsertTradeProfile(TradeProfileModel profile);
+  Future<void> patchUserProfile(String userId, UserProfilePatch patch);
+  Future<void> patchTradeProfile(String userId, TradeProfilePatch patch);
+  Future<void> patchBuilderProfile(String userId, BuilderProfilePatch patch);
   Future<void> setTradeAvailability(String userId, bool isAvailable);
   Future<void> setTradeUnavailableDates(String userId, List<DateTime> dates);
   Future<String> uploadAvatar(String userId, File file);
@@ -113,6 +118,47 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   Future<void> upsertTradeProfile(TradeProfileModel profile) async {
     try {
       await _client.from('trade_profiles').upsert(profile.toJson());
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> patchUserProfile(String userId, UserProfilePatch patch) async {
+    try {
+      await _client
+          .from('profiles')
+          .update(userProfilePatchColumns(patch))
+          .eq('id', userId);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  // trade_profiles / builder_profiles rows are keyed by id = auth user id and
+  // created at onboarding. Partial upsert (PostgREST merge-duplicates) only
+  // touches the supplied columns on existing rows, and tolerates the
+  // first-write case for fresh accounts.
+  @override
+  Future<void> patchTradeProfile(String userId, TradeProfilePatch patch) async {
+    try {
+      await _client
+          .from('trade_profiles')
+          .upsert({'id': userId, ...tradeProfilePatchColumns(patch)});
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> patchBuilderProfile(
+    String userId,
+    BuilderProfilePatch patch,
+  ) async {
+    try {
+      await _client
+          .from('builder_profiles')
+          .upsert({'id': userId, ...builderProfilePatchColumns(patch)});
     } catch (e) {
       throw ServerException(e.toString());
     }

@@ -6,6 +6,7 @@ import '../../../../core/cache/cache_store.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/builder_profile.dart';
+import '../../domain/entities/profile_patches.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -123,6 +124,48 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<Either<Failure, void>> upsertTradeProfile(TradeProfile profile) async {
     try {
       await _datasource.upsertTradeProfile(profile as TradeProfileModel);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> patchUserProfile(
+    String userId,
+    UserProfilePatch patch,
+  ) async {
+    if (patch.isEmpty) return right(null);
+    try {
+      await _datasource.patchUserProfile(userId, patch);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> patchTradeProfile(
+    String userId,
+    TradeProfilePatch patch,
+  ) async {
+    if (patch.isEmpty) return right(null);
+    try {
+      await _datasource.patchTradeProfile(userId, patch);
+      return right(null);
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> patchBuilderProfile(
+    String userId,
+    BuilderProfilePatch patch,
+  ) async {
+    if (patch.isEmpty) return right(null);
+    try {
+      await _datasource.patchBuilderProfile(userId, patch);
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
