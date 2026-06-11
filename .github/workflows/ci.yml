@@ -67,8 +67,8 @@ jobs:
             echo "::error::SUPABASE_TOKEN secret is not set — add it in Settings → Secrets to enable this job."
             exit 1
           fi
-          # `--linked` reads the project ref from supabase/.temp (gitignored;
-          # written by `supabase link` locally) — recreate it for CI.
-          mkdir -p supabase/.temp
-          echo "zethpanvkfyijislxesn" > supabase/.temp/project-ref
+          # Real `link` (not just a project-ref stub): GitHub runners are
+          # IPv4-only and the direct DB host is IPv6 — linking sets up the
+          # IPv4 pooler connection the dump needs.
+          supabase link --project-ref zethpanvkfyijislxesn
           bash scripts/schema-diff.sh
