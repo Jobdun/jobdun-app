@@ -13,6 +13,7 @@ import '../models/user_profile_model.dart';
 abstract interface class ProfileRemoteDataSource {
   Future<UserProfileModel> getProfile(String userId);
   Future<BuilderProfileModel?> getBuilderProfile(String userId);
+  Future<BuilderProfileModel?> getBuilderPublicProfile(String userId);
   Future<TradeProfileModel?> getTradeProfile(String userId);
   Future<void> patchUserProfile(String userId, UserProfilePatch patch);
   Future<void> patchTradeProfile(String userId, TradeProfilePatch patch);
@@ -66,6 +67,25 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           .select()
           .eq('id', userId)
           .isFilter('deleted_at', null)
+          .maybeSingle();
+      if (data == null) return null;
+      return BuilderProfileModel.fromJson(data);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  // Storefront projection for viewing ANOTHER builder (pre-relationship).
+  // `builder_profiles_public` exposes only front-of-card columns — no
+  // contact_name/phone, coordinates rounded server-side — and already
+  // filters soft-deleted rows (PII split, migration 20260611000004).
+  @override
+  Future<BuilderProfileModel?> getBuilderPublicProfile(String userId) async {
+    try {
+      final data = await _client
+          .from('builder_profiles_public')
+          .select()
+          .eq('id', userId)
           .maybeSingle();
       if (data == null) return null;
       return BuilderProfileModel.fromJson(data);

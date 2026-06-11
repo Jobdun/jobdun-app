@@ -1508,21 +1508,28 @@ COMMENT ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" 
 
 
 CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric DEFAULT NULL::numeric, "p_available_only" boolean DEFAULT false, "p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "full_name" "text", "primary_trade" "text", "crew_size" integer, "years_experience" integer, "hourly_rate_min" numeric, "hourly_rate_max" numeric, "hourly_rate_visible" boolean, "service_radius_km" integer, "base_suburb" "text", "base_state" "text", "base_postcode" "text", "base_formatted_address" "text", "base_place_id" "text", "base_latitude" double precision, "base_longitude" double precision, "about" "text", "trade_other" "text", "licence_url" "text", "portfolio_urls" "text"[], "is_verified" boolean, "average_rating" numeric, "rating_count" integer, "is_available" boolean, "available_from" "date", "distance_km" double precision)
-    LANGUAGE "sql" STABLE
+    LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-  SELECT * FROM (
+  SELECT
+    sub.id, sub.full_name, sub.primary_trade, sub.crew_size,
+    sub.years_experience,
+    CASE WHEN sub.hourly_rate_visible THEN sub.hourly_rate_min END,
+    CASE WHEN sub.hourly_rate_visible THEN sub.hourly_rate_max END,
+    sub.hourly_rate_visible, sub.service_radius_km,
+    sub.base_suburb, sub.base_state, sub.base_postcode,
+    NULL::text,  -- base_formatted_address: exact address never leaves the DB
+    NULL::text,  -- base_place_id
+    round(sub.base_latitude::numeric, 2)::double precision,
+    round(sub.base_longitude::numeric, 2)::double precision,
+    sub.about, sub.trade_other,
+    NULL::text,  -- licence_url: private-docs pointer; badge = is_verified
+    sub.portfolio_urls, sub.is_verified,
+    sub.average_rating, sub.rating_count,
+    sub.is_available, sub.available_from, sub.distance_km
+  FROM (
     SELECT
-      tp.id, tp.full_name, tp.primary_trade, tp.crew_size,
-      tp.years_experience, tp.hourly_rate_min, tp.hourly_rate_max,
-      tp.hourly_rate_visible, tp.service_radius_km,
-      tp.base_suburb, tp.base_state, tp.base_postcode,
-      tp.base_formatted_address, tp.base_place_id,
-      tp.base_latitude, tp.base_longitude,
-      tp.about, tp.trade_other, tp.licence_url, tp.portfolio_urls,
-      tp.is_verified,
-      tp.average_rating, tp.rating_count,
-      tp.is_available, tp.available_from,
+      tp.*,
       (6371 * acos(least(1.0, greatest(-1.0,
         cos(radians(p_lat)) * cos(radians(tp.base_latitude)) *
         cos(radians(tp.base_longitude) - radians(p_lng)) +
@@ -1788,6 +1795,28 @@ CREATE TABLE IF NOT EXISTS "public"."builder_profiles" (
 
 
 ALTER TABLE "public"."builder_profiles" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."builder_profiles_public" AS
+ SELECT "id",
+    "company_name",
+    "abn",
+    "about",
+    "website",
+    "years_in_business",
+    "service_suburb",
+    "service_state",
+    "service_postcode",
+    ("round"(("service_latitude")::numeric, 2))::double precision AS "service_latitude",
+    ("round"(("service_longitude")::numeric, 2))::double precision AS "service_longitude",
+    "average_rating",
+    "rating_count",
+    "created_at"
+   FROM "public"."builder_profiles" "bp"
+  WHERE ("deleted_at" IS NULL);
+
+
+ALTER VIEW "public"."builder_profiles_public" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."builder_unverified_acknowledgements" (
@@ -2205,6 +2234,43 @@ CREATE TABLE IF NOT EXISTS "public"."trade_categories" (
 
 
 ALTER TABLE "public"."trade_categories" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."trade_profiles_public" AS
+ SELECT "id",
+    "full_name",
+    "primary_trade",
+    "trade_other",
+    "about",
+    "base_suburb",
+    "base_state",
+    "base_postcode",
+    ("round"(("base_latitude")::numeric, 2))::double precision AS "base_latitude",
+    ("round"(("base_longitude")::numeric, 2))::double precision AS "base_longitude",
+    "crew_size",
+    "years_experience",
+    "service_radius_km",
+    "portfolio_urls",
+    "is_verified",
+    "is_available",
+    "available_from",
+        CASE
+            WHEN "hourly_rate_visible" THEN "hourly_rate_min"
+            ELSE NULL::numeric
+        END AS "hourly_rate_min",
+        CASE
+            WHEN "hourly_rate_visible" THEN "hourly_rate_max"
+            ELSE NULL::numeric
+        END AS "hourly_rate_max",
+    "hourly_rate_visible",
+    "average_rating",
+    "rating_count",
+    "created_at"
+   FROM "public"."trade_profiles" "tp"
+  WHERE ("deleted_at" IS NULL);
+
+
+ALTER VIEW "public"."trade_profiles_public" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."user_role_events" (
@@ -3272,9 +3338,15 @@ CREATE POLICY "builder_profiles_insert_own" ON "public"."builder_profiles" FOR I
 
 
 
-CREATE POLICY "builder_profiles_select_authenticated" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "builder_profiles"."id") AND ("ur"."role" = 'builder'::"text")))));
+CREATE POLICY "builder_profiles_select_related" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING ((("auth"."uid"() = "id") OR (EXISTS ( SELECT 1
+   FROM "public"."applications" "a"
+  WHERE (("a"."builder_id" = "builder_profiles"."id") AND ("a"."trade_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."conversations" "c"
+  WHERE (("c"."builder_id" = "builder_profiles"."id") AND ("c"."trade_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."bookings" "b"
+  WHERE (("b"."builder_id" = "builder_profiles"."id") AND ("b"."trade_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."quote_requests" "q"
+  WHERE (("q"."builder_id" = "builder_profiles"."id") AND ("q"."trade_id" = "auth"."uid"()))))));
 
 
 
@@ -3541,9 +3613,15 @@ CREATE POLICY "trade_profiles_insert_own" ON "public"."trade_profiles" FOR INSER
 
 
 
-CREATE POLICY "trade_profiles_select_authenticated" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "trade_profiles"."id") AND ("ur"."role" = 'trade'::"text")))));
+CREATE POLICY "trade_profiles_select_related" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING ((("auth"."uid"() = "id") OR (EXISTS ( SELECT 1
+   FROM "public"."applications" "a"
+  WHERE (("a"."trade_id" = "trade_profiles"."id") AND ("a"."builder_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."conversations" "c"
+  WHERE (("c"."trade_id" = "trade_profiles"."id") AND ("c"."builder_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."bookings" "b"
+  WHERE (("b"."trade_id" = "trade_profiles"."id") AND ("b"."builder_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."quote_requests" "q"
+  WHERE (("q"."trade_id" = "trade_profiles"."id") AND ("q"."builder_id" = "auth"."uid"()))))));
 
 
 
@@ -4009,6 +4087,12 @@ GRANT INSERT("service_longitude"),UPDATE("service_longitude") ON TABLE "public".
 
 
 
+GRANT ALL ON TABLE "public"."builder_profiles_public" TO "anon";
+GRANT ALL ON TABLE "public"."builder_profiles_public" TO "authenticated";
+GRANT ALL ON TABLE "public"."builder_profiles_public" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "anon";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "authenticated";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "service_role";
@@ -4230,6 +4314,12 @@ GRANT ALL ON TABLE "public"."timesheets" TO "service_role";
 GRANT ALL ON TABLE "public"."trade_categories" TO "anon";
 GRANT ALL ON TABLE "public"."trade_categories" TO "authenticated";
 GRANT ALL ON TABLE "public"."trade_categories" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."trade_profiles_public" TO "anon";
+GRANT ALL ON TABLE "public"."trade_profiles_public" TO "authenticated";
+GRANT ALL ON TABLE "public"."trade_profiles_public" TO "service_role";
 
 
 

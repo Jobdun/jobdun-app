@@ -11,6 +11,12 @@ import '../entities/user_profile.dart';
 abstract interface class ProfileRepository {
   Future<Either<Failure, UserProfile>> getProfile(String userId);
   Future<Either<Failure, BuilderProfile?>> getBuilderProfile(String userId);
+
+  // Front-of-card storefront view of ANOTHER builder (no contact details,
+  // coordinates rounded). Use for pre-relationship surfaces like /builders/:id.
+  Future<Either<Failure, BuilderProfile?>> getBuilderPublicProfile(
+    String userId,
+  );
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId);
   // Partial updates — only columns set on the patch are written. Empty
   // patches resolve to success without touching the network.
