@@ -73,9 +73,10 @@ void main() {
       );
       expect(state.filteredConversations.map((c) => c.id), ['1']);
       expect(
-        state.copyWith(searchQuery: 'QUOTE').filteredConversations.map(
-          (c) => c.id,
-        ),
+        state
+            .copyWith(searchQuery: 'QUOTE')
+            .filteredConversations
+            .map((c) => c.id),
         ['2'],
       );
       expect(state.copyWith(searchQuery: '').filteredConversations.length, 2);
@@ -179,10 +180,8 @@ void main() {
       expect(state.conversations.single.unreadCountFor('me'), 1);
       expect(state.totalUnread, 1);
       verify(
-        () => repo.markConversationUnread(
-          conversationId: 'a',
-          isBuilder: false,
-        ),
+        () =>
+            repo.markConversationUnread(conversationId: 'a', isBuilder: false),
       ).called(1);
     });
   });

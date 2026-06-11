@@ -8,14 +8,19 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../domain/entities/conversation.dart';
 import '../providers/messaging_provider.dart';
+import '../widgets/block_confirmation_sheet.dart';
+import '../widgets/conversation_row.dart';
+import '../widgets/inbox_search_bar.dart';
+import '../widgets/report_sheet.dart';
 import 'message_thread_page.dart';
 
 class MessagesPage extends ConsumerStatefulWidget {
@@ -26,6 +31,8 @@ class MessagesPage extends ConsumerStatefulWidget {
 }
 
 class _MessagesPageState extends ConsumerState<MessagesPage> {
+  bool _searchVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +67,22 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
               child: Row(
                 children: [
                   const Expanded(child: PageHeader(title: 'Messages')),
+                  IconButton(
+                    tooltip: 'Search messages',
+                    onPressed: () {
+                      setState(() => _searchVisible = !_searchVisible);
+                      if (!_searchVisible) {
+                        ref
+                            .read(messagingControllerProvider.notifier)
+                            .setSearchQuery('');
+                      }
+                    },
+                    icon: Icon(
+                      AppIcons.search,
+                      size: AppIconSize.md.r,
+                      color: _searchVisible ? c.action : c.text1,
+                    ),
+                  ),
                   if (totalUnread > 0)
                     Container(
                       padding: EdgeInsets.symmetric(
@@ -81,6 +104,23 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                 ],
               ),
             ),
+            AnimatedSize(
+              duration: AppMotion.fast,
+              curve: Curves.easeOut,
+              child: _searchVisible
+                  ? InboxSearchBar(
+                      onChanged: (q) => ref
+                          .read(messagingControllerProvider.notifier)
+                          .setSearchQuery(q),
+                      onClear: () {
+                        ref
+                            .read(messagingControllerProvider.notifier)
+                            .setSearchQuery('');
+                        setState(() => _searchVisible = false);
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            ),
             Divider(height: 1, color: c.border),
             // ── Conversation list
             Expanded(
@@ -91,7 +131,7 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                         itemCount: 6,
                         separatorBuilder: (_, _) =>
                             Divider(height: 1, color: c.border),
-                        itemBuilder: (_, _) => _ConvoRow(
+                        itemBuilder: (_, _) => ConversationRow(
                           initials: 'AB',
                           name: 'Loading conversation placeholder',
                           preview: 'Last message preview placeholder text here',
@@ -104,14 +144,24 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                     )
                   : msgState.conversations.isEmpty
                   ? _EmptyState(isBuilder: isBuilder)
+                  : msgState.filteredConversations.isEmpty
+                  ? Center(
+                      child: Text(
+                        'NO CONVERSATIONS MATCH.',
+                        style: tt.bodyMedium!.copyWith(color: c.text3),
+                      ),
+                    )
                   : JStaggeredList(
-                      itemCount: msgState.conversations.length,
+                      itemCount: msgState.filteredConversations.length,
                       separatorBuilder: (_, _) =>
                           Divider(height: 1, color: c.border),
                       itemBuilder: (ctx, i) {
-                        final conv = msgState.conversations[i];
+                        final conv = msgState.filteredConversations[i];
                         final unread = conv.unreadCountFor(userId);
-                        final row = _ConvoRow(
+                        final row = ConversationRow(
+                          isPinned: conv.isPinnedFor(userId),
+                          isMuted: conv.isMutedFor(userId),
+                          isBlocked: conv.status == ConversationStatus.blocked,
                           initials: _initials(conv.otherUserDisplayName ?? '?'),
                           name: conv.otherUserDisplayName ?? 'Unknown',
                           preview: conv.lastMessagePreview ?? '',
@@ -137,12 +187,71 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                             ),
                           ),
                         );
+                        final pinned = conv.isPinnedFor(userId);
+                        final muted = conv.isMutedFor(userId);
                         return Slidable(
                           key: ValueKey('convo-${conv.id}'),
+                          // Power tools on the left (D-11): pin + mark-unread.
+                          startActionPane: ActionPane(
+                            motion: const DrawerMotion(),
+                            extentRatio: 0.44,
+                            children: [
+                              SlidableAction(
+                                onPressed: (_) {
+                                  HapticFeedback.lightImpact();
+                                  ref
+                                      .read(
+                                        messagingControllerProvider.notifier,
+                                      )
+                                      .pinConversation(conv.id, pin: !pinned);
+                                },
+                                backgroundColor: c.available,
+                                foregroundColor: c.text1,
+                                icon: pinned
+                                    ? AppIcons.pinFilled
+                                    : AppIcons.pin,
+                                label: pinned ? 'UNPIN' : 'PIN',
+                                autoClose: true,
+                              ),
+                              SlidableAction(
+                                onPressed: (_) {
+                                  HapticFeedback.lightImpact();
+                                  ref
+                                      .read(
+                                        messagingControllerProvider.notifier,
+                                      )
+                                      .markConversationUnread(conv.id);
+                                },
+                                backgroundColor: c.surfaceRaised,
+                                foregroundColor: c.text1,
+                                icon: AppIcons.email,
+                                label: 'UNREAD',
+                                autoClose: true,
+                              ),
+                            ],
+                          ),
+                          // Removal + safety on the right: mute, archive, block.
                           endActionPane: ActionPane(
                             motion: const DrawerMotion(),
-                            extentRatio: 0.28,
+                            extentRatio: 0.56,
                             children: [
+                              SlidableAction(
+                                onPressed: (_) {
+                                  HapticFeedback.lightImpact();
+                                  ref
+                                      .read(
+                                        messagingControllerProvider.notifier,
+                                      )
+                                      .muteConversation(conv.id, mute: !muted);
+                                },
+                                backgroundColor: c.surfaceRaised,
+                                foregroundColor: c.text1,
+                                icon: muted
+                                    ? AppIcons.muteFilled
+                                    : AppIcons.mute,
+                                label: muted ? 'UNMUTE' : 'MUTE',
+                                autoClose: true,
+                              ),
                               SlidableAction(
                                 onPressed: (_) {
                                   HapticFeedback.lightImpact();
@@ -158,6 +267,17 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                                 label: 'ARCHIVE',
                                 autoClose: true,
                               ),
+                              SlidableAction(
+                                onPressed: (_) {
+                                  HapticFeedback.lightImpact();
+                                  _showBlockSheet(conv, userId);
+                                },
+                                backgroundColor: c.urgent,
+                                foregroundColor: c.text1,
+                                icon: AppIcons.block,
+                                label: 'BLOCK',
+                                autoClose: true,
+                              ),
                             ],
                           ),
                           child: row,
@@ -167,6 +287,35 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBlockSheet(Conversation conv, String userId) {
+    final otherName = conv.otherUserDisplayName ?? 'this person';
+    final otherId = conv.builderId == userId ? conv.tradeId : conv.builderId;
+    showJSheet<void>(
+      context: context,
+      backgroundColor: context.c.card,
+      builder: (_) => BlockConfirmationSheet(
+        otherName: otherName,
+        blockedId: otherId,
+        conversationId: conv.id,
+        onAlsoReport: () => _showReportSheet(conv, userId),
+      ),
+    );
+  }
+
+  void _showReportSheet(Conversation conv, String userId) {
+    final otherName = conv.otherUserDisplayName ?? 'this person';
+    final otherId = conv.builderId == userId ? conv.tradeId : conv.builderId;
+    showJSheet<void>(
+      context: context,
+      backgroundColor: context.c.card,
+      builder: (_) => ReportSheet(
+        otherName: otherName,
+        reportedId: otherId,
+        conversationId: conv.id,
       ),
     );
   }
@@ -182,137 +331,6 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return '${diff.inDays}d';
-  }
-}
-
-// ── Conversation Row ───────────────────────────────────────────────────────────
-
-class _ConvoRow extends StatelessWidget {
-  const _ConvoRow({
-    required this.initials,
-    required this.name,
-    required this.preview,
-    required this.time,
-    required this.unreadCount,
-    required this.onTap,
-    this.jobTitle,
-    this.avatarUrl,
-  });
-
-  final String initials;
-  final String name;
-  final String preview;
-  final String time;
-  final int unreadCount;
-  final String? jobTitle;
-  final String? avatarUrl;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    final hasUnread = unreadCount > 0;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Avatar (photo with initials fallback)
-            AvatarBlock(
-              initials: initials,
-              imageUrl: avatarUrl,
-              size: 46,
-              circle: true,
-            ),
-            Gap(12.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: hasUnread
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            color: c.text1,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Gap(8.w),
-                      Text(
-                        time,
-                        style: tt.bodySmall!.copyWith(
-                          fontWeight: FontWeight.w400,
-                          color: hasUnread ? c.action : c.text3,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (jobTitle != null) ...[
-                    Gap(2.h),
-                    Text(
-                      jobTitle!,
-                      style: tt.bodySmall!.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: c.text2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  Gap(3.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          preview,
-                          style: tt.bodyMedium!.copyWith(
-                            fontWeight: hasUnread
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: hasUnread ? c.text1 : c.text3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (hasUnread) ...[
-                        Gap(8.w),
-                        Container(
-                          width: 20.r,
-                          height: 20.r,
-                          decoration: BoxDecoration(
-                            color: c.action,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            unreadCount > 9 ? '9+' : '$unreadCount',
-                            style: tt.labelSmall!.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: c.onAction, // dark-on-orange — 6.37:1
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

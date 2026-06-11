@@ -9,14 +9,16 @@ import 'package:jobdun/features/messaging/domain/usecases/report_user.dart';
 
 class _MockRepo extends Mock implements MessageRepository {}
 
-ReportSubmission _report({ReportReason reason = ReportReason.spamOrScam, String? details}) =>
-    ReportSubmission(
-      reporterId: 'me',
-      reportedId: 'them',
-      conversationId: 'c1',
-      reason: reason,
-      details: details,
-    );
+ReportSubmission _report({
+  ReportReason reason = ReportReason.spamOrScam,
+  String? details,
+}) => ReportSubmission(
+  reporterId: 'me',
+  reportedId: 'them',
+  conversationId: 'c1',
+  reason: reason,
+  details: details,
+);
 
 void main() {
   setUpAll(() => registerFallbackValue(_report()));

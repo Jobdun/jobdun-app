@@ -1,7 +1,6 @@
 import '../../domain/entities/conversation.dart';
 
-DateTime? _parseTs(Object? v) =>
-    v == null ? null : DateTime.parse(v as String);
+DateTime? _parseTs(Object? v) => v == null ? null : DateTime.parse(v as String);
 
 class ConversationModel extends Conversation {
   const ConversationModel({
