@@ -26,9 +26,10 @@ jobs:
 
       # pubspec bundles `.env` as a flutter_dotenv asset; the real file is
       # gitignored, so stub it or `flutter analyze` raises a fatal
-      # asset_does_not_exist warning on every CI run.
+      # asset_does_not_exist warning. Must be non-empty — flutter_dotenv
+      # throws EmptyEnvFileError on a zero-byte file in tests.
       - name: Stub gitignored .env asset
-        run: touch .env
+        run: echo "CI_STUB=1" > .env
 
       - name: Install dependencies
         run: flutter pub get
