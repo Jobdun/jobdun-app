@@ -6,6 +6,7 @@ import '../../../../core/errors/failures.dart';
 import '../entities/conversation.dart';
 import '../entities/message.dart';
 import '../entities/message_reaction.dart';
+import '../entities/report_submission.dart';
 
 abstract interface class MessageRepository {
   Future<Either<Failure, List<Conversation>>> getConversations(String userId);
@@ -55,6 +56,30 @@ abstract interface class MessageRepository {
   Future<Either<Failure, void>> archiveConversation({
     required String conversationId,
     required bool isBuilder,
+  });
+
+  // ── Phase D: inbox power + safety ──────────────────────────────────────
+  Future<Either<Failure, void>> pinConversation({
+    required String conversationId,
+    required bool isBuilder,
+    required bool pin,
+  });
+  Future<Either<Failure, void>> muteConversation({
+    required String conversationId,
+    required bool isBuilder,
+    required bool mute,
+  });
+  Future<Either<Failure, void>> markConversationUnread({
+    required String conversationId,
+    required bool isBuilder,
+  });
+  Future<Either<Failure, void>> blockUser({
+    required String blockerId,
+    required String blockedId,
+    required String conversationId,
+  });
+  Future<Either<Failure, void>> reportUser({
+    required ReportSubmission report,
   });
   Stream<List<Conversation>> watchConversations(String userId);
   Stream<List<Message>> watchMessages(String conversationId, {int tailLimit});
