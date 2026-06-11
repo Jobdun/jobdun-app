@@ -17,6 +17,9 @@ import '../../domain/entities/message.dart';
 import '../../domain/entities/message_reaction.dart';
 import '../../domain/repositories/message_repository.dart';
 import '../../domain/usecases/get_conversations.dart';
+import '../../domain/usecases/mark_conversation_unread.dart';
+import '../../domain/usecases/mute_conversation.dart';
+import '../../domain/usecases/pin_conversation.dart';
 import '../../domain/usecases/get_messages.dart';
 import '../../domain/usecases/get_or_create_conversation.dart';
 import '../../domain/usecases/send_message.dart';
@@ -24,6 +27,7 @@ import '../../domain/usecases/watch_messages.dart';
 import '../state/messaging_state.dart';
 import '../state/thread_messages.dart';
 
+part 'messaging_inbox_actions_part.dart';
 part 'messaging_reactions_part.dart';
 
 // How many older messages a history page fetches.
@@ -43,28 +47,7 @@ final messageRepositoryProvider = Provider<MessageRepository>(
   (ref) => MessageRepositoryImpl(ref.read(messageDatasourceProvider)),
 );
 
-// ── Use cases ─────────────────────────────────────────────────────────────────
-// archive / markConversationRead / watchConversation hit the repo directly (no
-// use case yet) — documented exception, like the auth services pattern.
-final getConversationsUseCaseProvider = Provider(
-  (ref) => GetConversations(ref.read(messageRepositoryProvider)),
-);
-
-final getMessagesUseCaseProvider = Provider(
-  (ref) => GetMessages(ref.read(messageRepositoryProvider)),
-);
-
-final getOrCreateConversationUseCaseProvider = Provider(
-  (ref) => GetOrCreateConversation(ref.read(messageRepositoryProvider)),
-);
-
-final sendMessageUseCaseProvider = Provider(
-  (ref) => SendMessage(ref.read(messageRepositoryProvider)),
-);
-
-final watchMessagesUseCaseProvider = Provider(
-  (ref) => WatchMessages(ref.read(messageRepositoryProvider)),
-);
+// Use-case providers live in messaging_inbox_actions_part.dart (size budget).
 
 // ── Controller ────────────────────────────────────────────────────────────────
 final messagingControllerProvider =
@@ -73,7 +56,7 @@ final messagingControllerProvider =
     );
 
 class MessagingController extends Notifier<MessagingState>
-    with AccountScoped<MessagingState>, _ReactionActions {
+    with AccountScoped<MessagingState>, _ReactionActions, _InboxActions {
   late MessageRepository _repo;
   StreamSubscription<List<Conversation>>? _conversationsSub;
   final Map<String, StreamSubscription<List<Message>>> _messageSubs = {};
@@ -108,6 +91,7 @@ class MessagingController extends Notifier<MessagingState>
 
   // Inbox via get_inbox() (counterparty + unread resolved server-side); the raw
   // realtime stream can't do that join, so we never use its rows directly.
+  @override
   Future<void> _refreshInbox(String userId) async {
     final result = await ref.read(getConversationsUseCaseProvider).call(userId);
     result.fold(
@@ -187,7 +171,16 @@ class MessagingController extends Notifier<MessagingState>
           final updated = Map<String, DateTime?>.from(
             state.otherLastReadByConvId,
           )..[conversationId] = conv.otherLastReadAtFor(me);
-          state = state.copyWith(otherLastReadByConvId: updated);
+          // Track the frozen state live so the thread can lock its composer
+          // the moment either side blocks (guardrail, 2026-06-12).
+          final blocked = Set<String>.from(state.blockedConvIds);
+          conv.status == ConversationStatus.blocked
+              ? blocked.add(conversationId)
+              : blocked.remove(conversationId);
+          state = state.copyWith(
+            otherLastReadByConvId: updated,
+            blockedConvIds: blocked,
+          );
         }, onError: (_) {});
   }
 
@@ -474,6 +467,7 @@ class MessagingController extends Notifier<MessagingState>
     state = state.copyWith(hasMoreByConvId: map);
   }
 
+  @override
   int _computeUnread(List<Conversation> convs) {
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     return convs.fold<int>(

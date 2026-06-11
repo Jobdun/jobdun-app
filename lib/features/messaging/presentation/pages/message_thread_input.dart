@@ -185,3 +185,37 @@ class _SourceRow extends StatelessWidget {
     );
   }
 }
+
+/// Shown in place of the composer when the conversation is frozen by a block
+/// (either side). Honest lockout: no input, no failing retry bubbles.
+class _BlockedBanner extends StatelessWidget {
+  const _BlockedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      color: c.surface,
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(AppIcons.block, size: AppIconSize.inline.r, color: c.text3),
+            Gap(8.w),
+            Text(
+              'THIS CONVERSATION IS BLOCKED.',
+              style: tt.labelLarge!.copyWith(
+                color: c.text3,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -14,6 +14,7 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/j_offline_banner.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
+import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -105,18 +106,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            if (!isOnline) const SliverToBoxAdapter(child: JOfflineBanner()),
-            // /profile is a pushed route above the tab shell — gesture/system
-            // back works, but a visible affordance is required (restored by
-            // request 2026-06-11 after a brief removal the same day).
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(4.w, 4.h, 0, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
+        child: Column(
+          children: [
+            // House header-bar pattern (same chrome as the edit hub, About
+            // editor and builder public profile): back arrow anchored in a
+            // card-coloured bar with the page title — not a floating arrow.
+            Container(
+              color: c.card,
+              padding: EdgeInsets.fromLTRB(4.w, 8.h, 20.w, 12.h),
+              child: Row(
+                children: [
+                  IconButton(
                     onPressed: () => context.pop(),
                     tooltip: 'Back',
                     icon: Icon(
@@ -125,39 +125,56 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       color: c.text1,
                     ),
                   ),
-                ),
+                  const Expanded(
+                    child: PageHeader(
+                      title: 'Profile',
+                      size: PageHeaderSize.sub,
+                    ),
+                  ),
+                ],
               ),
             ),
-            SliverToBoxAdapter(
-              child: _ProfileHeader(
-                initials: initials,
-                displayName: displayName,
-                email: email,
-                role: role,
-                avatarUrl: profileState.profile?.avatarUrl,
-                isUploadingAvatar: profileState.isUploadingAvatar,
-                isVerified: isVerified,
+            Divider(height: 1, color: c.border),
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  if (!isOnline)
+                    const SliverToBoxAdapter(child: JOfflineBanner()),
+                  SliverToBoxAdapter(
+                    child: _ProfileHeader(
+                      initials: initials,
+                      displayName: displayName,
+                      email: email,
+                      role: role,
+                      avatarUrl: profileState.profile?.avatarUrl,
+                      isUploadingAvatar: profileState.isUploadingAvatar,
+                      isVerified: isVerified,
+                    ),
+                  ),
+                  if (gap != null) ...[
+                    SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: ProfileIncompleteBanner(gap: gap),
+                      ),
+                    ),
+                  ],
+                  SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+                  SliverToBoxAdapter(
+                    child: JSkeletonList(
+                      enabled: profileState.isLoading,
+                      child: isBuilder
+                          ? _BuilderProfile(
+                              profile: profileState.builderProfile,
+                            )
+                          : _TradeProfile(profile: profileState.tradeProfile),
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: Gap(AppSpacing.xl.h)),
+                ],
               ),
             ),
-            if (gap != null) ...[
-              SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
-                  child: ProfileIncompleteBanner(gap: gap),
-                ),
-              ),
-            ],
-            SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
-            SliverToBoxAdapter(
-              child: JSkeletonList(
-                enabled: profileState.isLoading,
-                child: isBuilder
-                    ? _BuilderProfile(profile: profileState.builderProfile)
-                    : _TradeProfile(profile: profileState.tradeProfile),
-              ),
-            ),
-            SliverToBoxAdapter(child: Gap(AppSpacing.xl.h)),
           ],
         ),
       ),
