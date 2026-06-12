@@ -83,6 +83,18 @@ void main() {
       );
     });
 
+    test('review signals route to the reviews page', () {
+      expect(
+        resolveNotificationRoute(
+          type: 'review_received',
+          data: {'review_id': 'r1', 'job_id': 'j1'},
+        ),
+        '/reviews',
+      );
+      // FCM pushes carry only the data payload — review_id is the signal.
+      expect(resolveNotificationRoute(data: {'review_id': 'r1'}), '/reviews');
+    });
+
     test('unknown or empty payloads fall back to notifications', () {
       expect(resolveNotificationRoute(data: {}), '/notifications');
       expect(

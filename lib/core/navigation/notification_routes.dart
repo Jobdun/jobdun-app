@@ -14,6 +14,8 @@ String resolveNotificationRoute({String? type, Map<String, dynamic>? data}) {
   if (conversationId != null) return '/messages/$conversationId';
   if (t.startsWith('message')) return '/messages';
 
+  if (t.startsWith('review') || _id(d['review_id']) != null) return '/reviews';
+
   // FCM pushes deliver only the data payload (no type), so the
   // application_id key doubles as the type signal.
   if (t.startsWith('application') || _id(d['application_id']) != null) {
