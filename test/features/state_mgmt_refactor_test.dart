@@ -84,7 +84,7 @@ void main() {
         AppNotification(
           id: id,
           userId: 'user-1',
-          type: NotificationType.newMessage,
+          type: 'message_received',
           title: 'Title',
           body: 'Body',
           createdAt: DateTime(2026, 5, 22),

@@ -16,9 +16,7 @@ class NotificationModel extends AppNotification {
       NotificationModel(
         id: json['id'] as String,
         userId: json['user_id'] as String,
-        type: NotificationTypeX.fromDb(
-          json['type'] as String? ?? 'system_announcement',
-        ),
+        type: json['type'] as String? ?? '',
         title: json['title'] as String,
         body: json['body'] as String,
         readAt: json['read_at'] != null

@@ -1,3 +1,4 @@
+import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 
 /// Status Command Bar (heatmap pairing): the top of the screen is the
@@ -30,6 +32,11 @@ class HomeStatusBar extends ConsumerWidget {
     final available = ref.watch(
       profileControllerProvider.select((s) => s.tradeProfile?.isAvailable),
     );
+    // Watching here also keeps the controller's realtime stream alive
+    // app-wide, so /notifications opens already populated.
+    final unreadCount = ref.watch(
+      notificationsControllerProvider.select((s) => s.unreadCount),
+    );
 
     return Row(
       children: [
@@ -45,14 +52,32 @@ class HomeStatusBar extends ConsumerWidget {
           ),
         const Spacer(),
         Semantics(
-          label: 'Notifications',
+          label: unreadCount > 0
+              ? 'Notifications, $unreadCount unread'
+              : 'Notifications',
           button: true,
           child: IconButton(
             onPressed: onNotificationsTap,
-            icon: Icon(
-              AppIcons.notification,
-              size: AppIconSize.nav.r,
-              color: c.text2,
+            icon: badges.Badge(
+              showBadge: unreadCount > 0,
+              badgeStyle: badges.BadgeStyle(
+                badgeColor: c.action,
+                padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+                shape: badges.BadgeShape.square,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              badgeContent: Text(
+                unreadCount > 9 ? '9+' : '$unreadCount',
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: c.onAction,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              child: Icon(
+                AppIcons.notification,
+                size: AppIconSize.nav.r,
+                color: unreadCount > 0 ? c.text1 : c.text2,
+              ),
             ),
           ),
         ),

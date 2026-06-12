@@ -98,20 +98,7 @@ class NotificationsController extends Notifier<NotificationsState>
     // Optimistic — stamp readAt locally, roll back on failure.
     final now = DateTime.now();
     final next = state.notifications
-        .map(
-          (n) => n.id == notificationId && n.readAt == null
-              ? AppNotification(
-                  id: n.id,
-                  userId: n.userId,
-                  type: n.type,
-                  title: n.title,
-                  body: n.body,
-                  createdAt: n.createdAt,
-                  readAt: now,
-                  data: n.data,
-                )
-              : n,
-        )
+        .map((n) => n.id == notificationId ? n.asRead(now) : n)
         .toList();
     state = state.copyWith(
       notifications: next,
@@ -127,22 +114,7 @@ class NotificationsController extends Notifier<NotificationsState>
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final now = DateTime.now();
-    final next = state.notifications
-        .map(
-          (n) => n.readAt != null
-              ? n
-              : AppNotification(
-                  id: n.id,
-                  userId: n.userId,
-                  type: n.type,
-                  title: n.title,
-                  body: n.body,
-                  createdAt: n.createdAt,
-                  readAt: now,
-                  data: n.data,
-                ),
-        )
-        .toList();
+    final next = state.notifications.map((n) => n.asRead(now)).toList();
     state = state.copyWith(notifications: next, unreadCount: 0);
     final result = await ref.read(markAllAsReadUseCaseProvider).call(userId);
     result.fold((f) => state = state.copyWith(error: f.message), (_) {});

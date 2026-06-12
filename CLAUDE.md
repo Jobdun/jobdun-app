@@ -36,6 +36,7 @@ Available page-specific overrides:
 - `design-system/jobdun/pages/jobs-feed.md`
 - `design-system/jobdun/pages/profile-dashboard.md`
 - `design-system/jobdun/pages/messaging.md`
+- `design-system/jobdun/pages/notifications.md`
 - `design-system/jobdun/pages/admin-web.md`
 - `design-system/jobdun/pages/applications.md`
 
