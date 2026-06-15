@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../providers/active_section_provider.dart';
+import '../sections/app_gallery_section.dart';
 import '../sections/bottom_cta_section.dart';
 import '../sections/built_for_section.dart';
 import '../sections/hero_section.dart';
@@ -192,6 +193,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 const SliverToBoxAdapter(child: HowItWorksSection()),
                 SliverToBoxAdapter(child: SizedBox(key: _hiringKey, height: 0)),
                 const SliverToBoxAdapter(child: RolesSection()),
+                const SliverToBoxAdapter(child: AppGallerySection()),
                 SliverToBoxAdapter(child: SizedBox(key: _crewsKey, height: 0)),
                 SliverToBoxAdapter(child: SizedBox(key: _appKey, height: 0)),
                 const SliverToBoxAdapter(child: BottomCtaSection()),

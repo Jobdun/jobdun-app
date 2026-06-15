@@ -118,10 +118,11 @@ class _Carousel extends StatelessWidget {
   Widget build(BuildContext context) {
     // SizedBox gives the PageView a finite height; otherwise the
     // unconstrained PageView (inside a Column with mainAxisSize.min)
-    // throws on layout. Height = phone maxHeight + caption gap.
-    const phoneH = 560.0;
+    // throws on layout. Phone width 320 × 9:19.5 aspect ≈ 696 +
+    // caption + breathing room.
+    const phoneH = 696.0;
     return SizedBox(
-      height: phoneH + 80, // phone + caption + breathing room
+      height: phoneH + 96, // phone + caption + breathing room
       child: PageView.builder(
         controller: controller,
         itemCount: items.length,
@@ -181,7 +182,7 @@ class _RoleCard extends StatelessWidget {
           child: PhoneFrame(
             asset: item.asset,
             tilt: item.tilt,
-            maxHeight: 560,
+            maxHeight: 800,
           ),
         ),
         const Gap(24),

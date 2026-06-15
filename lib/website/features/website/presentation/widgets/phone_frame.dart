@@ -7,16 +7,22 @@ import '../../../../../../core/design/colors.dart';
 /// edge glow, and a small bottom-edge ambient darkening. No drop
 /// shadows (banned by the design system).
 ///
+/// Aspect ratio is **9:19.5** (≈0.46) — a modern flagship phone
+/// (iPhone Pro Max / Galaxy S24 Ultra). Width defaults to 320, so
+/// the bezel renders at 320×~696 logical pixels. Pass a smaller
+/// [width] for mobile stacks where the carousel needs to be
+/// shorter, or use the [aspectRatio] param to override.
+///
 /// Sizing is in *logical pixels* (no `.h` / `.w` from screenutil) so
-/// the phone stays the same physical size across viewports. We use a
-/// fixed 320×640 bezel at desktop, with `maxHeight` clamping it for
-/// narrow mobile stacks.
+/// the phone stays the same physical size across viewports. We
+/// pass [maxHeight] as a clamp to prevent the rendered phone from
+/// being absurdly tall in tall viewport test pages.
 class PhoneFrame extends StatelessWidget {
   const PhoneFrame({
     super.key,
     required this.asset,
     this.width = 320,
-    this.maxHeight = 640,
+    this.maxHeight = 800,
     this.tilt = 0,
   });
 
@@ -25,11 +31,14 @@ class PhoneFrame extends StatelessWidget {
   final double maxHeight;
   final double tilt;
 
+  // Modern flagship phone aspect — 9:19.5 (≈ 0.46).
+  static const double _aspect = 9 / 19.5;
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final w = width;
-    final h = (width * 2).clamp(0.0, maxHeight); // 1:2 ratio
+    final h = (w / _aspect).clamp(0.0, maxHeight);
 
     return Transform.rotate(
       angle: tilt,
@@ -38,12 +47,12 @@ class PhoneFrame extends StatelessWidget {
         height: h,
         decoration: BoxDecoration(
           color: const Color(0xFF0A1220), // darker than c.surface
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(40),
           border: Border.all(color: c.border, width: 1),
         ),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(32),
           child: Stack(
             children: [
               Positioned.fill(
@@ -53,6 +62,9 @@ class PhoneFrame extends StatelessWidget {
                   alignment: Alignment.topCenter,
                 ),
               ),
+              // Faint orange right-edge glow — sits over the screenshot
+              // to suggest light coming from the right. 10% alpha,
+              // no shadow required.
               Positioned.fill(
                 child: IgnorePointer(
                   child: DecoratedBox(
@@ -70,6 +82,9 @@ class PhoneFrame extends StatelessWidget {
                   ),
                 ),
               ),
+              // Ambient bottom darkening — also banned as a true
+              // shadow, so this is a single linear-gradient darkening
+              // at the bottom edge.
               Positioned.fill(
                 child: IgnorePointer(
                   child: DecoratedBox(
@@ -84,7 +99,30 @@ class PhoneFrame extends StatelessWidget {
                         ],
                         stops: const [0.0, 0.75, 1.0],
                       ),
-                      borderRadius: BorderRadius.circular(28),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                  ),
+                ),
+              ),
+              // Top-edge specular highlight — a thin orange line that
+              // catches the eye, reads as a "premium device" detail
+              // and ties back to the brand. ~2% alpha so it never
+              // reads as a border.
+              Positioned(
+                top: 6,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          c.action.withValues(alpha: 0.35),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -96,4 +134,3 @@ class PhoneFrame extends StatelessWidget {
     );
   }
 }
-
