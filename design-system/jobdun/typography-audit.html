@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobdun — Typography Audit (psychology, factors, recommendation)</title>
+<!--
+  Professional typography audit for the Jobdun branding update.
+  Thesis: type is a TRUST + CONVERSION decision, not decoration. Processing fluency
+  (ease of reading) → trust → usage. Audits the current Oswald + Open Sans against
+  8 branding factors, then recommends a research-backed pairing for app + marketing.
+  Static HTML, no JS. Accent uses the trademark orange #FA5B0D.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&family=Outfit:wght@500;700;800&family=Zilla+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0E1320;--surface:#171d2b;--raised:#222a3a;--line:#28324a;
+    --t1:#EEF2F8;--t2:#9aa6bd;--t3:#6b768d;--orange:#FA5B0D;--orangeInk:#FB7B3D;
+    --ok:#4ADE80;--warn:#FBBF24;--bad:#F87171;
+  }
+  html{scroll-behavior:smooth;scroll-padding-top:78px}
+  body{background:var(--bg);color:var(--t1);font-family:'Inter',system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:90px}
+  .arch{font-family:'Archivo',sans-serif}
+  .mono{font-family:'Roboto Mono',monospace}
+  code{font-family:'Roboto Mono',monospace;font-size:.85em;background:#1b2233;color:#FDBA74;padding:2px 6px;border-radius:4px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header.bar{position:sticky;top:0;z-index:50;background:rgba(14,19,32,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .bar .wrap{display:flex;align-items:center;gap:14px;height:64px}
+  .bar .title{font-family:'Archivo';font-weight:900;letter-spacing:.3px;font-size:17px}
+  .bar .title span{color:var(--orange)}
+  nav{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+  nav a{font-family:'Archivo';font-weight:600;font-size:12px;color:var(--t2);text-decoration:none;padding:6px 9px;border-radius:6px}
+  nav a:hover{color:var(--t1);background:var(--surface)}
+  .hero{padding:60px 0 30px}
+  .eyebrow{font-family:'Archivo';font-weight:700;letter-spacing:2.4px;text-transform:uppercase;font-size:12px;color:var(--orange);margin-bottom:16px}
+  h1{font-family:'Archivo';font-weight:900;font-size:clamp(34px,6vw,62px);line-height:1.02;letter-spacing:-1px}
+  h1 .o{color:var(--orange)}
+  .lead{color:var(--t2);max-width:70ch;margin-top:18px;font-size:18px}
+  .rule{height:4px;width:90px;background:var(--orange);border-radius:2px;margin:26px 0 0}
+  .stats{display:flex;gap:34px;flex-wrap:wrap;margin-top:34px}
+  .stat .n{font-family:'Archivo';font-weight:900;font-size:34px;line-height:1;color:var(--t1)}
+  .stat .n span{color:var(--orange)}
+  .stat .l{color:var(--t3);font-size:12.5px;margin-top:6px;max-width:22ch}
+  section{padding:46px 0 4px}
+  .shead{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:26px}
+  .shead .k{font-family:'Archivo';font-weight:900;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--orange)}
+  .shead h2{font-family:'Archivo';font-weight:800;font-size:24px;letter-spacing:-.3px}
+  .shead .sub{color:var(--t3);font-size:13px;margin-left:auto}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.grid3{grid-template-columns:1fr}}
+  .fcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .fcard .ic{font-family:'Archivo';font-weight:900;font-size:13px;color:var(--orange);letter-spacing:1px}
+  .fcard h3{font-family:'Archivo';font-weight:800;font-size:17px;margin:8px 0 8px}
+  .fcard p{color:var(--t2);font-size:13.5px}
+  .fcard .win{margin-top:12px;font-size:12.5px;color:var(--t3);border-top:1px solid var(--line);padding-top:11px}
+  .fcard .win b{color:var(--ok);font-family:'Archivo';font-weight:700}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.cols2{grid-template-columns:1fr}}
+  .spec{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .spec.rec{border:1.5px solid var(--orange)}
+  .spectag{display:flex;align-items:center;gap:10px;padding:14px 22px;border-bottom:1px solid var(--line);background:#111727}
+  .spectag .pill{font-family:'Archivo';font-weight:800;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+  .spectag .pill.cur{background:var(--raised);color:var(--t2)}
+  .spectag .pill.rec{background:var(--orange);color:#16130f}
+  .spectag .fam{font-family:'Roboto Mono';font-size:12px;color:var(--t2)}
+  .specbody{padding:24px}
+  .sp-disp{font-weight:800;font-size:34px;line-height:1.05;letter-spacing:-.5px}
+  .sp-title{font-weight:700;font-size:18px;margin-top:18px}
+  .sp-body{font-size:15px;line-height:1.6;color:var(--t2);margin-top:8px}
+  .sp-btn{display:inline-block;margin-top:16px;background:var(--orange);color:#16130f;font-weight:700;font-size:13px;letter-spacing:.8px;text-transform:uppercase;padding:11px 18px;border-radius:8px}
+  .sp-cap{font-size:12px;color:var(--t3);margin-top:14px}
+  .verdict{margin-top:16px;font-size:13px;color:var(--t2);border-left:3px solid var(--orange);padding:10px 0 10px 14px}
+  .verdict.good{border-color:var(--ok)}.verdict.warn{border-color:var(--warn)}
+  .verdict b{color:var(--t1)}
+  /* lightcard to prove body legibility on light */
+  .lighten{background:#FAFAF9;color:#1C1917;border-radius:12px;padding:18px;margin-top:16px}
+  .lighten .lb{font-family:'Inter';font-size:14px;line-height:1.6;color:#44403C}
+  .lighten .ll{font-family:'Roboto Mono';font-size:10.5px;color:#78716C;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  /* also-considered */
+  .also{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  @media(max-width:820px){.also{grid-template-columns:1fr}}
+  .alt{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .alt .h{font-weight:700;font-size:17px}
+  .alt .t{font-family:'Roboto Mono';font-size:11px;color:var(--t3);margin:4px 0 10px}
+  .alt p{font-size:12.5px;color:var(--t2)}
+  /* scorecard */
+  table.score{width:100%;border-collapse:collapse;margin-top:6px;font-size:13.5px}
+  table.score th,table.score td{text-align:left;padding:12px 12px;border-bottom:1px solid var(--line)}
+  table.score th{font-family:'Archivo';font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--t3)}
+  table.score td.f{font-weight:600}
+  table.score td.dim{color:var(--t3);font-size:12px}
+  .dots{font-size:13px;letter-spacing:2px;white-space:nowrap}
+  .dots .on{color:var(--orange)}.dots .onc{color:var(--t2)}.dots .off{color:var(--line)}
+  .win-tag{font-family:'Archivo';font-weight:800;font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:3px 7px;border-radius:999px;background:rgba(74,222,128,.16);color:var(--ok)}
+  .win-tag.even{background:rgba(148,163,184,.16);color:var(--t2)}
+  /* mechanics */
+  .mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:820px){.mgrid{grid-template-columns:1fr}}
+  .mrow{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+  .mrow .v{font-family:'Archivo';font-weight:900;font-size:22px;color:var(--orange);min-width:74px}
+  .mrow .b h4{font-family:'Archivo';font-weight:700;font-size:14px}
+  .mrow .b p{font-size:12.5px;color:var(--t2);margin-top:3px}
+  .src{font-size:12px;color:var(--t3);line-height:1.9}
+  .src a{color:var(--orangeInk);text-decoration:none}.src a:hover{text-decoration:underline}
+  footer{padding:40px 0 0;color:var(--t3);font-size:11px;font-family:'Roboto Mono';text-align:center;line-height:1.8;border-top:1px solid var(--line);margin-top:40px}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <span class="title">JOBDUN <span>· TYPE AUDIT</span></span>
+  <nav>
+    <a href="#why">Why</a><a href="#factors">Factors</a><a href="#current">Current</a>
+    <a href="#rec">Recommendation</a><a href="#score">Scorecard</a><a href="#mech">Mechanics</a>
+  </nav>
+</div></header>
+
+<div class="wrap">
+  <div class="hero" id="why">
+    <div class="eyebrow">Typography Audit · Branding Update</div>
+    <h1>Type is a <span class="o">trust</span> decision,<br>not a cosmetic one.</h1>
+    <p class="lead">People decide whether an app or a brand feels legitimate within <b>seconds</b> — before they read a
+      word — and a big part of that judgment is the type. The easier something is to read, the more the brain treats it
+      as <b>true, competent, and worth acting on</b> (the "processing-fluency" effect). For a platform whose entire pitch
+      is <i>"verified, no timewasters,"</i> the typeface is doing trust-work on every screen.</p>
+    <div class="rule"></div>
+    <div class="stats">
+      <div class="stat"><div class="n"><span>+13%</span></div><div class="l">lift in positive brand response from typeface choice alone (Monotype)</div></div>
+      <div class="stat"><div class="n">&lt;1<span>s</span></div><div class="l">to judge a brand's legitimacy — type leads that read</div></div>
+      <div class="stat"><div class="n">#1</div><div class="l">outcome typography drives: trust → usage → conversion</div></div>
+    </div>
+  </div>
+
+  <!-- FACTORS -->
+  <section id="factors">
+    <div class="shead"><span class="k">01</span><h2>What type does to a brand</h2><span class="sub">8 factors that decide it</span></div>
+    <div class="grid3">
+      <div class="fcard"><div class="ic">A · FLUENCY</div><h3>Processing fluency</h3><p>Easy-to-read type is processed faster, and the brain mislabels "easy" as "trustworthy and true." Legible body text literally makes people believe and use the product more.</p><div class="win">Win with: <b>a screen-tuned body face</b> at the 16px floor.</div></div>
+      <div class="fcard"><div class="ic">B · TONE</div><h3>Personality &amp; voice</h3><p>Type is a voice before words are read. Grotesque/geometric = built, precise, modern; condensed = urban/sporty; slab = heavy/heritage; rounded = friendly.</p><div class="win">Match: <b>"licensed tradies, gets it done."</b></div></div>
+      <div class="fcard"><div class="ic">C · TRUST</div><h3>Credibility</h3><p>Clean, consistent, well-spaced type signals competence and care. Messy or generic type reads as amateur — fatal for a marketplace selling trust.</p><div class="win">Win with: <b>structure + consistency.</b></div></div>
+      <div class="fcard"><div class="ic">D · HIERARCHY</div><h3>Scannability</h3><p>Clear display↔body contrast guides the eye, lowers cognitive load, and speeds the decision that matters (apply, post a job).</p><div class="win">Win with: <b>strong size/weight steps.</b></div></div>
+      <div class="fcard"><div class="ic">E · PAIRING</div><h3>Contrast &amp; harmony</h3><p>Two faces need enough difference to separate roles, but enough harmony to feel intentional. Too similar = muddy; too different = chaotic.</p><div class="win">Win with: <b>one display + one body, distinct weights.</b></div></div>
+      <div class="fcard"><div class="ic">F · STRENGTH</div><h3>Weight &amp; structure</h3><p>Heavier, structured letterforms read as strong, reliable, "built to last" — exactly what construction buyers respond to.</p><div class="win">Win with: <b>a heavy display weight (800–900).</b></div></div>
+      <div class="fcard"><div class="ic">G · CONSISTENCY</div><h3>App ↔ marketing</h3><p>One type system across the website and the app builds recognition and compounds trust. A mismatch fractures the brand.</p><div class="win">Win with: <b>the same two families everywhere.</b></div></div>
+      <div class="fcard"><div class="ic">H · MECHANICS</div><h3>Readability settings</h3><p>Size, line-height, tracking and line length affect readability as much as the font itself. Tokens must encode them, not leave them to chance.</p><div class="win">Win with: <b>16px / 1.5 lh / 45–75ch.</b></div></div>
+    </div>
+  </section>
+
+  <!-- CURRENT -->
+  <section id="current">
+    <div class="shead"><span class="k">02</span><h2>Where Jobdun is today</h2><span class="sub">Oswald + Open Sans</span></div>
+    <div class="cols2">
+      <div class="spec">
+        <div class="spectag"><span class="pill cur">Display</span><span class="fam">Oswald · condensed grotesque</span></div>
+        <div class="specbody">
+          <div class="sp-disp" style="font-family:'Oswald'">Find your next job</div>
+          <div class="sp-title" style="font-family:'Oswald';font-weight:600">VERIFIED BEFORE THEY APPLY</div>
+          <div class="verdict warn"><b>Strong but narrow.</b> Distinctive and industrial, but the condensation trims readability on multi-word headlines and reads a little "sports/newspaper" — and it does <b>not</b> match the wide, heavy logo wordmark.</div>
+        </div>
+      </div>
+      <div class="spec">
+        <div class="spectag"><span class="pill cur">Body</span><span class="fam">Open Sans · humanist sans</span></div>
+        <div class="specbody">
+          <div class="sp-body" style="font-family:'Open Sans';font-size:16px;color:var(--t1)">Every trade is licence-checked and every builder carries a verified ABN. This is the default reading size for descriptions, job details and content.</div>
+          <div class="sp-cap" style="font-family:'Open Sans'">Caption · metadata · 12px</div>
+          <div class="verdict"><b>Safe and legible</b> — but a touch generic next to 2026 UI leaders, and slightly lower small-size fluency than the best screen faces.</div>
+        </div>
+      </div>
+    </div>
+    <div class="verdict" style="margin-top:18px;border-color:var(--warn)"><b>Net:</b> accessible and serviceable, but two gaps for a trust-led trades brand — the display fights the logo and trims readability, and the body leaves fluency (= trust) on the table.</div>
+  </section>
+
+  <!-- RECOMMENDATION -->
+  <section id="rec">
+    <div class="shead"><span class="k">03</span><h2>The research-backed pick</h2><span class="sub">Archivo + Inter</span></div>
+    <div class="cols2">
+      <div class="spec rec">
+        <div class="spectag"><span class="pill rec">Display</span><span class="fam">Archivo · industrial grotesque (to 900)</span></div>
+        <div class="specbody">
+          <div class="sp-disp arch" style="font-weight:800">Find your next job</div>
+          <div class="sp-title arch" style="font-weight:700">VERIFIED BEFORE THEY APPLY</div>
+          <div class="verdict good"><b>Strength + structure + logo-match.</b> A normal-width grotesque with heavy weights (Black 900 echoes the trademark wordmark). Reads as built and reliable, stays modern, and is more readable than condensed type on real headlines.</div>
+        </div>
+      </div>
+      <div class="spec rec">
+        <div class="spectag"><span class="pill rec">Body</span><span class="fam">Inter · the 2026 UI fluency leader</span></div>
+        <div class="specbody">
+          <div class="sp-body" style="font-family:'Inter';font-size:16px;color:var(--t1)">Every trade is licence-checked and every builder carries a verified ABN. Tall x-height and open apertures make Inter exceptionally legible at small sizes — which is exactly what UI demands.</div>
+          <div class="sp-cap" style="font-family:'Inter'">Caption · metadata · 12px</div>
+          <div class="verdict good"><b>Maximum fluency = maximum trust.</b> Screen-tuned letterforms reduce reading effort, which the research ties directly to trust and repeat usage.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lighten">
+      <div class="ll">Inter body on a light marketing surface — legibility holds both themes</div>
+      <div class="lb">Builders post a job, see only licence-checked trades, and talk to them direct. Inter keeps long-form marketing copy effortless to read at 14–16px on white as well as on the dark app surface — one body face, both worlds.</div>
+    </div>
+
+    <div class="verdict" style="margin-top:18px"><b>Honest trade-off:</b> Archivo and Inter are both grotesques, so the pairing has slightly <b>less intrinsic contrast</b> than Oswald-condensed + Open Sans. Weight (Archivo 800/900 vs Inter 400), size, and tracking carry the hierarchy instead — the net is cleaner, more trustworthy, and finally consistent with the logo.</div>
+
+    <div class="shead" style="margin-top:34px"><span class="k">·</span><h2 style="font-size:18px">Also considered</h2></div>
+    <div class="also">
+      <div class="alt"><div class="h arch" style="font-weight:800">Outfit + Inter</div><div class="t">geometric · friendlier</div><p>Rounder, more approachable headlines. Pick this if you want warmer over heavier — but it signals less "strength."</p></div>
+      <div class="alt"><div class="h" style="font-family:'Zilla Slab';font-weight:700">Zilla Slab + Inter</div><div class="t">slab · maximum "built to last"</div><p>The strongest heritage/durability signal (slab serifs read "construction"). Risk: heavier, slightly older feel for a modern app.</p></div>
+      <div class="alt"><div class="h" style="font-family:'Oswald';font-weight:700">Keep Oswald + Open Sans</div><div class="t">incumbent · lowest effort</div><p>Distinctive and proven. The cost is the logo mismatch and the fluency/modernity gap — fine if a rebrand isn't wanted now.</p></div>
+    </div>
+  </section>
+
+  <!-- SCORECARD -->
+  <section id="score">
+    <div class="shead"><span class="k">04</span><h2>Scorecard</h2><span class="sub">current vs recommended · 5 = best</span></div>
+    <table class="score">
+      <thead><tr><th>Factor</th><th>Current · Oswald + Open Sans</th><th>Recommended · Archivo + Inter</th><th></th></tr></thead>
+      <tbody id="scorebody"></tbody>
+    </table>
+  </section>
+
+  <!-- MECHANICS -->
+  <section id="mech">
+    <div class="shead"><span class="k">05</span><h2>Readability mechanics</h2><span class="sub">the non-font half of the decision</span></div>
+    <div class="mgrid">
+      <div class="mrow"><div class="v">16px</div><div class="b"><h4>Body floor</h4><p>Never below 16px for primary body on mobile. It's Google's floor and the fluency baseline.</p></div></div>
+      <div class="mrow"><div class="v">1.5</div><div class="b"><h4>Line-height (body)</h4><p>1.5 for body, 1.1–1.2 for display. Open leading reduces reading effort and tracking errors.</p></div></div>
+      <div class="mrow"><div class="v">45–75</div><div class="b"><h4>Measure (line length)</h4><p>Cap reading width at 45–75 characters. Long lines lose the reader between rows.</p></div></div>
+      <div class="mrow"><div class="v">±tr</div><div class="b"><h4>Tracking</h4><p>Tighten large display (≈ −0.5px), leave body at default, add tracking to ALL-CAPS labels (+0.8–1.2px).</p></div></div>
+    </div>
+    <footer id="foot"></footer>
+  </section>
+</div>
+
+<script>
+/* dots renderer for scorecard */
+function dots(n,cls){let s='';for(let i=1;i<=5;i++)s+=`<span class="${i<=n?(cls||'on'):'off'}">●</span>`;return `<span class="dots">${s}</span>`;}
+const ROWS=[
+  ['Processing fluency (body)',4,5,'rec'],
+  ['Personality — strength + modern',3,5,'rec'],
+  ['Trust / credibility',4,5,'rec'],
+  ['Hierarchy / scannability',4,4,'even'],
+  ['Pairing contrast',4,3,'cur'],
+  ['Weight / structure (strength)',4,5,'rec'],
+  ['Logo cohesion',2,5,'rec'],
+  ['Consistency app ↔ marketing',4,5,'rec'],
+  ['Modernity (2026)',3,5,'rec'],
+];
+document.getElementById('scorebody').innerHTML=ROWS.map(([f,c,r,win])=>{
+  const tag = win==='rec'?'<span class="win-tag">Recommended</span>':win==='cur'?'<span class="win-tag even">Current</span>':'<span class="win-tag even">Even</span>';
+  return `<tr><td class="f">${f}</td><td>${dots(c,'onc')}</td><td>${dots(r,'on')}</td><td>${tag}</td></tr>`;
+}).join('');
+document.getElementById('foot').innerHTML=
+  `Recommendation: <b style="color:#FA5B0D">Archivo (display) + Inter (body)</b> — fluency-led trust, strength/structure, logo cohesion, one system for app + marketing. Keep Open Sans only if deferring the rebrand. · Sources: Monotype typeface-impact study (+13%) · processing-fluency &amp; trust research (Sprak, Blacksmith, Brand Vision) · 2026 UI font guides (Untitled UI, Design Monks) on Inter legibility · construction/strength type psychology (Design Shack, Today Made).`;
+</script>
+</body>
+</html>
