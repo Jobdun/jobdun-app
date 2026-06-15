@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Companion doc:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — current-state
+> snapshot of what's wired (features, packages, secrets, branch state, pitfalls).
+> Read it after this file when you need to know *what the repo looks like today*;
+> this file is *how to work in it*.
+
 ## Project
 
 Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. It connects two roles in the mobile app: **Builders** (post jobs, manage applicants) and **Trades/Crews** (browse and apply for jobs, upload verifications). **Admin is a separate web application** — the Flutter app has no admin UI.
