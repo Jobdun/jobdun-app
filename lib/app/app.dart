@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../core/services/push_notifications.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
@@ -13,6 +15,17 @@ class JobdunApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(themeProvider);
+
+    // Push taps navigate through the live router. Cold-start routes are
+    // buffered in PushNotifications and only flushed once auth is restored,
+    // so the router's redirect doesn't eat the destination.
+    PushNotifications.attachNavigator(router.push);
+    ref.listen(authControllerProvider.select((s) => s.isAuthenticated), (
+      _,
+      authed,
+    ) {
+      if (authed) PushNotifications.flushPendingRoute();
+    });
 
     return ScreenUtilInit(
       designSize: const Size(390, 844),

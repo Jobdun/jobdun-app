@@ -9,6 +9,7 @@ import '../../../../core/config/supabase_config.dart';
 import '../../../../core/errors/error_messages.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/sentry_reporter.dart';
+import '../../../../core/services/push_notifications.dart';
 import '../../data/services/email_auth_service.dart';
 import '../../data/services/account_deletion_service.dart';
 import '../../data/services/oauth_service.dart';
@@ -443,6 +444,9 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
 
   Future<void> signOut() async {
     if (SupabaseConfig.isInitialized) {
+      // Stop pushes to this device first — needs the live session for RLS.
+      // Best-effort inside; never blocks the sign-out.
+      await PushNotifications.unregister();
       await _email.signOut();
     }
     state = const AuthState();

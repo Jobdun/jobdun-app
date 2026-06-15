@@ -445,12 +445,17 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                 ),
               ),
 
-            // ── Input bar (composer extracted to a part to keep this file lean)
-            _ThreadComposer(
-              controller: _textCtrl,
-              onSend: _send,
-              onAttach: _pickAndSendImage,
-            ),
+            // ── Input bar (composer extracted to a part to keep this file
+            // lean). Frozen threads (a block on either side) lock the
+            // composer instead of letting sends fail at the DB guard.
+            if (mState.blockedConvIds.contains(widget.args.conversationId))
+              const _BlockedBanner()
+            else
+              _ThreadComposer(
+                controller: _textCtrl,
+                onSend: _send,
+                onAttach: _pickAndSendImage,
+              ),
           ],
         ),
       ),

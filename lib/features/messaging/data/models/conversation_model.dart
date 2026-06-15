@@ -1,5 +1,7 @@
 import '../../domain/entities/conversation.dart';
 
+DateTime? _parseTs(Object? v) => v == null ? null : DateTime.parse(v as String);
+
 class ConversationModel extends Conversation {
   const ConversationModel({
     required super.id,
@@ -15,6 +17,10 @@ class ConversationModel extends Conversation {
     super.lastMessageSenderId,
     super.builderLastReadAt,
     super.tradeLastReadAt,
+    super.builderPinnedAt,
+    super.tradePinnedAt,
+    super.builderMutedAt,
+    super.tradeMutedAt,
     super.otherUserDisplayName,
     super.otherUserAvatarUrl,
     super.jobTitle,
@@ -42,6 +48,10 @@ class ConversationModel extends Conversation {
           : null,
       builderUnreadCount: json['builder_unread_count'] as int? ?? 0,
       tradeUnreadCount: json['trade_unread_count'] as int? ?? 0,
+      builderPinnedAt: _parseTs(json['builder_pinned_at']),
+      tradePinnedAt: _parseTs(json['trade_pinned_at']),
+      builderMutedAt: _parseTs(json['builder_muted_at']),
+      tradeMutedAt: _parseTs(json['trade_muted_at']),
       status: ConversationStatusX.fromDb(json['status'] as String? ?? 'active'),
       createdAt: DateTime.parse(json['created_at'] as String),
       otherUserDisplayName: profileData?['display_name'] as String?,
@@ -59,6 +69,12 @@ class ConversationModel extends Conversation {
   }) {
     final unread = json['my_unread_count'] as int? ?? 0;
     final isBuilderViewer = json['builder_id'] == viewerId;
+    // get_inbox resolves pin/mute per viewer into booleans; map them back to
+    // the viewer's side as a sentinel timestamp (the UI only needs the bool,
+    // via isPinnedFor/isMutedFor — the real timestamp stays server-side).
+    final pinned = json['is_pinned'] as bool? ?? false;
+    final muted = json['is_muted'] as bool? ?? false;
+    final sentinel = DateTime(2000);
     return ConversationModel(
       id: json['id'] as String,
       jobId: json['job_id'] as String?,
@@ -71,6 +87,10 @@ class ConversationModel extends Conversation {
       lastMessageSenderId: json['last_message_sender_id'] as String?,
       builderUnreadCount: isBuilderViewer ? unread : 0,
       tradeUnreadCount: isBuilderViewer ? 0 : unread,
+      builderPinnedAt: isBuilderViewer && pinned ? sentinel : null,
+      tradePinnedAt: !isBuilderViewer && pinned ? sentinel : null,
+      builderMutedAt: isBuilderViewer && muted ? sentinel : null,
+      tradeMutedAt: !isBuilderViewer && muted ? sentinel : null,
       status: ConversationStatusX.fromDb(json['status'] as String? ?? 'active'),
       createdAt: DateTime.parse(json['created_at'] as String),
       otherUserDisplayName: json['other_display_name'] as String?,

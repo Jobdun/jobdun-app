@@ -353,6 +353,22 @@ class _AppCard extends StatelessWidget {
                     ),
                   ),
                 ],
+                // ── Post-hire: rate the other party (builder ⇄ tradie).
+                // One review per reviewer per job — DB unique constraint;
+                // ReviewCta swaps to a read-only row once submitted.
+                if (status == ApplicationStatus.hired) ...[
+                  Gap(12.h),
+                  Divider(height: 1, color: c.border),
+                  Gap(10.h),
+                  ReviewCta(
+                    jobId: app.jobId,
+                    revieweeId: isBuilder ? app.tradeId : app.builderId,
+                    revieweeName: isBuilder
+                        ? (app.tradeFullName ?? 'this tradie')
+                        : (app.builderCompanyName ?? 'this builder'),
+                    label: isBuilder ? 'REVIEW TRADIE' : 'REVIEW BUILDER',
+                  ),
+                ],
               ],
             ),
           ),
