@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/design/colors.dart';
+import '../widgets/site_section_frame.dart';
 
 /// Footer — three columns on desktop, stacked on mobile. The contact
 /// column lists both `sam@jobdun.com.au` (general) and
@@ -23,88 +24,76 @@ class SiteFooter extends StatelessWidget {
         color: c.surface,
         border: Border(top: BorderSide(color: c.border)),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: _hPad(context),
-        vertical: AppSpacing.xxl.h,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 720;
-          final columns = [
-            _FooterCol(
-              title: 'JOBDUN',
-              items: [
-                _FooterLink('Privacy policy', '/privacy/'),
-                _FooterLink('Delete your account', '/delete-account/'),
-              ],
-            ),
-            _FooterCol(
-              title: 'CONTACT',
-              items: const [
-                _FooterLink('sam@jobdun.com.au', 'mailto:sam@jobdun.com.au'),
-                _FooterLink(
-                  'support@jobdun.com.au',
-                  'mailto:support@jobdun.com.au',
-                ),
-              ],
-            ),
-            _FooterCol(
-              title: 'GET THE APP',
-              items: const [
-                _FooterLink('Post a job', '#hiring'),
-                _FooterLink('Find work', '#crews'),
-              ],
-            ),
-          ];
-          if (wide) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < columns.length; i++) ...[
-                      Expanded(child: columns[i]),
-                      if (i < columns.length - 1) Gap(AppSpacing.xl.w),
-                    ],
-                  ],
-                ),
-                Gap(AppSpacing.xl.h),
-                Divider(color: c.border, height: 1),
-                Gap(AppSpacing.lg.h),
-                Text(
-                  '© 2026 Jobdun Pty Ltd. Built for Australian construction.',
-                  style: tt.bodySmall!.copyWith(color: c.text3),
-                ),
-              ],
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < columns.length; i++) ...[
-                columns[i],
-                if (i < columns.length - 1) Gap(AppSpacing.lg.h),
-              ],
-              Gap(AppSpacing.lg.h),
-              Divider(color: c.border, height: 1),
-              Gap(AppSpacing.lg.h),
-              Text(
-                '© 2026 Jobdun Pty Ltd. Built for Australian construction.',
-                style: tt.bodySmall!.copyWith(color: c.text3),
+      padding: const EdgeInsets.only(top: 64, bottom: 64),
+      child: SiteSectionFrame(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 720;
+            final columns = [
+              _FooterCol(
+                title: 'JOBDUN',
+                items: [
+                  _FooterLink('Privacy policy', '/privacy/'),
+                  _FooterLink('Delete your account', '/delete-account/'),
+                ],
               ),
-            ],
-          );
-        },
+              _FooterCol(
+                title: 'CONTACT',
+                items: const [
+                  _FooterLink('sam@jobdun.com.au', 'mailto:sam@jobdun.com.au'),
+                  _FooterLink(
+                    'support@jobdun.com.au',
+                    'mailto:support@jobdun.com.au',
+                  ),
+                ],
+              ),
+              _FooterCol(
+                title: 'GET THE APP',
+                items: const [
+                  _FooterLink('Post a job', '#hiring'),
+                  _FooterLink('Find work', '#crews'),
+                ],
+              ),
+            ];
+            final cols = wide
+                ? <Widget>[
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < columns.length; i++) ...[
+                            Expanded(child: columns[i]),
+                            if (i < columns.length - 1) const SizedBox(width: 32),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Gap(32),
+                    Container(height: 1, color: c.border),
+                    const Gap(24),
+                    Text(
+                      '© 2026 Jobdun Pty Ltd. Built for Australian construction.',
+                      style: tt.bodySmall!.copyWith(color: c.text3),
+                    ),
+                  ]
+                : <Widget>[
+                    for (var i = 0; i < columns.length; i++) ...[
+                      columns[i],
+                      if (i < columns.length - 1) const Gap(16),
+                    ],
+                    const Gap(16),
+                    Container(height: 1, color: c.border),
+                    const Gap(16),
+                    Text(
+                      '© 2026 Jobdun Pty Ltd. Built for Australian construction.',
+                      style: tt.bodySmall!.copyWith(color: c.text3),
+                    ),
+                  ];
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: cols);
+          },
+        ),
       ),
     );
-  }
-
-  double _hPad(BuildContext context) {
-    final w = MediaQuery.sizeOf(context).width;
-    if (w >= 1100) return AppSpacing.xxl.w;
-    if (w >= 720) return AppSpacing.xl.w;
-    return AppSpacing.lg.w;
   }
 }
 
@@ -129,10 +118,10 @@ class _FooterCol extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        Gap(AppSpacing.md.h),
+        const Gap(16),
         for (final link in items) ...[
           _FooterLinkWidget(link: link),
-          Gap(AppSpacing.xs.h),
+          const Gap(4),
         ],
       ],
     );
@@ -155,20 +144,15 @@ class _FooterLinkWidget extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return InkWell(
-      onTap: () {
-        // Honor a different href for anchor links vs absolute URLs.
-        if (link.href.startsWith('#')) {
-          // Anchor scroll on the home page — only meaningful when the
-          // footer is rendered as part of HomePage (which is the only
-          // place it ships). We delegate to the global scroll provider.
-          // ignore: avoid_print
-          debugPrint('footer anchor: ${link.href} (home-page scroll)');
-        } else {
-          // External / static page. We use a simple Navigator route for
-          // mailto: (the OS will pick the right handler). For absolute
-          // paths like /privacy/ we leave it to the browser — the
-          // marketing site doesn't own those routes.
-          debugPrint('footer link: ${link.href}');
+      onTap: () async {
+        final uri = Uri.parse(link.href);
+        // Anchors + mailto: open in a new tab; absolute paths open
+        // in the same tab. Falls through silently if `url_launcher`
+        // can't open (offline build, unsupported scheme) — the link
+        // still renders and is hover-focusable, so accessibility
+        // isn't broken.
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
       },
       child: Text(

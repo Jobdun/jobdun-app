@@ -4,10 +4,31 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
-import '../../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../providers/active_section_provider.dart';
 import '../widgets/phone_frame.dart';
+
+/// Section-level page padding. Every section uses this so the page
+/// has consistent horizontal breathing room — the design system
+/// page margin scales with viewport width.
+class _PagePad extends StatelessWidget {
+  const _PagePad({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final pad = w >= 1100
+        ? 96.0
+        : w >= 720
+            ? 64.0
+            : 24.0;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: pad),
+      child: child,
+    );
+  }
+}
 
 /// Hero — a 2-column split, text on the left, the real app on the right.
 /// No eyebrow. No "tiny text → huge text" formula. The screen itself
@@ -28,52 +49,60 @@ class HeroSection extends ConsumerWidget {
       width: double.infinity,
       color: c.background,
       padding: EdgeInsets.symmetric(
-        horizontal: _hPad(w),
         vertical: AppSpacing.xxl.h * 1.5,
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1280),
-          child: stacked
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CopyBlock(tt: tt, c: c, onHire: () => _scrollTo(ref, 'hiring'), onCrew: () => _scrollTo(ref, 'crews')),
-                    Gap(AppSpacing.xxl.h),
-                    const Center(child: PhoneFrame(asset: 'assets/website/screenshots/ftue-splash.png', tilt: -0.04)),
-                  ],
-                )
-              : IntrinsicHeight(
-                  child: Row(
+      child: _PagePad(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: stacked
+                ? Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(
-                        flex: 5,
-                        child: _CopyBlock(tt: tt, c: c, onHire: () => _scrollTo(ref, 'hiring'), onCrew: () => _scrollTo(ref, 'crews')),
+                      const PhoneFrame(
+                        asset: 'assets/website/screenshots/ftue-splash.png',
+                        tilt: -0.04,
                       ),
-                      Gap(AppSpacing.xxl.w),
-                      Expanded(
-                        flex: 5,
-                        child: Center(
-                          child: PhoneFrame(
-                            asset: 'assets/website/screenshots/ftue-splash.png',
-                            tilt: -0.04,
-                            maxHeight: 640.h,
-                          ),
-                        ),
+                      Gap(AppSpacing.xxl.h),
+                      _CopyBlock(
+                        tt: tt,
+                        c: c,
+                        onHire: () => _scrollTo(ref, 'hiring'),
+                        onCrew: () => _scrollTo(ref, 'crews'),
+                        align: TextAlign.center,
                       ),
                     ],
+                  )
+                : IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: _CopyBlock(
+                            tt: tt,
+                            c: c,
+                            onHire: () => _scrollTo(ref, 'hiring'),
+                            onCrew: () => _scrollTo(ref, 'crews'),
+                          ),
+                        ),
+                        Gap(64.w),
+                        Expanded(
+                          flex: 5,
+                          child: Center(
+                            child: PhoneFrame(
+                              asset: 'assets/website/screenshots/ftue-splash.png',
+                              tilt: -0.04,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+          ),
         ),
       ),
     );
-  }
-
-  double _hPad(double w) {
-    if (w >= 1100) return AppSpacing.xxl.w;
-    if (w >= 720) return AppSpacing.xl.w;
-    return AppSpacing.lg.w;
   }
 
   void _scrollTo(WidgetRef ref, String id) {
@@ -87,24 +116,29 @@ class _CopyBlock extends StatelessWidget {
     required this.c,
     required this.onHire,
     required this.onCrew,
+    this.align = TextAlign.left,
   });
 
   final TextTheme tt;
   final JColors c;
   final VoidCallback onHire;
   final VoidCallback onCrew;
+  final TextAlign align;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: align == TextAlign.center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo wordmark up top — small, sets brand context
-        const JobdunLogo(variant: LogoVariant.full),
-        Gap(AppSpacing.xl.h),
+        // No logo here — the sticky SiteTopBar already carries the
+        // wordmark. Rendering it twice in the same viewport made
+        // the brand mark look like a repeating watermark.
         Text(
           'Only verified.\nNo timewasters.',
+          textAlign: align,
           style: tt.displayLarge!.copyWith(
             color: c.text1,
             height: 1.05,
@@ -116,12 +150,16 @@ class _CopyBlock extends StatelessWidget {
         Text(
           'Every trade licence-checked. Every builder verified. '
           'Built for the people who actually build Australia.',
+          textAlign: align,
           style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.55),
         ),
         Gap(AppSpacing.xl.h),
         Wrap(
           spacing: AppSpacing.md.w,
           runSpacing: AppSpacing.md.h,
+          alignment: align == TextAlign.center
+              ? WrapAlignment.center
+              : WrapAlignment.start,
           children: [
             _Cta(label: "I'M HIRING", primary: true, onPressed: onHire),
             _Cta(label: "I'M LOOKING FOR WORK", primary: false, onPressed: onCrew),

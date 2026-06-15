@@ -12,25 +12,28 @@ import '../sections/roles_section.dart';
 import '../sections/site_footer.dart';
 import '../sections/site_top_bar.dart';
 import '../sections/values_strip.dart';
+import '../widgets/blueprint_grid_background.dart';
+import '../widgets/orange_rule.dart';
+import '../widgets/watermark_mark.dart';
 
 /// Single-page marketing site for Jobdun.
 ///
-/// Composition (top to bottom) — no two consecutive sections share a
-/// layout rhythm:
+/// Composition (top to bottom) — no two consecutive sections share
+/// a layout rhythm:
 ///   1. Sticky `SiteTopBar`.
-///   2. `HeroSection`         — text on the left, real app screenshot
-///                                on the right (product moment).
-///   3. `BuiltForSection`     — long-form editorial paragraph, no
-///                                widgets, no cards.
-///   4. `ValuesStrip`         — three short value props with orange
-///                                ticks, no section header above.
-///   5. `HowItWorksSection`   — three vector illustrations + a
-///                                sentence each. No screenshots.
-///   6. `RolesSection`        — two large phones, one per role,
-///                                no card chrome.
-///   7. `BottomCtaSection`    — single column, mark + headline +
-///                                store buttons.
+///   2. `HeroSection`         — text on the left, real app on the right.
+///   3. `BuiltForSection`     — long-form editorial prose, with a
+///                                watermark hammer-J as anchor.
+///   4. `ValuesStrip`         — three short value props, no header.
+///   5. `HowItWorksSection`   — three vector illustrations, no header.
+///   6. `RolesSection`        — two large phones, swipeable on mobile.
+///   7. `BottomCtaSection`    — single column, mark + headline.
 ///   8. `SiteFooter`          — privacy / delete / contact.
+///
+/// The page background is a faint blueprint grid (56px squares, 18%
+/// alpha) — reads as the graph paper of a job-site clipboard, never
+/// as a "decoration". Each section sits on top of the grid via the
+/// `BlueprintGridBackground` widget.
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, this.initialFragment});
 
@@ -137,16 +140,55 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Scaffold(
       backgroundColor: c.background,
+      // The blueprint grid is the page background. Every section
+      // paints its own colour over the top (c.background or
+      // c.surface), but the grid is visible in the *gaps* between
+      // sections where neither colour covers it.
       body: Stack(
         children: [
+          const Positioned.fill(
+            child: BlueprintGridBackground(spacing: 56, minor: true),
+          ),
           Positioned.fill(
             child: CustomScrollView(
               controller: _scroll,
               slivers: [
                 SliverToBoxAdapter(child: SizedBox(key: _topKey, height: 0)),
                 const SliverToBoxAdapter(child: HeroSection()),
-                const SliverToBoxAdapter(child: BuiltForSection()),
+                // BuiltFor sits on a slightly tinted section bg so the
+                // grid fades behind it; the watermark anchor lives here.
+                SliverToBoxAdapter(
+                  child: Stack(
+                    children: [
+                      const BuiltForSection(),
+                      const Positioned.fill(
+                        child: IgnorePointer(
+                          child: WatermarkMark(
+                            alignment: Alignment.topRight,
+                            size: 320,
+                            opacity: 0.045,
+                            tilt: -0.05,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Orange rule between BuiltFor and ValuesStrip — the
+                // first hard rhythm break after the editorial prose.
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: OrangeRule(width: 64, thickness: 4)),
+                  ),
+                ),
                 const SliverToBoxAdapter(child: ValuesStrip()),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: OrangeRule(width: 48, thickness: 3)),
+                  ),
+                ),
                 const SliverToBoxAdapter(child: HowItWorksSection()),
                 SliverToBoxAdapter(child: SizedBox(key: _hiringKey, height: 0)),
                 const SliverToBoxAdapter(child: RolesSection()),

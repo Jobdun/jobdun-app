@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/design/widgets/jobdun_logo.dart';
+import '../widgets/site_section_frame.dart';
 
 /// The final CTA. Single column, no header text, no body paragraph.
 /// The brand mark + the headline + two store buttons are the whole
@@ -18,53 +19,48 @@ class BottomCtaSection extends StatelessWidget {
     return Container(
       width: double.infinity,
       color: c.background,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxl.w,
-        vertical: AppSpacing.xxl.h * 2,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Column(
-            children: [
-              const SizedBox(
-                width: 80,
-                height: 80,
-                child: JobdunLogo(variant: LogoVariant.badge),
+      padding: const EdgeInsets.symmetric(vertical: 128),
+      child: SiteSectionFrame(
+        maxWidth: 720,
+        child: Column(
+          children: [
+            const SizedBox(
+              width: 80,
+              height: 80,
+              child: JobdunLogo(variant: LogoVariant.badge),
+            ),
+            const Gap(24),
+            Text(
+              'Ready when you are.',
+              textAlign: TextAlign.center,
+              style: tt.displaySmall!.copyWith(
+                color: c.text1,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
               ),
-              Gap(AppSpacing.xl.h),
-              Text(
-                'Ready when you are.',
-                textAlign: TextAlign.center,
-                style: tt.displaySmall!.copyWith(
-                  color: c.text1,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
-                ),
+            ),
+            const Gap(24),
+            Text(
+              'iOS  ·  Android  ·  AU launch markets only',
+              textAlign: TextAlign.center,
+              style: tt.bodyMedium!.copyWith(
+                color: c.text2,
+                letterSpacing: 1.2,
               ),
-              Gap(AppSpacing.xl.h),
-              Text(
-                'iOS  ·  Android  ·  AU launch markets only',
-                textAlign: TextAlign.center,
-                style: tt.bodyMedium!.copyWith(
-                  color: c.text2,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              Gap(AppSpacing.lg.h),
-              // Two text buttons — App Store / Play Store placeholders
-              // until the real badge URLs are available.
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: AppSpacing.md.w,
-                runSpacing: AppSpacing.md.h,
-                children: const [
-                  _StoreButton(label: 'APP STORE'),
-                  _StoreButton(label: 'GOOGLE PLAY'),
-                ],
-              ),
-            ],
-          ),
+            ),
+            const Gap(16),
+            // Two text buttons — App Store / Play Store placeholders
+            // until the real badge URLs are available.
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
+              children: const [
+                _StoreButton(label: 'APP STORE'),
+                _StoreButton(label: 'GOOGLE PLAY'),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -87,10 +83,10 @@ class _StoreButton extends StatelessWidget {
         onTap: () {},
         borderRadius: BorderRadius.circular(AppRadius.btn.r),
         child: Container(
-          constraints: BoxConstraints(minHeight: 56.h),
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl.w,
-            vertical: AppSpacing.md.h,
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 16,
           ),
           child: Text(
             label,
