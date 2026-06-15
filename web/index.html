@@ -1,112 +1,118 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html><html lang="en-AU">
+<head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    Jobdun marketing site — jobdun.com.au
+    Built with Flutter Web from lib/website/main_website.dart.
+    The Flutter app takes over the page; legal sub-routes
+    (/privacy, /delete-account) are served as static HTML from /site/
+    by Cloudflare Pages and never hit this shell.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Jobdun — workforce platform for the construction trades.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="color-scheme" content="dark">
 
-  <!-- iOS meta tags & icons -->
+  <title>Jobdun — workforce platform for Australian construction trades</title>
+  <meta name="description" content="Jobdun connects Australian builders with verified trades. Every licence checked, every builder verified, no dud operators. Built for sparkies, chippies, plumbers, and crews.">
+  <meta name="author" content="Jobdun Pty Ltd">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Jobdun">
+  <meta property="og:title" content="Jobdun — verified trades for Australian builders">
+  <meta property="og:description" content="Every trade licence-checked. Every builder verified. No timewasters.">
+  <meta property="og:url" content="https://jobdun.com.au">
+  <meta property="og:image" content="https://jobdun.com.au/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_AU">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Jobdun — verified trades for Australian builders">
+  <meta name="twitter:description" content="Every trade licence-checked. Every builder verified. No timewasters.">
+  <meta name="twitter:image" content="https://jobdun.com.au/og-image.png">
+
+  <!-- iOS / mobile web -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Jobdun">
+  <meta name="format-detection" content="telephone=no">
   <link rel="apple-touch-icon" href="favicon.png">
 
   <!-- Favicon — Jobdun badge. SVG for modern browsers, PNG fallback. -->
   <link rel="icon" type="image/svg+xml" href="jobdun-badge.svg">
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>Jobdun</title>
   <link rel="manifest" href="manifest.json">
-  <style id="splash-screen-style">
-    html {
-      height: 100%
-    }
 
-    body {
+  <!-- Brand splash — pre-Flutter paint. Matches the marketing-site dark
+       slate background so there's no white flash. The hammer-J badge
+       mark stays centred until Flutter takes over. -->
+  <style>
+    html, body {
       margin: 0;
-      min-height: 100%;
+      height: 100%;
       background-color: #0F172A;
-          background-size: 100% 100%;
+      color: #F1F5F9;
+      font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    .center {
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      -ms-transform: translate(-50%, -50%);
-      transform: translate(-50%, -50%);
+    .splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #0F172A;
     }
 
-    .contain {
-      display:block;
-      width:100%; height:100%;
-      object-fit: contain;
+    .splash img {
+      width: 96px;
+      height: 96px;
+      animation: pulse 1.4s ease-in-out infinite;
     }
 
-    .stretch {
-      display:block;
-      width:100%; height:100%;
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1.0; }
     }
 
-    .cover {
-      display:block;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
-
-    .bottom {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      -ms-transform: translate(-50%, 0);
-      transform: translate(-50%, 0);
-    }
-
-    .bottomLeft {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-    }
-
-    .bottomRight {
-      position: absolute;
-      bottom: 0;
-      right: 0;
+    @media (prefers-reduced-motion: reduce) {
+      .splash img { animation: none; opacity: 1.0; }
     }
   </style>
-  <script id="splash-screen-script">
-    function removeSplashFromWeb() {
-      document.getElementById("splash")?.remove();
-      document.getElementById("splash-branding")?.remove();
-      document.body.style.background = "transparent";
-    }
+  <script>
+    // Remove the splash once Flutter tells us it has taken over the page.
+    // The Flutter app calls window.removeSplash() via a JS interop hook
+    // (set up in lib/website/app/website_app.dart) on its first frame.
+    window.removeSplash = function () {
+      var el = document.getElementById('splash');
+      if (el) el.remove();
+    };
+    // Failsafe: if Flutter never bootstraps (network error, etc.), remove
+    // the splash after 8 seconds so the user sees something other than a
+    // pulsing mark forever.
+    setTimeout(function () {
+      if (document.getElementById('splash')) {
+        document.getElementById('splash').style.opacity = '0';
+        document.getElementById('splash').style.transition = 'opacity 300ms ease';
+        setTimeout(window.removeSplash, 350);
+      }
+    }, 8000);
   </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0" name="viewport">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="splash" class="splash" aria-label="Loading Jobdun">
+    <img src="jobdun-badge.svg" alt="" aria-hidden="true" width="96" height="96">
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async=""></script>
-
-
-</body></html>
+</body>
+</html>
