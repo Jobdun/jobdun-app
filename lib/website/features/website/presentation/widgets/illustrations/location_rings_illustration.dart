@@ -80,11 +80,7 @@ class _RingsPainter extends CustomPainter {
       ..close();
     canvas.drawPath(tail, pinFill);
 
-    canvas.drawCircle(
-      pinCenter,
-      pinRadius * 0.35,
-      Paint()..color = pinAccent,
-    );
+    canvas.drawCircle(pinCenter, pinRadius * 0.35, Paint()..color = pinAccent);
   }
 
   @override

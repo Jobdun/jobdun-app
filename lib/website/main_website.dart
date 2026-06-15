@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,18 +29,10 @@ Future<void> main() async {
     debugPrint('dotenv skipped: $e');
   }
 
-  // Marketing site is dark-only — it's a brand surface, not a product
-  // chrome. Edge-to-edge dark status bar so a phone user who adds the
-  // site to their home screen doesn't see a white flash.
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Color(0x00000000),
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFF0F172A),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  // System overlay is left to the active theme — the site now ships both a
+  // light and a dark variant (see WebsiteApp + themeModeProvider), so forcing
+  // a dark status bar here would fight a light-mode visitor. On web the
+  // browser chrome follows the <meta name="theme-color"> in web/index.html.
 
   runApp(const ProviderScope(child: WebsiteApp()));
 }

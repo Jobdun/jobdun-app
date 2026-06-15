@@ -46,7 +46,7 @@ class BlueprintGridBackground extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-            child: CustomPaint(
+          child: CustomPaint(
             painter: _GridPainter(spacing: spacing, linePaint: paint),
             // The grid sits behind everything; do not absorb hits.
             child: const SizedBox.expand(),

@@ -65,8 +65,10 @@ class _RolesSectionState extends State<RolesSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (carousel) _Carousel(controller: _pageController, items: _items)
-            else _TwoUp(items: _items),
+            if (carousel)
+              _Carousel(controller: _pageController, items: _items)
+            else
+              _TwoUp(items: _items),
             if (carousel) ...[
               Gap(AppSpacing.lg.h),
               _Dots(
@@ -83,7 +85,11 @@ class _RolesSectionState extends State<RolesSection> {
 }
 
 class _RoleItem {
-  const _RoleItem({required this.asset, required this.caption, required this.tilt});
+  const _RoleItem({
+    required this.asset,
+    required this.caption,
+    required this.tilt,
+  });
   final String asset;
   final String caption;
   final double tilt;
@@ -138,7 +144,11 @@ class _Carousel extends StatelessWidget {
 }
 
 class _Dots extends StatelessWidget {
-  const _Dots({required this.count, required this.page, required this.controller});
+  const _Dots({
+    required this.count,
+    required this.page,
+    required this.controller,
+  });
   final int count;
   final double page;
   final PageController controller;
@@ -179,11 +189,7 @@ class _RoleCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Center(
-          child: PhoneFrame(
-            asset: item.asset,
-            tilt: item.tilt,
-            maxHeight: 800,
-          ),
+          child: PhoneFrame(asset: item.asset, tilt: item.tilt, maxHeight: 800),
         ),
         const Gap(24),
         Text(

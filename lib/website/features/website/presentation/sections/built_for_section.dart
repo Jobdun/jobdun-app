@@ -44,10 +44,7 @@ class BuiltForSection extends StatelessWidget {
               'this country upright. Sparkies. Chippies. Plumbers. '
               'Concreters. Roofers. Brickies. The ones who actually '
               'turn up at six.',
-              style: tt.bodyLarge!.copyWith(
-                color: c.text1,
-                height: 1.6,
-              ),
+              style: tt.bodyLarge!.copyWith(color: c.text1, height: 1.6),
             ),
             Gap(AppSpacing.md.h),
             Text(
@@ -55,20 +52,14 @@ class BuiltForSection extends StatelessWidget {
               'licence has been looked up. Every builder has an ABN. '
               "If we wouldn't put them on our own site, they don't "
               'go on yours.',
-              style: tt.bodyLarge!.copyWith(
-                color: c.text2,
-                height: 1.6,
-              ),
+              style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
             ),
             Gap(AppSpacing.md.h),
             Text(
               'We are a small team. We have used the trades in this '
               "roster ourselves. If you have a job and we don't have a "
               "trade for it, we'll say so. That's the whole pitch.",
-              style: tt.bodyLarge!.copyWith(
-                color: c.text2,
-                height: 1.6,
-              ),
+              style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
             ),
           ],
         ),

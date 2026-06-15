@@ -23,17 +23,20 @@ class ValuesStrip extends StatelessWidget {
     const items = [
       _Value(
         label: 'No subscription.',
-        body: 'Builders post jobs. Trades apply. There is no monthly fee '
+        body:
+            'Builders post jobs. Trades apply. There is no monthly fee '
             'and no "premium" tier that unlocks real features.',
       ),
       _Value(
         label: 'No take rate.',
-        body: "We don't skim a cut off your pay. The job pays what you "
+        body:
+            "We don't skim a cut off your pay. The job pays what you "
             'agreed, and that is the whole story.',
       ),
       _Value(
         label: 'No anonymous operators.',
-        body: 'Every account is checked at sign-up. Anonymous profiles '
+        body:
+            'Every account is checked at sign-up. Anonymous profiles '
             'do not exist on Jobdun.',
       ),
     ];

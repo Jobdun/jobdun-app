@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/theme/app_icons.dart';
-import '../providers/active_section_provider.dart';
 import '../widgets/phone_frame.dart';
 
 /// Section-level page padding. Every section uses this so the page
@@ -21,8 +20,8 @@ class _PagePad extends StatelessWidget {
     final pad = w >= 1100
         ? 96.0
         : w >= 720
-            ? 64.0
-            : 24.0;
+        ? 64.0
+        : 24.0;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: pad),
       child: child,
@@ -35,11 +34,11 @@ class _PagePad extends StatelessWidget {
 /// is the hero.
 ///
 /// On mobile the columns stack and the phone drops below the copy.
-class HeroSection extends ConsumerWidget {
+class HeroSection extends StatelessWidget {
   const HeroSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
@@ -48,8 +47,11 @@ class HeroSection extends ConsumerWidget {
     return Container(
       width: double.infinity,
       color: c.background,
-      padding: EdgeInsets.symmetric(
-        vertical: AppSpacing.xxl.h * 1.5,
+      // Extra top room clears the floating glass nav; generous bottom rhythm
+      // hands off to the trust band below.
+      padding: EdgeInsets.only(
+        top: (AppSpacing.xxl * 2.2).h,
+        bottom: AppSpacing.xxl.h * 1.5,
       ),
       child: _PagePad(
         child: Center(
@@ -59,16 +61,13 @@ class HeroSection extends ConsumerWidget {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const PhoneFrame(
-                        asset: 'assets/website/screenshots/ftue-splash.png',
-                        tilt: -0.04,
-                      ),
+                      const _HeroPhone(width: 280),
                       Gap(AppSpacing.xxl.h),
                       _CopyBlock(
                         tt: tt,
                         c: c,
-                        onHire: () => _scrollTo(ref, 'hiring'),
-                        onCrew: () => _scrollTo(ref, 'crews'),
+                        onHire: () => context.go('/for-builders'),
+                        onCrew: () => context.go('/for-crews'),
                         align: TextAlign.center,
                       ),
                     ],
@@ -82,19 +81,14 @@ class HeroSection extends ConsumerWidget {
                           child: _CopyBlock(
                             tt: tt,
                             c: c,
-                            onHire: () => _scrollTo(ref, 'hiring'),
-                            onCrew: () => _scrollTo(ref, 'crews'),
+                            onHire: () => context.go('/for-builders'),
+                            onCrew: () => context.go('/for-crews'),
                           ),
                         ),
                         Gap(64.w),
-                        Expanded(
+                        const Expanded(
                           flex: 5,
-                          child: Center(
-                            child: PhoneFrame(
-                              asset: 'assets/website/screenshots/ftue-splash.png',
-                              tilt: -0.04,
-                            ),
-                          ),
+                          child: Center(child: _HeroPhone(width: 320)),
                         ),
                       ],
                     ),
@@ -103,10 +97,6 @@ class HeroSection extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  void _scrollTo(WidgetRef ref, String id) {
-    ref.read(scrollToProvider.notifier).request(id);
   }
 }
 
@@ -136,15 +126,18 @@ class _CopyBlock extends StatelessWidget {
         // No logo here — the sticky SiteTopBar already carries the
         // wordmark. Rendering it twice in the same viewport made
         // the brand mark look like a repeating watermark.
-        Text(
-          'Only verified.\nNo timewasters.',
-          textAlign: align,
-          style: tt.displayLarge!.copyWith(
-            color: c.text1,
-            height: 1.05,
-            letterSpacing: -0.5,
+        Semantics(
+          header: true,
+          child: Text(
+            'Only verified.\nNo timewasters.',
+            textAlign: align,
+            style: tt.displayLarge!.copyWith(
+              color: c.text1,
+              height: 1.05,
+              letterSpacing: -0.5,
+            ),
+            maxLines: 3,
           ),
-          maxLines: 3,
         ),
         Gap(AppSpacing.lg.h),
         Text(
@@ -162,7 +155,11 @@ class _CopyBlock extends StatelessWidget {
               : WrapAlignment.start,
           children: [
             _Cta(label: "I'M HIRING", primary: true, onPressed: onHire),
-            _Cta(label: "I'M LOOKING FOR WORK", primary: false, onPressed: onCrew),
+            _Cta(
+              label: "I'M LOOKING FOR WORK",
+              primary: false,
+              onPressed: onCrew,
+            ),
           ],
         ),
       ],
@@ -170,8 +167,55 @@ class _CopyBlock extends StatelessWidget {
   }
 }
 
+/// The hero phone with the one sanctioned soft orange radial glow behind it.
+/// The glow is the single piece of "depth" the refined-flat+ direction allows
+/// on the marketing site — a quiet brand halo, not a drop shadow.
+class _HeroPhone extends StatelessWidget {
+  const _HeroPhone({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  radius: 0.72,
+                  colors: [
+                    c.action.withValues(alpha: 0.22),
+                    c.action.withValues(alpha: 0.06),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        PhoneFrame(
+          asset: 'assets/website/screenshots/ftue-splash.png',
+          tilt: -0.04,
+          width: width,
+          semanticLabel:
+              'The Jobdun app open on its welcome screen, showing the verified-trades job feed.',
+        ),
+      ],
+    );
+  }
+}
+
 class _Cta extends StatelessWidget {
-  const _Cta({required this.label, required this.primary, required this.onPressed});
+  const _Cta({
+    required this.label,
+    required this.primary,
+    required this.onPressed,
+  });
 
   final String label;
   final bool primary;
@@ -200,7 +244,11 @@ class _Cta extends StatelessWidget {
             children: [
               Text(label, style: tt.labelLarge!.copyWith(color: fg)),
               Gap(AppSpacing.sm.w),
-              Icon(AppIcons.chevronRight, size: AppIconSize.inline.r, color: fg),
+              Icon(
+                AppIcons.chevronRight,
+                size: AppIconSize.inline.r,
+                color: fg,
+              ),
             ],
           ),
         ),

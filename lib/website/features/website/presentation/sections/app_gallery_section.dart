@@ -98,9 +98,7 @@ class AppGallerySection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     for (var i = 0; i < phones.length; i++) ...[
-                      Expanded(
-                        child: _PhoneWithCaption(phone: phones[i]),
-                      ),
+                      Expanded(child: _PhoneWithCaption(phone: phones[i])),
                       if (i < phones.length - 1) const Gap(24),
                     ],
                   ],
@@ -142,11 +140,7 @@ class _PhoneWithCaption extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Center(
-          child: PhoneFrame(
-            asset: phone.asset,
-            tilt: phone.tilt,
-            width: width,
-          ),
+          child: PhoneFrame(asset: phone.asset, tilt: phone.tilt, width: width),
         ),
         const Gap(20),
         Text(

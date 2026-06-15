@@ -16,10 +16,7 @@ class HammerMarkIllustration extends StatelessWidget {
     return SizedBox.square(
       dimension: size,
       child: CustomPaint(
-        painter: _HammerPainter(
-          headColor: c.action,
-          handleColor: c.text1,
-        ),
+        painter: _HammerPainter(headColor: c.action, handleColor: c.text1),
       ),
     );
   }
@@ -51,24 +48,14 @@ class _HammerPainter extends CustomPainter {
     canvas.drawRRect(handleRRect, Paint()..color = handleColor);
 
     final headHeight = h * 0.22;
-    final headRect = Rect.fromLTWH(
-      w * 0.08,
-      h * 0.08,
-      w * 0.84,
-      headHeight,
-    );
+    final headRect = Rect.fromLTWH(w * 0.08, h * 0.08, w * 0.84, headHeight);
     final headRRect = RRect.fromRectAndRadius(
       headRect,
       Radius.circular(headHeight * 0.18),
     );
     canvas.drawRRect(headRRect, Paint()..color = headColor);
 
-    final collarRect = Rect.fromLTWH(
-      w * 0.20,
-      h * 0.30,
-      w * 0.40,
-      h * 0.04,
-    );
+    final collarRect = Rect.fromLTWH(w * 0.20, h * 0.30, w * 0.40, h * 0.04);
     canvas.drawRect(
       collarRect,
       Paint()..color = headColor.withValues(alpha: 0.6),

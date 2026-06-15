@@ -30,8 +30,8 @@ class SiteSectionFrame extends StatelessWidget {
     final pad = w >= 1100
         ? 96.0
         : w >= 720
-            ? 64.0
-            : 24.0;
+        ? 64.0
+        : 24.0;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: pad),
       child: Center(

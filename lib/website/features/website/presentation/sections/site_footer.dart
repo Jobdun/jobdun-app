@@ -3,7 +3,9 @@ import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/design/colors.dart';
+import '../../../../../core/design/widgets/jobdun_logo.dart';
 import '../widgets/site_section_frame.dart';
+import '../widgets/social_links.dart';
 
 /// Footer — three columns on desktop, stacked on mobile. The contact
 /// column lists both `sam@jobdun.com.au` (general) and
@@ -31,7 +33,7 @@ class SiteFooter extends StatelessWidget {
             final wide = constraints.maxWidth >= 720;
             final columns = [
               _FooterCol(
-                title: 'JOBDUN',
+                title: 'LEGAL',
                 items: [
                   _FooterLink('Privacy policy', '/privacy/'),
                   _FooterLink('Delete your account', '/delete-account/'),
@@ -63,7 +65,8 @@ class SiteFooter extends StatelessWidget {
                         children: [
                           for (var i = 0; i < columns.length; i++) ...[
                             Expanded(child: columns[i]),
-                            if (i < columns.length - 1) const SizedBox(width: 32),
+                            if (i < columns.length - 1)
+                              const SizedBox(width: 32),
                           ],
                         ],
                       ),
@@ -89,7 +92,25 @@ class SiteFooter extends StatelessWidget {
                       style: tt.bodySmall!.copyWith(color: c.text3),
                     ),
                   ];
-            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: cols);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const JobdunLogo(variant: LogoVariant.mark, height: 34),
+                const Gap(12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: Text(
+                    'The verified workforce platform for Australian '
+                    'construction trades.',
+                    style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.5),
+                  ),
+                ),
+                const Gap(20),
+                const SocialLinks(iconSize: 20),
+                const Gap(40),
+                ...cols,
+              ],
+            );
           },
         ),
       ),

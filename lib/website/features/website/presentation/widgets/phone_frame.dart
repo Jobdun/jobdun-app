@@ -21,12 +21,17 @@ class PhoneFrame extends StatelessWidget {
   const PhoneFrame({
     super.key,
     required this.asset,
+    this.semanticLabel,
     this.width = 320,
     this.maxHeight = 800,
     this.tilt = 0,
   });
 
   final String asset;
+
+  /// Alt text for the screenshot (WCAG 1.1.1). When null the frame is marked
+  /// decorative so screen readers skip it instead of announcing a filename.
+  final String? semanticLabel;
   final double width;
   final double maxHeight;
   final double tilt;
@@ -60,6 +65,8 @@ class PhoneFrame extends StatelessWidget {
                   asset,
                   fit: BoxFit.cover,
                   alignment: Alignment.topCenter,
+                  semanticLabel: semanticLabel,
+                  excludeFromSemantics: semanticLabel == null,
                 ),
               ),
               // Faint orange right-edge glow — sits over the screenshot

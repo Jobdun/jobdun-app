@@ -29,20 +29,23 @@ class HowItWorksSection extends StatelessWidget {
       _Step(
         illustrationKind: _StepKind.seal,
         title: 'Verified before they apply.',
-        body: 'Trades register with their licence number. We cross-check '
+        body:
+            'Trades register with their licence number. We cross-check '
             'the national register before they can pick up a single job.',
       ),
       _Step(
         illustrationKind: _StepKind.rings,
         title: 'Local by default.',
-        body: 'Pick the suburb you work in. The feed shows you the work '
+        body:
+            'Pick the suburb you work in. The feed shows you the work '
             "that's actually drivable from your yard — not 80 kilometres of "
             'scroll-and-guess.',
       ),
       _Step(
         illustrationKind: _StepKind.hammer,
         title: 'On the tools in three taps.',
-        body: 'See a job. Check the trust score. Apply. The platform gets '
+        body:
+            'See a job. Check the trust score. Apply. The platform gets '
             'out of the way once the work starts.',
       ),
     ];
@@ -101,7 +104,11 @@ class HowItWorksSection extends StatelessWidget {
 enum _StepKind { seal, rings, hammer }
 
 class _Step {
-  const _Step({required this.illustrationKind, required this.title, required this.body});
+  const _Step({
+    required this.illustrationKind,
+    required this.title,
+    required this.body,
+  });
   final _StepKind illustrationKind;
   final String title;
   final String body;

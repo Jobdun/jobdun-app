@@ -1,75 +1,115 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/design/widgets/jobdun_logo.dart';
-import '../providers/active_section_provider.dart';
+import '../providers/nav_scroll_provider.dart';
+import '../widgets/theme_toggle.dart';
 import 'site_top_nav_link.dart';
 
-/// Sticky top bar for the marketing site.
+/// Floating frosted-glass, router-aware top bar shared by every page.
 ///
-/// - Logo (left) → brand-mark + wordmark lockup, taps to scroll to top.
-/// - Three scroll anchors (HOW IT WORKS / FOR HIRERS / FOR CREWS) — the
-///   active one highlights as the user scrolls.
-/// - GET THE APP (right) — filled orange CTA, surfaces the same onTap
-///   passed in by `HomePage` (which scrolls to the closing CTA).
-///
-/// Crucially: this widget is `Positioned` *outside* the `CustomScrollView`,
-/// so it must NEVER call `Scrollable.ensureVisible` directly — that would
-/// throw "No scrollable widget found". Instead it routes scroll requests
-/// through `scrollToProvider`, which `HomePage` consumes via the scroll
-/// controller.
+/// - A pill inset from the viewport edges with a `BackdropFilter` blur so
+///   content scrolls *through* it. Transparent at the very top; frosted +
+///   hairline border once content scrolls under it ([navScrolledProvider]).
+/// - The J mark (left) returns home. On tablet+ the section links route via
+///   GoRouter and the current route highlights; on phones they collapse into a
+///   menu. The orange CONTACT US button is the standing call-to-action.
 class SiteTopBar extends ConsumerWidget {
-  const SiteTopBar({super.key, required this.onGetTheApp});
+  const SiteTopBar({super.key});
 
-  final VoidCallback onGetTheApp;
+  static const _links = <({String label, String route})>[
+    (label: 'FOR BUILDERS', route: '/for-builders'),
+    (label: 'FOR CREWS', route: '/for-crews'),
+    (label: 'PRICING', route: '/pricing'),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
-    final active = ref.watch(activeSectionProvider);
-    final scrolled = active != null;
+    final scrolled = ref.watch(navScrolledProvider);
+    final wide = MediaQuery.sizeOf(context).width >= 860;
+    final path = GoRouterState.of(context).uri.path;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scrolled ? c.surface : c.background,
-        border: Border(
-          bottom: BorderSide(
-            color: scrolled ? c.border : c.background,
-            width: 1,
-          ),
+    final fill = scrolled
+        ? c.surface.withValues(alpha: 0.78)
+        : c.background.withValues(alpha: 0.0);
+    final borderColor = scrolled ? c.border : Colors.transparent;
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          _hPad(context),
+          AppSpacing.md.h,
+          _hPad(context),
+          0,
         ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: _hPad(context),
-        vertical: AppSpacing.md.h,
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            InkWell(
-              onTap: () => ref.read(scrollToProvider.notifier).request('top'),
-              child: const JobdunLogo(variant: LogoVariant.full),
-            ),
-            const Spacer(),
-            // Nav — hidden on narrow phones, kept on tablet+. The new
-            // page doesn't have 3 distinct sections worth nav-anchoring
-            // (the screens/roles/bottom-cta all read as one continuous
-            // flow), so we keep just one anchor: back to the top.
-            if (MediaQuery.sizeOf(context).width >= 720) ...[
-              SiteTopNavLink(
-                label: 'ABOUT',
-                active: false,
-                onTap: () =>
-                    ref.read(scrollToProvider.notifier).request('top'),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1180),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.card.r),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(AppRadius.card.r),
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg.w,
+                    vertical: AppSpacing.sm.h,
+                  ),
+                  child: Row(
+                    children: [
+                      InkWell(
+                        onTap: () => context.go('/'),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Semantics(
+                          label: 'Jobdun — home',
+                          button: true,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: const JobdunLogo(
+                              variant: LogoVariant.trademark,
+                              height: 34,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (wide) ...[
+                        for (final link in _links) ...[
+                          SiteTopNavLink(
+                            label: link.label,
+                            active: path == link.route,
+                            onTap: () => context.go(link.route),
+                          ),
+                          Gap(AppSpacing.lg.w),
+                        ],
+                        const ThemeToggle(),
+                        Gap(AppSpacing.md.w),
+                        _ContactCta(active: path == '/contact'),
+                      ] else ...[
+                        const ThemeToggle(),
+                        Gap(AppSpacing.sm.w),
+                        _NavMenu(currentPath: path),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-              Gap(AppSpacing.lg.w),
-            ],
-            _GetTheAppButton(onPressed: onGetTheApp),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -78,29 +118,16 @@ class SiteTopBar extends ConsumerWidget {
 
 double _hPad(BuildContext context) {
   final w = MediaQuery.sizeOf(context).width;
-  if (w >= 1100) return AppSpacing.xxl.w;
-  if (w >= 720) return AppSpacing.xl.w;
-  return AppSpacing.lg.w;
+  if (w >= 1100) return AppSpacing.xl.w;
+  if (w >= 720) return AppSpacing.lg.w;
+  return AppSpacing.md.w;
 }
 
-class _GetTheAppButton extends StatelessWidget {
-  const _GetTheAppButton({required this.onPressed});
+/// Orange CONTACT US button — the standing call-to-action in the bar.
+class _ContactCta extends StatelessWidget {
+  const _ContactCta({required this.active});
 
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return _CompactOrangeCta(label: 'GET THE APP', onPressed: onPressed);
-  }
-}
-
-/// Compact orange CTA — used in the top bar so the bar height matches the
-/// logo height (~32 logical px) instead of the standard 56dp JButton.
-class _CompactOrangeCta extends StatelessWidget {
-  const _CompactOrangeCta({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +137,7 @@ class _CompactOrangeCta extends StatelessWidget {
       color: c.action,
       borderRadius: BorderRadius.circular(AppRadius.btn.r),
       child: InkWell(
-        onTap: onPressed,
+        onTap: () => context.go('/contact'),
         borderRadius: BorderRadius.circular(AppRadius.btn.r),
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -118,11 +145,54 @@ class _CompactOrangeCta extends StatelessWidget {
             vertical: AppSpacing.sm.h,
           ),
           child: Text(
-            label,
+            'CONTACT US',
             style: tt.labelLarge!.copyWith(color: c.onAction),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Phone-width navigation — collapses the section links + Contact into a menu.
+class _NavMenu extends StatelessWidget {
+  const _NavMenu({required this.currentPath});
+
+  final String currentPath;
+
+  static const _items = <({String label, String route})>[
+    (label: 'For builders', route: '/for-builders'),
+    (label: 'For crews', route: '/for-crews'),
+    (label: 'Pricing', route: '/pricing'),
+    (label: 'Contact us', route: '/contact'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return PopupMenuButton<String>(
+      tooltip: 'Menu',
+      icon: Icon(Icons.menu_rounded, color: c.text1),
+      color: c.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        side: BorderSide(color: c.border),
+      ),
+      onSelected: context.go,
+      itemBuilder: (context) => [
+        for (final item in _items)
+          PopupMenuItem<String>(
+            value: item.route,
+            child: Text(
+              item.label,
+              style: tt.titleSmall!.copyWith(
+                color: currentPath == item.route ? c.actionInk : c.text1,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
