@@ -94,6 +94,26 @@ dart format --set-exit-if-changed .  # CI format check
 flutter doctor
 ```
 
+### Testing UI changes — always run the app in the emulator
+
+**Mandatory rule for any change that affects the mobile app's UI** (new screens, redesigns, copy, form fields, navigation, theming, asset swaps): run the app in the Android emulator and capture real screenshots before claiming the change is done. Mockups, AI-generated UI, and stock photography are not substitutes. The marketing site at `jobdun.com.au` reuses real app screenshots as product visuals, and the docs/verification/ set is the canonical visual record.
+
+Full workflow in `docs/ANDROID_SCREENSHOTS.md` — emulator boot, APK install, `adb shell` driving, `screencap` capture, asset pipeline. One command:
+
+```bash
+bash scripts/capture_app_screenshots.sh
+```
+
+When invoked, the script:
+1. Boots `jobdun_test` AVD (KVM-accelerated on this host; user is in the `kvm` group).
+2. Installs `build/app/outputs/flutter-apk/app-debug.apk` and pre-grants `POST_NOTIFICATIONS` so the runtime dialog doesn't sit on top of FTUE.
+3. Launches `MainActivity`, drives the FTUE / role-select / create-account flow with `adb input tap` / `input swipe`, captures each screen with `screencap -p`.
+4. Writes the PNGs to `docs/verification/<date>-emulator-NN-<screen>.png` (committed) AND `assets/website/screenshots/<key>.png` (consumed by the marketing site).
+
+The script is **idempotent and re-runnable**. Run it any time the app's UI changes; commit the new verification PNGs alongside the code change so reviewers can see the actual screen.
+
+When the marketing site needs updated product visuals, edit the new `docs/verification/` PNGs down to the 3 site-consumed names (`ftue-splash.png`, `aussie-site.jpg`, `create-account.png`) in `assets/website/screenshots/`, rebuild, and redeploy.
+
 ### Admin web app (separate entrypoint)
 
 The admin console is a second Flutter entrypoint in the same repo, isolated under `lib/admin/`. It shares the Supabase project and design tokens with the mobile app but has its own router, login flow, and admin-role gate.
