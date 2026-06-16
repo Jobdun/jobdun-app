@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../widgets/hover_lift_card.dart';
@@ -44,7 +45,7 @@ class TestimonialsSection extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final stacked = w < 900;
+    final stacked = w < Bp.laptop;
 
     return Container(
       width: double.infinity,

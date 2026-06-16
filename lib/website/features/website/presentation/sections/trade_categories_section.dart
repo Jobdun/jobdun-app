@@ -2,25 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
-import '../../../../../core/theme/app_icons.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
 /// "Built for every trade on site." — a confident title, a one-line qualifier,
 /// then a wrap of AU-slang trade chips. The chips are the social proof of
-/// breadth: a chippie and a sparky both see themselves here.
+/// breadth: a chippie and a sparky both see themselves here. Text-only chips —
+/// the trade name does the work, no decorative icon per tag.
 class TradeCategoriesSection extends StatelessWidget {
   const TradeCategoriesSection({super.key});
 
-  static const _trades = <_Trade>[
-    _Trade('Chippies', AppIcons.myJobsOutline),
-    _Trade('Sparkies', AppIcons.lightning),
-    _Trade('Plumbers', AppIcons.drop),
-    _Trade('Brickies', AppIcons.building),
-    _Trade('Painters', AppIcons.paintRoller),
-    _Trade('Concreters', AppIcons.hardHat),
-    _Trade('Roofers', AppIcons.homeOutline),
-    _Trade('Landscapers', AppIcons.tree),
+  static const _trades = <String>[
+    'Chippies',
+    'Sparkies',
+    'Plumbers',
+    'Brickies',
+    'Painters',
+    'Concreters',
+    'Roofers',
+    'Landscapers',
   ];
 
   @override
@@ -69,7 +69,7 @@ class TradeCategoriesSection extends StatelessWidget {
                 for (var i = 0; i < _trades.length; i++)
                   RevealOnScroll(
                     delayMs: 120 + i * 50,
-                    child: _TradeChip(trade: _trades[i]),
+                    child: _TradeChip(label: _trades[i]),
                   ),
               ],
             ),
@@ -81,41 +81,28 @@ class TradeCategoriesSection extends StatelessWidget {
 }
 
 class _TradeChip extends StatelessWidget {
-  const _TradeChip({required this.trade});
+  const _TradeChip({required this.label});
 
-  final _Trade trade;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: c.surfaceRaised,
         borderRadius: BorderRadius.circular(AppRadius.btn),
         border: Border.all(color: c.border),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(trade.icon, size: 18, color: c.action),
-          const Gap(10),
-          Text(
-            trade.label,
-            style: tt.titleSmall!.copyWith(
-              color: c.text1,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: tt.titleSmall!.copyWith(
+          color: c.text1,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
-}
-
-class _Trade {
-  const _Trade(this.label, this.icon);
-  final String label;
-  final IconData icon;
 }

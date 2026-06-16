@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/breakpoints.dart';
+
 /// Standard outer-frame for every section on the marketing site.
 ///
 /// Composition: `Padding(horizontal: pad) > Center > ConstrainedBox(maxWidth: 1200) > child`.
@@ -27,9 +29,9 @@ class SiteSectionFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
-    final pad = w >= 1100
+    final pad = w >= Bp.desktop
         ? 96.0
-        : w >= 720
+        : w >= Bp.tablet
         ? 64.0
         : 24.0;
     return Padding(

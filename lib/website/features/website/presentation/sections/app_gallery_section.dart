@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
+import '../../../../app/theme/breakpoints.dart';
 import '../widgets/orange_rule.dart';
 import '../widgets/phone_frame.dart';
 import '../widgets/roadmap_bar.dart';
@@ -57,7 +58,7 @@ class _AppGallerySectionState extends State<AppGallerySection>
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final stacked = w < 960;
+    final stacked = w < Bp.laptop;
 
     return Container(
       width: double.infinity,
@@ -471,7 +472,7 @@ const _milestones = <_Milestone>[
     headline: 'Post the job in 20s.',
     caption:
         'Title, trade, location, pay. Five steps. Verified crews see it first.',
-    asset: 'assets/website/screenshots/post-job-wizard.webp',
+    asset: 'assets/website/screenshots/posted-job.webp',
   ),
   _Milestone(
     number: '02',
@@ -484,8 +485,9 @@ const _milestones = <_Milestone>[
   _Milestone(
     number: '03',
     eyebrow: 'Hire',
-    headline: "You're connected.",
-    caption: 'One tap. Rate is locked. Message opens the second it lands.',
-    asset: 'assets/website/screenshots/hire-celebration.webp',
+    headline: 'Hired. Job filled.',
+    caption:
+        'One tap locks the rate, flips the job to FILLED, and opens the chat.',
+    asset: 'assets/website/screenshots/job-filled.webp',
   ),
 ];

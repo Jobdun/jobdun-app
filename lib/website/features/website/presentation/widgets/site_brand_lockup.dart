@@ -27,22 +27,24 @@ class SiteBrandLockup extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
+        Container(
           width: height,
           height: height,
-          child: ClipRRect(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.action,
             borderRadius: BorderRadius.circular(height * 0.28),
-            child: ColoredBox(
-              color: c.action,
-              child: SvgPicture.asset(
-                _mark,
-                fit: BoxFit.contain,
-                colorFilter: const ColorFilter.mode(
-                  Colors
-                      .white, // intentional: matches the white-on-orange app icon
-                  BlendMode.srcIn,
-                ),
-              ),
+            // Theme-aware hairline: a faint dark edge in light mode (so the
+            // orange square stays crisp on a light nav) and a faint light edge
+            // in dark mode. `c.text1` already flips with the theme.
+            border: Border.all(color: c.text1.withValues(alpha: 0.12)),
+          ),
+          child: SvgPicture.asset(
+            _mark,
+            fit: BoxFit.contain,
+            colorFilter: const ColorFilter.mode(
+              Colors.white, // intentional: matches the white-on-orange app icon
+              BlendMode.srcIn,
             ),
           ),
         ),

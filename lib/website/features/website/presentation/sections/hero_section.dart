@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/theme/breakpoints.dart';
 import '../widgets/phone_frame.dart';
 
 /// Section-level page padding. Every section uses this so the page
@@ -17,9 +18,9 @@ class _PagePad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
-    final pad = w >= 1100
+    final pad = w >= Bp.desktop
         ? 96.0
-        : w >= 720
+        : w >= Bp.tablet
         ? 64.0
         : 24.0;
     return Padding(
@@ -42,7 +43,7 @@ class HeroSection extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final stacked = w < 960;
+    final stacked = w < Bp.laptop;
 
     return Container(
       width: double.infinity,
@@ -200,11 +201,12 @@ class _HeroPhone extends StatelessWidget {
           ),
         ),
         PhoneFrame(
-          asset: 'assets/website/screenshots/hire-celebration.webp',
+          asset:
+              'assets/website/screenshots/17_builder_home_with_applicant.webp',
           tilt: -0.04,
           width: width,
           semanticLabel:
-              'The Jobdun app showing the hire confirmation: a green checkmark, "YOU\'RE CONNECTED" and "You hired Ken."',
+              'The Jobdun app builder home: a new applicant on a 3-phase switchboard job, with a Sydney job map.',
         ),
       ],
     );

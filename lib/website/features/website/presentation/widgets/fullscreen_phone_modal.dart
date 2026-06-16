@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_icons.dart';
+import '../../../../app/theme/breakpoints.dart';
 import '../widgets/phone_frame.dart';
 
 /// Fullscreen phone modal — opens when a [StoryScrollSection] phone
@@ -24,7 +25,7 @@ class FullscreenPhoneModal extends StatelessWidget {
     final mq = MediaQuery.sizeOf(context);
     // Phone fits the viewport's shorter axis minus a small margin.
     // On mobile, width drives; on web, height drives.
-    final phoneW = mq.width < 720
+    final phoneW = mq.width < Bp.tablet
         ? (mq.width - 48).clamp(280.0, 420.0)
         : (mq.height * (9 / 19.5) - 32).clamp(360.0, 540.0);
     return Dialog(

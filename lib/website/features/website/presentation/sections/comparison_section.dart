@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/theme/app_icons.dart';
 import '../widgets/reveal_on_scroll.dart';
@@ -38,7 +39,7 @@ class ComparisonSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final wide = MediaQuery.sizeOf(context).width >= 820;
+    final wide = MediaQuery.sizeOf(context).width >= Bp.laptop;
 
     final jobdun = _CompareCard(
       title: 'Jobdun',
