@@ -115,7 +115,7 @@ class HeroSection extends StatelessWidget {
                             onCrew: () => context.go('/for-crews'),
                           ),
                         ),
-                        Gap(64.w),
+                        SizedBox(width: 64.w), // Gap breaks IntrinsicHeight baseline
                         const Expanded(
                           flex: 5,
                           child: Center(child: _HeroPhone(width: 320)),

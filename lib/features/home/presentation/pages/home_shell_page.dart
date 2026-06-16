@@ -199,52 +199,54 @@ class _BottomNav extends ConsumerWidget {
             borderRadius: BorderRadius.circular(28.r),
             border: Border.all(color: c.border),
           ),
-        child: Row(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Expanded(child: _dockTab(context, tt, c, i)),
-            Expanded(
-              child: Semantics(
-                label: 'Account and settings',
-                button: true,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(24.r),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    showAccountSheet(context);
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.h),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AvatarBlock(
-                          initials: name.isEmpty ? '?' : name[0].toUpperCase(),
-                          imageUrl: profile?.avatarUrl,
-                          size: 24,
-                          circle: true,
-                        ),
-                        Gap(3.h),
-                        Text(
-                          'You',
-                          style: tt.labelSmall!.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                            color: c.text3,
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(child: _dockTab(context, tt, c, i)),
+              Expanded(
+                child: Semantics(
+                  label: 'Account and settings',
+                  button: true,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24.r),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      showAccountSheet(context);
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 5.h),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AvatarBlock(
+                            initials: name.isEmpty
+                                ? '?'
+                                : name[0].toUpperCase(),
+                            imageUrl: profile?.avatarUrl,
+                            size: 24,
+                            circle: true,
                           ),
-                          maxLines: 1,
-                        ),
-                      ],
+                          Gap(3.h),
+                          Text(
+                            'You',
+                            style: tt.labelSmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                              color: c.text3,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _dockTab(BuildContext context, TextTheme tt, JColors c, int i) {
