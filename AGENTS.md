@@ -5,6 +5,7 @@ Guidance for AI coding agents (Claude Code, Copilot, Codex, Gemini, etc.) workin
 ## Read this first
 
 1. **`CLAUDE.md`** (project root) — the single source of truth for project context, architecture, commands, packages, design tokens, branch strategy, and CI/CD. Everything in CLAUDE.md applies to all agents and **overrides default agent behavior**.
+2. **`docs/ARCHITECTURE.md`** — current-state architecture snapshot: wired features, package pins, secrets locations, branch/release state, known pitfalls. Read alongside `CLAUDE.md` when you need to know *what the repo looks like today*; `CLAUDE.md` is *how to work in it*.
 2. **`design-system/jobdun/MASTER.md`** then **`design-system/jobdun/pages/<page>.md`** — read before building or modifying any screen. Page overrides win over MASTER.
 3. **`docs/CLAUDE_SKILLS.md`** — inventory of every installed skill, what it is in plain terms, and when to use it on Jobdun. Only project-scoped skills (`.claude/`) travel to cloud/remote runs; global ones do not.
 
