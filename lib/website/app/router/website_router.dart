@@ -1,3 +1,5 @@
+import 'package:animations/animations.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,28 +24,62 @@ final websiteRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const HomePage(),
+        pageBuilder: (context, state) =>
+            _fadeThroughPage(context, state, const HomePage()),
       ),
       GoRoute(
         path: '/for-builders',
         name: 'for-builders',
-        builder: (context, state) => const ForBuildersPage(),
+        pageBuilder: (context, state) =>
+            _fadeThroughPage(context, state, const ForBuildersPage()),
       ),
       GoRoute(
         path: '/for-crews',
         name: 'for-crews',
-        builder: (context, state) => const ForCrewsPage(),
+        pageBuilder: (context, state) =>
+            _fadeThroughPage(context, state, const ForCrewsPage()),
       ),
       GoRoute(
         path: '/pricing',
         name: 'pricing',
-        builder: (context, state) => const PricingPage(),
+        pageBuilder: (context, state) =>
+            _fadeThroughPage(context, state, const PricingPage()),
       ),
       GoRoute(
         path: '/contact',
         name: 'contact',
-        builder: (context, state) => const ContactPage(),
+        pageBuilder: (context, state) =>
+            _fadeThroughPage(context, state, const ContactPage()),
       ),
     ],
   );
 });
+
+/// Wraps a destination in a Material "fade through" page transition — the
+/// correct pattern for switching between peer top-level destinations. Falls
+/// back to an instant cut under reduced-motion.
+CustomTransitionPage<void> _fadeThroughPage(
+  BuildContext context,
+  GoRouterState state,
+  Widget child,
+) {
+  final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 220),
+    reverseTransitionDuration: reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 180),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (reduceMotion) return child;
+      return FadeThroughTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        child: child,
+      );
+    },
+  );
+}
