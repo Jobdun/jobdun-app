@@ -10,6 +10,7 @@ import '../../../../../core/theme/app_icons.dart';
 import '../../../../app/placeholders/admin_placeholder_stat.dart';
 import '../../../../app/router/admin_routes.dart';
 import '../../../admin_dashboard/presentation/providers/admin_dashboard_stats_provider.dart';
+import '../widgets/admin_domain_deployment_card.dart';
 import '../widgets/admin_scaffold.dart';
 
 class AdminDashboardPage extends ConsumerWidget {
@@ -42,6 +43,8 @@ class AdminDashboardPage extends ConsumerWidget {
             ),
             const Gap(32),
             const _StatsStrip(),
+            const Gap(36),
+            const AdminDomainDeploymentCard(),
             const Gap(36),
             const _ComingSoonStatsStrip(),
             const Gap(40),

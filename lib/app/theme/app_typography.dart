@@ -79,8 +79,9 @@ abstract final class AppTypography {
   }
 }
 
-/// Admin-console type scale. The admin web app (`lib/admin/**`) reuses the same
-/// Oswald + Open Sans families as mobile but at its own desktop-density sizes.
+/// Admin-console type scale. The admin web app (`lib/admin/**`) uses the same
+/// Archivo + Inter pairing as the marketing website, but keeps its own
+/// desktop-density sizes and tighter product-UI rhythm.
 ///
 /// Centralising them here is not optional decoration: the repo-wide design lint
 /// (`scripts/validate.sh`) forbids `GoogleFonts.*` anywhere under `lib/` except
@@ -92,13 +93,13 @@ abstract final class AppTypography {
 /// sites still pass `context.c.*` tokens so the values lerp correctly if the
 /// console ever follows the app's theme mode.
 abstract final class AdminText {
-  static TextStyle _os(
+  static TextStyle _arch(
     double size,
     FontWeight w,
     double ls,
     double h,
     Color c,
-  ) => GoogleFonts.oswald(
+  ) => GoogleFonts.archivo(
     fontSize: size,
     fontWeight: w,
     letterSpacing: ls,
@@ -106,13 +107,13 @@ abstract final class AdminText {
     color: c,
   );
 
-  static TextStyle _sans(
+  static TextStyle _inter(
     double size,
     FontWeight w,
     double ls,
     double h,
     Color c,
-  ) => GoogleFonts.openSans(
+  ) => GoogleFonts.inter(
     fontSize: size,
     fontWeight: w,
     letterSpacing: ls,
@@ -120,56 +121,61 @@ abstract final class AdminText {
     color: c,
   );
 
-  // ── Oswald — display / headings ──────────────────────────────────────────
+  // ── Archivo — display / headings / high-intent labels ────────────────────
   /// Page hero (dashboard "WELCOME, ADMIN.").
-  static TextStyle display(Color c) => _os(40, FontWeight.w700, 1.0, 1.1, c);
+  static TextStyle display(Color c) =>
+      _arch(40, FontWeight.w800, -0.3, 1.05, c);
 
   /// Sidebar / login wordmark — wide brand tracking.
-  static TextStyle wordmark(Color c) => _os(22, FontWeight.w700, 3.0, 1.0, c);
+  static TextStyle wordmark(Color c) => _arch(22, FontWeight.w800, 0.8, 1.0, c);
 
   /// Big metric number on dashboard stat tiles.
-  static TextStyle statValue(Color c) => _os(32, FontWeight.w700, 0.5, 1.0, c);
+  static TextStyle statValue(Color c) =>
+      _arch(32, FontWeight.w800, -0.2, 1.0, c);
 
   /// Dialog / review-sheet title.
-  static TextStyle dialogTitle(Color c) => _os(22, FontWeight.w700, 0, 1.15, c);
+  static TextStyle dialogTitle(Color c) =>
+      _arch(22, FontWeight.w800, 0, 1.12, c);
 
   /// Topbar title + login "RESTRICTED ACCESS".
-  static TextStyle pageTitle(Color c) => _os(20, FontWeight.w600, 0.5, 1.2, c);
+  static TextStyle pageTitle(Color c) => _arch(20, FontWeight.w700, 0, 1.18, c);
 
   /// In-page section header (PENDING / REVIEWED, error-block titles).
   static TextStyle sectionTitle(Color c) =>
-      _os(18, FontWeight.w700, 1.5, 1.2, c);
+      _arch(18, FontWeight.w800, 0.6, 1.18, c);
 
   /// Detail-card header eyebrow (PROFILE / BUILDER / TRADE / VERIFICATIONS).
-  static TextStyle cardLabel(Color c) => _os(13, FontWeight.w700, 1.4, 1.2, c);
-
-  // ── Open Sans — body / labels ────────────────────────────────────────────
-  /// Intro / explanatory body copy.
-  static TextStyle body(Color c) => _sans(14, FontWeight.w400, 0, 1.5, c);
-
-  /// Emphasised inline value (names, primary cell text).
-  static TextStyle bodyStrong(Color c) => _sans(13, FontWeight.w600, 0, 1.4, c);
-
-  /// Default value / card copy.
-  static TextStyle value(Color c) => _sans(13, FontWeight.w400, 0, 1.5, c);
-
-  /// Text inside ad-hoc input fields.
-  static TextStyle input(Color c) => _sans(13, FontWeight.w500, 0, 1.3, c);
-
-  /// Timestamps, hints, secondary metadata.
-  static TextStyle meta(Color c) => _sans(12, FontWeight.w400, 0, 1.4, c);
+  static TextStyle cardLabel(Color c) =>
+      _arch(13, FontWeight.w800, 1.0, 1.15, c);
 
   /// All-caps nav / chip / button label.
-  static TextStyle label(Color c) => _sans(12, FontWeight.w700, 1.2, 1.2, c);
+  static TextStyle label(Color c) => _arch(12, FontWeight.w800, 0.9, 1.15, c);
+
+  // ── Inter — body / dense data / small labels ─────────────────────────────
+  /// Intro / explanatory body copy.
+  static TextStyle body(Color c) => _inter(14, FontWeight.w400, 0, 1.55, c);
+
+  /// Emphasised inline value (names, primary cell text).
+  static TextStyle bodyStrong(Color c) =>
+      _inter(13, FontWeight.w600, 0, 1.45, c);
+
+  /// Default value / card copy.
+  static TextStyle value(Color c) => _inter(13, FontWeight.w400, 0, 1.55, c);
+
+  /// Text inside ad-hoc input fields.
+  static TextStyle input(Color c) => _inter(13, FontWeight.w500, 0, 1.35, c);
+
+  /// Timestamps, hints, secondary metadata.
+  static TextStyle meta(Color c) => _inter(12, FontWeight.w400, 0, 1.45, c);
 
   /// Sentence-case form / KV label.
-  static TextStyle labelMd(Color c) => _sans(12, FontWeight.w600, 0.5, 1.2, c);
+  static TextStyle labelMd(Color c) => _inter(12, FontWeight.w600, 0.4, 1.2, c);
 
   /// Small caption.
-  static TextStyle caption(Color c) => _sans(11, FontWeight.w600, 0, 1.3, c);
+  static TextStyle caption(Color c) => _inter(11, FontWeight.w600, 0, 1.35, c);
 
   /// Eyebrow / micro-label (stat labels, "SIGNED IN AS", badges).
-  static TextStyle eyebrow(Color c) => _sans(10, FontWeight.w700, 1.4, 1.2, c);
+  static TextStyle eyebrow(Color c) => _inter(10, FontWeight.w700, 1.2, 1.2, c);
 
   /// Monospace — raw regulator JSON payloads in the verification viewer.
   static TextStyle mono(Color c) =>
