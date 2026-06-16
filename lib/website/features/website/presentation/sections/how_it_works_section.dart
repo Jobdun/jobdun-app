@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../../core/design/colors.dart';
+import '../../../../app/theme/breakpoints.dart';
 import '../widgets/illustrations/badge_seal_illustration.dart';
 import '../widgets/illustrations/hammer_mark_illustration.dart';
 import '../widgets/illustrations/location_rings_illustration.dart';
@@ -23,7 +24,7 @@ class HowItWorksSection extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final stacked = w < 960;
+    final stacked = w < Bp.laptop;
 
     const steps = [
       _Step(

@@ -187,21 +187,22 @@ class _StoryScrollSectionState extends State<StoryScrollSection> {
       eyebrow: 'Sign in',
       headline: 'One account. Two sides.',
       body: 'Email, Google, or Apple. Switch sides any time.',
-      asset: 'assets/website/screenshots/login.png',
+      asset: 'assets/website/screenshots/login.webp',
     ),
     _StoryBeat(
       number: '02',
       eyebrow: 'Post the job',
-      headline: 'Five steps. Twenty seconds.',
-      body: 'Trade filters who sees the listing. Verified crews first.',
-      asset: 'assets/website/screenshots/post-job-wizard.png',
+      headline: 'Live in twenty seconds.',
+      body: 'Title, trade, location, pay. Verified crews see it first.',
+      asset: 'assets/website/screenshots/posted-job.webp',
     ),
     _StoryBeat(
       number: '03',
       eyebrow: 'Hire the tradie',
-      headline: "You're connected.",
-      body: 'One tap. Rate is locked. Message opens the second it lands.',
-      asset: 'assets/website/screenshots/hire-celebration.png',
+      headline: 'Hired. Job filled.',
+      body:
+          'One tap locks the rate, flips the listing to FILLED, and opens the chat.',
+      asset: 'assets/website/screenshots/job-filled.webp',
     ),
   ];
 }

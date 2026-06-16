@@ -175,3 +175,90 @@ abstract final class AdminText {
   static TextStyle mono(Color c) =>
       GoogleFonts.robotoMono(fontSize: 11, height: 1.4, color: c);
 }
+
+/// Marketing-site type scale — **Archivo + Inter** (Option A, the recommended
+/// pairing). Archivo is the industrial grotesque that matches the logo wordmark
+/// and carries heavy display weights; Inter is the modern UI body face. It
+/// lives here, beside [AppTypography] and [AdminText], because the design lint
+/// only allows `GoogleFonts.*` in this file and `app_theme.dart`.
+///
+/// The mobile app keeps Oswald + Open Sans ([AppTypography]); only the website
+/// theme (`WebsiteTheme`) consumes this scale. Sizes / line-heights mirror the
+/// app ramp so layout rhythm is unchanged — only the families (and a heavier
+/// display weight) differ.
+abstract final class WebsiteText {
+  static TextStyle _arch(
+    double size,
+    FontWeight w,
+    double ls,
+    double h,
+    Color c,
+  ) => GoogleFonts.archivo(
+    fontSize: size,
+    fontWeight: w,
+    letterSpacing: ls,
+    height: h,
+    color: c,
+  );
+
+  static TextStyle _inter(
+    double size,
+    FontWeight w,
+    double ls,
+    double h,
+    Color c,
+  ) => GoogleFonts.inter(
+    fontSize: size,
+    fontWeight: w,
+    letterSpacing: ls,
+    height: h,
+    color: c,
+  );
+
+  /// Wordmark ONLY — Archivo heavy, tuned to sit beside the hammer-J badge.
+  static TextStyle brandDisplay(Color color) => GoogleFonts.archivo(
+    fontSize: 40,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.5,
+    height: 1.0,
+    color: color,
+  );
+
+  /// Archivo (display/headings) + Inter (titles < 18 / body / small labels).
+  static TextTheme textTheme({
+    required Color text1,
+    required Color text2,
+    required Color text3,
+  }) {
+    return TextTheme(
+      displayLarge: _arch(40, FontWeight.w800, -0.5, 1.05, text1),
+      displayMedium: _arch(36, FontWeight.w800, -0.5, 1.08, text1),
+      displaySmall: _arch(32, FontWeight.w700, -0.25, 1.10, text1),
+      headlineLarge: _arch(32, FontWeight.w800, -0.25, 1.12, text1),
+      headlineMedium: _arch(26, FontWeight.w700, 0, 1.20, text1),
+      headlineSmall: _arch(22, FontWeight.w700, 0, 1.25, text1),
+      titleLarge: _arch(18, FontWeight.w700, 0, 1.30, text1),
+      titleMedium: _inter(16, FontWeight.w600, 0, 1.50, text1),
+      titleSmall: _inter(14, FontWeight.w600, 0, 1.40, text1),
+      bodyLarge: _inter(16, FontWeight.w400, 0, 1.55, text1),
+      bodyMedium: _inter(14, FontWeight.w400, 0, 1.55, text2),
+      bodySmall: _inter(12, FontWeight.w500, 0.1, 1.45, text2),
+      labelLarge: _arch(
+        14,
+        FontWeight.w700,
+        1.0,
+        1.10,
+        text1,
+      ), // CAPS via widget
+      labelMedium: _inter(12, FontWeight.w600, 0.4, 1.20, text2),
+      labelSmall: _inter(11, FontWeight.w600, 0.6, 1.20, text3),
+    );
+  }
+
+  /// Input label / hint / error styles (Inter) for the website input theme.
+  static TextStyle inputLabel(Color c) =>
+      _inter(11, FontWeight.w700, 0.8, 1.2, c);
+  static TextStyle inputHint(Color c) => _inter(13, FontWeight.w400, 0, 1.3, c);
+  static TextStyle inputError(Color c) =>
+      _inter(11, FontWeight.w500, 0, 1.3, c);
+}

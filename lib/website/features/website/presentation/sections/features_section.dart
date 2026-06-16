@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
-import '../../../../../core/theme/app_icons.dart';
 import '../widgets/hover_lift_card.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
@@ -11,47 +11,44 @@ import '../widgets/site_section_frame.dart';
 /// concrete things the app actually does. The conceptual "how it works"
 /// section sells the idea; this one names the features so a sceptical tradie
 /// can see exactly what they get.
+///
+/// Typography-led: no per-card icon. The headline carries each card and the
+/// hover-lift border supplies the structure — the modern, un-templated read.
 class FeaturesSection extends StatelessWidget {
   const FeaturesSection({super.key});
 
   static const _features = <_Feature>[
     _Feature(
-      icon: AppIcons.verified,
       title: 'Licence & ABN checks',
       body:
           'Every trade is cross-checked against the national licence '
           'register. Every builder carries a verified ABN.',
     ),
     _Feature(
-      icon: AppIcons.location,
       title: 'Local job matching',
       body:
           'Set the suburb you work out of and the feed only shows jobs '
           "that are actually drivable — no 80km guesswork.",
     ),
     _Feature(
-      icon: AppIcons.messageText,
       title: 'Talk direct, in-app',
       body:
           'Message the builder or the trade straight away. No agencies, '
           'no go-betweens, no phone tag.',
     ),
     _Feature(
-      icon: AppIcons.receipt,
       title: 'Quote on apply',
       body:
           'Send your price with the application. The job pays what you '
           'both agreed — written down, up front.',
     ),
     _Feature(
-      icon: AppIcons.star,
       title: 'Ratings that follow you',
       body:
           'Finish the job, earn the review. A solid track record puts '
           'you at the top of the next builder\'s list.',
     ),
     _Feature(
-      icon: AppIcons.wallet,
       title: 'No fees, no take rate',
       body:
           "No subscription, no premium tier, and we never skim a cut of "
@@ -64,9 +61,9 @@ class FeaturesSection extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final columns = w >= 980
+    final columns = w >= Bp.laptop
         ? 3
-        : w >= 640
+        : w >= Bp.tablet
         ? 2
         : 1;
 
@@ -136,16 +133,6 @@ class _FeatureCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: c.actionBg,
-              borderRadius: BorderRadius.circular(AppRadius.btn),
-            ),
-            child: Icon(feature.icon, size: 24, color: c.actionInk),
-          ),
-          const Gap(20),
           Text(
             feature.title,
             style: tt.titleLarge!.copyWith(
@@ -154,7 +141,7 @@ class _FeatureCard extends StatelessWidget {
               letterSpacing: -0.2,
             ),
           ),
-          const Gap(8),
+          const Gap(10),
           Text(
             feature.body,
             style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.55),
@@ -166,8 +153,7 @@ class _FeatureCard extends StatelessWidget {
 }
 
 class _Feature {
-  const _Feature({required this.icon, required this.title, required this.body});
-  final IconData icon;
+  const _Feature({required this.title, required this.body});
   final String title;
   final String body;
 }

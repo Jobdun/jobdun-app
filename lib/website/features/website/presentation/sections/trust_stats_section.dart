@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../widgets/count_up_text.dart';
 import '../widgets/reveal_on_scroll.dart';
@@ -26,7 +27,7 @@ class TrustStatsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final w = MediaQuery.sizeOf(context).width;
-    final columns = w >= 900 ? 4 : 2;
+    final columns = w >= Bp.laptop ? 4 : 2;
 
     return Container(
       width: double.infinity,

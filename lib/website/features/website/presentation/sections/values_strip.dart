@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../widgets/site_section_frame.dart';
 
@@ -18,7 +19,7 @@ class ValuesStrip extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final w = MediaQuery.sizeOf(context).width;
-    final stacked = w < 900;
+    final stacked = w < Bp.laptop;
 
     const items = [
       _Value(

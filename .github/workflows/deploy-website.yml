@@ -67,16 +67,21 @@ jobs:
         run: flutter pub get
 
       # The website entrypoint is separate from the mobile app — the
-      # existing CI workflow builds the mobile APK. We rebuild for web
-      # here. --no-tree-shake-icons keeps the full phosphor icon set so
-      # AppIcons.* resolves at runtime; icon-tree-shaking is a future
-      # optimisation once we measure the payload cost.
+      # existing CI workflow builds the mobile APK. We rebuild for web here.
+      # Icon tree-shaking is ON (default): AppIcons only uses const
+      # PhosphorIconsBold/Fill, so unused glyphs are safely stripped.
+      # trim-web-fonts.sh then drops the 4 unused Phosphor weights that
+      # phosphor_flutter still bundles (~2MB). --source-maps satisfies the
+      # Lighthouse best-practices "source maps" check.
       - name: Build Flutter web
         run: |
           flutter build web \
             -t lib/website/main_website.dart \
-            --no-tree-shake-icons \
-            --release
+            --release \
+            --source-maps
+
+      - name: Trim unused Phosphor icon-font weights
+        run: bash scripts/trim-web-fonts.sh build/web
 
       # Sanity check the build output before shipping. Catches the
       # "empty build/web" case where flutter exits 0 but produces

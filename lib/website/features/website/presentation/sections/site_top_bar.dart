@@ -7,6 +7,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
+import '../../../../app/theme/breakpoints.dart';
 import '../providers/nav_scroll_provider.dart';
 import '../widgets/site_brand_lockup.dart';
 import '../widgets/theme_toggle.dart';
@@ -33,7 +34,7 @@ class SiteTopBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final scrolled = ref.watch(navScrolledProvider);
-    final wide = MediaQuery.sizeOf(context).width >= 860;
+    final wide = MediaQuery.sizeOf(context).width >= Bp.laptop;
     final path = GoRouterState.of(context).uri.path;
 
     final fill = scrolled
@@ -115,8 +116,8 @@ class SiteTopBar extends ConsumerWidget {
 
 double _hPad(BuildContext context) {
   final w = MediaQuery.sizeOf(context).width;
-  if (w >= 1100) return AppSpacing.xl.w;
-  if (w >= 720) return AppSpacing.lg.w;
+  if (w >= Bp.desktop) return AppSpacing.xl.w;
+  if (w >= Bp.tablet) return AppSpacing.lg.w;
   return AppSpacing.md.w;
 }
 

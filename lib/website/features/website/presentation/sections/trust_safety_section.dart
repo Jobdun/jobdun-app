@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
-import '../../../../../core/theme/app_icons.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
@@ -10,40 +10,38 @@ import '../widgets/site_section_frame.dart';
 /// into proof. Every platform uses the word; this section spells out the exact
 /// checks that happen before anyone can pick up a job, so the promise is
 /// auditable rather than aspirational.
+///
+/// Presented as a hairline-divided spec list — the claim leads each row, no
+/// decorative per-row icon.
 class TrustSafetySection extends StatelessWidget {
   const TrustSafetySection({super.key});
 
   static const _checks = <_Check>[
     _Check(
-      icon: AppIcons.verified,
       title: 'Licence cross-checked',
       body:
           'The trade registers a licence number and we look it up against '
           'the national register before they can apply for anything.',
     ),
     _Check(
-      icon: AppIcons.building,
       title: 'Current ABN',
       body:
           'Every builder and business carries an ABN that is checked at '
           'sign-up — not just typed into a box.',
     ),
     _Check(
-      icon: AppIcons.user,
       title: 'Identity confirmed',
       body:
           'Real names, real people. Identity is verified so anonymous '
           'operators never make it onto the roster.',
     ),
     _Check(
-      icon: AppIcons.policy,
       title: 'Insurance on file',
       body:
           'Public liability and the cover relevant to the trade are '
           'recorded against the profile.',
     ),
     _Check(
-      icon: AppIcons.star,
       title: 'Reviews from real jobs',
       body:
           'Ratings come only from work actually completed through Jobdun — '
@@ -55,7 +53,7 @@ class TrustSafetySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final wide = MediaQuery.sizeOf(context).width >= Bp.laptop;
 
     final intro = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,12 +85,7 @@ class TrustSafetySection extends StatelessWidget {
         for (var i = 0; i < _checks.length; i++)
           RevealOnScroll(
             delayMs: i * 70,
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: i == _checks.length - 1 ? 0 : 24,
-              ),
-              child: _CheckRow(check: _checks[i]),
-            ),
+            child: _CheckRow(check: _checks[i]),
           ),
       ],
     );
@@ -129,46 +122,31 @@ class _CheckRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: c.verifiedBg,
-            borderRadius: BorderRadius.circular(AppRadius.btn),
-          ),
-          child: Icon(check.icon, size: 22, color: c.verified),
-        ),
-        const Gap(16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                check.title,
-                style: tt.titleMedium!.copyWith(
-                  color: c.text1,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Gap(4),
-              Text(
-                check.body,
-                style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.5),
-              ),
-            ],
+        Container(height: 1, color: c.border),
+        const Gap(20),
+        Text(
+          check.title,
+          style: tt.titleMedium!.copyWith(
+            color: c.text1,
+            fontWeight: FontWeight.w700,
           ),
         ),
+        const Gap(6),
+        Text(
+          check.body,
+          style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.5),
+        ),
+        const Gap(24),
       ],
     );
   }
 }
 
 class _Check {
-  const _Check({required this.icon, required this.title, required this.body});
-  final IconData icon;
+  const _Check({required this.title, required this.body});
   final String title;
   final String body;
 }

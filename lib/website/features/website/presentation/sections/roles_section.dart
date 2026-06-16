@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
+import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../widgets/phone_frame.dart';
 import '../widgets/site_section_frame.dart';
@@ -29,11 +30,11 @@ class _RolesSectionState extends State<RolesSection> {
   // promise: local jobs, one-tap apply.
   static const _items = <_RoleItem>[
     _RoleItem(
-      asset: 'assets/website/screenshots/17_builder_home_with_applicant.png',
+      asset: 'assets/website/screenshots/17_builder_home_with_applicant.webp',
       caption: 'For builders hiring trades.',
     ),
     _RoleItem(
-      asset: 'assets/website/screenshots/ftue-page-2.png',
+      asset: 'assets/website/screenshots/ftue-page-2.webp',
       caption: 'For crews looking for work.',
     ),
   ];
@@ -59,7 +60,7 @@ class _RolesSectionState extends State<RolesSection> {
   Widget build(BuildContext context) {
     final c = context.c;
     final w = MediaQuery.sizeOf(context).width;
-    final carousel = w < 720;
+    final carousel = w < Bp.tablet;
 
     return Container(
       width: double.infinity,

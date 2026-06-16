@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../../../app/theme/app_theme.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/colors.dart';
 
 /// Horizontal brand lockup for the site chrome: the hammer-J app-icon badge
-/// followed by the JOBDUN wordmark set in Oswald — the brand display face.
+/// followed by the JOBDUN wordmark set in Archivo — the brand display face.
 ///
 /// The badge reproduces the launcher icon exactly (white hammer-J on a
 /// safety-orange rounded square, `mark-jobdun.svg` carrying the icon's native
@@ -27,31 +27,33 @@ class SiteBrandLockup extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
+        Container(
           width: height,
           height: height,
-          child: ClipRRect(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.action,
             borderRadius: BorderRadius.circular(height * 0.28),
-            child: ColoredBox(
-              color: c.action,
-              child: SvgPicture.asset(
-                _mark,
-                fit: BoxFit.contain,
-                colorFilter: const ColorFilter.mode(
-                  Colors
-                      .white, // intentional: matches the white-on-orange app icon
-                  BlendMode.srcIn,
-                ),
-              ),
+            // Theme-aware hairline: a faint dark edge in light mode (so the
+            // orange square stays crisp on a light nav) and a faint light edge
+            // in dark mode. `c.text1` already flips with the theme.
+            border: Border.all(color: c.text1.withValues(alpha: 0.12)),
+          ),
+          child: SvgPicture.asset(
+            _mark,
+            fit: BoxFit.contain,
+            colorFilter: const ColorFilter.mode(
+              Colors.white, // intentional: matches the white-on-orange app icon
+              BlendMode.srcIn,
             ),
           ),
         ),
         SizedBox(width: height * 0.34),
         Text(
           'JOBDUN',
-          style: AppTheme.brandDisplay(
+          style: WebsiteText.brandDisplay(
             c.text1,
-          ).copyWith(fontSize: height * 0.66, letterSpacing: 1.2, height: 1.0),
+          ).copyWith(fontSize: height * 0.66, letterSpacing: 0.5, height: 1.0),
         ),
       ],
     );
