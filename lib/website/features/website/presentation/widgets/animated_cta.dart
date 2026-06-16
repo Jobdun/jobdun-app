@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
@@ -9,8 +8,6 @@ import '../../../../../core/theme/app_icons.dart';
 ///
 /// - Filled (orange) or secondary (raised) variants.
 /// - On hover it lifts slightly and the trailing arrow nudges right.
-/// - The filled variant runs a slow, low-intensity shimmer sweep so the
-///   primary action quietly draws the eye.
 /// - All motion is suppressed under reduced-motion; the button stays fully
 ///   functional.
 /// - Pass [route] to navigate via GoRouter, or [onPressed] for a custom action.
@@ -53,53 +50,36 @@ class _AnimatedCtaState extends State<AnimatedCta> {
 
     final bg = widget.filled ? c.action : c.surfaceRaised;
     final fg = widget.filled ? c.onAction : c.text1;
-    final scale = _hovered && !reduceMotion ? 1.03 : 1.0;
 
-    Widget button = AnimatedScale(
-      scale: scale,
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      child: Material(
-        color: _hovered && widget.filled ? c.actionPressed : bg,
+    Widget button = Material(
+      color: _hovered && widget.filled ? c.actionPressed : bg,
+      borderRadius: BorderRadius.circular(AppRadius.btn),
+      child: InkWell(
+        onTap: _activate,
         borderRadius: BorderRadius.circular(AppRadius.btn),
-        child: InkWell(
-          onTap: _activate,
-          borderRadius: BorderRadius.circular(AppRadius.btn),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(widget.label, style: tt.labelLarge!.copyWith(color: fg)),
-                if (widget.icon != null) ...[
-                  const SizedBox(width: 10),
-                  AnimatedSlide(
-                    offset: _hovered && !reduceMotion
-                        ? const Offset(0.25, 0)
-                        : Offset.zero,
-                    duration: const Duration(milliseconds: 150),
-                    curve: Curves.easeOut,
-                    child: Icon(widget.icon, size: 18, color: fg),
-                  ),
-                ],
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.label, style: tt.labelLarge!.copyWith(color: fg)),
+              if (widget.icon != null) ...[
+                const SizedBox(width: 10),
+                AnimatedSlide(
+                  offset: _hovered && !reduceMotion
+                      ? const Offset(0.25, 0)
+                      : Offset.zero,
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
+                  child: Icon(widget.icon, size: 18, color: fg),
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
-
-    // Slow shine on the primary action only, off under reduced-motion.
-    if (widget.filled && !reduceMotion) {
-      button = button
-          .animate(onPlay: (controller) => controller.repeat())
-          .shimmer(
-            duration: 1600.ms,
-            delay: 3200.ms,
-            color: c.onAction.withValues(alpha: 0.18),
-          );
-    }
 
     return Semantics(
       button: true,
