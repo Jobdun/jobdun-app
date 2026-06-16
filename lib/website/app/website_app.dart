@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../app/theme/app_theme.dart';
+import 'theme/website_theme.dart';
 import '../features/website/presentation/providers/theme_mode_provider.dart';
 import 'router/website_router.dart';
 
@@ -34,8 +34,8 @@ class WebsiteApp extends ConsumerWidget {
               'Jobdun — workforce platform for Australian construction trades',
           debugShowCheckedModeBanner: false,
           themeMode: themeMode,
-          darkTheme: AppTheme.dark(),
-          theme: AppTheme.light(),
+          darkTheme: WebsiteTheme.dark(),
+          theme: WebsiteTheme.light(),
           routerConfig: ref.watch(websiteRouterProvider),
         );
       },

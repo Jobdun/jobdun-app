@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../../../app/theme/app_theme.dart';
+import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/colors.dart';
 
 /// Horizontal brand lockup for the site chrome: the hammer-J app-icon badge
-/// followed by the JOBDUN wordmark set in Oswald — the brand display face.
+/// followed by the JOBDUN wordmark set in Archivo — the brand display face.
 ///
 /// The badge reproduces the launcher icon exactly (white hammer-J on a
 /// safety-orange rounded square, `mark-jobdun.svg` carrying the icon's native
@@ -49,9 +49,9 @@ class SiteBrandLockup extends StatelessWidget {
         SizedBox(width: height * 0.34),
         Text(
           'JOBDUN',
-          style: AppTheme.brandDisplay(
+          style: WebsiteText.brandDisplay(
             c.text1,
-          ).copyWith(fontSize: height * 0.66, letterSpacing: 1.2, height: 1.0),
+          ).copyWith(fontSize: height * 0.66, letterSpacing: 0.5, height: 1.0),
         ),
       ],
     );
