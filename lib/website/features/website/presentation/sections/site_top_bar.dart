@@ -7,8 +7,8 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design/colors.dart';
-import '../../../../../core/design/widgets/jobdun_logo.dart';
 import '../providers/nav_scroll_provider.dart';
+import '../widgets/site_brand_lockup.dart';
 import '../widgets/theme_toggle.dart';
 import 'site_top_nav_link.dart';
 
@@ -77,12 +77,9 @@ class SiteTopBar extends ConsumerWidget {
                         child: Semantics(
                           label: 'Jobdun — home',
                           button: true,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: const JobdunLogo(
-                              variant: LogoVariant.trademark,
-                              height: 34,
-                            ),
+                          child: Padding(
+                            padding: EdgeInsets.all(AppSpacing.xs.w),
+                            child: const SiteBrandLockup(height: 34),
                           ),
                         ),
                       ),
