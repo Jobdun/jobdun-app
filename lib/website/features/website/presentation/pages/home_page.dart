@@ -9,6 +9,7 @@ import '../sections/features_section.dart';
 import '../sections/hero_section.dart';
 import '../sections/how_it_works_section.dart';
 import '../sections/roles_section.dart';
+import '../sections/story_scroll_section.dart';
 import '../sections/testimonials_section.dart';
 import '../sections/trade_categories_section.dart';
 import '../sections/trust_safety_section.dart';
@@ -51,6 +52,8 @@ class HomePage extends StatelessWidget {
         ),
         // Proof of the verification claim the editorial just made.
         SliverToBoxAdapter(child: TrustSafetySection()),
+        // Sticky-scroll product walkthrough — real-device captures.
+        SliverToBoxAdapter(child: StoryScrollSection()),
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
