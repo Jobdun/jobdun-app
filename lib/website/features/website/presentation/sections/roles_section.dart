@@ -21,16 +21,20 @@ class RolesSection extends StatefulWidget {
 }
 
 class _RolesSectionState extends State<RolesSection> {
+  // Real device captures — one per role, showing the actual
+  // builder / crew experience. The builder side shows the home
+  // with a new applicant hero ("NEXT: 1 NEW APPLICANT") — the
+  // value moment for builders. The crew side shows FTUE page 2
+  // ("JOBS NEAR YOU. APPLY IN THREE TAPS.") — the tradie's
+  // promise: local jobs, one-tap apply.
   static const _items = <_RoleItem>[
     _RoleItem(
-      asset: 'assets/website/screenshots/create-account.png',
+      asset: 'assets/website/screenshots/17_builder_home_with_applicant.png',
       caption: 'For builders hiring trades.',
-      tilt: -0.03,
     ),
     _RoleItem(
-      asset: 'assets/website/screenshots/ftue-splash.png',
+      asset: 'assets/website/screenshots/ftue-page-2.png',
       caption: 'For crews looking for work.',
-      tilt: 0.04,
     ),
   ];
 
@@ -85,14 +89,9 @@ class _RolesSectionState extends State<RolesSection> {
 }
 
 class _RoleItem {
-  const _RoleItem({
-    required this.asset,
-    required this.caption,
-    required this.tilt,
-  });
+  const _RoleItem({required this.asset, required this.caption});
   final String asset;
   final String caption;
-  final double tilt;
 }
 
 class _TwoUp extends StatelessWidget {
@@ -189,7 +188,7 @@ class _RoleCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Center(
-          child: PhoneFrame(asset: item.asset, tilt: item.tilt, maxHeight: 800),
+          child: PhoneFrame(asset: item.asset, width: 220, maxHeight: 520),
         ),
         const Gap(24),
         Text(

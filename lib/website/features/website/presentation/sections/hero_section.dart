@@ -129,7 +129,7 @@ class _CopyBlock extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            'Only verified.\nNo timewasters.',
+            'Hire the right\ntradie in minutes.',
             textAlign: align,
             style: tt.displayLarge!.copyWith(
               color: c.text1,
@@ -141,8 +141,9 @@ class _CopyBlock extends StatelessWidget {
         ),
         Gap(AppSpacing.lg.h),
         Text(
+          'Post the job. Get verified applicants. Hire the one you want. '
           'Every trade licence-checked. Every builder verified. '
-          'Built for the people who actually build Australia.',
+          'No agencies, no timewasters.',
           textAlign: align,
           style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.55),
         ),
@@ -199,11 +200,11 @@ class _HeroPhone extends StatelessWidget {
           ),
         ),
         PhoneFrame(
-          asset: 'assets/website/screenshots/ftue-splash.png',
+          asset: 'assets/website/screenshots/hire-celebration.png',
           tilt: -0.04,
           width: width,
           semanticLabel:
-              'The Jobdun app open on its welcome screen, showing the verified-trades job feed.',
+              'The Jobdun app showing the hire confirmation: a green checkmark, "YOU\'RE CONNECTED" and "You hired Ken."',
         ),
       ],
     );
