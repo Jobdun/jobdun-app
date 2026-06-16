@@ -8,9 +8,9 @@ import '../../../app/theme/app_typography.dart';
 /// borders) with its type swapped to the **Archivo + Inter** website scale
 /// ([WebsiteText]).
 ///
-/// Scoped to the website on purpose — the mobile app and admin console keep
-/// Oswald + Open Sans. Only `lib/website/app/website_app.dart` builds with this,
-/// so changing the marketing-site face never touches the product UI.
+/// Scoped to the website on purpose. The mobile app now shares this family
+/// pairing through [AppTypography], while admin keeps its own desktop scale.
+/// Only `lib/website/app/website_app.dart` builds with this theme.
 abstract final class WebsiteTheme {
   static ThemeData light() => _withType(AppTheme.light(), JColors.light);
   static ThemeData dark() => _withType(AppTheme.dark(), JColors.dark);

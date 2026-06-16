@@ -7,10 +7,10 @@ import 'field_label.dart';
 
 /// Size variant of [PageHeader] — maps directly to existing theme tokens.
 ///
-/// - [hero]  `headlineLarge` (32sp Oswald w700, ls 0.8). Use on `/home` only.
-/// - [tab]   `headlineMedium` (24sp Oswald w600, ls 0.5). Use on tab landings
+/// - [hero]  `headlineLarge` (32sp Archivo w800). Use on `/home` only.
+/// - [tab]   `headlineMedium` (26sp Archivo w700). Use on tab landings
 ///           (jobs, applications, messages, verification).
-/// - [sub]   `headlineSmall` (20sp Oswald w600, ls 0.3). Use on pushed
+/// - [sub]   `headlineSmall` (22sp Archivo w700). Use on pushed
 ///           sub-pages (job_create, profile_edit).
 enum PageHeaderSize { hero, tab, sub }
 
@@ -30,7 +30,7 @@ enum PageHeaderSize { hero, tab, sub }
 /// section needs naming (e.g. `JOB DETAILS` above a specific job's title, or
 /// `EDIT PROFILE` above the user's name). On bottom-nav landings the bottom
 /// bar already tells the user which screen they're on, and the title alone
-/// (in Oswald) is enough — an eyebrow there is redundant noise. The old
+/// (in Archivo) is enough — an eyebrow there is redundant noise. The old
 /// `labelSmall` + muted-tint + wide-tracking treatment is also physically
 /// small and low-contrast on phone, so skip it unless it earns its keep.
 ///

@@ -45,9 +45,38 @@ class HeroSection extends StatelessWidget {
     final w = MediaQuery.sizeOf(context).width;
     final stacked = w < Bp.laptop;
 
-    return Container(
+    return Stack(
+      children: [
+        // Construction site background — dark gradient overlay preserves
+        // text legibility; left side nearly opaque, right side lighter so
+        // the phone frame floats against the scene rather than the flat bg.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/website/construction/hero-bg.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  c.background.withValues(alpha: 0.97),
+                  c.background.withValues(alpha: 0.82),
+                  c.background.withValues(alpha: 0.50),
+                  c.background.withValues(alpha: 0.28),
+                ],
+                stops: const [0.0, 0.38, 0.68, 1.0],
+              ),
+            ),
+          ),
+        ),
+        Container(
       width: double.infinity,
-      color: c.background,
+      color: Colors.transparent,
       // Extra top room clears the floating glass nav; generous bottom rhythm
       // hands off to the trust band below.
       padding: EdgeInsets.only(
@@ -97,7 +126,9 @@ class HeroSection extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),   // Container
+    ],
+  );
   }
 }
 

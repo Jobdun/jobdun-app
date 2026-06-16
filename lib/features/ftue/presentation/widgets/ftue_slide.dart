@@ -5,7 +5,7 @@ import 'package:gap/gap.dart';
 import '../../../../core/design/colors.dart';
 
 // Single-slide template for the FTUE carousel. Photo (or custom visual) at
-// the top, two-line Oswald headline below, two-line body paragraph under
+// the top, two-line Archivo headline below, two-line body paragraph under
 // that, optional footer (slide 3's CTA stack). The `visual` slot is
 // optional so a slide can be text-only when its own elements (e.g. slide
 // 2's map-pin chip row) carry the visual weight.

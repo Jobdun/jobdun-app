@@ -78,8 +78,8 @@ WCAG 2.2 AA is a hard requirement, enforced by `test/colors_contrast_test.dart` 
 
 ## Typography
 
-**Display / Headings:** Oswald — condensed, bold, industrial authority
-**Body / UI text:** Open Sans — clean, readable, professional
+**Display / Headings:** Archivo — industrial grotesque, bold, matches the website identity
+**Body / UI text:** Inter — clean, readable, modern product UI text
 **Configure in `AppTheme` only — never call `GoogleFonts.*` per-widget.**
 
 Distinct sizes **40 / 36 / 32 / 26 / 22 / 18 / 16 / 14 / 12 / 11**. Sizes are **fixed logical
@@ -90,29 +90,29 @@ OS scaler is clamped to 0.9–1.3 in `MaterialApp.builder`.
 
 | Role (M3) | Font | Weight | Size | Letter Spacing | Line-height | Usage |
 |-----------|------|--------|------|----------------|-------------|-------|
-| displayLarge   | Oswald    | 700 | 40 | 0    | 1.10 | Hero / splash |
-| displayMedium  | Oswald    | 700 | 36 | 0    | 1.10 | Hero (rare) |
-| displaySmall   | Oswald    | 700 | 32 | 0    | 1.12 | Hero alt (rare) |
-| headlineLarge  | Oswald    | 700 | 32 | 0    | 1.15 | Screen titles |
-| headlineMedium | Oswald    | 600 | 26 | 0.15 | 1.20 | Section / wizard-screen titles |
-| headlineSmall  | Oswald    | 600 | 22 | 0.15 | 1.25 | Sub-sections / sheet & dialog titles |
-| titleLarge     | Oswald    | 600 | 18 | 0.15 | 1.30 | Card / section headers |
-| titleMedium    | Open Sans | 600 | 16 | 0    | 1.50 | Emphasised body |
-| titleSmall     | Open Sans | 600 | 14 | 0    | 1.40 | Small emphasised — row labels, form values |
-| bodyLarge      | Open Sans | 400 | 16 | 0    | 1.50 | Primary body (Google 16px floor) |
-| bodyMedium     | Open Sans | 400 | 14 | 0    | 1.50 | Secondary body (most-used) |
-| bodySmall      | Open Sans | 500 | 12 | 0.1  | 1.40 | Caption / metadata (floor) |
-| labelLarge     | Oswald    | 700 | 14 | 1.2  | 1.10 | Buttons — ALL CAPS |
-| labelMedium    | Open Sans | 600 | 12 | 0.4  | 1.20 | Tags / chips |
-| labelSmall     | Open Sans | 600 | 11 | 0.6  | 1.20 | Eyebrows (`FieldLabel`) |
+| displayLarge   | Archivo | 800 | 40 | 0    | 1.06 | Hero / splash |
+| displayMedium  | Archivo | 800 | 36 | 0    | 1.08 | Hero (rare) |
+| displaySmall   | Archivo | 800 | 32 | 0    | 1.10 | Hero alt (rare) |
+| headlineLarge  | Archivo | 800 | 32 | 0    | 1.12 | Screen titles |
+| headlineMedium | Archivo | 700 | 26 | 0    | 1.18 | Section / wizard-screen titles |
+| headlineSmall  | Archivo | 700 | 22 | 0    | 1.22 | Sub-sections / sheet & dialog titles |
+| titleLarge     | Archivo | 700 | 18 | 0    | 1.25 | Card / section headers |
+| titleMedium    | Inter   | 600 | 16 | 0    | 1.50 | Emphasised body |
+| titleSmall     | Inter   | 600 | 14 | 0    | 1.40 | Small emphasised — row labels, form values |
+| bodyLarge      | Inter   | 400 | 16 | 0    | 1.55 | Primary body (Google 16px floor) |
+| bodyMedium     | Inter   | 400 | 14 | 0    | 1.55 | Secondary body (most-used) |
+| bodySmall      | Inter   | 500 | 12 | 0.1  | 1.45 | Caption / metadata (floor) |
+| labelLarge     | Archivo | 800 | 14 | 0.8  | 1.10 | Buttons — ALL CAPS |
+| labelMedium    | Inter   | 600 | 12 | 0.35 | 1.20 | Tags / chips |
+| labelSmall     | Inter   | 700 | 11 | 0.5  | 1.20 | Eyebrows (`FieldLabel`) |
 
-Wordmark only (NOT a scale role): Oswald 700 · 40 · tracking **3.0** · `AppTypography.brandDisplay()`.
+Wordmark only (NOT a scale role): Archivo 800 · 40 · tracking **0.5** · `AppTypography.brandDisplay()`.
 
 **Typography Rules:**
-- Headings use Oswald (condensed weight does the visual work, no italic needed); body is Open Sans.
+- Headings use Archivo; body/UI text uses Inter.
 - **Route through the theme.** `tt.<role>!.copyWith(colour/weight)` — keep `fontSize` overrides out of feature code so off-scale sizes can't creep back. Off-scale values snap to the nearest step.
-- Button text is Oswald w700 uppercase — apply CAPS via a widget transform, not by typing caps into strings.
-- Tracking is neutral on display/headings, positive only on small caps/labels; the wordmark's wide 3.0 is deliberate brand.
+- Button text is Archivo w800 uppercase — apply CAPS via a widget transform, not by typing caps into strings.
+- Tracking is neutral on display/headings, positive only on small caps/labels.
 - Pay rates, counts, ratings use `AppTypography.numeric()` (tabular figures) so digits don't jitter.
 - No thin fonts anywhere. Minimum weight 400 for any visible text. Type floor is 11 (labels) / 12 (caption body).
 
@@ -345,7 +345,7 @@ Before delivering any UI code, verify:
 - [ ] Background is `#0F172A`, never white
 - [ ] All buttons are filled (no ghost buttons); orange foregrounds are dark `onAction`, never white
 - [ ] Button text is uppercase + bold (FontWeight.w700+)
-- [ ] All text uses Oswald / Open Sans via AppTheme (no per-widget GoogleFonts calls)
+- [ ] All text uses Archivo / Inter via AppTypography/AppTheme (no per-widget GoogleFonts calls)
 - [ ] Text routes through `Theme.of(context).textTheme.<role>` — no detached `TextStyle(fontSize:)` in features
 - [ ] Gap(n) used for all spacing, never SizedBox
 - [ ] All sizes use .w / .h / .sp / .r from flutter_screenutil

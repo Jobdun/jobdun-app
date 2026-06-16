@@ -14,7 +14,7 @@ import 'package:jobdun/app/theme/app_colors.dart';
 /// app ships dark. Goldens follow.
 ///
 /// **Fonts.** Production `AppTheme.dark()` wires every text style through
-/// `google_fonts`, which fetches Oswald / Open Sans over the network on
+/// `google_fonts`, which fetches Archivo / Inter over the network on
 /// first paint. CI sandboxes have no network access and the fetch throws
 /// asynchronously, killing the test. We build a parallel `_goldenTheme()`
 /// here that mirrors the production colour wiring and `JColors` extension

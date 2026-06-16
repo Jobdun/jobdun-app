@@ -24,18 +24,18 @@ class DesignPreviewPage extends StatelessWidget {
 
   // (role sample, spec caption) — sizes/line-heights read live from the theme.
   static const _typeRoles = <(String, String)>[
-    ('Display · 40', 'displayLarge · Oswald 700 · lh 1.10'),
-    ('Headline L · 32', 'headlineLarge · Oswald 700 · lh 1.15'),
-    ('Headline M · 26', 'headlineMedium · Oswald 600 · +0.15 · lh 1.20'),
-    ('Headline S · 22', 'headlineSmall · Oswald 600 · +0.15 · lh 1.25'),
-    ('Title L · 18', 'titleLarge · Oswald 600 · +0.15 · lh 1.30'),
-    ('Title M · 16', 'titleMedium · Open Sans 600 · lh 1.50'),
-    ('Body L · 16', 'bodyLarge · Open Sans 400 · lh 1.50'),
-    ('Body M · 14', 'bodyMedium · Open Sans 400 · lh 1.50 · most-used'),
-    ('Body S · 12', 'bodySmall · Open Sans 500 · +0.1 · floor'),
-    ('LABEL L · 14', 'labelLarge · Oswald 700 · +1.2 · buttons CAPS'),
-    ('Label M · 12', 'labelMedium · Open Sans 600 · +0.4 · chips'),
-    ('Label S · 11', 'labelSmall · Open Sans 600 · +0.6 · eyebrows'),
+    ('Display · 40', 'displayLarge · Archivo 800 · lh 1.06'),
+    ('Headline L · 32', 'headlineLarge · Archivo 800 · lh 1.12'),
+    ('Headline M · 26', 'headlineMedium · Archivo 700 · lh 1.18'),
+    ('Headline S · 22', 'headlineSmall · Archivo 700 · lh 1.22'),
+    ('Title L · 18', 'titleLarge · Archivo 700 · lh 1.25'),
+    ('Title M · 16', 'titleMedium · Inter 600 · lh 1.50'),
+    ('Body L · 16', 'bodyLarge · Inter 400 · lh 1.55'),
+    ('Body M · 14', 'bodyMedium · Inter 400 · lh 1.55 · most-used'),
+    ('Body S · 12', 'bodySmall · Inter 500 · +0.1 · floor'),
+    ('LABEL L · 14', 'labelLarge · Archivo 800 · +0.8 · buttons CAPS'),
+    ('Label M · 12', 'labelMedium · Inter 600 · +0.35 · chips'),
+    ('Label S · 11', 'labelSmall · Inter 700 · +0.5 · eyebrows'),
   ];
 
   // (label, px) — the new spacing menu.

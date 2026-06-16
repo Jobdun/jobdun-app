@@ -55,7 +55,7 @@ Available page-specific overrides:
 - Border: `#334155`
 - Error: `#EF4444` | Success: `#22C55E`
 - Style: Aggressive Flat — dark, heavy weight, no shadows, icon-heavy, all-caps buttons
-- Typography: Oswald (headings, display, buttons) + Open Sans (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_theme.dart`.
+- Typography: Archivo (display, headings, buttons) + Inter (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_typography.dart`.
 - Transitions: 150–200ms ease, no bounce/spring
 - Anti-patterns: white backgrounds, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
 

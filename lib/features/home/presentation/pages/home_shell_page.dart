@@ -176,21 +176,29 @@ class _BottomNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    final vb = MediaQuery.of(context).viewPadding.bottom;
     final profile = ref.watch(
       profileControllerProvider.select((s) => s.profile),
     );
     final name = (profile?.displayName ?? '').trim();
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 10.h),
-        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(28.r),
-          border: Border.all(color: c.border),
-        ),
+    // ColoredBox fills the entire nav widget bounds (including the gesture-bar
+    // zone below the pill) with c.background, preventing body content from
+    // bleeding through the transparent safe-area gap on Android 15+ edge-to-edge.
+    // Explicit viewPadding.bottom replaces SafeArea so the background also covers
+    // the area between the pill and the system home indicator.
+    return ColoredBox(
+      color: c.background,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: vb),
+        child: Container(
+          margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 10.h),
+          padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(28.r),
+            border: Border.all(color: c.border),
+          ),
         child: Row(
           children: [
             for (var i = 0; i < tabs.length; i++)
@@ -235,7 +243,8 @@ class _BottomNav extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _dockTab(BuildContext context, TextTheme tt, JColors c, int i) {

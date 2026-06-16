@@ -57,7 +57,7 @@ void main() {
     binding.platformDispatcher.views.first.resetDevicePixelRatio();
   });
 
-  // Real fonts (Oswald, Iconsax) don't load in widget tests so the Ahem
+  // Real fonts (Archivo, Inter, Iconsax) don't load in widget tests so the Ahem
   // fallback renders glyphs wider than production — that triggers harmless
   // RenderFlex overflows in dense rows.
   //
