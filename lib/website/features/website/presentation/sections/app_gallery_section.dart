@@ -471,7 +471,7 @@ const _milestones = <_Milestone>[
     headline: 'Post the job in 20s.',
     caption:
         'Title, trade, location, pay. Five steps. Verified crews see it first.',
-    asset: 'assets/website/screenshots/post-job-wizard.png',
+    asset: 'assets/website/screenshots/post-job-wizard.webp',
   ),
   _Milestone(
     number: '02',
@@ -479,13 +479,13 @@ const _milestones = <_Milestone>[
     headline: 'Applicants, instant.',
     caption:
         'Licence-checked tradies within 30 km apply. Shortlist, message, decide.',
-    asset: 'assets/website/screenshots/17_builder_home_with_applicant.png',
+    asset: 'assets/website/screenshots/17_builder_home_with_applicant.webp',
   ),
   _Milestone(
     number: '03',
     eyebrow: 'Hire',
     headline: "You're connected.",
     caption: 'One tap. Rate is locked. Message opens the second it lands.',
-    asset: 'assets/website/screenshots/hire-celebration.png',
+    asset: 'assets/website/screenshots/hire-celebration.webp',
   ),
 ];

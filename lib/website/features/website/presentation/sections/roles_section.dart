@@ -29,11 +29,11 @@ class _RolesSectionState extends State<RolesSection> {
   // promise: local jobs, one-tap apply.
   static const _items = <_RoleItem>[
     _RoleItem(
-      asset: 'assets/website/screenshots/17_builder_home_with_applicant.png',
+      asset: 'assets/website/screenshots/17_builder_home_with_applicant.webp',
       caption: 'For builders hiring trades.',
     ),
     _RoleItem(
-      asset: 'assets/website/screenshots/ftue-page-2.png',
+      asset: 'assets/website/screenshots/ftue-page-2.webp',
       caption: 'For crews looking for work.',
     ),
   ];

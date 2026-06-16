@@ -200,7 +200,7 @@ class _HeroPhone extends StatelessWidget {
           ),
         ),
         PhoneFrame(
-          asset: 'assets/website/screenshots/hire-celebration.png',
+          asset: 'assets/website/screenshots/hire-celebration.webp',
           tilt: -0.04,
           width: width,
           semanticLabel:
