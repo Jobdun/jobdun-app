@@ -50,6 +50,7 @@ client_*.plist
 .env
 .env.*
 !.env.example
+!.env.server.example
 scripts/.ship-env
 scripts/.cloudflare-env
 *.local
