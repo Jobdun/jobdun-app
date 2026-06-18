@@ -84,6 +84,12 @@ grep_check "No AppColors.* in lib/features/" \
 grep_check "No Theme.colorScheme in lib/features/ (use context.c)" \
   "$(grep -rn --include="*.dart" "colorScheme\." lib/features/ || true)"
 
+# No server secrets in the bundled .env — pubspec ships .env as a flutter asset,
+# so anything here is extractable from every APK/IPA. Server secrets belong in
+# .env.server (gitignored, never bundled). Absent .env (CI stub) => zero hits.
+grep_check "No server secrets in bundled .env asset" \
+  "$([ -f .env ] && grep -inE '^[A-Z_]*(SERVICE_ROLE|TWILIO|SECRET|PRIVATE_KEY|PASSWORD|ABR_GUID|KEN_DEV_PHONE)[A-Z_]*=' .env || true)"
+
 echo ""
 
 # ── File-size budget ──────────────────────────────────────────────────────────
