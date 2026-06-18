@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Jobdun type scale — the **new** (2026-05-31) ~1.2 "minor third" ramp.
+/// Jobdun type scale — the **new** (2026-06-17) Archivo + Inter ramp.
 ///
 /// Body anchored at 16; distinct sizes 40 / 32 / 26 / 22 / 18 / 16 / 14 / 12 / 11
 /// (the old 15/14/13 1-px cluster is gone). Line-heights are explicit on every
@@ -12,20 +12,20 @@ import 'package:google_fonts/google_fonts.dart';
 /// and ignores the OS text-size setting; the scaler is clamped in
 /// `MaterialApp.builder` instead.
 ///
-/// Fonts still resolve through `google_fonts` (Oswald + Open Sans) so the scale
+/// Fonts still resolve through `google_fonts` (Archivo + Inter) so the scale
 /// renders immediately. Bundling the static weights as assets (kill the runtime
-/// fetch for offline worksites) is a separate tracked migration — when it lands,
-/// swap the two helpers below to `TextStyle(fontFamily: …)` and nothing else
+/// fetch for offline worksites) is a separate tracked migration; when it lands,
+/// swap the two helpers below to `TextStyle(fontFamily: ...)` and nothing else
 /// changes.
 ///
 /// Proven on `/design-preview`; wired into the global theme after sign-off.
 abstract final class AppTypography {
-  /// Wordmark ONLY — the wide 3.0 tracking is brand, not part of the scale.
+  /// Wordmark ONLY — tuned to sit beside the hammer-J badge.
   /// Example: `Text('JOBDUN', style: AppTypography.brandDisplay(context.c.text1))`.
-  static TextStyle brandDisplay(Color color) => GoogleFonts.oswald(
+  static TextStyle brandDisplay(Color color) => GoogleFonts.archivo(
     fontSize: 40,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 3.0,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.5,
     height: 1.0,
     color: color,
   );
@@ -42,16 +42,16 @@ abstract final class AppTypography {
     required Color text2,
     required Color text3,
   }) {
-    TextStyle os(double size, FontWeight w, double ls, double h, Color c) =>
-        GoogleFonts.oswald(
+    TextStyle arch(double size, FontWeight w, double ls, double h, Color c) =>
+        GoogleFonts.archivo(
           fontSize: size,
           fontWeight: w,
           letterSpacing: ls,
           height: h,
           color: c,
         );
-    TextStyle sans(double size, FontWeight w, double ls, double h, Color c) =>
-        GoogleFonts.openSans(
+    TextStyle inter(double size, FontWeight w, double ls, double h, Color c) =>
+        GoogleFonts.inter(
           fontSize: size,
           fontWeight: w,
           letterSpacing: ls,
@@ -60,27 +60,34 @@ abstract final class AppTypography {
         );
 
     return TextTheme(
-      displayLarge: os(40, FontWeight.w700, 0, 1.10, text1),
-      displayMedium: os(36, FontWeight.w700, 0, 1.10, text1), // rare
-      displaySmall: os(32, FontWeight.w700, 0, 1.12, text1), // rare
-      headlineLarge: os(32, FontWeight.w700, 0, 1.15, text1),
-      headlineMedium: os(26, FontWeight.w600, 0.15, 1.20, text1),
-      headlineSmall: os(22, FontWeight.w600, 0.15, 1.25, text1),
-      titleLarge: os(18, FontWeight.w600, 0.15, 1.30, text1),
-      titleMedium: sans(16, FontWeight.w600, 0, 1.50, text1),
-      titleSmall: sans(14, FontWeight.w600, 0, 1.40, text1),
-      bodyLarge: sans(16, FontWeight.w400, 0, 1.50, text1),
-      bodyMedium: sans(14, FontWeight.w400, 0, 1.50, text2),
-      bodySmall: sans(12, FontWeight.w500, 0.1, 1.40, text2),
-      labelLarge: os(14, FontWeight.w700, 1.2, 1.10, text1), // CAPS via widget
-      labelMedium: sans(12, FontWeight.w600, 0.4, 1.20, text2),
-      labelSmall: sans(11, FontWeight.w600, 0.6, 1.20, text3),
+      displayLarge: arch(40, FontWeight.w800, 0, 1.06, text1),
+      displayMedium: arch(36, FontWeight.w800, 0, 1.08, text1), // rare
+      displaySmall: arch(32, FontWeight.w800, 0, 1.10, text1), // rare
+      headlineLarge: arch(32, FontWeight.w800, 0, 1.12, text1),
+      headlineMedium: arch(26, FontWeight.w700, 0, 1.18, text1),
+      headlineSmall: arch(22, FontWeight.w700, 0, 1.22, text1),
+      titleLarge: arch(18, FontWeight.w700, 0, 1.25, text1),
+      titleMedium: inter(16, FontWeight.w600, 0, 1.50, text1),
+      titleSmall: inter(14, FontWeight.w600, 0, 1.40, text1),
+      bodyLarge: inter(16, FontWeight.w400, 0, 1.55, text1),
+      bodyMedium: inter(14, FontWeight.w400, 0, 1.55, text2),
+      bodySmall: inter(12, FontWeight.w500, 0.1, 1.45, text2),
+      labelLarge: arch(
+        14,
+        FontWeight.w800,
+        0.8,
+        1.10,
+        text1,
+      ), // CAPS via widget
+      labelMedium: inter(12, FontWeight.w600, 0.35, 1.20, text2),
+      labelSmall: inter(11, FontWeight.w700, 0.5, 1.20, text3),
     );
   }
 }
 
-/// Admin-console type scale. The admin web app (`lib/admin/**`) reuses the same
-/// Oswald + Open Sans families as mobile but at its own desktop-density sizes.
+/// Admin-console type scale. The admin web app (`lib/admin/**`) keeps its own
+/// desktop-density Oswald + Open Sans roles until the admin console typography
+/// branch lands.
 ///
 /// Centralising them here is not optional decoration: the repo-wide design lint
 /// (`scripts/validate.sh`) forbids `GoogleFonts.*` anywhere under `lib/` except
@@ -182,10 +189,8 @@ abstract final class AdminText {
 /// lives here, beside [AppTypography] and [AdminText], because the design lint
 /// only allows `GoogleFonts.*` in this file and `app_theme.dart`.
 ///
-/// The mobile app keeps Oswald + Open Sans ([AppTypography]); only the website
-/// theme (`WebsiteTheme`) consumes this scale. Sizes / line-heights mirror the
-/// app ramp so layout rhythm is unchanged — only the families (and a heavier
-/// display weight) differ.
+/// The website theme (`WebsiteTheme`) consumes this scale. Sizes / line-heights
+/// mirror the app ramp so layout rhythm is unchanged across mobile and web.
 abstract final class WebsiteText {
   static TextStyle _arch(
     double size,

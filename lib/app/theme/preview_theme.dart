@@ -70,7 +70,7 @@ abstract final class PreviewTheme {
   }
 
   static ThemeData _apply(ThemeData base, JColors c) {
-    // Reuse the base styles (keeps the already-resolved Oswald/Open-Sans
+    // Reuse the base styles (keeps the already-resolved Archivo/Inter
     // families) and only bump the failing sizes / line-heights.
     final textTheme = base.textTheme.copyWith(
       bodyMedium: base.textTheme.bodyMedium!.copyWith(height: 1.45),
