@@ -176,63 +176,74 @@ class _BottomNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    final vb = MediaQuery.of(context).viewPadding.bottom;
     final profile = ref.watch(
       profileControllerProvider.select((s) => s.profile),
     );
     final name = (profile?.displayName ?? '').trim();
 
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 10.h),
-        padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(28.r),
-          border: Border.all(color: c.border),
-        ),
-        child: Row(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Expanded(child: _dockTab(context, tt, c, i)),
-            Expanded(
-              child: Semantics(
-                label: 'Account and settings',
-                button: true,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(24.r),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    showAccountSheet(context);
-                  },
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.h),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AvatarBlock(
-                          initials: name.isEmpty ? '?' : name[0].toUpperCase(),
-                          imageUrl: profile?.avatarUrl,
-                          size: 24,
-                          circle: true,
-                        ),
-                        Gap(3.h),
-                        Text(
-                          'You',
-                          style: tt.labelSmall!.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                            color: c.text3,
+    // ColoredBox fills the entire nav widget bounds (including the gesture-bar
+    // zone below the pill) with c.background, preventing body content from
+    // bleeding through the transparent safe-area gap on Android 15+ edge-to-edge.
+    // Explicit viewPadding.bottom replaces SafeArea so the background also covers
+    // the area between the pill and the system home indicator.
+    return ColoredBox(
+      color: c.background,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: vb),
+        child: Container(
+          margin: EdgeInsets.fromLTRB(14.w, 0, 14.w, 10.h),
+          padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(28.r),
+            border: Border.all(color: c.border),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(child: _dockTab(context, tt, c, i)),
+              Expanded(
+                child: Semantics(
+                  label: 'Account and settings',
+                  button: true,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24.r),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      showAccountSheet(context);
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 5.h),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AvatarBlock(
+                            initials: name.isEmpty
+                                ? '?'
+                                : name[0].toUpperCase(),
+                            imageUrl: profile?.avatarUrl,
+                            size: 24,
+                            circle: true,
                           ),
-                          maxLines: 1,
-                        ),
-                      ],
+                          Gap(3.h),
+                          Text(
+                            'You',
+                            style: tt.labelSmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                              color: c.text3,
+                            ),
+                            maxLines: 1,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

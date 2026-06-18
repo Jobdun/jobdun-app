@@ -10,7 +10,7 @@ import '../sections/hero_section.dart';
 import '../sections/how_it_works_section.dart';
 import '../sections/roles_section.dart';
 import '../sections/testimonials_section.dart';
-import '../sections/trade_categories_section.dart';
+import '../sections/trade_features_section.dart';
 import '../sections/trust_safety_section.dart';
 import '../sections/trust_stats_section.dart';
 import '../sections/values_strip.dart';
@@ -69,7 +69,7 @@ class HomePage extends StatelessWidget {
         // The competitive wedge — proves the "no fees" feature.
         SliverToBoxAdapter(child: ComparisonSection()),
         SliverToBoxAdapter(child: RolesSection()),
-        SliverToBoxAdapter(child: TradeCategoriesSection()),
+        SliverToBoxAdapter(child: TradeFeaturesSection()),
         SliverToBoxAdapter(child: TestimonialsSection()),
         SliverToBoxAdapter(child: AppGallerySection()),
         // Objection-handling before the final ask.

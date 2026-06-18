@@ -6,7 +6,7 @@ import '../../../../../core/design/colors.dart';
 import '../widgets/site_section_frame.dart';
 
 /// A long-form "for the people who actually build" section. Just
-/// paragraphs, set in body-large Open Sans. Reads like a job-site
+/// paragraphs, set in body-large Inter. Reads like a job-site
 /// notice on the wall — no widgets, no rules, no cards.
 ///
 /// The whole section is one centred block capped at 720ch so the

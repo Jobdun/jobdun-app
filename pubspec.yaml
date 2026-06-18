@@ -194,6 +194,7 @@ flutter:
     - assets/legal/
     - assets/images/ftue/
     - assets/website/screenshots/
+    - assets/website/construction/
     - lib/core/assets/
     - lib/core/assets/logo-concepts/hammer-j-above/
     - lib/core/assets/logo-concepts/hammer-j-fused/

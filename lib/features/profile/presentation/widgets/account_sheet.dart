@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/bottom_sheet_header.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -49,83 +50,81 @@ class _AccountSheetBody extends ConsumerWidget {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 16.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: c.border,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-            ),
-            Gap(16.h),
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const BottomSheetHeader(),
+          Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 16.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AvatarBlock(
-                  initials: name.isEmpty ? '?' : name[0].toUpperCase(),
-                  imageUrl: profile?.avatarUrl,
-                  size: 48,
-                  circle: true,
+                Row(
+                  children: [
+                    AvatarBlock(
+                      initials: name.isEmpty ? '?' : name[0].toUpperCase(),
+                      imageUrl: profile?.avatarUrl,
+                      size: 48,
+                      circle: true,
+                    ),
+                    Gap(12.w),
+                    Expanded(
+                      child: Text(
+                        name.isEmpty ? 'Your account' : name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.titleLarge!.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Gap(12.w),
-                Expanded(
-                  child: Text(
-                    name.isEmpty ? 'Your account' : name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.titleLarge!.copyWith(fontWeight: FontWeight.w700),
+                Gap(8.h),
+                Divider(color: c.border, height: 16.h),
+                _AccountRow(
+                  icon: AppIcons.user,
+                  label: 'My profile',
+                  onTap: () => go('/profile'),
+                ),
+                _AccountRow(
+                  icon: AppIcons.shield,
+                  label: isTrade ? 'Credentials' : 'Verification',
+                  onTap: () => go('/verification/wizard'),
+                ),
+                _AccountRow(
+                  icon: AppIcons.edit,
+                  label: 'Edit profile',
+                  onTap: () => go('/profile/edit'),
+                ),
+                if (isTrade)
+                  _AccountRow(
+                    icon: AppIcons.calendar,
+                    label: 'Availability schedule',
+                    // go (not push): /schedule is the Schedule TAB — switching the
+                    // branch keeps the dock visible; a push would render it
+                    // dockless with no back affordance.
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.go('/schedule');
+                    },
                   ),
+                _AccountRow(
+                  icon: AppIcons.settings,
+                  label: 'Settings',
+                  onTap: () => go('/settings'),
+                ),
+                _AccountRow(
+                  icon: AppIcons.notification,
+                  label: 'Notification settings',
+                  onTap: () => go('/settings/notifications'),
                 ),
               ],
             ),
-            Gap(8.h),
-            Divider(color: c.border, height: 16.h),
-            _AccountRow(
-              icon: AppIcons.user,
-              label: 'My profile',
-              onTap: () => go('/profile'),
-            ),
-            _AccountRow(
-              icon: AppIcons.shield,
-              label: isTrade ? 'Credentials' : 'Verification',
-              onTap: () => go('/verification/wizard'),
-            ),
-            _AccountRow(
-              icon: AppIcons.edit,
-              label: 'Edit profile',
-              onTap: () => go('/profile/edit'),
-            ),
-            if (isTrade)
-              _AccountRow(
-                icon: AppIcons.calendar,
-                label: 'Availability schedule',
-                // go (not push): /schedule is the Schedule TAB — switching the
-                // branch keeps the dock visible; a push would render it
-                // dockless with no back affordance.
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.go('/schedule');
-                },
-              ),
-            _AccountRow(
-              icon: AppIcons.settings,
-              label: 'Settings',
-              onTap: () => go('/settings'),
-            ),
-            _AccountRow(
-              icon: AppIcons.notification,
-              label: 'Notification settings',
-              onTap: () => go('/settings/notifications'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
