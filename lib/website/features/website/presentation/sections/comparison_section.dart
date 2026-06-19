@@ -7,34 +7,34 @@ import '../../../../../core/theme/app_icons.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "What you keep, that other platforms take." — the competitive wedge.
+/// "What you keep, that other platforms take.": the competitive wedge.
 ///
 /// Every major AU trades platform charges the tradie or the builder: a
 /// subscription, a price per lead, or a cut of the job. Jobdun's model is
-/// the opposite — tradies stay free forever, builders pay a flat \$10/week
+/// the opposite. Tradies stay free forever, builders pay a flat \$10/week
 /// that costs less than two paid leads. This section proves the "no fees,
 /// no take rate" promise as a side-by-side the reader can scan in five
-/// seconds. No competitor is named — the right-hand column is the honest
+/// seconds. No competitor is named; the right-hand column is the honest
 /// category, "lead-buying platforms".
 class ComparisonSection extends StatelessWidget {
   const ComparisonSection({super.key});
 
-  // Parallel rows — index i of [_jobdun] answers index i of [_others].
+  // Parallel rows. Index i of [_jobdun] answers index i of [_others].
   static const _jobdun = <String>[
     'Tradies download and apply free, forever',
-    r'Builders pay a flat $10/week — less than two leads',
+    r'Builders pay a flat $10/week, less than two leads',
     'You keep 100% of what the job pays',
     'A job you apply for is yours alone',
     'Message the builder or trade direct',
     'Licence + ABN checked before contact',
   ];
   static const _others = <String>[
-    r'Pay $30–80+ for every single lead',
-    r'$200–600 a month just to stay listed',
+    r'Pay $30 to $80+ for every single lead',
+    r'$200 to $600 a month just to stay listed',
     'Up to ~15% skimmed off the job',
     'The same lead is sold to 3+ rivals',
     'Routed through a lead broker first',
-    'Verification varies — if it happens',
+    'Verification varies, if it happens',
   ];
 
   @override
@@ -87,7 +87,7 @@ class ComparisonSection extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Text(
                   'Most platforms charge tradies or builders per lead, per '
-                  'month, or per job — sometimes all three. Jobdun costs a '
+                  'month, or per job, sometimes all three. Jobdun costs a '
                   "tradie nothing, ever, and costs a builder less than two "
                   'paid leads a week.',
                   style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.55),
@@ -98,15 +98,13 @@ class ComparisonSection extends StatelessWidget {
             RevealOnScroll(
               delayMs: 120,
               child: wide
-                  ? IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(child: jobdun),
-                          const Gap(20),
-                          Expanded(child: others),
-                        ],
-                      ),
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: jobdun),
+                        const Gap(20),
+                        Expanded(child: others),
+                      ],
                     )
                   : Column(children: [jobdun, const Gap(20), others]),
             ),

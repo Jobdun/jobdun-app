@@ -7,9 +7,9 @@ import '../../../../../core/design/colors.dart';
 import '../widgets/phone_frame.dart';
 import '../widgets/site_section_frame.dart';
 
-/// Two role phones — on web, a centred 2-up. On mobile, a horizontal
+/// Two role phones, on web a centred 2-up. On mobile, a horizontal
 /// PageView so the user can swipe between roles (the user does NOT
-/// want a stacked column on a phone — they explicitly asked for a
+/// want a stacked column on a phone. They explicitly asked for a
 /// swipeable carousel).
 ///
 /// CTAs live in the bottom-CTA section; this section is purely
@@ -22,11 +22,11 @@ class RolesSection extends StatefulWidget {
 }
 
 class _RolesSectionState extends State<RolesSection> {
-  // Real device captures — one per role, showing the actual
+  // Real device captures, one per role, showing the actual
   // builder / crew experience. The builder side shows the home
-  // with a new applicant hero ("NEXT: 1 NEW APPLICANT") — the
+  // with a new applicant hero ("NEXT: 1 NEW APPLICANT"), the
   // value moment for builders. The crew side shows FTUE page 2
-  // ("JOBS NEAR YOU. APPLY IN THREE TAPS.") — the tradie's
+  // ("JOBS NEAR YOU. APPLY IN THREE TAPS."), the tradie's
   // promise: local jobs, one-tap apply.
   static const _items = <_RoleItem>[
     _RoleItem(
@@ -101,16 +101,19 @@ class _TwoUp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(width: 48),
-            Expanded(child: _RoleCard(item: items[i])),
-          ],
+    // IntrinsicHeight inside a SliverList / SliverToBoxAdapter returns 0
+    // (Sliver constraints don't propagate the way regular boxes do),
+    // which silently collapsed both role cards. PhoneFrame already has
+    // a finite width + maxHeight so the row lays out fine without
+    // needing IntrinsicHeight at all.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(width: 48),
+          Expanded(child: _RoleCard(item: items[i])),
         ],
-      ),
+      ],
     );
   }
 }
