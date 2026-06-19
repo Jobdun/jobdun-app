@@ -58,13 +58,25 @@ class PhoneFrame extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final w = width;
-    final h = (w / _aspect).clamp(0.0, maxHeight);
-    // When peeking, only the top slice of the screenshot is shown.
-    // The bezel still renders at full phone height so the device
-    // reads as a device; the screenshot inside is cropped so the
-    // visible window is the top portion.
     final peeking = peekFromTop > 0.0 && peekFromTop < 1.0;
 
+    // Peek mode: render only the visible top slice. No full-height
+    // bezel, no padding wrapper — the device's bottom edge is the
+    // clipped edge of the screenshot. Top corners are rounded; bottom
+    // is square. Sized to the natural visible height (= width ×
+    // (9:19.5 aspect) × peek fraction).
+    if (peeking) {
+      return Transform.rotate(
+        angle: tilt,
+        child: _PeekContent(
+          asset: asset,
+          semanticLabel: semanticLabel,
+          fraction: peekFromTop,
+        ),
+      );
+    }
+
+    final h = (w / _aspect).clamp(0.0, maxHeight);
     return Transform.rotate(
       angle: tilt,
       child: Container(
@@ -78,13 +90,7 @@ class PhoneFrame extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32),
-          child: peeking
-              ? _PeekContent(
-                  asset: asset,
-                  semanticLabel: semanticLabel,
-                  fraction: peekFromTop,
-                )
-              : _FullContent(asset: asset, semanticLabel: semanticLabel, c: c),
+          child: _FullContent(asset: asset, semanticLabel: semanticLabel, c: c),
         ),
       ),
     );
@@ -187,7 +193,16 @@ class _FullContent extends StatelessWidget {
 /// Shows only the top [fraction] of the source screenshot. Used for
 /// the trust-safety proof block so the phone reads as a device
 /// rising up from below the surface — only the top portion of the
-/// screen is visible.
+/// screen is visible, and the bezel ends at the cropped edge so the
+/// part that isn't shown doesn't render.
+///
+/// Implementation: render a SizedBox sized to the visible top slice
+/// of the screenshot (no full-height bezel). The container is the
+/// visible slice only — the screenshot's natural aspect ratio,
+/// clipped at the bottom. Top corners are rounded (matches the
+/// phone's full bezel). Right-edge orange glow + top-edge specular
+/// highlight stay; bottom darkening is dropped since the bottom
+/// edge of the visible slice is the bezel's new "edge".
 class _PeekContent extends StatelessWidget {
   const _PeekContent({
     required this.asset,
@@ -201,103 +216,89 @@ class _PeekContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return SizedBox.expand(
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          // Render the screenshot at its full intrinsic size, anchored
-          // at the top of the bezel. The bottom (1-fraction) of the
-          // screenshot is clipped off, so only the top [fraction] is
-          // visible. Using LayoutBuilder + OverflowBox keeps the source
-          // proportions intact.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final bezelW = constraints.maxWidth;
-              final bezelH = constraints.maxHeight;
-              if (bezelW <= 0 || bezelH <= 0) return const SizedBox.shrink();
-              // The screenshot has the phone's intrinsic 9:19.5
-              // aspect (1080:2340). At a width of `bezelW`, its
-              // natural height is `bezelW / _aspect`. We show only
-              // the top `fraction` of that height.
-              final sourceH = bezelW / (9 / 19.5);
-              final visibleH = sourceH * fraction;
-              return Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: visibleH,
-                    child: ClipRect(
-                      child: OverflowBox(
-                        minHeight: sourceH,
-                        maxHeight: sourceH,
-                        alignment: Alignment.topCenter,
-                        child: Image.asset(
-                          asset,
-                          fit: BoxFit.cover,
-                          width: bezelW,
-                          height: sourceH,
-                          alignment: Alignment.topCenter,
-                          semanticLabel: semanticLabel,
-                          excludeFromSemantics: semanticLabel == null,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Right-edge orange glow (mirrors the full view's
-                  // accent). Aligns to the visible slice, not the
-                  // full bezel.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: visibleH,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerRight,
-                            end: Alignment.centerLeft,
-                            colors: [
-                              c.action.withValues(alpha: 0.10),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.18],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          // Top-edge specular highlight stays at the very top of
-          // the bezel so the device still reads as a device when
-          // cropped.
-          Positioned(
-            top: 6,
-            left: 0,
-            right: 0,
-            child: IgnorePointer(
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      c.action.withValues(alpha: 0.35),
-                      Colors.transparent,
-                    ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bezelW = constraints.maxWidth;
+        if (bezelW <= 0) return const SizedBox.shrink();
+        // The screenshot has the phone's intrinsic 9:19.5 aspect
+        // (1080:2340). At a width of `bezelW`, its natural height is
+        // `bezelW / _aspect`. We show only the top `fraction` of that
+        // height, so the visible card is exactly that height.
+        final sourceH = bezelW / (9 / 19.5);
+        final visibleH = sourceH * fraction;
+        return SizedBox(
+          width: bezelW,
+          height: visibleH,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+            child: Stack(
+              fit: StackFit.expand,
+              clipBehavior: Clip.hardEdge,
+              children: [
+                // The screenshot, anchored at the top. The full image
+                // is laid out at sourceH height but the parent SizedBox
+                // clips the bottom (1 - fraction) via the ClipRRect
+                // already; we still use OverflowBox to lay out the
+                // full image at its natural height without rescaling,
+                // so the screenshot's top 32% renders at its source
+                // resolution.
+                OverflowBox(
+                  minHeight: sourceH,
+                  maxHeight: sourceH,
+                  alignment: Alignment.topCenter,
+                  child: Image.asset(
+                    asset,
+                    fit: BoxFit.cover,
+                    width: bezelW,
+                    height: sourceH,
+                    alignment: Alignment.topCenter,
+                    semanticLabel: semanticLabel,
+                    excludeFromSemantics: semanticLabel == null,
                   ),
                 ),
-              ),
+                // Right-edge orange glow (matches the full view's
+                // accent). Light coming from the right.
+                IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          c.action.withValues(alpha: 0.10),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.18],
+                      ),
+                    ),
+                  ),
+                ),
+                // Top-edge specular highlight. ~2% alpha, thin line
+                // — reads as a "premium device" detail.
+                Positioned(
+                  top: 6,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            c.action.withValues(alpha: 0.35),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

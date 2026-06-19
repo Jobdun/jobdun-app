@@ -168,12 +168,15 @@ class _StatCell extends StatelessWidget {
 }
 
 /// "Show, don't tell": the real in-app affordance that hides
-/// unverified applicants, with the verified seal beside it.
+/// unverified applicants.
 ///
-/// Layout: the device renders large and bottom-aligned, with only the
-/// top ~30% of the screen visible — the rest of the phone is clipped
-/// by the proof block's bottom edge. Reads as the device rising up
-/// from below the surface, with the seal stamped at the cropped top.
+/// Layout: the device renders large with only the top portion of
+/// the screen visible (the rest is not rendered at all). Top
+/// corners of the visible slice are rounded; the bottom is a
+/// clean horizontal cut. Reads as the device peeking up from
+/// below the proof block's surface. The verified seal floats
+/// above the visible slice's top-right corner; the supporting
+/// copy sits to the right of the device on wide viewports.
 class _ProofBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -181,11 +184,12 @@ class _ProofBlock extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final wide = MediaQuery.sizeOf(context).width >= Bp.laptop;
 
-    // Width + top-peek fraction. 380 wide on desktop reads as a big,
-    // premium device. The peek fraction (0.32) shows the top third
-    // — exactly where the job-card UI sits in the source screenshot.
-    const phoneW = 380.0;
-    const peek = 0.32;
+    // Width + top-peek fraction. 420 wide on desktop reads as a
+    // big, premium device. The peek fraction (0.36) shows the top
+    // third — exactly where the '3-phase switchboard install' card
+    // and 'Verified only' toggle sit in the source screenshot.
+    const phoneW = 420.0;
+    const peek = 0.36;
 
     final phone = SizedBox(
       width: phoneW,
@@ -194,52 +198,71 @@ class _ProofBlock extends StatelessWidget {
         semanticLabel:
             'Applicants view showing one hidden applicant. Only verified workers are shown.',
         width: phoneW,
-        maxHeight: 820,
+        maxHeight: 1200,
         peekFromTop: peek,
       ),
     );
 
     final seal = BadgeSealIllustration(size: 88);
 
+    final copy = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 56),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            wide
+                ? 'The verified-workers toggle hides every '
+                      'unverified applicant. You can override it; most '
+                      'builders never do.'
+                : 'The verified-workers toggle hides every unverified applicant.',
+            style: tt.headlineSmall!.copyWith(
+              color: c.text1,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+              letterSpacing: -0.2,
+            ),
+          ),
+          if (wide) ...[
+            const Gap(20),
+            Text(
+              'No anonymous operators. No drive-by reviews. Every '
+              'name on the roster is a tradie you can actually call.',
+              style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
+            ),
+          ],
+        ],
+      ),
+    );
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(40, 56, 40, 0),
+      padding: const EdgeInsets.fromLTRB(48, 56, 48, 0),
       decoration: BoxDecoration(
         color: c.background,
         border: Border.all(color: c.border),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
-      child: IntrinsicHeight(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Bottom-aligned so the bottom of the phone sits flush
-            // with the bottom of the proof block. The visible top
-            // slice is at the upper edge of the phone; the rest is
-            // off-screen below.
-            Align(alignment: Alignment.bottomCenter, child: phone),
-            // Seal stamped on the right of the visible portion of
-            // the device.
-            Positioned(right: 36, top: 16, child: seal),
-            // One supporting line of copy above the device.
-            Positioned(
-              top: 16,
-              left: 40,
-              right: 160,
-              child: Text(
-                wide
-                    ? 'The verified-workers toggle hides every unverified applicant. '
-                          'You can override it; most builders never do.'
-                    : 'The verified-workers toggle hides every unverified applicant.',
-                style: tt.bodyLarge!.copyWith(
-                  color: c.text1,
-                  height: 1.55,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Two-column: phone on the left (bottom-aligned so the
+          // cropped edge sits flush with the bottom of the proof
+          // block's content area), copy on the right.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Align(alignment: Alignment.bottomCenter, child: phone),
+              const Gap(48),
+              if (wide) Expanded(child: copy) else copy,
+            ],
+          ),
+          // Verified seal floats above the visible slice's top-right
+          // corner. The negative top + right pull it into the area
+          // just above and to the right of the phone's top edge.
+          Positioned(right: wide ? 24 : -16, top: -36, child: seal),
+        ],
       ),
     );
   }
