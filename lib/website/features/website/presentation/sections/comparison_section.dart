@@ -9,18 +9,20 @@ import '../widgets/site_section_frame.dart';
 
 /// "What you keep, that other platforms take." — the competitive wedge.
 ///
-/// Every major AU trades platform charges the tradie: a subscription, a price
-/// per lead, or a cut of the job. Jobdun charges neither side to connect. This
-/// section proves the "no fees" line the features grid makes, as a side-by-side
-/// the reader can scan in five seconds. No competitor is named — the right-hand
-/// column is the honest category, "lead-buying platforms".
+/// Every major AU trades platform charges the tradie or the builder: a
+/// subscription, a price per lead, or a cut of the job. Jobdun's model is
+/// the opposite — tradies stay free forever, builders pay a flat \$10/week
+/// that costs less than two paid leads. This section proves the "no fees,
+/// no take rate" promise as a side-by-side the reader can scan in five
+/// seconds. No competitor is named — the right-hand column is the honest
+/// category, "lead-buying platforms".
 class ComparisonSection extends StatelessWidget {
   const ComparisonSection({super.key});
 
   // Parallel rows — index i of [_jobdun] answers index i of [_others].
   static const _jobdun = <String>[
-    'Free to post a job and free to apply',
-    'No subscription — not now, not ever',
+    'Tradies download and apply free, forever',
+    r'Builders pay a flat $10/week — less than two leads',
     'You keep 100% of what the job pays',
     'A job you apply for is yours alone',
     'Message the builder or trade direct',
@@ -43,7 +45,7 @@ class ComparisonSection extends StatelessWidget {
 
     final jobdun = _CompareCard(
       title: 'Jobdun',
-      tagline: 'What you pay to connect: nothing.',
+      tagline: 'Tradies free. Builders \$10/week. No cuts.',
       items: _jobdun,
       positive: true,
       highlighted: true,
@@ -84,9 +86,10 @@ class ComparisonSection extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Text(
-                  'Most platforms charge tradies to be found — a monthly fee, a '
-                  'price per lead, or a cut of the job. We charge neither side a '
-                  'cent to connect.',
+                  'Most platforms charge tradies or builders per lead, per '
+                  'month, or per job — sometimes all three. Jobdun costs a '
+                  "tradie nothing, ever, and costs a builder less than two "
+                  'paid leads a week.',
                   style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.55),
                 ),
               ),

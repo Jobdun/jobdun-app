@@ -7,9 +7,10 @@ import '../widgets/animated_cta.dart';
 import '../widgets/page_hero.dart';
 import '../widgets/site_shell.dart';
 
-/// `/pricing` — the whole pitch on one page: it's free, and here's the proof
-/// next to what every other platform charges. Leads with the headline, then
-/// the side-by-side comparison and the cost-related FAQs.
+/// `/pricing` — the whole pitch on one page: free for tradies, $10 a week
+/// for builders, and the side-by-side against every other platform that
+/// charges per-lead or takes a cut. Leads with the headline, then the
+/// comparison and the cost-related FAQs.
 class PricingPage extends StatelessWidget {
   const PricingPage({super.key});
 
@@ -20,11 +21,12 @@ class PricingPage extends StatelessWidget {
         SliverToBoxAdapter(
           child: PageHero(
             eyebrow: 'Pricing',
-            title: "It's free.\nHere's the catch: there isn't one.",
+            title: 'Free for tradies.\n\$10 a week for builders.',
             subtitle:
-                'No subscription. No price per lead. No cut of the job. We '
-                "don't charge builders or trades a cent to connect — and we "
-                'never will. Scroll down for exactly how that compares.',
+                'No price per lead. No cut of the job. Tradies download and '
+                'apply free, forever. Builders pay a flat \$10 a week — '
+                'cancel any time. Scroll down to see how that lines up '
+                'against what every other platform charges.',
             ctas: [AnimatedCta(label: 'GET STARTED', route: '/contact')],
           ),
         ),

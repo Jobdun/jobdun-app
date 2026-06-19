@@ -23,16 +23,16 @@ class ValuesStrip extends StatelessWidget {
 
     const items = [
       _Value(
-        label: 'No subscription.',
+        label: r'Free for tradies.',
         body:
-            'Builders post jobs. Trades apply. There is no monthly fee '
-            'and no "premium" tier that unlocks real features.',
+            'Tradies download, browse, and apply for jobs free, forever. '
+            'No subscription. No premium tier. No cut of your pay.',
       ),
       _Value(
-        label: 'No take rate.',
+        label: r'Builders: $10 a week.',
         body:
-            "We don't skim a cut off your pay. The job pays what you "
-            'agreed, and that is the whole story.',
+            'One flat weekly fee covers every job you post, every applicant '
+            'you message, and every licence check. Cancel any time.',
       ),
       _Value(
         label: 'No anonymous operators.',

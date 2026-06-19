@@ -10,8 +10,9 @@ import '../widgets/page_hero.dart';
 import '../widgets/site_shell.dart';
 
 /// `/for-crews` — the find-work side. Leads with local, real, paid-in-full
-/// work, then reuses features, the no-take-rate comparison, the trade chips
-/// and proof, framed for a trade deciding whether to sign up.
+/// work, makes the "always free for tradies" promise explicit, then reuses
+/// features, comparison, trade chips and proof framed for a trade deciding
+/// whether to sign up.
 class ForCrewsPage extends StatelessWidget {
   const ForCrewsPage({super.key});
 
@@ -25,8 +26,9 @@ class ForCrewsPage extends StatelessWidget {
             title: 'Real work, close to home.\nAnd you keep all of it.',
             subtitle:
                 'See the jobs that are actually drivable from your yard, quote '
-                'on your own terms, and talk to the builder direct. No '
-                'subscription, no lead fees, no cut of your pay — ever.',
+                'on your own terms, and talk to the builder direct. Jobdun '
+                'is free for tradies — to download, to apply, to get paid. '
+                'Always.',
             ctas: [
               AnimatedCta(label: 'FIND WORK NEAR YOU', route: '/contact'),
               AnimatedCta(

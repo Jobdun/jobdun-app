@@ -49,10 +49,11 @@ class FeaturesSection extends StatelessWidget {
           'you at the top of the next builder\'s list.',
     ),
     _Feature(
-      title: 'No fees, no take rate',
+      title: 'Free for tradies',
       body:
-          "No subscription, no premium tier, and we never skim a cut of "
-          'your pay. The job pays you, in full.',
+          'Browse and apply for jobs free, forever — no subscription, no '
+          'premium tier, and we never skim a cut of your pay. Builders pay '
+          'a flat \$10 a week. The job pays you, in full.',
     ),
   ];
 

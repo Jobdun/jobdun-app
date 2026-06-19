@@ -16,8 +16,17 @@ class FaqSection extends StatelessWidget {
   static const _faqs = <_Faq>[
     _Faq(
       'What does it cost?',
-      "Nothing to post a job and nothing to apply. There's no subscription, "
-          'no premium tier, and we never take a cut of your pay.',
+      'Tradies download the app and apply for jobs free, forever — no '
+          'subscription, no premium tier, no cut of your pay. Builders pay '
+          'a flat \$10 a week. Cancel any time from inside the app.',
+    ),
+    _Faq(
+      'Why \$10 a week for builders?',
+      'Lead-buying platforms charge \$30–80 per lead and sell the same lead '
+          'to three or four rivals. \$10/week covers the cost of running '
+          'the licence + ABN checks and the in-app messaging, with no per-'
+          'lead fee and no surprise upsells. When the CRM ships later this '
+          'year, the second tier will be available at a higher weekly price.',
     ),
     _Faq(
       'How are trades verified?',
