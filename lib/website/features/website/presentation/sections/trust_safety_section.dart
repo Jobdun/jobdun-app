@@ -176,7 +176,8 @@ class _StatCell extends StatelessWidget {
 /// clean horizontal cut. Reads as the device peeking up from
 /// below the proof block's surface. The verified seal floats
 /// above the visible slice's top-right corner; the supporting
-/// copy sits to the right of the device on wide viewports.
+/// copy sits to the right of the device on wide viewports, or
+/// above it on narrow viewports.
 class _ProofBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -205,40 +206,65 @@ class _ProofBlock extends StatelessWidget {
 
     final seal = BadgeSealIllustration(size: 88);
 
-    final copy = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 56),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            wide
-                ? 'The verified-workers toggle hides every '
-                      'unverified applicant. You can override it; most '
-                      'builders never do.'
-                : 'The verified-workers toggle hides every unverified applicant.',
-            style: tt.headlineSmall!.copyWith(
-              color: c.text1,
-              fontWeight: FontWeight.w600,
-              height: 1.25,
-              letterSpacing: -0.2,
-            ),
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          wide
+              ? 'The verified-workers toggle hides every '
+                    'unverified applicant. You can override it; most '
+                    'builders never do.'
+              : 'The verified-workers toggle hides every unverified applicant.',
+          style: tt.headlineSmall!.copyWith(
+            color: c.text1,
+            fontWeight: FontWeight.w600,
+            height: 1.25,
+            letterSpacing: -0.2,
           ),
-          if (wide) ...[
-            const Gap(20),
-            Text(
-              'No anonymous operators. No drive-by reviews. Every '
-              'name on the roster is a tradie you can actually call.',
-              style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
-            ),
-          ],
+        ),
+        if (wide) ...[
+          const Gap(20),
+          Text(
+            'No anonymous operators. No drive-by reviews. Every '
+            'name on the roster is a tradie you can actually call.',
+            style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
+          ),
         ],
-      ),
+      ],
     );
+
+    // Wide: phone on the left (bottom-aligned), copy on the right
+    // (vertically centred to align with the visible slice).
+    // Narrow: copy on top, phone below (also bottom-aligned so the
+    // cropped edge of the device sits flush with the bottom of the
+    // proof block's content area).
+    final body = wide
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Align(alignment: Alignment.bottomCenter, child: phone),
+              const Gap(48),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 56),
+                  child: copy,
+                ),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(padding: const EdgeInsets.only(bottom: 32), child: copy),
+              Align(alignment: Alignment.bottomCenter, child: phone),
+            ],
+          );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(48, 56, 48, 0),
+      padding: const EdgeInsets.fromLTRB(32, 56, 32, 0),
       decoration: BoxDecoration(
         color: c.background,
         border: Border.all(color: c.border),
@@ -247,21 +273,17 @@ class _ProofBlock extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Two-column: phone on the left (bottom-aligned so the
-          // cropped edge sits flush with the bottom of the proof
-          // block's content area), copy on the right.
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Align(alignment: Alignment.bottomCenter, child: phone),
-              const Gap(48),
-              if (wide) Expanded(child: copy) else copy,
-            ],
-          ),
+          body,
           // Verified seal floats above the visible slice's top-right
-          // corner. The negative top + right pull it into the area
-          // just above and to the right of the phone's top edge.
-          Positioned(right: wide ? 24 : -16, top: -36, child: seal),
+          // corner. Wide: sits to the right of the phone's top edge.
+          // Narrow: centered above the phone since the device is now
+          // full-width below the copy.
+          Positioned(
+            right: wide ? 24 : null,
+            left: wide ? null : 0,
+            top: -36,
+            child: seal,
+          ),
         ],
       ),
     );
