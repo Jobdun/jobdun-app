@@ -169,6 +169,11 @@ class _StatCell extends StatelessWidget {
 
 /// "Show, don't tell": the real in-app affordance that hides
 /// unverified applicants, with the verified seal beside it.
+///
+/// Layout: the device renders large and bottom-aligned, with only the
+/// top ~30% of the screen visible — the rest of the phone is clipped
+/// by the proof block's bottom edge. Reads as the device rising up
+/// from below the surface, with the seal stamped at the cropped top.
 class _ProofBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -176,80 +181,66 @@ class _ProofBlock extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final wide = MediaQuery.sizeOf(context).width >= Bp.laptop;
 
+    // Width + top-peek fraction. 380 wide on desktop reads as a big,
+    // premium device. The peek fraction (0.32) shows the top third
+    // — exactly where the job-card UI sits in the source screenshot.
+    const phoneW = 380.0;
+    const peek = 0.32;
+
     final phone = SizedBox(
-      width: 240,
+      width: phoneW,
       child: PhoneFrame(
         asset: 'assets/website/screenshots/20_applicants_job_view.webp',
         semanticLabel:
             'Applicants view showing one hidden applicant. Only verified workers are shown.',
-        width: 240,
-        maxHeight: 540,
+        width: phoneW,
+        maxHeight: 820,
+        peekFromTop: peek,
       ),
     );
 
     final seal = BadgeSealIllustration(size: 88);
 
-    final copy = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'VERIFIED',
-          style: tt.labelMedium!.copyWith(
-            color: c.action,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.6,
-          ),
-        ),
-        const Gap(16),
-        Text(
-          'What verified looks like\nin the app.',
-          style: tt.headlineSmall!.copyWith(
-            color: c.text1,
-            fontWeight: FontWeight.w700,
-            height: 1.15,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const Gap(14),
-        Text(
-          'One applicant is hidden. Only verified workers are shown. '
-          'Builders see the people who passed the gate; unverified '
-          'applicants never reach the inbox.',
-          style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.6),
-        ),
-      ],
-    );
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(40, 56, 40, 0),
       decoration: BoxDecoration(
         color: c.background,
         border: Border.all(color: c.border),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
-      child: wide
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(width: 220, child: phone),
-                const Gap(16),
-                seal,
-                const Gap(32),
-                Expanded(child: copy),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: phone),
-                const Gap(20),
-                seal,
-                const Gap(20),
-                copy,
-              ],
+      child: IntrinsicHeight(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Bottom-aligned so the bottom of the phone sits flush
+            // with the bottom of the proof block. The visible top
+            // slice is at the upper edge of the phone; the rest is
+            // off-screen below.
+            Align(alignment: Alignment.bottomCenter, child: phone),
+            // Seal stamped on the right of the visible portion of
+            // the device.
+            Positioned(right: 36, top: 16, child: seal),
+            // One supporting line of copy above the device.
+            Positioned(
+              top: 16,
+              left: 40,
+              right: 160,
+              child: Text(
+                wide
+                    ? 'The verified-workers toggle hides every unverified applicant. '
+                          'You can override it; most builders never do.'
+                    : 'The verified-workers toggle hides every unverified applicant.',
+                style: tt.bodyLarge!.copyWith(
+                  color: c.text1,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
+          ],
+        ),
+      ),
     );
   }
 }
