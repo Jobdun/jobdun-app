@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../../core/design/colors.dart';
 
-/// Stylised hammer — a thick horizontal head + a vertical handle. Drawn
+/// Stylised hammer: a thick horizontal head + a vertical handle. Drawn
 /// with [CustomPainter], no asset. Used on the marketing site as the
 /// "for tradies / on the tools" vector.
 class HammerMarkIllustration extends StatelessWidget {

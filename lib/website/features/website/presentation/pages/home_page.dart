@@ -18,7 +18,7 @@ import '../widgets/orange_rule.dart';
 import '../widgets/site_shell.dart';
 import '../widgets/watermark_mark.dart';
 
-/// The marketing home page — the full single-scroll story. Chrome (nav,
+/// The marketing home page: the full single-scroll story. Chrome (nav,
 /// footer, blueprint background, scroll-driven nav state) lives in [SiteShell];
 /// this page only declares the section rhythm. No two adjacent sections share
 /// a layout, and the surface/background colour alternates for cadence.
@@ -66,7 +66,7 @@ class HomePage extends StatelessWidget {
         ),
         SliverToBoxAdapter(child: HowItWorksSection()),
         SliverToBoxAdapter(child: FeaturesSection()),
-        // The competitive wedge — proves the "no fees" feature.
+        // The competitive wedge: proves the "no fees" feature.
         SliverToBoxAdapter(child: ComparisonSection()),
         SliverToBoxAdapter(child: RolesSection()),
         SliverToBoxAdapter(child: TradeFeaturesSection()),

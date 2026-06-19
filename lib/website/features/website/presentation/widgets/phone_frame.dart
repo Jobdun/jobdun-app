@@ -7,7 +7,7 @@ import '../../../../../../core/design/colors.dart';
 /// edge glow, and a small bottom-edge ambient darkening. No drop
 /// shadows (banned by the design system).
 ///
-/// Aspect ratio is **9:19.5** (≈0.46) — a modern flagship phone
+/// Aspect ratio is **9:19.5** (≈0.46). A modern flagship phone
 /// (iPhone Pro Max / Galaxy S24 Ultra). Width defaults to 320, so
 /// the bezel renders at 320×~696 logical pixels. Pass a smaller
 /// [width] for mobile stacks where the carousel needs to be
@@ -36,7 +36,7 @@ class PhoneFrame extends StatelessWidget {
   final double maxHeight;
   final double tilt;
 
-  // Modern flagship phone aspect — 9:19.5 (≈ 0.46).
+  // Modern flagship phone aspect: 9:19.5 (≈ 0.46).
   static const double _aspect = 9 / 19.5;
 
   @override
@@ -69,7 +69,7 @@ class PhoneFrame extends StatelessWidget {
                   excludeFromSemantics: semanticLabel == null,
                 ),
               ),
-              // Faint orange right-edge glow — sits over the screenshot
+              // Faint orange right-edge glow, sits over the screenshot
               // to suggest light coming from the right. 10% alpha,
               // no shadow required.
               Positioned.fill(
@@ -89,7 +89,7 @@ class PhoneFrame extends StatelessWidget {
                   ),
                 ),
               ),
-              // Ambient bottom darkening — also banned as a true
+              // Ambient bottom darkening, also banned as a true
               // shadow, so this is a single linear-gradient darkening
               // at the bottom edge.
               Positioned.fill(
@@ -111,7 +111,7 @@ class PhoneFrame extends StatelessWidget {
                   ),
                 ),
               ),
-              // Top-edge specular highlight — a thin orange line that
+              // Top-edge specular highlight: a thin orange line that
               // catches the eye, reads as a "premium device" detail
               // and ties back to the brand. ~2% alpha so it never
               // reads as a border.

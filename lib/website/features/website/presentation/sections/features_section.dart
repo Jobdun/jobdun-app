@@ -7,13 +7,13 @@ import '../widgets/hover_lift_card.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "Everything the job needs, nothing it doesn't." — a six-up grid of the
+/// "Everything the job needs, nothing it doesn't.": a six-up grid of the
 /// concrete things the app actually does. The conceptual "how it works"
 /// section sells the idea; this one names the features so a sceptical tradie
 /// can see exactly what they get.
 ///
 /// Typography-led: no per-card icon. The headline carries each card and the
-/// hover-lift border supplies the structure — the modern, un-templated read.
+/// hover-lift border supplies the structure. The modern, un-templated read.
 class FeaturesSection extends StatelessWidget {
   const FeaturesSection({super.key});
 
@@ -28,7 +28,7 @@ class FeaturesSection extends StatelessWidget {
       title: 'Local job matching',
       body:
           'Set the suburb you work out of and the feed only shows jobs '
-          "that are actually drivable — no 80km guesswork.",
+          "that are actually drivable, no 80km guesswork.",
     ),
     _Feature(
       title: 'Talk direct, in-app',
@@ -40,7 +40,7 @@ class FeaturesSection extends StatelessWidget {
       title: 'Quote on apply',
       body:
           'Send your price with the application. The job pays what you '
-          'both agreed — written down, up front.',
+          'both agreed, written down, up front.',
     ),
     _Feature(
       title: 'Ratings that follow you',
@@ -51,7 +51,7 @@ class FeaturesSection extends StatelessWidget {
     _Feature(
       title: 'Free for tradies',
       body:
-          'Browse and apply for jobs free, forever — no subscription, no '
+          'Browse and apply for jobs free, forever. No subscription, no '
           'premium tier, and we never skim a cut of your pay. Builders pay '
           'a flat \$10 a week. The job pays you, in full.',
     ),

@@ -9,7 +9,7 @@ import '../widgets/animated_cta.dart';
 import '../widgets/page_hero.dart';
 import '../widgets/site_shell.dart';
 
-/// `/for-builders` — the hiring side. Leads with the chase-free promise,
+/// `/for-builders`: the hiring side. Leads with the chase-free promise,
 /// names the flat weekly fee so there's no surprise later, then reuses
 /// trust, features, comparison and proof sections framed for a builder
 /// deciding whether to post their first job.
@@ -26,7 +26,7 @@ class ForBuildersPage extends StatelessWidget {
             title: "Find a crew you\ndon't have to chase.",
             subtitle:
                 'Post a job and see only licence-checked trades who can '
-                'actually do it. Talk to them direct — no agencies, no '
+                'actually do it. Talk to them direct. No agencies, no '
                 'per-lead fees, no dud operators wasting your week. '
                 'One flat \$10 a week. Cancel any time.',
             ctas: [

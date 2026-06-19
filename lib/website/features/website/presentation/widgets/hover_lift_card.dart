@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../core/design/colors.dart';
 
 /// A bordered card that lifts a few pixels and brightens its border to the
-/// brand orange on hover — the single card-depth the refined-flat+ marketing
+/// brand orange on hover; the single card-depth the refined-flat+ marketing
 /// direction allows. Lift is suppressed under reduced-motion.
 ///
 /// Shared by the features grid and the testimonial wall so card behaviour is

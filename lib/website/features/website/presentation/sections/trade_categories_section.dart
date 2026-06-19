@@ -6,21 +6,21 @@ import '../../../../../core/design/colors.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "The jobs posted on Jobdun right now." — a registry, not a tag cloud.
+/// "The jobs posted on Jobdun right now.": a registry, not a tag cloud.
 ///
 /// Layout (top-to-bottom):
-///   1. Header — eyebrow + headline + subhead. The headline names the
+///   1. Header: eyebrow + headline + subhead. The headline names the
 ///      breadth (12 trades) and the gate (verified every one).
-///   2. Roster — an asymmetric 4-card grid. Sparkies is the featured
+///   2. Roster: an asymmetric 4-card grid. Sparkies is the featured
 ///      card (wider, left) and carries a longer proof sentence. The
 ///      other three trades stack on the right at narrower widths.
 ///      Each card has a real photo, an AU-slang trade name in heavy
 ///      type, a roster stat in brand orange, a small tracked-caps
 ///      label, and a one-line proof sentence.
-///   3. Live ticker — a single hairline-divided line with a pulsing
+///   3. Live ticker: a single hairline-divided line with a pulsing
 ///      orange dot, one job-posted metric, and one hires-this-week
 ///      metric. Reads as activity, not as a social-proof badge.
-///   4. CTA link — "See all trades ↓", points at a future /trades page.
+///   4. CTA link: "See all trades ↓", points at a future /trades page.
 ///
 /// The asymmetric featured-card layout deliberately breaks the
 /// "identical card grids" SaaS trap. Each card is the same height
@@ -389,7 +389,7 @@ class _LiveTickerState extends State<_LiveTicker>
                 const Gap(12),
                 Expanded(
                   child: Text(
-                    'LIVE — 1 new job posted in the last 30 seconds.',
+                    'LIVE: 1 new job posted in the last 30 seconds.',
                     style: tt.bodyMedium!.copyWith(
                       color: c.text1,
                       fontWeight: FontWeight.w600,

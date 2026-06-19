@@ -6,7 +6,7 @@ import '../../../../../../core/design/colors.dart';
 ///
 /// The grid is *faint enough* (4% alpha) that it never reads as a
 /// "decoration" competing with the content. It reads as the subtle
-/// graph-paper texture of a job-site clipboard — the kind of
+/// graph-paper texture of a job-site clipboard: the kind of
 /// thing you'd only notice if you stopped to look.
 ///
 /// Why this works for Jobdun:
@@ -14,7 +14,7 @@ import '../../../../../../core/design/colors.dart';
 ///     blue grid paper. The visual language is in the audience's
 ///     muscle memory.
 ///   - The grid is mathematical (50px square), regular, and
-///     rhythmic — it doesn't fight the typography.
+///     rhythmic. It doesn't fight the typography.
 ///   - It's flat colour, no gradient, no glow, no glass. Banned
 ///     list passes.
 ///

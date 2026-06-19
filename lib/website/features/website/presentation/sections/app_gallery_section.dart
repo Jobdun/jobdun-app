@@ -155,7 +155,7 @@ class _HorizontalRoadmap extends StatelessWidget {
                   ),
               ],
             ),
-            // Animated connector line — at the node-dot y, on top
+            // Animated connector line at the node-dot y, on top
             // of the columns. Height is the line thickness.
             Positioned(
               left: lineLeft,
@@ -234,7 +234,7 @@ class _AnimatedConnectorLine extends StatelessWidget {
                   ? RoadmapBar(color: c.border)
                   : RoadmapBar(color: c.border, thickness: 2),
             ),
-            // Drawn portion — solid orange, clipped to progress.
+            // Drawn portion: solid orange, clipped to progress.
             if (drawnLength > 0)
               Positioned.fill(
                 child: ClipRect(
@@ -247,7 +247,7 @@ class _AnimatedConnectorLine extends StatelessWidget {
                       : RoadmapBar(color: c.action, thickness: 2),
                 ),
               ),
-            // Moving pulse — dot that travels along the line as
+            // Moving pulse, dot that travels along the line as
             // it draws.
             if (drawnLength > 4)
               Positioned(
@@ -276,7 +276,7 @@ class _AnimatedConnectorLine extends StatelessWidget {
   }
 }
 
-/// One milestone — phone above, node dot, headline + caption.
+/// One milestone: phone above, node dot, headline + caption.
 class _MilestoneColumn extends StatelessWidget {
   const _MilestoneColumn({
     required this.milestone,
@@ -305,7 +305,7 @@ class _MilestoneColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Phone — fades in + scales up + slides up.
+        // Phone: fades in + scales up + slides up.
         Opacity(
           opacity: phoneProgress,
           child: Transform.translate(
@@ -321,7 +321,7 @@ class _MilestoneColumn extends StatelessWidget {
           ),
         ),
         const Gap(24),
-        // Node dot — pops in.
+        // Node dot: pops in.
         Opacity(
           opacity: nodeProgress,
           child: Transform.scale(
@@ -356,7 +356,7 @@ class _MilestoneColumn extends StatelessWidget {
           ),
         ),
         const Gap(20),
-        // Headline + caption — fade in after the node.
+        // Headline + caption: fade in after the node.
         Opacity(
           opacity: nodeProgress,
           child: Transform.translate(

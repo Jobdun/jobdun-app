@@ -126,7 +126,7 @@ class _StoryScrollSectionState extends State<StoryScrollSection> {
               constraints: const BoxConstraints(maxWidth: 640),
               child: Text(
                 'Three captures from a real device. Tap a phone for the '
-                'full screen — the same flow your crew runs through on day one.',
+                'full screen. The same flow your crew runs through on day one.',
                 style: tt.bodyLarge!.copyWith(color: c.text2, height: 1.55),
               ),
             ),

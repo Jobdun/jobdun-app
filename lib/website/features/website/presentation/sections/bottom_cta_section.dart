@@ -8,8 +8,11 @@ import '../../../../../core/theme/app_icons.dart';
 import '../widgets/site_section_frame.dart';
 
 /// The final CTA. Single column, no header text, no body paragraph.
-/// The brand mark + the headline + two store buttons are the whole
-/// section. Minimal, declarative, in the FTUE voice.
+/// The brand mark + the play-twist tagline + the headline + two store
+/// buttons are the whole section. Minimal, declarative, in the FTUE
+/// voice. The "JobDun" capitalisation in the tagline is intentional:
+/// it highlights the suffix that rhymes with "done" and lands the
+/// play on "get the job done" once and only once on the entire site.
 class BottomCtaSection extends StatelessWidget {
   const BottomCtaSection({super.key});
 
@@ -30,7 +33,35 @@ class BottomCtaSection extends StatelessWidget {
               height: 80,
               child: JobdunLogo(variant: LogoVariant.badge),
             ),
-            const Gap(24),
+            const Gap(28),
+            // Play-twist tagline: "Everything you need to get the
+            // JobDun." Brand voice stays "Jobdun" everywhere else; the
+            // capital D here is a deliberate one-off that earns the play
+            // on "get the job done".
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: tt.titleMedium!.copyWith(
+                  color: c.text2,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                  height: 1.4,
+                ),
+                children: const [
+                  TextSpan(text: 'Everything you need to get the '),
+                  TextSpan(
+                    text: 'Job',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  TextSpan(
+                    text: 'Dun',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  TextSpan(text: '.'),
+                ],
+              ),
+            ),
+            const Gap(20),
             Text(
               'Ready when you are.',
               textAlign: TextAlign.center,
@@ -50,7 +81,7 @@ class BottomCtaSection extends StatelessWidget {
               ),
             ),
             const Gap(16),
-            // Store badges — wired to no-op until the apps are published;
+            // Store badges. Wired to no-op until the apps are published;
             // the listings go live in our AU launch markets first.
             Wrap(
               alignment: WrapAlignment.center,
@@ -92,7 +123,7 @@ class _StoreButton extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Tooltip(
-      message: 'Coming soon — $bottomLine',
+      message: 'Coming soon: $bottomLine',
       child: Material(
         color: c.surfaceRaised,
         borderRadius: BorderRadius.circular(AppRadius.btn.r),

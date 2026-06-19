@@ -33,7 +33,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   /// Flip between light and dark. From [ThemeMode.system] we resolve the
   /// current platform brightness first, then flip to the *opposite* of what
-  /// the visitor is seeing — so one tap always visibly changes the page.
+  /// the visitor is seeing. One tap always visibly changes the page.
   Future<void> toggle(Brightness platformBrightness) async {
     final showingDark = switch (state) {
       ThemeMode.dark => true,

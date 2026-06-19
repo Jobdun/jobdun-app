@@ -7,7 +7,7 @@ import '../widgets/animated_cta.dart';
 import '../widgets/page_hero.dart';
 import '../widgets/site_shell.dart';
 
-/// `/pricing` — the whole pitch on one page: free for tradies, $10 a week
+/// `/pricing`: the whole pitch on one page: free for tradies, $10 a week
 /// for builders, and the side-by-side against every other platform that
 /// charges per-lead or takes a cut. Leads with the headline, then the
 /// comparison and the cost-related FAQs.
@@ -24,7 +24,7 @@ class PricingPage extends StatelessWidget {
             title: 'Free for tradies.\n\$10 a week for builders.',
             subtitle:
                 'No price per lead. No cut of the job. Tradies download and '
-                'apply free, forever. Builders pay a flat \$10 a week — '
+                'apply free, forever. Builders pay a flat \$10 a week, '
                 'cancel any time. Scroll down to see how that lines up '
                 'against what every other platform charges.',
             ctas: [AnimatedCta(label: 'GET STARTED', route: '/contact')],

@@ -6,7 +6,7 @@ import '../../../../../core/theme/app_icons.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// Frequently-asked questions — the objections a sceptical tradie raises
+/// Frequently-asked questions: the objections a sceptical tradie raises
 /// before they download. Accessible disclosure: each row is a button that
 /// reports its expanded state, and the open/close motion is suppressed under
 /// reduced-motion.
@@ -16,13 +16,13 @@ class FaqSection extends StatelessWidget {
   static const _faqs = <_Faq>[
     _Faq(
       'What does it cost?',
-      'Tradies download the app and apply for jobs free, forever — no '
+      'Tradies download the app and apply for jobs free, forever. No '
           'subscription, no premium tier, no cut of your pay. Builders pay '
           'a flat \$10 a week. Cancel any time from inside the app.',
     ),
     _Faq(
       'Why \$10 a week for builders?',
-      'Lead-buying platforms charge \$30–80 per lead and sell the same lead '
+      'Lead-buying platforms charge \$30 to \$80 per lead and sell the same lead '
           'to three or four rivals. \$10/week covers the cost of running '
           'the licence + ABN checks and the in-app messaging, with no per-'
           'lead fee and no surprise upsells. When the CRM ships later this '
@@ -53,7 +53,7 @@ class FaqSection extends StatelessWidget {
     ),
     _Faq(
       'How do I delete my data?',
-      'Any time — from inside the app or from the website. See the privacy '
+      'Any time, from inside the app or from the website. See the privacy '
           'policy and the delete-account page linked in the footer below.',
     ),
   ];

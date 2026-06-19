@@ -76,7 +76,7 @@ class SiteTopBar extends ConsumerWidget {
                         onTap: () => context.go('/'),
                         borderRadius: BorderRadius.circular(8),
                         child: Semantics(
-                          label: 'Jobdun — home',
+                          label: 'Jobdun: home',
                           button: true,
                           child: Padding(
                             padding: EdgeInsets.all(AppSpacing.xs.w),
@@ -121,7 +121,7 @@ double _hPad(BuildContext context) {
   return AppSpacing.md.w;
 }
 
-/// Orange CONTACT US button — the standing call-to-action in the bar.
+/// Orange CONTACT US button, the standing call-to-action in the bar.
 class _ContactCta extends StatelessWidget {
   const _ContactCta({required this.active});
 
@@ -152,7 +152,7 @@ class _ContactCta extends StatelessWidget {
   }
 }
 
-/// Phone-width navigation — collapses the section links + Contact into a menu.
+/// Phone-width navigation: collapses the section links + Contact into a menu.
 class _NavMenu extends StatelessWidget {
   const _NavMenu({required this.currentPath});
 

@@ -5,7 +5,7 @@ import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "Three things we won't do." — a single dense row of three short
+/// "Three things we won't do.": a single dense row of three short
 /// value-props. Each block is a bold one-liner + a one-sentence
 /// qualifier. The whole strip reads as the inside cover of a
 /// job-site clipboard, not a feature grid.
@@ -62,7 +62,7 @@ class ValuesStrip extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Short orange tick — sits above the label
+                          // Short orange tick; sits above the label
                           // and reads as a "yes, this" affirmation.
                           Container(width: 28, height: 3, color: c.action),
                           const Gap(16),

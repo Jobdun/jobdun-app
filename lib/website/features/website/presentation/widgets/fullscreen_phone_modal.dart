@@ -4,10 +4,10 @@ import '../../../../../core/theme/app_icons.dart';
 import '../../../../app/theme/breakpoints.dart';
 import '../widgets/phone_frame.dart';
 
-/// Fullscreen phone modal — opens when a [StoryScrollSection] phone
+/// Fullscreen phone modal. Opens when a [StoryScrollSection] phone
 /// is tapped. The phone is the entire surface: viewport-filling,
 /// centered, with the screenshot at the maximum readable size. **No
-/// caption** — the caption lives on the in-page carousel card, where
+/// caption**: the caption lives on the in-page carousel card, where
 /// the user is reading. The modal is for "look at this screen at
 /// 1:1", not for re-reading the copy.
 class FullscreenPhoneModal extends StatelessWidget {

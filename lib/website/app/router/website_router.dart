@@ -55,7 +55,7 @@ final websiteRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Wraps a destination in a Material "fade through" page transition — the
+/// Wraps a destination in a Material "fade through" page transition. The
 /// correct pattern for switching between peer top-level destinations. Falls
 /// back to an instant cut under reduced-motion.
 CustomTransitionPage<void> _fadeThroughPage(

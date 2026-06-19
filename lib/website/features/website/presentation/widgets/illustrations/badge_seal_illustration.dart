@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../../core/design/colors.dart';
 
-/// Circular "verified seal" — a dashed outer ring + a solid inner ring +
+/// Circular "verified seal": a dashed outer ring + a solid inner ring +
 /// a centered check-mark. Drawn with [CustomPainter], no asset. Used on
 /// the marketing site as a vector for verification / accreditation.
 class BadgeSealIllustration extends StatelessWidget {

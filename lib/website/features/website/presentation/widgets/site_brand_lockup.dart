@@ -5,12 +5,12 @@ import '../../../../../app/theme/app_typography.dart';
 import '../../../../../core/design/colors.dart';
 
 /// Horizontal brand lockup for the site chrome: the hammer-J app-icon badge
-/// followed by the JOBDUN wordmark set in Archivo — the brand display face.
+/// followed by the JOBDUN wordmark set in Archivo. The brand display face.
 ///
 /// The badge reproduces the launcher icon exactly (white hammer-J on a
 /// safety-orange rounded square, `mark-jobdun.svg` carrying the icon's native
 /// inset), so the header mark, the app icon, and the registered trademark all
-/// read as one identity. The wordmark is live text — it inherits the active
+/// read as one identity. The wordmark is live text; it inherits the active
 /// theme so it stays crisp and recolours with light/dark instead of baking a
 /// flat SVG.
 class SiteBrandLockup extends StatelessWidget {

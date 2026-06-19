@@ -14,7 +14,7 @@ import 'router/website_router.dart';
 /// - `ScreenUtilInit` with the design width set to a wide desktop default
 ///   (1280) so the layout reads at the 360 / 768 / 1280 / 1440 breakpoints
 ///   the ui-ux-pro-max checklist audits. Phone rendering still respects
-///   the OS text scaler (clamped 0.9–1.3 in the theme).
+///   the OS text scaler (clamped 0.9 to 1.3 in the theme).
 /// - `RouterConfig` driven by the website router. The whole site is one
 ///   route; anchor scrolling is handled inside `HomePage` so deep links
 ///   like `jobdun.com.au/#how` land on the right section.
@@ -31,7 +31,7 @@ class WebsiteApp extends ConsumerWidget {
       builder: (context, child) {
         return MaterialApp.router(
           title:
-              'Jobdun — workforce platform for Australian construction trades',
+              'Jobdun: workforce platform for Australian construction trades',
           debugShowCheckedModeBanner: false,
           themeMode: themeMode,
           darkTheme: WebsiteTheme.dark(),

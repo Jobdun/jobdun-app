@@ -8,13 +8,13 @@ import '../widgets/phone_frame.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "What 'verified' actually means on Jobdun." — two visuals, one story.
+/// "What 'verified' actually means on Jobdun.": two visuals, one story.
 ///
 /// Layout, top-to-bottom:
-///   1. Header — eyebrow rule + headline + subhead.
-///   2. Stat strip — five hairline-divided metrics. Names the registries
+///   1. Header: eyebrow rule + headline + subhead.
+///   2. Stat strip: five hairline-divided metrics. Names the registries
 ///      and the cadence; the strip is the auditable claim.
-///   3. Proof block — the real in-app affordance showing unverified
+///   3. Proof block: the real in-app affordance showing unverified
 ///      applicants hidden, with the verified seal beside it.
 ///
 /// The 8-row spec list and the "what we'd catch" enumeration were cut:
@@ -167,7 +167,7 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-/// "Show, don't tell" — the real in-app affordance that hides
+/// "Show, don't tell": the real in-app affordance that hides
 /// unverified applicants, with the verified seal beside it.
 class _ProofBlock extends StatelessWidget {
   @override
@@ -181,7 +181,7 @@ class _ProofBlock extends StatelessWidget {
       child: PhoneFrame(
         asset: 'assets/website/screenshots/20_applicants_job_view.webp',
         semanticLabel:
-            'Applicants view showing one hidden applicant — only verified workers are shown.',
+            'Applicants view showing one hidden applicant. Only verified workers are shown.',
         width: 240,
         maxHeight: 540,
       ),
