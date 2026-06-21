@@ -558,7 +558,7 @@ COMMENT ON FUNCTION "public"."get_builder_public_verification"("p_user_id" "uuid
 
 
 
-CREATE OR REPLACE FUNCTION "public"."get_inbox"("p_user" "uuid") RETURNS TABLE("id" "uuid", "job_id" "uuid", "builder_id" "uuid", "trade_id" "uuid", "last_message_at" timestamp with time zone, "last_message_preview" "text", "last_message_sender_id" "uuid", "status" "text", "created_at" timestamp with time zone, "my_unread_count" integer, "other_display_name" "text", "other_avatar_url" "text", "job_title" "text")
+CREATE OR REPLACE FUNCTION "public"."get_inbox"("p_user" "uuid") RETURNS TABLE("id" "uuid", "job_id" "uuid", "builder_id" "uuid", "trade_id" "uuid", "last_message_at" timestamp with time zone, "last_message_preview" "text", "last_message_sender_id" "uuid", "status" "text", "created_at" timestamp with time zone, "my_unread_count" integer, "other_display_name" "text", "other_avatar_url" "text", "job_title" "text", "is_pinned" boolean, "is_muted" boolean)
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -566,14 +566,18 @@ CREATE OR REPLACE FUNCTION "public"."get_inbox"("p_user" "uuid") RETURNS TABLE("
          c.last_message_at, c.last_message_preview, c.last_message_sender_id,
          c.status::text, c.created_at,
          CASE WHEN c.builder_id = p_user THEN c.builder_unread_count
-              ELSE c.trade_unread_count END                      AS my_unread_count,
+              ELSE c.trade_unread_count END                        AS my_unread_count,
          CASE
-           WHEN c.builder_id <> p_user   -- counterparty is the builder (a business)
+           WHEN c.builder_id <> p_user
              THEN COALESCE(NULLIF(btrim(bp.company_name), ''), other.display_name)
-           ELSE other.display_name        -- counterparty is the trade (a person)
-         END                                                     AS other_display_name,
-         other.avatar_url                                        AS other_avatar_url,
-         j.title                                                 AS job_title
+           ELSE other.display_name
+         END                                                       AS other_display_name,
+         other.avatar_url                                          AS other_avatar_url,
+         j.title                                                   AS job_title,
+         CASE WHEN c.builder_id = p_user THEN c.builder_pinned_at IS NOT NULL
+              ELSE c.trade_pinned_at IS NOT NULL END               AS is_pinned,
+         CASE WHEN c.builder_id = p_user THEN c.builder_muted_at IS NOT NULL
+              ELSE c.trade_muted_at IS NOT NULL END                AS is_muted
     FROM public.conversations c
     LEFT JOIN public.jobs j ON j.id = c.job_id
     LEFT JOIN public.profiles other
@@ -582,7 +586,12 @@ CREATE OR REPLACE FUNCTION "public"."get_inbox"("p_user" "uuid") RETURNS TABLE("
    WHERE auth.uid() = p_user
      AND ( (c.builder_id = p_user AND c.builder_archived_at IS NULL)
         OR (c.trade_id   = p_user AND c.trade_archived_at   IS NULL) )
-   ORDER BY c.last_message_at DESC NULLS LAST;
+   ORDER BY
+     -- Pinned conversations float to the top per viewer
+     CASE WHEN c.builder_id = p_user THEN (c.builder_pinned_at IS NOT NULL)::int
+          ELSE (c.trade_pinned_at IS NOT NULL)::int
+     END DESC,
+     c.last_message_at DESC NULLS LAST;
 $$;
 
 
@@ -598,6 +607,15 @@ DECLARE
 BEGIN
   IF auth.uid() NOT IN (p_builder, p_trade) THEN
     RAISE EXCEPTION 'not a participant';
+  END IF;
+
+  -- Refuse to open/re-open a thread between blocked users.
+  IF EXISTS (
+    SELECT 1 FROM public.blocks
+     WHERE (blocker_id = p_builder AND blocked_id = p_trade)
+        OR (blocker_id = p_trade   AND blocked_id = p_builder)
+  ) THEN
+    RAISE EXCEPTION 'user_blocked';
   END IF;
 
   SELECT id INTO v_id FROM public.conversations
@@ -1060,6 +1078,44 @@ ALTER FUNCTION "public"."notify_on_new_message"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."notify_on_new_message"() IS 'Stream B producer: on a new message, inserts a message_received notification for the OTHER conversation participant (never the sender). Central push fanout delivers it. Copy is "New message from <name>" (no message preview).';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."notify_on_new_review"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_reviewer_name text;
+BEGIN
+  -- Defensive: never notify someone about their own review.
+  IF NEW.reviewee_id = NEW.reviewer_id THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT p.display_name INTO v_reviewer_name
+    FROM public.profiles p
+   WHERE p.id = NEW.reviewer_id;
+
+  INSERT INTO public.notifications (user_id, type, title, body, data)
+  VALUES (
+    NEW.reviewee_id,
+    'review_received',
+    'New review',
+    COALESCE(NULLIF(v_reviewer_name, ''), 'Someone')
+      || ' rated you ' || NEW.rating || '/5',
+    jsonb_build_object(
+      'review_id', NEW.id,
+      'job_id',    NEW.job_id,
+      'rating',    NEW.rating
+    )
+  );
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."notify_on_new_review"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."notify_trade_on_application_status"() RETURNS "trigger"
@@ -1750,6 +1806,17 @@ COMMENT ON COLUMN "public"."applications"."verification_snapshot_at_hire" IS 'Ca
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."blocks" (
+    "blocker_id" "uuid" NOT NULL,
+    "blocked_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "blocks_no_self_block" CHECK (("blocker_id" <> "blocked_id"))
+);
+
+
+ALTER TABLE "public"."blocks" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."bookings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_id" "uuid" NOT NULL,
@@ -1850,7 +1917,11 @@ CREATE TABLE IF NOT EXISTS "public"."conversations" (
     "builder_muted_until" timestamp with time zone,
     "trade_muted_until" timestamp with time zone,
     "builder_last_read_at" timestamp with time zone,
-    "trade_last_read_at" timestamp with time zone
+    "trade_last_read_at" timestamp with time zone,
+    "builder_pinned_at" timestamp with time zone,
+    "trade_pinned_at" timestamp with time zone,
+    "builder_muted_at" timestamp with time zone,
+    "trade_muted_at" timestamp with time zone
 );
 
 ALTER TABLE ONLY "public"."conversations" REPLICA IDENTITY FULL;
@@ -2170,6 +2241,26 @@ COMMENT ON TABLE "public"."regulator_circuit_state" IS 'One row per regulator (A
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."reports" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "reporter_id" "uuid" NOT NULL,
+    "reported_id" "uuid" NOT NULL,
+    "conversation_id" "uuid" NOT NULL,
+    "message_id" "uuid",
+    "reason" "text" NOT NULL,
+    "details" "text",
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "reports_details_check" CHECK (("char_length"("details") <= 500)),
+    CONSTRAINT "reports_no_self_report" CHECK (("reporter_id" <> "reported_id")),
+    CONSTRAINT "reports_reason_check" CHECK (("reason" = ANY (ARRAY['harassment'::"text", 'spam_or_scam'::"text", 'fake_profile'::"text", 'inappropriate_content'::"text", 'other'::"text"]))),
+    CONSTRAINT "reports_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'reviewed'::"text", 'actioned'::"text", 'dismissed'::"text"])))
+);
+
+
+ALTER TABLE "public"."reports" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."reviews" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_id" "uuid" NOT NULL,
@@ -2458,6 +2549,11 @@ ALTER TABLE ONLY "public"."applications"
 
 
 
+ALTER TABLE ONLY "public"."blocks"
+    ADD CONSTRAINT "blocks_pkey" PRIMARY KEY ("blocker_id", "blocked_id");
+
+
+
 ALTER TABLE ONLY "public"."bookings"
     ADD CONSTRAINT "bookings_pkey" PRIMARY KEY ("id");
 
@@ -2558,6 +2654,11 @@ ALTER TABLE ONLY "public"."regulator_circuit_state"
 
 
 
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."reviews"
     ADD CONSTRAINT "reviews_job_id_reviewer_id_key" UNIQUE ("job_id", "reviewer_id");
 
@@ -2647,6 +2748,10 @@ CREATE INDEX "applications_trade_id_idx" ON "public"."applications" USING "btree
 
 
 
+CREATE INDEX "blocks_blocked_id_idx" ON "public"."blocks" USING "btree" ("blocked_id");
+
+
+
 CREATE INDEX "bookings_builder_idx" ON "public"."bookings" USING "btree" ("builder_id");
 
 
@@ -2671,11 +2776,19 @@ CREATE INDEX "conversations_builder_id_idx" ON "public"."conversations" USING "b
 
 
 
+CREATE INDEX "conversations_builder_pinned_idx" ON "public"."conversations" USING "btree" ("builder_id", "builder_pinned_at" DESC) WHERE ("builder_pinned_at" IS NOT NULL);
+
+
+
 CREATE INDEX "conversations_trade_active_idx" ON "public"."conversations" USING "btree" ("trade_id", "last_message_at" DESC) WHERE ("trade_archived_at" IS NULL);
 
 
 
 CREATE INDEX "conversations_trade_id_idx" ON "public"."conversations" USING "btree" ("trade_id");
+
+
+
+CREATE INDEX "conversations_trade_pinned_idx" ON "public"."conversations" USING "btree" ("trade_id", "trade_pinned_at" DESC) WHERE ("trade_pinned_at" IS NOT NULL);
 
 
 
@@ -2831,6 +2944,26 @@ CREATE INDEX "rate_limits_lookup_idx" ON "public"."verification_rate_limits" USI
 
 
 
+CREATE INDEX "reports_conversation_id_idx" ON "public"."reports" USING "btree" ("conversation_id");
+
+
+
+CREATE UNIQUE INDEX "reports_one_pending_per_conversation" ON "public"."reports" USING "btree" ("reporter_id", "conversation_id") WHERE ("status" = 'pending'::"text");
+
+
+
+CREATE INDEX "reports_reported_id_idx" ON "public"."reports" USING "btree" ("reported_id");
+
+
+
+CREATE INDEX "reports_reporter_id_idx" ON "public"."reports" USING "btree" ("reporter_id");
+
+
+
+CREATE INDEX "reports_status_created_idx" ON "public"."reports" USING "btree" ("status", "created_at" DESC);
+
+
+
 CREATE INDEX "reviews_reviewee_id_idx" ON "public"."reviews" USING "btree" ("reviewee_id");
 
 
@@ -2943,6 +3076,10 @@ CREATE OR REPLACE TRIGGER "notify_on_new_message_trg" AFTER INSERT ON "public"."
 
 
 
+CREATE OR REPLACE TRIGGER "notify_on_new_review_trg" AFTER INSERT ON "public"."reviews" FOR EACH ROW EXECUTE FUNCTION "public"."notify_on_new_review"();
+
+
+
 CREATE OR REPLACE TRIGGER "notify_trade_on_application_status_trg" AFTER UPDATE OF "status" ON "public"."applications" FOR EACH ROW WHEN ((("old"."status" IS DISTINCT FROM "new"."status") AND ("new"."status" = ANY (ARRAY['shortlisted'::"public"."application_status", 'hired'::"public"."application_status", 'rejected'::"public"."application_status"])))) EXECUTE FUNCTION "public"."notify_trade_on_application_status"();
 
 
@@ -3012,6 +3149,16 @@ ALTER TABLE ONLY "public"."applications"
 
 ALTER TABLE ONLY "public"."applications"
     ADD CONSTRAINT "applications_trade_id_fkey" FOREIGN KEY ("trade_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blocks"
+    ADD CONSTRAINT "blocks_blocked_id_fkey" FOREIGN KEY ("blocked_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blocks"
+    ADD CONSTRAINT "blocks_blocker_id_fkey" FOREIGN KEY ("blocker_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -3160,6 +3307,26 @@ ALTER TABLE ONLY "public"."quote_requests"
 
 
 
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."messages"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_reported_id_fkey" FOREIGN KEY ("reported_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."reports"
+    ADD CONSTRAINT "reports_reporter_id_fkey" FOREIGN KEY ("reporter_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."reviews"
     ADD CONSTRAINT "reviews_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE CASCADE;
 
@@ -3291,6 +3458,21 @@ CREATE POLICY "applications_select" ON "public"."applications" FOR SELECT USING 
 
 
 CREATE POLICY "applications_update" ON "public"."applications" FOR UPDATE USING ((("auth"."uid"() = "trade_id") OR ("auth"."uid"() = "builder_id")));
+
+
+
+ALTER TABLE "public"."blocks" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "blocks_delete_own" ON "public"."blocks" FOR DELETE USING (("auth"."uid"() = "blocker_id"));
+
+
+
+CREATE POLICY "blocks_insert_own" ON "public"."blocks" FOR INSERT WITH CHECK (("auth"."uid"() = "blocker_id"));
+
+
+
+CREATE POLICY "blocks_select_own" ON "public"."blocks" FOR SELECT USING (("auth"."uid"() = "blocker_id"));
 
 
 
@@ -3437,7 +3619,15 @@ ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "messages_insert" ON "public"."messages" FOR INSERT WITH CHECK ((("auth"."uid"() = "sender_id") AND (EXISTS ( SELECT 1
    FROM "public"."conversations" "c"
-  WHERE (("c"."id" = "messages"."conversation_id") AND (("c"."builder_id" = "auth"."uid"()) OR ("c"."trade_id" = "auth"."uid"())))))));
+  WHERE (("c"."id" = "messages"."conversation_id") AND (("c"."builder_id" = "auth"."uid"()) OR ("c"."trade_id" = "auth"."uid"())) AND ("c"."status" <> 'blocked'::"public"."conversation_status")))) AND (NOT (EXISTS ( SELECT 1
+   FROM "public"."blocks" "b"
+  WHERE (("b"."blocked_id" = "auth"."uid"()) AND ("b"."blocker_id" IN ( SELECT
+                CASE
+                    WHEN ("c2"."builder_id" = "auth"."uid"()) THEN "c2"."trade_id"
+                    ELSE "c2"."builder_id"
+                END AS "builder_id"
+           FROM "public"."conversations" "c2"
+          WHERE ("c2"."id" = "messages"."conversation_id")))))))));
 
 
 
@@ -3542,6 +3732,19 @@ CREATE POLICY "reactions_update" ON "public"."message_reactions" FOR UPDATE USIN
 
 
 ALTER TABLE "public"."regulator_circuit_state" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."reports" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "reports_insert_own" ON "public"."reports" FOR INSERT WITH CHECK ((("auth"."uid"() = "reporter_id") AND (EXISTS ( SELECT 1
+   FROM "public"."conversations" "c"
+  WHERE (("c"."id" = "reports"."conversation_id") AND (("c"."builder_id" = "auth"."uid"()) OR ("c"."trade_id" = "auth"."uid"())))))));
+
+
+
+CREATE POLICY "reports_select_own" ON "public"."reports" FOR SELECT USING (("auth"."uid"() = "reporter_id"));
+
 
 
 ALTER TABLE "public"."reviews" ENABLE ROW LEVEL SECURITY;
@@ -3912,6 +4115,12 @@ GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "anon";
+GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "anon";
 GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "service_role";
@@ -4012,6 +4221,12 @@ GRANT ALL ON TABLE "public"."admin_actions" TO "service_role";
 GRANT ALL ON TABLE "public"."applications" TO "anon";
 GRANT ALL ON TABLE "public"."applications" TO "authenticated";
 GRANT ALL ON TABLE "public"."applications" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."blocks" TO "anon";
+GRANT ALL ON TABLE "public"."blocks" TO "authenticated";
+GRANT ALL ON TABLE "public"."blocks" TO "service_role";
 
 
 
@@ -4290,6 +4505,12 @@ GRANT ALL ON TABLE "public"."quote_requests" TO "service_role";
 GRANT ALL ON TABLE "public"."regulator_circuit_state" TO "anon";
 GRANT ALL ON TABLE "public"."regulator_circuit_state" TO "authenticated";
 GRANT ALL ON TABLE "public"."regulator_circuit_state" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."reports" TO "anon";
+GRANT ALL ON TABLE "public"."reports" TO "authenticated";
+GRANT ALL ON TABLE "public"."reports" TO "service_role";
 
 
 
