@@ -5,8 +5,33 @@ Guidance for AI coding agents (Claude Code, Copilot, Codex, Gemini, etc.) workin
 ## Read this first
 
 1. **`CLAUDE.md`** (project root) — the single source of truth for project context, architecture, commands, packages, design tokens, branch strategy, and CI/CD. Everything in CLAUDE.md applies to all agents and **overrides default agent behavior**.
+2. **`docs/ARCHITECTURE.md`** — current-state architecture snapshot: wired features, package pins, secrets locations, branch/release state, known pitfalls. Read alongside `CLAUDE.md` when you need to know *what the repo looks like today*; `CLAUDE.md` is *how to work in it*.
 2. **`design-system/jobdun/MASTER.md`** then **`design-system/jobdun/pages/<page>.md`** — read before building or modifying any screen. Page overrides win over MASTER.
 3. **`docs/CLAUDE_SKILLS.md`** — inventory of every installed skill, what it is in plain terms, and when to use it on Jobdun. Only project-scoped skills (`.claude/`) travel to cloud/remote runs; global ones do not.
+
+## Testing UI changes — always screenshot the live app
+
+**Mandatory rule for any change that affects the mobile app's UI** (new screens, redesigns, copy, form fields, navigation, theming, asset swaps):
+
+> **Always run the app in the Android emulator and capture real screenshots before claiming the change is done.**
+
+Mockups, AI-generated UI, and stock photography are not substitutes. The marketing site at `jobdun.com.au` reuses real app screenshots as product visuals, and the docs/verification/ set is the canonical visual record. New screenshots flow into both.
+
+The full workflow is in **`docs/ANDROID_SCREENSHOTS.md`** — emulator boot, APK install, `adb shell` driving, `screencap` capture, asset pipeline. One command:
+
+```bash
+bash scripts/capture_app_screenshots.sh
+```
+
+When invoked, that script:
+1. Boots `jobdun_test` AVD (KVM-accelerated on this host; user is in the `kvm` group).
+2. Installs `build/app/outputs/flutter-apk/app-debug.apk` and pre-grants `POST_NOTIFICATIONS` so the runtime dialog doesn't sit on top of FTUE.
+3. Launches `MainActivity`, drives the FTUE / role-select / create-account flow with `adb input tap` / `input swipe`, captures each screen with `screencap -p`.
+4. Writes the PNGs to `docs/verification/<date>-emulator-NN-<screen>.png` (committed) AND `assets/website/screenshots/<key>.png` (consumed by the marketing site).
+
+The script is **idempotent and re-runnable**. Run it any time the app's UI changes; commit the new verification PNGs alongside the code change so reviewers can see the actual screen.
+
+When the marketing site needs updated product visuals, edit the new `docs/verification/` PNGs down to the 3 site-consumed names (`ftue-splash.png`, `aussie-site.jpg`, `create-account.png`) in `assets/website/screenshots/`, rebuild, and redeploy.
 
 ## Required tools & skills
 
@@ -47,6 +72,14 @@ Run local validation and confirm it passes — do not claim success without evid
 ```bash
 bash scripts/validate.sh          # design + format + lint + tests (~60s)
 FULL=1 bash scripts/validate.sh   # also builds debug APK (~5 min)
+```
+
+**If you touched any mobile UI**, also run the screenshot capture so the verification set is current:
+
+```bash
+bash scripts/capture_app_screenshots.sh
+# then commit the new docs/verification/*.png and the updated
+# assets/website/screenshots/*.png that the marketing site consumes.
 ```
 
 PRs require passing `flutter analyze` + `flutter test`, a reviewer, screenshots for UI changes, and migration notes for DB changes. Branch from `main`; never commit/push unless asked.

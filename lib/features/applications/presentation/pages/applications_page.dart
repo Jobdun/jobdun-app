@@ -6,6 +6,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobdun/app/constants/app_strings.dart';
+import 'package:jobdun/app/theme/app_typography.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
@@ -20,6 +21,7 @@ import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../messaging/presentation/pages/message_thread_page.dart';
 import '../../../messaging/presentation/providers/messaging_provider.dart';
+import '../../../reviews/presentation/widgets/review_cta.dart';
 import '../../../verification/presentation/widgets/builder_verified_badge.dart';
 import '../../../verification/presentation/widgets/unverified_consent_dialog.dart';
 import '../../domain/entities/job_application.dart';
@@ -168,7 +170,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                           20.w,
                           AppSpacing.md.h,
                           20.w,
-                          AppSpacing.lg.h,
+                          AppSpacing.xl.h,
                         ),
                         itemCount: 4,
                         separatorBuilder: (_, _) => Gap(10.h),

@@ -1,6 +1,20 @@
 # Push Notifications (#8) — LIVE
 
-**Updated:** 2026-06-09 · **Status: full program live on `zethpanvkfyijislxesn` + Firebase `jobdun-627d2`.**
+**Updated:** 2026-06-12 · **Status: full program live on `zethpanvkfyijislxesn` + Firebase `jobdun-627d2`.**
+
+## Client presentation layer (2026-06-12, `feat/notifications-live`)
+- **In-app feed live:** `/notifications` renders the realtime-synced grouped
+  list (NEW/EARLIER) from `NotificationsController`; home bell carries an
+  unread count badge that also keeps the realtime stream alive app-wide.
+- **Tap deep-linking:** background/cold-start push taps route via
+  `resolveNotificationRoute` (`lib/core/navigation/notification_routes.dart`);
+  cold-start routes are buffered until auth restores (`JobdunApp` wires
+  `PushNotifications.attachNavigator` + `flushPendingRoute`).
+- **Foreground banners:** `flutter_local_notifications` channel
+  `jobdun_default` mirrors `onMessage` pushes as heads-up banners; banner taps
+  share the same routing.
+- **Sign-out hygiene:** `PushNotifications.unregister()` deletes this device's
+  `device_tokens` row before `auth.signOut()`.
 
 ## Program (2026-06-09) — all live
 - **Central rail** (`20260609000006/000007`): one trigger on `notifications` INSERT → push, gated by `notification_preferences` (per-user, per-category). Any feature/admin just inserts a row.

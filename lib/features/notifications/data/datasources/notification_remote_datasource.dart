@@ -14,6 +14,10 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   const NotificationRemoteDataSourceImpl(this._client);
   final SupabaseClient _client;
 
+  /// Scale guard — the page is not paginated; mark-all-read naturally trims
+  /// the unread set, so a recency window is enough (spec 2026-06-12).
+  static const _maxRows = 100;
+
   @override
   Future<List<NotificationModel>> getNotifications(String userId) async {
     try {
@@ -21,7 +25,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
           .from('notifications')
           .select()
           .eq('user_id', userId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(_maxRows);
       return (data as List)
           .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -62,6 +67,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
+        .limit(_maxRows)
         .map((rows) => rows.map(NotificationModel.fromJson).toList());
   }
 }

@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
 
+/// Standard corner radius for all Jobdun bottom sheets.
+const double kJSheetCornerRadius = 20.0;
+
+/// Standard top-corner shape — pass to [showJSheet]'s `shape:` and to
+/// inner Container `borderRadius` so they stay in sync.
+const ShapeBorder kJSheetShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.vertical(
+    top: Radius.circular(kJSheetCornerRadius),
+  ),
+);
+
 /// Jobdun-flavoured bottom sheet helper.
 ///
 /// Wraps [showMaterialModalBottomSheet] so every modal across the app shares

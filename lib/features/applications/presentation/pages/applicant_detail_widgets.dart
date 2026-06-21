@@ -112,7 +112,7 @@ class _DetailHeader extends StatelessWidget {
                         Gap(3.w),
                         Text(
                           '${rating.toStringAsFixed(1)} ($ratingCount)',
-                          style: tt.bodySmall!.copyWith(
+                          style: AppTypography.numeric(tt.bodySmall!).copyWith(
                             fontWeight: FontWeight.w700,
                             color: c.text1,
                           ),
@@ -224,10 +224,9 @@ class _QuoteBlock extends StatelessWidget {
             children: [
               Text(
                 quote,
-                style: tt.headlineLarge!.copyWith(
-                  color: c.action,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTypography.numeric(
+                  tt.headlineLarge!,
+                ).copyWith(color: c.action, fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               if (budgetLabel.isNotEmpty)
@@ -294,10 +293,9 @@ class _Stat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: tt.titleLarge!.copyWith(
-            fontWeight: FontWeight.w700,
-            color: c.text1,
-          ),
+          style: AppTypography.numeric(
+            tt.titleLarge!,
+          ).copyWith(fontWeight: FontWeight.w700, color: c.text1),
         ),
         Gap(2.h),
         Text(

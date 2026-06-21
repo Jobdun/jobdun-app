@@ -64,12 +64,13 @@ class AppTheme {
     );
   }
 
-  /// Brand wordmark style — Inter Black 900. Use only for logo/wordmark text.
+  /// Brand wordmark style — Archivo ExtraBold. Use only for logo/wordmark text.
   /// Example: Text('JOBDUN', style: AppTheme.brandDisplay(context.c.text1))
-  static TextStyle brandDisplay(Color color) => GoogleFonts.oswald(
+  static TextStyle brandDisplay(Color color) => GoogleFonts.archivo(
     fontSize: 40,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 3.0,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.5,
+    height: 1.0,
     color: color,
   );
 
@@ -77,9 +78,9 @@ class AppTheme {
   static PinTheme pinputTheme(JColors c) => PinTheme(
     width: 56,
     height: 56,
-    textStyle: GoogleFonts.oswald(
+    textStyle: GoogleFonts.archivo(
       fontSize: 20,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w800,
       color: c.text1,
     ),
     decoration: BoxDecoration(
@@ -93,9 +94,9 @@ class AppTheme {
   static PinTheme pinputFocusedTheme(JColors c) => PinTheme(
     width: 56,
     height: 56,
-    textStyle: GoogleFonts.oswald(
+    textStyle: GoogleFonts.archivo(
       fontSize: 20,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w800,
       color: c.text1,
     ),
     decoration: BoxDecoration(
@@ -209,24 +210,24 @@ class AppTheme {
           horizontal: 16,
           vertical: 16,
         ),
-        labelStyle: GoogleFonts.openSans(
+        labelStyle: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+          letterSpacing: 0.5,
           color: c.text3,
         ),
-        floatingLabelStyle: GoogleFonts.openSans(
+        floatingLabelStyle: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+          letterSpacing: 0.5,
           color: c.action,
         ),
-        hintStyle: GoogleFonts.openSans(
+        hintStyle: GoogleFonts.inter(
           fontSize: 13,
           fontWeight: FontWeight.w400,
           color: c.text3,
         ),
-        errorStyle: GoogleFonts.openSans(
+        errorStyle: GoogleFonts.inter(
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: c.urgentTx,

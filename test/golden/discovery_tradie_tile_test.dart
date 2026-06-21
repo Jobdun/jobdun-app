@@ -21,7 +21,7 @@ void main() {
           // isVerified omitted (false): the verified chip tips the status row
           // past the surface under the golden harness's default (wider) font —
           // a harness artifact, not a production layout bug (prod uses the
-          // narrower Oswald/Open Sans). The tile layout is still exercised.
+          // narrower Archivo/Inter). The tile layout is still exercised.
         ),
         distanceKm: 2.3,
       );

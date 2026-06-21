@@ -50,6 +50,7 @@ client_*.plist
 .env
 .env.*
 !.env.example
+!.env.server.example
 scripts/.ship-env
 scripts/.cloudflare-env
 *.local
@@ -104,3 +105,6 @@ test/**/failures/
 # Android release signing — NEVER commit. Backup drill: docs/RELEASE_SIGNING.md
 android/key.properties
 android/upload-keystore.jks
+
+# Local screenshots from emulator runs (not for commit)
+ss/

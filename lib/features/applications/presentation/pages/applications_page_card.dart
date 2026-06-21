@@ -244,10 +244,9 @@ class _AppCard extends StatelessWidget {
                         _pricingLine(app, isBuilder),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: c.text2,
-                        ),
+                        style: AppTypography.numeric(
+                          tt.bodyMedium!,
+                        ).copyWith(fontWeight: FontWeight.w600, color: c.text2),
                       ),
                     ),
                   ],
@@ -301,7 +300,7 @@ class _AppCard extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             'HIRE THIS TRADIE',
-                            style: tt.labelMedium!.copyWith(
+                            style: tt.labelLarge!.copyWith(
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.5,
                               color: c
@@ -351,6 +350,22 @@ class _AppCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ),
+                ],
+                // ── Post-hire: rate the other party (builder ⇄ tradie).
+                // One review per reviewer per job — DB unique constraint;
+                // ReviewCta swaps to a read-only row once submitted.
+                if (status == ApplicationStatus.hired) ...[
+                  Gap(12.h),
+                  Divider(height: 1, color: c.border),
+                  Gap(10.h),
+                  ReviewCta(
+                    jobId: app.jobId,
+                    revieweeId: isBuilder ? app.tradeId : app.builderId,
+                    revieweeName: isBuilder
+                        ? (app.tradeFullName ?? 'this tradie')
+                        : (app.builderCompanyName ?? 'this builder'),
+                    label: isBuilder ? 'REVIEW TRADIE' : 'REVIEW BUILDER',
                   ),
                 ],
               ],

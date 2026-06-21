@@ -1,0 +1,163 @@
+name: Deploy marketing site
+
+# Builds the Jobdun marketing site (lib/website/main_website.dart)
+# and deploys build/web/ to Cloudflare Pages at jobdun.com.au.
+#
+# Triggers:
+#   - push to main   → production deploy
+#   - workflow_dispatch → manual deploy from the Actions tab
+#
+# Secrets required (set in GitHub repo Settings → Secrets and variables
+# → Actions):
+#   CLOUDFLARE_API_TOKEN   — Account API Tokens → Create Custom Token →
+#                            Templates: Edit Cloudflare Pages, Account
+#                            Resources: include the Pages project
+#   CLOUDFLARE_ACCOUNT_ID  — Account ID from the Cloudflare dashboard
+#                            right sidebar ("Account ID")
+#   CLOUDFLARE_PROJECT_NAME — Pages project name (default: jobdun-site)
+#
+# Required variables (Settings → Variables → Actions → Repository
+# variables) — leave CLOUDFLARE_PROJECT_NAME unset to use the default:
+#   CLOUDFLARE_PROJECT_NAME = jobdun-site
+#
+# This workflow does NOT run on pull_request. Preview deploys on PR
+# aren't enabled — the project ships to a single production target
+# and PRs are caught by the existing CI workflow (.github/workflows/
+# ci.yml). Wire up Cloudflare Pages "Preview deployments" in the
+# dashboard when the team grows past one contributor.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Cancel an in-flight deploy when a new commit lands on main — keeps
+  # the queue short and avoids publishing a half-built artifact.
+  group: deploy-website
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build website
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Pinned to the same version as CI. Floating `stable` broke
+          # 2026-06-11 (IconData became final, phosphor_flutter 2.1.0
+          # can't compile). Bump together with a local SDK + phosphor
+          # upgrade, never implicitly.
+          flutter-version: 3.41.7
+          channel: stable
+          cache: true
+
+      # pubspec bundles `.env` as a flutter_dotenv asset; the real file
+      # is gitignored, so stub it or `flutter build` fails with
+      # asset_does_not_exist. Non-empty so flutter_dotenv doesn't throw
+      # EmptyEnvFileError.
+      - name: Stub gitignored .env asset
+        run: echo "CI_STUB=1" > .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # The website entrypoint is separate from the mobile app — the
+      # existing CI workflow builds the mobile APK. We rebuild for web here.
+      # Icon tree-shaking is ON (default): AppIcons only uses const
+      # PhosphorIconsBold/Fill, so unused glyphs are safely stripped.
+      # trim-web-fonts.sh then drops the 4 unused Phosphor weights that
+      # phosphor_flutter still bundles (~2MB). --source-maps satisfies the
+      # Lighthouse best-practices "source maps" check.
+      - name: Build Flutter web
+        run: |
+          flutter build web \
+            -t lib/website/main_website.dart \
+            --release \
+            --source-maps
+
+      - name: Trim unused Phosphor icon-font weights
+        run: bash scripts/trim-web-fonts.sh build/web
+
+      # Sanity check the build output before shipping. Catches the
+      # "empty build/web" case where flutter exits 0 but produces
+      # nothing (e.g. a missing entrypoint silently generating a
+      # placeholder index.html).
+      - name: Verify build output
+        run: |
+          test -f build/web/main.dart.js || \
+            (echo "::error::build/web/main.dart.js missing" && exit 1)
+          test -f build/web/index.html || \
+            (echo "::error::build/web/index.html missing" && exit 1)
+          test -f build/web/_headers || \
+            (echo "::error::build/web/_headers missing" && exit 1)
+          # _redirects is what makes the SPA fallback work — the
+          # marketing site is a single Flutter route but anchor
+          # links (#hiring, #crews) need the /index.html fallback.
+          test -f build/web/_redirects || \
+            (echo "::error::build/web/_redirects missing" && exit 1)
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-${{ github.sha }}
+          path: build/web
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Don't run on forks — the secrets wouldn't be available, and
+    # there's no value in deploying from an untrusted PR.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    environment:
+      name: production
+      url: https://jobdun.com.au
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: website-${{ github.sha }}
+          path: build/web
+
+      # Cloudflare's official Pages deploy action. Wraps the REST
+      # `pages.deployments.create` + the multipart upload. We pass
+      # the secret token + account ID + project name; everything else
+      # is configured at the Pages project level (custom domain
+      # jobdun.com.au is wired there, not in this workflow).
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1.5.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CLOUDFLARE_PROJECT_NAME || 'jobdun-site' }}
+          directory: build/web
+          # gitHubToken: defaults to ${{ secrets.GITHUB_TOKEN }}, the
+          # workflow's auto-injected token. This requires the repo's
+          # GitHub Actions permissions to include:
+          #   - pages: write        (create the Pages deployment)
+          #   - id-token: write     (OIDC for Cloudflare's GitHub App)
+          # Both are enabled at: GitHub → Settings → Actions → General
+          # → Workflow permissions → "Read and write permissions".
+          # If the org's default is "Read repository contents and packages
+          # permissions" you'll need to either switch the repo to the
+          # wider permission, or set `permissions: pages: write,
+          # id-token: write` at the top of this workflow (next to `on:`).
+          wranglerVersion: '3'
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "### ✅ Deployed jobdun.com.au" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "URL: https://jobdun.com.au" >> $GITHUB_STEP_SUMMARY

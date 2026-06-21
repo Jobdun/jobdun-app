@@ -45,7 +45,7 @@ class JTextField extends StatefulWidget {
   });
 
   final String name;
-  // Optional uppercase Oswald label above the input. When null, the input
+  // Optional uppercase theme label above the input. When null, the input
   // renders without a label — useful for row layouts where one shared
   // FieldLabel sits above several inputs (e.g. SUBURB / STATE / POSTCODE on
   // /profile/edit) and per-field labels would duplicate it.

@@ -75,8 +75,9 @@ class JobCard extends StatelessWidget {
                               title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              // titleLarge = MASTER "card header" role (Oswald
-                              // 600). Was headlineSmall (a sub-section size) —
+                              // titleLarge = MASTER "card header" role
+                              // (Archivo 700). Was headlineSmall (a
+                              // sub-section size) —
                               // too loud for a feed row and it crowded the meta.
                               style: tt.titleLarge!.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -117,7 +118,7 @@ class JobCard extends StatelessWidget {
                               ),
                               // Buttons stay ALL CAPS — that's the brand
                               // (MASTER). labelLarge is the canonical button
-                              // role (Oswald 700); no off-scale .sp override.
+                              // role (Archivo 800); no off-scale .sp override.
                               child: Text(
                                 'APPLY NOW',
                                 style: tt.labelLarge!.copyWith(
@@ -193,9 +194,9 @@ class _MetaCol extends StatelessWidget {
           style: tt.labelMedium!.copyWith(color: c.text3),
         ),
         Gap(2.h),
-        // titleMedium (emphasised body, Open Sans 600) + tabular figures so
-        // rates/dates/distances align and don't jitter. The Oswald title above
-        // carries the hierarchy through font contrast, not raw size.
+        // titleMedium (emphasised body, Inter 600) + tabular figures so
+        // rates/dates/distances align and don't jitter. The Archivo title
+        // above carries the hierarchy through font contrast, not raw size.
         Text(
           value,
           maxLines: 1,

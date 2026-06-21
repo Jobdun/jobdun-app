@@ -2,11 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
+import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/review_remote_datasource.dart';
 import '../../data/repositories/review_repository_impl.dart';
 import '../../domain/entities/review.dart';
 import '../../domain/repositories/review_repository.dart';
 import '../../domain/usecases/get_average_rating.dart';
+import '../../domain/usecases/get_review_for_job.dart';
 import '../../domain/usecases/get_reviews_for_user.dart';
 import '../../domain/usecases/submit_review.dart';
 
@@ -31,6 +33,24 @@ final getAverageRatingUseCaseProvider = Provider(
 final submitReviewUseCaseProvider = Provider(
   (ref) => SubmitReview(ref.read(reviewRepositoryProvider)),
 );
+
+final getReviewForJobUseCaseProvider = Provider(
+  (ref) => GetReviewForJob(ref.read(reviewRepositoryProvider)),
+);
+
+// The signed-in user's own review for a job, or null. Backs the hired-card
+// CTA ("LEAVE REVIEW" vs the reviewed state). Invalidate after a successful
+// submit. Failures degrade to null (CTA shows; the DB unique constraint is
+// the real dupe guard).
+final myReviewForJobProvider = FutureProvider.autoDispose
+    .family<Review?, String>((ref, jobId) async {
+      final reviewerId = readCurrentUserId(ref);
+      if (reviewerId == null) return null;
+      final res = await ref
+          .read(getReviewForJobUseCaseProvider)
+          .call(jobId: jobId, reviewerId: reviewerId);
+      return res.fold((_) => null, (r) => r);
+    });
 
 // ── Read-only family ──────────────────────────────────────────────────────────
 // Watchable list of reviews ABOUT a given user — for embeddable previews

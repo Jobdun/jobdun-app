@@ -170,6 +170,27 @@ abstract final class AppIcons {
   /// Close / dismiss — bare X.
   static const IconData close = PhosphorIconsBold.x;
 
+  /// Pin a conversation/item to the top (inactive state).
+  static const IconData pin = PhosphorIconsBold.pushPin;
+
+  /// Pinned state — Fill weight per the active/selected convention.
+  static const IconData pinFilled = PhosphorIconsFill.pushPin;
+
+  /// Mute notifications for a conversation (inactive state).
+  static const IconData mute = PhosphorIconsBold.speakerSlash;
+
+  /// Muted state — Fill weight per the active/selected convention.
+  static const IconData muteFilled = PhosphorIconsFill.speakerSlash;
+
+  /// Block a user — destructive safety action.
+  static const IconData block = PhosphorIconsBold.prohibit;
+
+  /// Unselected radio row (report-reason picker).
+  static const IconData radioOff = PhosphorIconsBold.circle;
+
+  /// Selected radio row — Fill ring per the active convention.
+  static const IconData radioOn = PhosphorIconsFill.radioButton;
+
   /// Alias of [close] for callers that semantically mean "dismiss a sheet".
   /// Same glyph; the alias keeps the intent at the call site readable.
   static const IconData closeBox = PhosphorIconsBold.x;
@@ -326,4 +347,41 @@ abstract final class AppIcons {
 
   /// Safety / PPE. Reserved for future use.
   static const IconData hardHat = PhosphorIconsBold.hardHat;
+
+  // ─── Trade categories (marketing site chips) ──────────────────────────────
+
+  /// Painters / decorators.
+  static const IconData paintRoller = PhosphorIconsBold.paintRoller;
+
+  /// Plumbers — water drop.
+  static const IconData drop = PhosphorIconsBold.drop;
+
+  /// Landscapers / gardeners.
+  static const IconData tree = PhosphorIconsBold.tree;
+
+  // ─── Store badges (marketing site) ────────────────────────────────────────
+
+  /// Apple App Store badge glyph.
+  static const IconData appleLogo = PhosphorIconsFill.appleLogo;
+
+  /// Google Play badge glyph.
+  static const IconData googlePlayLogo = PhosphorIconsFill.googlePlayLogo;
+
+  // ─── Social + contact (marketing site) ────────────────────────────────────
+
+  /// Instagram follow link.
+  static const IconData instagram = PhosphorIconsFill.instagramLogo;
+
+  /// Facebook follow link.
+  static const IconData facebook = PhosphorIconsFill.facebookLogo;
+
+  /// LinkedIn follow link.
+  static const IconData linkedin = PhosphorIconsFill.linkedinLogo;
+
+  /// TikTok follow link.
+  static const IconData tiktok = PhosphorIconsFill.tiktokLogo;
+
+  /// Forward arrow — CTA affordance. (`email`/`phone`/`send` already exist
+  /// above and are reused on the contact page.)
+  static const IconData arrowRight = PhosphorIconsBold.arrowRight;
 }

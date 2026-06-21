@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../domain/entities/report_submission.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 import '../models/message_reaction_model.dart';
+
+part 'message_remote_datasource_safety_part.dart';
 
 abstract interface class MessageRemoteDataSource {
   Future<List<ConversationModel>> getConversations(String userId);
@@ -76,6 +79,34 @@ abstract interface class MessageRemoteDataSource {
     required String conversationId,
     required bool isBuilder,
   });
+
+  // ── Phase D: inbox power + safety ──────────────────────────────────────
+  Future<void> pinConversation({
+    required String conversationId,
+    required bool isBuilder,
+    required bool pin,
+  });
+  Future<void> muteConversation({
+    required String conversationId,
+    required bool isBuilder,
+    required bool mute,
+  });
+  Future<void> markConversationUnread({
+    required String conversationId,
+    required bool isBuilder,
+  });
+  Future<void> blockUser({
+    required String blockerId,
+    required String blockedId,
+    required String conversationId,
+  });
+  Future<void> reportUser(ReportSubmission report);
+  Future<bool> amIBlocking(String blockedId);
+  Future<void> unblockUser({
+    required String blockedId,
+    required String conversationId,
+  });
+
   Stream<List<ConversationModel>> watchConversations(String userId);
 
   /// Live tail of the most recent [tailLimit] messages, oldest→newest. Older
@@ -90,8 +121,11 @@ abstract interface class MessageRemoteDataSource {
   Stream<ConversationModel> watchConversation(String conversationId);
 }
 
-class MessageRemoteDataSourceImpl implements MessageRemoteDataSource {
+class MessageRemoteDataSourceImpl
+    with _InboxSafetyRemote
+    implements MessageRemoteDataSource {
   const MessageRemoteDataSourceImpl(this._client);
+  @override
   final SupabaseClient _client;
 
   @override

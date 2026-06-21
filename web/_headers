@@ -1,11 +1,35 @@
-# Cloudflare Pages security headers for the Jobdun admin console.
-# These are all safe for a Flutter/CanvasKit + Supabase app. A strict CSP and
-# COOP/COEP are a deliberate next step — added via CSP-Report-Only + a test pass
-# first (they can white-screen CanvasKit if set blind), then promoted to enforce.
+# Cloudflare Pages security headers for the Jobdun marketing site
+# (jobdun.com.au). These are safe for a Flutter/CanvasKit + Google Fonts
+# static-asset site. A strict CSP is a deliberate next step — added via
+# CSP-Report-Only + a test pass first (it can white-screen CanvasKit if
+# set blind), then promoted to enforce.
+#
+# IMPORTANT: this is the marketing site. Do NOT add X-Robots-Tag:
+# noindex, nofollow here — that was the admin console rule, not the
+# public marketing surface. Search engines must index jobdun.com.au.
+#
+# Legal sub-routes (/privacy, /delete-account) are served as static
+# HTML from /site/ by Cloudflare Pages and inherit these headers.
+
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
-  X-Robots-Tag: noindex, nofollow
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+# Cache the static Flutter web bundle aggressively. main.dart.js is
+# content-hashed by the Flutter build, so this is safe.
+/canvaskit/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Don't cache the entry document — the Flutter build swaps it on every
+# release and we want the latest index.html.
+/
+  Cache-Control: public, max-age=300, must-revalidate

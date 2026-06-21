@@ -32,7 +32,7 @@ Every implementation rule from the design study, with Jobdun's status, the **tar
 | Line-height (body) | 1.4–1.6 | ⚠️→🟢 | `bodyLarge`/`titleMedium` 1.6 ✅; `bodyMedium` none → preview 1.45 |
 | Modular scale ratio | 1.2–1.333 | ✅ | 40/32/24/20/16 ≈ 1.2–1.33 |
 | Measure (prose) | 45–75ch | ✅ | mobile single-column, naturally short |
-| One/two families, weight contrast | ≤ 3 families | ✅ | Oswald + Open Sans, configured in `AppTheme` only |
+| One/two families, weight contrast | ≤ 3 families | ✅ | Archivo + Inter, configured in `AppTypography` / `AppTheme` only |
 | Type scales with OS setting | honor + clamp | ⚠️→🟢 | passthrough only → preview clamps `textScaler` 0.9–1.3 |
 
 ## 3. Spacing & Grid

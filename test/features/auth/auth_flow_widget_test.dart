@@ -41,7 +41,7 @@ void main() {
     binding.platformDispatcher.views.first.resetDevicePixelRatio();
   });
 
-  // Real fonts (Inter, Oswald, Iconsax) don't load in widget tests, so the
+  // Real fonts (Archivo, Inter, Iconsax) don't load in widget tests, so the
   // Ahem fallback renders glyphs wider than production. That can trigger a
   // harmless RenderFlex overflow in tight rows on auth surfaces. Drain it
   // after each pump so the binding doesn't fail the test on the artifact.

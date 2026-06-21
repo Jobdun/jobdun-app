@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Jobdun brand orange — A vs B (WCAG comparison)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F172A; --surface:#1E293B; --raised:#334155; --border:#334155;
+    --t1:#F1F5F9; --t2:#94A3B8; --t3:#64748B;
+    --A:#FA5B0D; --B:#F97316; --dark:#0F172A; --light:#F8FAFC;
+    --pass:#22C55E; --warn:#F59E0B; --fail:#EF4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--t1);font-family:"Open Sans",system-ui,sans-serif;
+       line-height:1.6;padding:48px 24px 96px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1,h2,h3,.disp{font-family:"Oswald",sans-serif;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+  h1{font-size:clamp(30px,5vw,52px);margin-bottom:8px}
+  .sub{color:var(--t2);max-width:64ch;margin-bottom:8px}
+  .eyebrow{font-family:"Oswald";font-weight:600;letter-spacing:2px;text-transform:uppercase;
+           color:var(--B);font-size:13px;margin-bottom:14px}
+  .rule{width:64px;height:4px;background:var(--B);border-radius:2px;margin:28px 0 40px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .card.win{border:2px solid var(--A)}
+  .swatch{height:150px;display:flex;align-items:flex-end;justify-content:space-between;padding:18px 22px}
+  .swatch .word{font-family:"Oswald";font-weight:700;font-size:34px;letter-spacing:1px}
+  .badge{position:absolute;top:16px;right:16px;background:var(--A);color:#0F172A;font-family:"Oswald";
+         font-weight:700;font-size:12px;letter-spacing:1px;padding:5px 10px;border-radius:6px}
+  .cardhead{position:relative;padding:0}
+  .meta{padding:20px 22px}
+  .hex{font-family:"Oswald";font-weight:700;font-size:26px;letter-spacing:1px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--t2);font-size:13px}
+  table{width:100%;border-collapse:collapse;margin-top:16px}
+  th,td{text-align:left;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+  th{color:var(--t3);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+  td.ratio{font-family:"Oswald";font-weight:700;font-size:18px;text-align:right;width:64px}
+  .pill{display:inline-block;font-family:"Oswald";font-weight:700;font-size:11px;letter-spacing:.5px;
+        padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .pill.pass{background:rgba(34,197,94,.16);color:#4ADE80}
+  .pill.warn{background:rgba(245,158,11,.16);color:#FBBF24}
+  .pill.fail{background:rgba(239,68,68,.16);color:#F87171}
+  .samples{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:36px}
+  @media(max-width:760px){.samples{grid-template-columns:repeat(2,1fr)}}
+  .samp{border-radius:12px;padding:18px;text-align:center;font-family:"Oswald";font-weight:700;
+        font-size:17px;border:1px solid var(--border);min-height:84px;display:flex;
+        flex-direction:column;justify-content:center;gap:4px}
+  .samp small{font-family:"Open Sans";font-weight:600;font-size:11px;opacity:.8;letter-spacing:.5px}
+  .verdict{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--A);
+           border-radius:14px;padding:28px 30px;margin-top:40px}
+  .verdict h2{font-size:24px;margin-bottom:12px}
+  .verdict p{color:var(--t2);margin-bottom:12px}
+  .verdict strong{color:var(--t1)}
+  ul{color:var(--t2);margin:8px 0 4px 20px}
+  li{margin-bottom:8px}
+  .note{color:var(--t3);font-size:13px;margin-top:10px}
+  .fontbox{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-top:16px}
+  .fontsamp{font-family:"Oswald";font-weight:700;font-size:44px;letter-spacing:1px;color:var(--t1)}
+  section{margin-top:56px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Jobdun · Brand colour review</div>
+  <h1>Safety orange: A vs B</h1>
+  <p class="sub">Two oranges are in play — the registered <strong>trademark/logo orange</strong> and the
+     current <strong>UI CTA token</strong>. They look nearly identical (contrast between them is just
+     1.14:1), but they behave very differently against text. Ratios below are WCAG&nbsp;2.2;
+     AA needs <strong>4.5:1</strong> for normal text and <strong>3:1</strong> for large/bold text and UI.</p>
+  <div class="rule"></div>
+
+  <div class="grid">
+    <!-- A -->
+    <div class="card win">
+      <div class="cardhead">
+        <div class="swatch" style="background:#FA5B0D">
+          <span class="word" style="color:#0F172A">JOBDUN</span>
+          <span class="word" style="color:#fff;opacity:.92">Aa</span>
+        </div>
+        <div class="badge">RECOMMENDED</div>
+      </div>
+      <div class="meta">
+        <div class="hex" style="color:#FA5B0D">#FA5B0D</div>
+        <div class="mono">rgb(250, 91, 13) · the trademark / logo orange · luminance 0.278</div>
+        <table>
+          <tr><th>Pair</th><th></th><th style="text-align:right">Ratio</th></tr>
+          <tr><td>White text on orange</td><td><span class="pill warn">Large/UI 3:1</span></td><td class="ratio">3.20</td></tr>
+          <tr><td>Dark-slate text on orange</td><td><span class="pill pass">AA</span></td><td class="ratio">5.58</td></tr>
+          <tr><td>Orange ink on dark bg</td><td><span class="pill pass">AA</span></td><td class="ratio">5.58</td></tr>
+          <tr><td>Orange ink on light bg</td><td><span class="pill warn">Large/UI 3:1</span></td><td class="ratio">3.06</td></tr>
+        </table>
+      </div>
+    </div>
+    <!-- B -->
+    <div class="card">
+      <div class="cardhead">
+        <div class="swatch" style="background:#F97316">
+          <span class="word" style="color:#0F172A">JOBDUN</span>
+          <span class="word" style="color:#fff;opacity:.92">Aa</span>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="hex" style="color:#F97316">#F97316</div>
+        <div class="mono">rgb(249, 115, 22) · current UI CTA token (Tailwind orange-500) · luminance 0.325</div>
+        <table>
+          <tr><th>Pair</th><th></th><th style="text-align:right">Ratio</th></tr>
+          <tr><td>White text on orange</td><td><span class="pill fail">Fail</span></td><td class="ratio">2.80</td></tr>
+          <tr><td>Dark-slate text on orange</td><td><span class="pill pass">AA</span></td><td class="ratio">6.37</td></tr>
+          <tr><td>Orange ink on dark bg</td><td><span class="pill pass">AA</span></td><td class="ratio">6.37</td></tr>
+          <tr><td>Orange ink on light bg</td><td><span class="pill fail">Fail</span></td><td class="ratio">2.68</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- live samples -->
+  <section>
+    <div class="eyebrow">See it for real</div>
+    <h2 style="font-size:22px">How each behaves with text</h2>
+    <div class="samples">
+      <div class="samp" style="background:#FA5B0D;color:#fff">A · white<small>3.20:1 — borderline</small></div>
+      <div class="samp" style="background:#FA5B0D;color:#0F172A">A · dark<small>5.58:1 — clean</small></div>
+      <div class="samp" style="background:#F97316;color:#fff">B · white<small>2.80:1 — muddy</small></div>
+      <div class="samp" style="background:#F97316;color:#0F172A">B · dark<small>6.37:1 — clean</small></div>
+      <div class="samp" style="background:#F8FAFC;color:#FA5B0D">A on light<small>3.06:1 — ok large</small></div>
+      <div class="samp" style="background:#0F172A;color:#FA5B0D">A on dark<small>5.58:1 — clean</small></div>
+      <div class="samp" style="background:#F8FAFC;color:#F97316">B on light<small>2.68:1 — fails</small></div>
+      <div class="samp" style="background:#0F172A;color:#F97316">B on dark<small>6.37:1 — clean</small></div>
+    </div>
+  </section>
+
+  <!-- verdict -->
+  <div class="verdict">
+    <h2>Verdict: adopt <span style="color:#FA5B0D">A · #FA5B0D</span></h2>
+    <p>The two are visually the same orange (1.14:1 apart), so switching the UI token to the trademark
+       colour costs you <strong>nothing in look</strong> — but it <strong>fixes the two pairs that fail
+       today</strong> and aligns the whole site with the registered mark.</p>
+    <ul>
+      <li><strong>White-on-orange:</strong> 2.80 (fail) → <strong>3.20</strong> — now clears the 3:1 floor for large/bold text & UI.</li>
+      <li><strong>Orange ink on light backgrounds:</strong> 2.68 (fail) → <strong>3.06</strong> — usable for large headings/icons in light mode without a darker fallback.</li>
+      <li><strong>Dark-slate-on-orange:</strong> 6.37 → 5.58 — drops slightly but stays comfortably AA. This is Jobdun's actual button-text pairing (<code>onAction</code>), so CTAs stay AA either way.</li>
+      <li><strong>Brand truth:</strong> #FA5B0D is the colour on the official trademark — one orange everywhere beats two near-identical ones sitting side-by-side in the nav.</li>
+    </ul>
+    <p class="note">One caveat: white on orange still isn't 4.5:1, so keep white labels large/bold — or
+       keep using dark-slate text on orange CTAs (which Jobdun already does, at AA). If you switch the
+       token, the contrast-guard test expectations get updated and re-run.</p>
+  </div>
+
+  <!-- font -->
+  <section>
+    <div class="eyebrow">The lettering</div>
+    <h2 style="font-size:22px">What font the wordmark is</h2>
+    <p class="sub">The JOBDUN wordmark in the trademark is <strong>drawn as vector outlines, not live
+       text</strong> — there's no embedded font name. The style is a <strong>heavy / black-weight
+       geometric sans-serif</strong>: wide, near-square proportions, full round counters, even stroke
+       weight, blunt terminals.</p>
+    <p class="sub">It is <strong>not</strong> the site's display font — Jobdun headings use
+       <strong>Oswald</strong>, which is <em>condensed</em> (narrow). The logo is much wider and heavier.
+       Closest live matches if you want text to echo the mark: <strong>Archivo Black</strong> (closest),
+       Montserrat&nbsp;Black/ExtraBold, or Poppins&nbsp;Black.</p>
+    <div class="fontbox">
+      <div>
+        <div class="note">Site display — Oswald (condensed)</div>
+        <div class="fontsamp" style="font-family:Oswald">JOBDUN</div>
+      </div>
+      <div>
+        <div class="note">Logo style — heavy geometric (e.g. Archivo Black)</div>
+        <div class="fontsamp" style="font-family:'Open Sans';font-weight:800;letter-spacing:0">JOBDUN</div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

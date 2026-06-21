@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Companion doc:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — current-state
+> snapshot of what's wired (features, packages, secrets, branch state, pitfalls).
+> Read it after this file when you need to know *what the repo looks like today*;
+> this file is *how to work in it*.
+
 ## Project
 
 Jobdun is a mobile-first job matching and workforce platform for the construction/trades industry. It connects two roles in the mobile app: **Builders** (post jobs, manage applicants) and **Trades/Crews** (browse and apply for jobs, upload verifications). **Admin is a separate web application** — the Flutter app has no admin UI.
@@ -36,6 +41,7 @@ Available page-specific overrides:
 - `design-system/jobdun/pages/jobs-feed.md`
 - `design-system/jobdun/pages/profile-dashboard.md`
 - `design-system/jobdun/pages/messaging.md`
+- `design-system/jobdun/pages/notifications.md`
 - `design-system/jobdun/pages/admin-web.md`
 - `design-system/jobdun/pages/applications.md`
 
@@ -49,7 +55,7 @@ Available page-specific overrides:
 - Border: `#334155`
 - Error: `#EF4444` | Success: `#22C55E`
 - Style: Aggressive Flat — dark, heavy weight, no shadows, icon-heavy, all-caps buttons
-- Typography: Oswald (headings, display, buttons) + Open Sans (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_theme.dart`.
+- Typography: Archivo (display, headings, buttons) + Inter (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_typography.dart`. (Admin web console keeps its own Oswald/Open Sans `AdminText` scale until the admin-typography branch lands.)
 - Transitions: 150–200ms ease, no bounce/spring
 - Anti-patterns: white backgrounds, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
 
@@ -92,6 +98,38 @@ dart format --set-exit-if-changed .  # CI format check
 # Verify Flutter setup
 flutter doctor
 ```
+
+### Testing UI changes — always run the app in the emulator
+
+**Mandatory rule for any change that affects the mobile app's UI** (new screens, redesigns, copy, form fields, navigation, theming, asset swaps): run the app in the Android emulator and capture real screenshots before claiming the change is done. Mockups, AI-generated UI, and stock photography are not substitutes. The marketing site at `jobdun.com.au` reuses real app screenshots as product visuals, and the docs/verification/ set is the canonical visual record.
+
+Full workflow in `docs/ANDROID_SCREENSHOTS.md` — emulator boot, APK install, `adb shell` driving, `screencap` capture, asset pipeline. One command:
+
+```bash
+bash scripts/capture_app_screenshots.sh
+```
+
+When invoked, the script:
+1. Boots `jobdun_test` AVD (KVM-accelerated on this host; user is in the `kvm` group).
+2. Installs `build/app/outputs/flutter-apk/app-debug.apk` and pre-grants `POST_NOTIFICATIONS` so the runtime dialog doesn't sit on top of FTUE.
+3. Launches `MainActivity`, drives the FTUE / role-select / create-account flow with `adb input tap` / `input swipe`, captures each screen with `screencap -p`.
+4. Writes the PNGs to `docs/verification/<date>-emulator-NN-<screen>.png` (committed) AND `assets/website/screenshots/<key>.png` (consumed by the marketing site).
+
+The script is **idempotent and re-runnable**. Run it any time the app's UI changes; commit the new verification PNGs alongside the code change so reviewers can see the actual screen.
+
+When the marketing site needs updated product visuals, edit the new `docs/verification/` PNGs down to the 3 site-consumed names (`ftue-splash.png`, `aussie-site.jpg`, `create-account.png`) in `assets/website/screenshots/`, rebuild, and redeploy.
+
+### Marketing site (`lib/website/`) — phone frame patterns
+
+`PhoneFrame` (`lib/website/features/website/presentation/widgets/phone_frame.dart`) is the shared widget for any in-app screenshot on the marketing site. It supports two modes.
+
+**Full mode** (default, `peekFromTop: 1.0`). The full 9:19.5 bezel renders around the entire screenshot. Rounded corners all around, faint orange right-edge glow, ambient bottom darkening, top-edge specular highlight. Width defaults to 320; pass `width` for smaller mobile-stack sizes.
+
+**Peek mode** (`peekFromTop` in `(0.0, 1.0)`, e.g. `0.36`). The widget renders **only the visible top slice** of the screenshot — the unshown part is not rendered at all. The widget sizes itself to the visible slice's natural height (= width × 9:19.5 × fraction). Top corners are rounded (40px); the bottom is a clean horizontal cut. Right-edge orange glow + top-edge specular highlight stay so the device still reads as a device.
+
+When the user says **"peeking screen"** they mean peek mode: only the top portion of the phone is visible, the rest of the bezel is gone, the device reads as rising up from below the surface. Never render a full bezel with a cropped screenshot inside — the dark bezel below the cropped edge reads as "phone continues down" and breaks the effect.
+
+**Layout convention for peek-mode sections**: text content sits in the **upper** portion of the section (above where the phone rises), the phone is bottom-aligned so its cropped edge sits flush with the section's bottom. On wide viewports the phone can sit to the left with the text to the right; on narrow viewports stack vertically with text on top and the phone below. The verified seal (or any companion ornament) floats above the phone's top-right corner.
 
 ### Admin web app (separate entrypoint)
 

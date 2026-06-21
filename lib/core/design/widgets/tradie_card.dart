@@ -83,7 +83,7 @@ class TradieCard extends StatelessWidget {
                               children: [
                                 Text(
                                   rating.toStringAsFixed(1),
-                                  // titleLarge (Oswald) + tabular figures — an
+                                  // titleLarge (Archivo) + tabular figures — an
                                   // on-scale role, not an 18.sp override.
                                   style: AppTypography.numeric(tt.titleLarge!)
                                       .copyWith(

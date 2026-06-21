@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobdun — Typography Bake-off (same colours, different type)</title>
+<!--
+  Colour is held CONSTANT at the current shipping system (Slate + #F97316, dark theme).
+  Only the typography changes, so the type pairing is the only variable to judge.
+  Same specimen — eyebrow, headline, body, button, chip, caption — rendered per pairing.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&family=Archivo:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&family=Zilla+Slab:wght@500;700&family=Bebas+Neue&family=Source+Sans+3:wght@400;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ── CURRENT colours — held constant ── */
+  :root{
+    --bg:#0F172A;--surface:#1E293B;--raised:#334155;--border:#334155;--borderStrong:#708096;
+    --text1:#F1F5F9;--text2:#94A3B8;--text3:#8B98AB;
+    --action:#F97316;--onAction:#0F172A;--verified:#22C55E;--verifiedBg:#052E16;--verifiedTx:#86EFAC;
+    --line:#28324a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text1);font-family:'Inter',system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:80px}
+  .mono{font-family:'Roboto Mono',monospace}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header.bar{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .bar .wrap{display:flex;align-items:center;gap:14px;height:64px}
+  .bar .title{font-family:'Archivo';font-weight:900;font-size:16px;letter-spacing:.3px}
+  .bar .title span{color:var(--action)}
+  .bar .note{margin-left:auto;font-family:'Roboto Mono';font-size:12px;color:var(--text2)}
+  .swrow{display:flex;align-items:center;gap:8px;font-family:'Roboto Mono';font-size:12px;color:var(--text2)}
+  .swrow .sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.12)}
+  .intro{padding:46px 0 26px}
+  .intro h1{font-family:'Archivo';font-weight:900;font-size:clamp(28px,5vw,46px);line-height:1.05;letter-spacing:-.6px}
+  .intro p{color:var(--text2);max-width:74ch;margin-top:14px}
+  .palette{display:flex;gap:18px;flex-wrap:wrap;margin-top:20px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding-top:8px}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .card.rec{border:2px solid var(--action)}
+  .ctag{display:flex;align-items:center;gap:10px;padding:13px 20px;border-bottom:1px solid var(--border);background:#16203a}
+  .ctag .nm{font-family:'Archivo';font-weight:800;font-size:14px}
+  .ctag .fm{font-family:'Roboto Mono';font-size:11px;color:var(--text2);margin-left:auto}
+  .pill{font-family:'Archivo';font-weight:800;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+  .pill.rec{background:var(--action);color:var(--onAction)}
+  .pill.cur{background:var(--raised);color:var(--text2)}
+  .cbody{padding:26px}
+  .eyebrow{font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:12px;color:var(--action);margin-bottom:14px}
+  .headline{font-size:38px;line-height:1.04;color:var(--text1)}
+  .body{font-size:15px;line-height:1.6;color:var(--text2);margin-top:14px;max-width:46ch}
+  .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+  .btn{background:var(--action);color:var(--onAction);font-weight:700;letter-spacing:.8px;text-transform:uppercase;font-size:13px;padding:12px 18px;border-radius:8px;cursor:pointer}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--verifiedBg);color:var(--verifiedTx);font-weight:700;letter-spacing:.6px;text-transform:uppercase;font-size:11px;padding:7px 12px;border-radius:6px}
+  .chip .d{width:7px;height:7px;border-radius:50%;background:var(--verified)}
+  .cap{font-family:'Roboto Mono';font-size:11px;color:var(--text3);margin-top:18px}
+  .note{font-size:12.5px;color:var(--text2);border-top:1px solid var(--border);margin-top:20px;padding-top:14px}
+  .note b{color:var(--text1)}
+  footer{padding:42px 0 0;color:var(--text3);font-size:11px;font-family:'Roboto Mono';text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap">
+  <span class="title">JOBDUN <span>· TYPE BAKE-OFF</span></span>
+  <span class="swrow"><span class="sw" style="background:#0F172A"></span><span class="sw" style="background:#1E293B"></span><span class="sw" style="background:#F97316"></span> current colours · locked</span>
+</div></header>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Same colours. Five typefaces.</h1>
+    <p>Every card below uses the <b>current</b> colour system — slate <code class="mono">#0F172A</code> /
+       surface <code class="mono">#1E293B</code> / safety orange <code class="mono">#F97316</code> — held
+       perfectly constant. The <b>only</b> thing that changes is the type, so you can judge each pairing on the
+       exact same content and decide which reads best. Display font drives the eyebrow, headline, button and chip;
+       the body font drives the paragraph and caption — mirroring how Jobdun splits the roles.</p>
+  </div>
+  <div class="grid" id="grid"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const HEAD="Only verified. No timewasters.";
+const BODY="Every trade licence-checked. Every builder verified. Built for the people who actually build Australia.";
+
+const OPTS=[
+  {name:'Current', disp:"'Oswald'", body:"'Open Sans'", dispW:700, fm:'Oswald + Open Sans', tag:'cur',
+   note:'Ships today. Condensed, distinctive, industrial — but the narrow headline trims readability and does not match the logo wordmark.'},
+  {name:'Option A — Recommended', disp:"'Archivo'", body:"'Inter'", dispW:800, fm:'Archivo + Inter', tag:'rec',
+   note:'Industrial grotesque (to 900, matches the logo) + the 2026 UI fluency leader. Strongest trust, cleanest body, modern.'},
+  {name:'Geometric Modern', disp:"'Outfit'", body:"'Inter'", dispW:700, fm:'Outfit + Inter', tag:'',
+   note:'Rounder, friendlier headlines. Warmer and lighter in feel — less "heavy/strong" than Archivo.'},
+  {name:'Built to Last', disp:"'Zilla Slab'", body:"'Inter'", dispW:700, fm:'Zilla Slab + Inter', tag:'',
+   note:'Slab-serif display = maximum strength / "built to last" — the most overtly construction. Heavier, slightly more traditional.'},
+  {name:'Bold Statement', disp:"'Bebas Neue'", body:"'Source Sans 3'", dispW:400, fm:'Bebas Neue + Source Sans 3', tag:'',
+   note:'Tall condensed all-caps display — poster-loud impact for marketing. Big personality, but caps-only limits everyday UI titles.'},
+];
+
+document.getElementById('grid').innerHTML=OPTS.map(o=>{
+  const pill = o.tag==='rec'?'<span class="pill rec">Recommended</span>':o.tag==='cur'?'<span class="pill cur">Current</span>':'';
+  const hl = o.disp==="'Bebas Neue'"?'letter-spacing:1px;':'letter-spacing:-.4px;';
+  return `<div class="card ${o.tag==='rec'?'rec':''}">
+    <div class="ctag">${pill}<span class="nm">${o.name}</span><span class="fm">${o.fm}</span></div>
+    <div class="cbody">
+      <div class="eyebrow" style="font-family:${o.disp},sans-serif">Only verified</div>
+      <div class="headline" style="font-family:${o.disp},sans-serif;font-weight:${o.dispW};${hl}">${HEAD}</div>
+      <div class="body" style="font-family:${o.body},sans-serif">${BODY}</div>
+      <div class="actions">
+        <span class="btn" style="font-family:${o.disp},sans-serif">Get the app</span>
+        <span class="chip" style="font-family:${o.disp},sans-serif"><span class="d"></span>Verified</span>
+      </div>
+      <div class="cap" style="font-family:${o.body},sans-serif">Licence checked · ABN verified · $65/hr</div>
+      <div class="note" style="font-family:${o.body},sans-serif"><b>${o.fm}.</b> ${o.note}</div>
+    </div>
+  </div>`;
+}).join('');
+
+document.getElementById('foot').innerHTML='Colour locked to the current system (Slate + #F97316, dark). Only the typeface varies. · Display font = eyebrow/headline/button/chip · body font = paragraph/caption · pick the one that reads best to you.';
+</script>
+</body>
+</html>

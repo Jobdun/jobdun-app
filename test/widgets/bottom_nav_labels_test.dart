@@ -12,28 +12,31 @@ import 'package:jobdun/features/home/presentation/pages/home_shell_page.dart';
 /// in isolation gives us a fast, hermetic check on the contract.
 void main() {
   group('TabSpec.forRole', () {
-    test('builder roster has 5 tabs, slots 2/3 are My Jobs and Applicants', () {
-      final tabs = TabSpec.forRole(UserRole.builder);
-      expect(tabs, hasLength(5));
-      expect(tabs[0].shortLabel, 'Home');
-      expect(tabs[1].shortLabel, 'My Jobs');
-      expect(tabs[1].semanticsLabel, 'My posted jobs');
-      expect(tabs[2].shortLabel, 'Applicants');
-      expect(tabs[2].semanticsLabel, 'Job applicants');
-      expect(tabs[3].shortLabel, 'Messages');
-      expect(tabs[4].shortLabel, 'Profile');
-    });
+    // Floating-dock nav (2026-06-11): four work tabs; Profile moved off the bar
+    // to the avatar/account-sheet — the dock's 5th slot is a button, not a tab.
+    test(
+      'builder roster has 4 work tabs, slots 1/2 are My Jobs and Applicants',
+      () {
+        final tabs = TabSpec.forRole(UserRole.builder);
+        expect(tabs, hasLength(4));
+        expect(tabs[0].shortLabel, 'Home');
+        expect(tabs[1].shortLabel, 'My Jobs');
+        expect(tabs[1].semanticsLabel, 'My posted jobs');
+        expect(tabs[2].shortLabel, 'Applicants');
+        expect(tabs[2].semanticsLabel, 'Job applicants');
+        expect(tabs[3].shortLabel, 'Messages');
+      },
+    );
 
-    test('trade roster has 5 tabs, slots 2/3 are Find and Applied', () {
+    test('trade roster has 4 work tabs, slots 1/2 are Find and Applied', () {
       final tabs = TabSpec.forRole(UserRole.trade);
-      expect(tabs, hasLength(5));
+      expect(tabs, hasLength(4));
       expect(tabs[0].shortLabel, 'Home');
       expect(tabs[1].shortLabel, 'Find');
       expect(tabs[1].semanticsLabel, 'Find jobs nearby');
       expect(tabs[2].shortLabel, 'Applied');
       expect(tabs[2].semanticsLabel, 'My job applications');
       expect(tabs[3].shortLabel, 'Messages');
-      expect(tabs[4].shortLabel, 'Profile');
     });
 
     test('null role defaults to the trade roster (pre-role-load state)', () {
