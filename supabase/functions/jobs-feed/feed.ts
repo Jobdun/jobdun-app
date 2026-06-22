@@ -88,33 +88,42 @@ async function fetchFeedFromDb(limit: number): Promise<unknown[]> {
   return data ?? [];
 }
 
+function parseRows(value: unknown): unknown[] | null {
+  try {
+    const parsed = JSON.parse(value as string);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null; // corrupt entry → caller falls through to origin + repopulate
+  }
+}
+
 export async function handleRead(limit: number): Promise<Response> {
   const cached = await redis(["GET", CACHE_KEY]);
 
   if (!cached.error && cached.result != null) {
-    let jobs: unknown = null;
-    try {
-      jobs = JSON.parse(cached.result as string);
-    } catch {
-      jobs = null; // corrupt entry → fall through to origin + repopulate
-    }
-    if (jobs != null) {
+    const rows = parseRows(cached.result);
+    if (rows != null) {
       background(redis(["INCR", STATS_HIT_KEY]));
-      return jsonResponse({ source: "cache", jobs });
+      return jsonResponse({ source: "cache", jobs: rows.slice(0, limit) });
     }
   }
 
-  const jobs = await fetchFeedFromDb(limit);
+  // Always fetch + cache the full page so the cached payload is independent of
+  // any single caller's limit; each caller gets the slice it asked for.
+  const full = await fetchFeedFromDb(MAX_LIMIT);
 
   if (cached.error) {
     // Redis not configured / unreachable → serve uncached (kill-switch path).
-    return jsonResponse({ source: "origin-no-cache", jobs });
+    return jsonResponse({
+      source: "origin-no-cache",
+      jobs: full.slice(0, limit),
+    });
   }
 
   // Genuine miss → populate (awaited so the cache reliably fills) + count.
-  await redis(["SET", CACHE_KEY, JSON.stringify(jobs), "EX", TTL_SECONDS]);
+  await redis(["SET", CACHE_KEY, JSON.stringify(full), "EX", TTL_SECONDS]);
   background(redis(["INCR", STATS_MISS_KEY]));
-  return jsonResponse({ source: "origin", jobs });
+  return jsonResponse({ source: "origin", jobs: full.slice(0, limit) });
 }
 
 export async function handleInvalidate(): Promise<Response> {
