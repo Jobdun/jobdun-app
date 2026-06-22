@@ -1,6 +1,11 @@
 # Jobs-Feed Shared Cache (Upstash Redis + Edge Function)
 
-> **Status:** in progress · **Branch:** `feat/jobs-feed-cache` · **Started:** 2026-06-22
+> **Status (2026-06-22):** Phases 0–4 **code-complete & committed** on
+> `feat/jobs-feed-cache` (commits `c6a53e4`→`917a880`): plan, index migration,
+> Edge Function + Deno tests, app read integration, write-invalidation — Deno
+> tests + 11 Dart repo tests green, analyze + architecture clean. **Remaining to
+> go live:** deploy the function + set Upstash secrets, apply the index, then
+> capture the hit ratio (Phase 5 measurement). See **Go-live** below.
 > **Companion:** [`CACHING_ARCHITECTURE.md`](CACHING_ARCHITECTURE.md) — this is the
 > implementation of its **Phase 4** (shared server-side cache for the public feed).
 
@@ -153,6 +158,39 @@ This document. **Review checkpoint:** the plan itself.
 - **Redis/function outage** → app falls back to direct Postgres; disk cache covers full offline.
 - **Projection drift (TS vs Dart)** → projection-parity Deno test + comment cross-link.
 - **Premature optimization** → honest note retained; kill switch + index make the change net-positive even at low load; measurement gate in Phase 5.
+
+## Go-live (remaining steps — outward, run with care)
+
+Confirm the target project first (mobile = `zethpanvkfyijislxesn`, Sydney; two
+projects are linked).
+
+1. **Deploy the function** (JWT-gated by default — no `--no-verify-jwt`):
+   ```bash
+   supabase functions deploy jobs-feed
+   ```
+2. **Set the Upstash secrets in prod** (service-role + SUPABASE_URL are
+   auto-injected by Supabase for edge functions — only Upstash needs setting):
+   ```bash
+   supabase secrets set \
+     UPSTASH_REDIS_REST_URL="https://<your-db>.upstash.io" \
+     UPSTASH_REDIS_REST_TOKEN="<token>"
+   ```
+3. **Apply the feed index** (after confirming the project):
+   ```bash
+   supabase db push
+   ```
+4. **Verify live**: open the app (emulator/device) → Jobs feed → confirm it
+   renders; post a job from another account → it appears within seconds. Then
+   read the counters to confirm caching is working:
+   ```bash
+   # hits should climb on repeated feed opens
+   curl -s "$UPSTASH_REDIS_REST_URL" -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN" \
+     -d '["MGET","jobs:feed:v1:stats:hit","jobs:feed:v1:stats:miss"]'
+   ```
+5. **Record** the observed hit ratio back into this doc + `CACHING_ARCHITECTURE.md`.
+
+If anything misbehaves: remove the Upstash secrets (function serves uncached) or
+`supabase functions delete jobs-feed` (app falls back to direct Postgres).
 
 ## End-to-End Verification
 1. `EXPLAIN (ANALYZE)` feed query → index scan, no sort (Phase 1).
