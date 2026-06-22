@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/cache/cache_store.dart';
@@ -92,6 +94,15 @@ class JobRepositoryImpl implements JobRepository {
     }
   }
 
+  // Fire-and-forget cache bust after a write so a new/changed job appears in the
+  // shared feed promptly (the 45s TTL is the backstop). Never blocks or fails the
+  // write — invalidate() swallows its own errors.
+  void _invalidateFeedCache() {
+    final feedCache = _feedCache;
+    if (feedCache == null || !kFeedServerCacheEnabled) return;
+    unawaited(feedCache.invalidate().catchError((Object _) {}));
+  }
+
   @override
   Future<Either<Failure, List<Job>>> getBuilderJobs(String builderId) async {
     final key = _builderJobsKey(builderId);
@@ -131,7 +142,9 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, Job>> createJob(Job job) async {
     try {
       final model = job is JobModel ? job : JobModel.fromEntity(job);
-      return right(await _datasource.createJob(model));
+      final created = await _datasource.createJob(model);
+      _invalidateFeedCache();
+      return right(created);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -141,7 +154,9 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, Job>> updateJob(Job job) async {
     try {
       final model = job is JobModel ? job : JobModel.fromEntity(job);
-      return right(await _datasource.updateJob(model));
+      final updated = await _datasource.updateJob(model);
+      _invalidateFeedCache();
+      return right(updated);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -151,6 +166,7 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, void>> softDeleteJob(String id) async {
     try {
       await _datasource.softDeleteJob(id);
+      _invalidateFeedCache();
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
@@ -164,6 +180,7 @@ class JobRepositoryImpl implements JobRepository {
   ) async {
     try {
       await _datasource.updateJobStatus(id, status);
+      _invalidateFeedCache();
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));

@@ -147,4 +147,86 @@ void main() {
     verifyNever(() => feed.getFirstPage(limit: any(named: 'limit')));
     verify(() => ds.getJobs(filter: null, limit: null, offset: null)).called(1);
   });
+
+  group('invalidation on write', () {
+    setUpAll(() => registerFallbackValue(_job()));
+
+    test('createJob success fires a best-effort feed invalidation', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(() => ds.createJob(any())).thenAnswer((_) async => _job(id: 'new'));
+      when(() => feed.invalidate()).thenAnswer((_) async {});
+
+      final res = await repo.createJob(_job(id: 'new'));
+
+      expect(res.isRight(), isTrue);
+      verify(() => feed.invalidate()).called(1);
+    });
+
+    test('updateJob success fires invalidation', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(() => ds.updateJob(any())).thenAnswer((_) async => _job());
+      when(() => feed.invalidate()).thenAnswer((_) async {});
+
+      await repo.updateJob(_job());
+
+      verify(() => feed.invalidate()).called(1);
+    });
+
+    test('softDeleteJob success fires invalidation', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(() => ds.softDeleteJob(any())).thenAnswer((_) async {});
+      when(() => feed.invalidate()).thenAnswer((_) async {});
+
+      await repo.softDeleteJob('job-1');
+
+      verify(() => feed.invalidate()).called(1);
+    });
+
+    test('updateJobStatus success fires invalidation', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(
+        () => ds.updateJobStatus(any(), JobStatus.filled),
+      ).thenAnswer((_) async {});
+      when(() => feed.invalidate()).thenAnswer((_) async {});
+
+      await repo.updateJobStatus('job-1', JobStatus.filled);
+
+      verify(() => feed.invalidate()).called(1);
+    });
+
+    test('a failed write does NOT invalidate', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(() => ds.createJob(any())).thenThrow(const ServerException('boom'));
+
+      final res = await repo.createJob(_job());
+
+      expect(res.isLeft(), isTrue);
+      verifyNever(() => feed.invalidate());
+    });
+
+    test('invalidation failure never fails the write', () async {
+      final ds = MockJobRemoteDataSource();
+      final feed = MockJobFeedCacheDataSource();
+      final repo = JobRepositoryImpl(ds, InMemoryCacheStore(), feed);
+      when(() => ds.createJob(any())).thenAnswer((_) async => _job(id: 'ok'));
+      when(
+        () => feed.invalidate(),
+      ).thenAnswer((_) async => throw const ServerException('redis down'));
+
+      final res = await repo.createJob(_job(id: 'ok'));
+
+      expect(res.isRight(), isTrue, reason: 'write survives a bad invalidate');
+      res.fold((_) => fail('expected job'), (j) => expect(j.id, 'ok'));
+    });
+  });
 }
