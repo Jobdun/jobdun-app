@@ -1,11 +1,11 @@
 # Jobs-Feed Shared Cache (Upstash Redis + Edge Function)
 
-> **Status (2026-06-22):** Phases 0–4 **code-complete & committed** on
-> `feat/jobs-feed-cache` (commits `c6a53e4`→`917a880`): plan, index migration,
-> Edge Function + Deno tests, app read integration, write-invalidation — Deno
-> tests + 11 Dart repo tests green, analyze + architecture clean. **Remaining to
-> go live:** deploy the function + set Upstash secrets, apply the index, then
-> capture the hit ratio (Phase 5 measurement). See **Go-live** below.
+> **Status (2026-06-22):** Phases 0–5 done & **DEPLOYED to Sydney**
+> (`zethpanvkfyijislxesn`): `jobs-feed` function ACTIVE (v2), Upstash secrets set,
+> index `20260622000001` applied. Code on `feat/jobs-feed-cache` (commits
+> `c6a53e4`→`9e167ca`) — Deno tests + 11 Dart repo tests green, analyze +
+> architecture clean. **Remaining:** read the live hit ratio after real feed
+> traffic (counters `jobs:feed:v1:stats:hit|miss`); branch not yet `git push`ed.
 > **Companion:** [`CACHING_ARCHITECTURE.md`](CACHING_ARCHITECTURE.md) — this is the
 > implementation of its **Phase 4** (shared server-side cache for the public feed).
 
