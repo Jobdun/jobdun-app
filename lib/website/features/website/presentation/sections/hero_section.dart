@@ -75,60 +75,62 @@ class HeroSection extends StatelessWidget {
           ),
         ),
         Container(
-      width: double.infinity,
-      color: Colors.transparent,
-      // Extra top room clears the floating glass nav; generous bottom rhythm
-      // hands off to the trust band below.
-      padding: EdgeInsets.only(
-        top: (AppSpacing.xxl * 2.2).h,
-        bottom: AppSpacing.xxl.h * 1.5,
-      ),
-      child: _PagePad(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: stacked
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const _HeroPhone(width: 280),
-                      Gap(AppSpacing.xxl.h),
-                      _CopyBlock(
-                        tt: tt,
-                        c: c,
-                        onHire: () => context.go('/for-builders'),
-                        onCrew: () => context.go('/for-crews'),
-                        align: TextAlign.center,
-                      ),
-                    ],
-                  )
-                : IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          flex: 5,
-                          child: _CopyBlock(
+          width: double.infinity,
+          color: Colors.transparent,
+          // Extra top room clears the floating glass nav; generous bottom rhythm
+          // hands off to the trust band below.
+          padding: EdgeInsets.only(
+            top: (AppSpacing.xxl * 2.2).h,
+            bottom: AppSpacing.xxl.h * 1.5,
+          ),
+          child: _PagePad(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: stacked
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const _HeroPhone(width: 280),
+                          Gap(AppSpacing.xxl.h),
+                          _CopyBlock(
                             tt: tt,
                             c: c,
                             onHire: () => context.go('/for-builders'),
                             onCrew: () => context.go('/for-crews'),
+                            align: TextAlign.center,
                           ),
+                        ],
+                      )
+                    : IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: _CopyBlock(
+                                tt: tt,
+                                c: c,
+                                onHire: () => context.go('/for-builders'),
+                                onCrew: () => context.go('/for-crews'),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 64.w,
+                            ), // Gap breaks IntrinsicHeight baseline
+                            const Expanded(
+                              flex: 5,
+                              child: Center(child: _HeroPhone(width: 320)),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 64.w), // Gap breaks IntrinsicHeight baseline
-                        const Expanded(
-                          flex: 5,
-                          child: Center(child: _HeroPhone(width: 320)),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+              ),
+            ),
           ),
-        ),
-      ),
-    ),   // Container
-    ],
-  );
+        ), // Container
+      ],
+    );
   }
 }
 

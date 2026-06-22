@@ -121,17 +121,10 @@ class TradeFeaturesSection extends StatelessWidget {
           // Trade rows
           for (var i = 0; i < _trades.length; i++) ...[
             if (i > 0)
-              Container(
-                height: 1,
-                width: double.infinity,
-                color: c.border,
-              ),
+              Container(height: 1, width: double.infinity, color: c.border),
             RevealOnScroll(
               delayMs: i * 60,
-              child: _TradeRow(
-                data: _trades[i],
-                stacked: stacked,
-              ),
+              child: _TradeRow(data: _trades[i], stacked: stacked),
             ),
           ],
           const Gap(80),
@@ -188,9 +181,8 @@ class _TradePhoto extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         alignment: Alignment.center,
-        errorBuilder: (context, error, stack) => Container(
-          color: context.c.surfaceRaised,
-        ),
+        errorBuilder: (context, error, stack) =>
+            Container(color: context.c.surfaceRaised),
       ),
     );
   }
@@ -259,7 +251,9 @@ class _TradeCopy extends StatelessWidget {
                   height: 1,
                 ),
               ),
-              const SizedBox(width: 10), // Gap incompatible with baseline alignment
+              const SizedBox(
+                width: 10,
+              ), // Gap incompatible with baseline alignment
               Text(
                 data.statLabel,
                 style: tt.labelSmall!.copyWith(
