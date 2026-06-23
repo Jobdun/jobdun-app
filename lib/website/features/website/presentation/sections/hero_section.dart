@@ -185,9 +185,18 @@ class _CopyBlock extends StatelessWidget {
               ? WrapAlignment.center
               : WrapAlignment.start,
           children: [
-            _Cta(label: "I'M HIRING", primary: true, onPressed: onHire),
             _Cta(
-              label: "I'M LOOKING FOR WORK",
+              label: 'I NEED THIS JOBDONE',
+              primary: true,
+              onPressed: onHire,
+            ),
+            _Cta(
+              label: 'I CAN GET THIS JOBDONE',
+              primary: false,
+              onPressed: onCrew,
+            ),
+            _Cta(
+              label: 'TEACH ME TO GET THE JOBDONE',
               primary: false,
               onPressed: onCrew,
             ),
