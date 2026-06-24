@@ -978,8 +978,10 @@ import {
   XCircle,
   Info,
   Circle,
-  type Icon,
 } from "@phosphor-icons/react/dist/ssr";
+// The `Icon` TYPE is exported from the package root, NOT the /dist/ssr subpath
+// (which re-exports icon component values only). Type-only import → no runtime cost.
+import type { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export type StatusTone = "neutral" | "verified" | "pending" | "rejected" | "info";
@@ -1104,7 +1106,7 @@ export function Skeleton({ className, ...props }: ComponentProps<"div">) {
 - [ ] **Step 4: Write `components/ui/empty-state.tsx`**
 
 ```tsx
-import type { Icon } from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 type Action = { label: string; href?: string; onClick?: () => void };
@@ -1191,7 +1193,7 @@ export function KVRow({ label, value }: { label: string; value: ReactNode }) {
 - [ ] **Step 7: Write `components/ui/stat-tile.tsx`**
 
 ```tsx
-import type { Icon } from "@phosphor-icons/react/dist/ssr";
+import type { Icon } from "@phosphor-icons/react";
 
 /** Dashboard metric tile — tabular-nums value. */
 export function StatTile({
@@ -1388,5 +1390,5 @@ git commit -m "feat: foundation primitives showcase route + green axe gate"
 
 - **Spec P0 deliverables** — scaffold from marketing-site ✓ (T1); dark-only tokens + Archivo/Inter ✓ (T2); shadcn pipeline wired to Jobdun tokens ✓ (T2 aliases + T4 components.json); base primitives Button/danger, Card, Field, StatusTag, Skeleton, EmptyState, ErrorState, KVRow (+StatTile) ✓ (T5–T7); test + axe harness ✓ (T3); "boots + on-brand showcase + axe clean" done-when ✓ (T8).
 - **Placeholder scan** — no TBD/TODO; every file has complete content; every test has real assertions. ✓
-- **Type consistency** — `cn` from `@/lib/utils` used everywhere; `Button` props/variants (`primary|secondary|danger`, `sm|md|lg|icon`) consistent across atoms and the showcase; `StatusTone` union matches `tones` map; `Icon` type imported from `@phosphor-icons/react/dist/ssr` consistently. ✓
+- **Type consistency** — `cn` from `@/lib/utils` used everywhere; `Button` props/variants (`primary|secondary|danger`, `sm|md|lg|icon`) consistent across atoms and the showcase; `StatusTone` union matches `tones` map; the `Icon` TYPE is imported from the `@phosphor-icons/react` root (the `/dist/ssr` subpath exports icon component values only, not the type — importing the type from there fails `tsc`/`next build` with TS2724). ✓
 - **Note** — `--danger #b91c1c` is a P0-introduced token (AA-safe danger-button fill) not present in marketing-site; documented inline in `globals.css`. The Supabase deps listed in the spec's §3.1 are intentionally deferred to P1 (YAGNI for the foundation).
