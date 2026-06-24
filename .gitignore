@@ -113,3 +113,6 @@ android/upload-keystore.jks
 
 # Local screenshots from emulator runs (not for commit)
 ss/
+
+# Nested standalone admin console (own repo, deployed separately)
+/admin-web/
