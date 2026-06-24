@@ -9,7 +9,7 @@ import '../../../../app/theme/breakpoints.dart';
 import '../widgets/phone_frame.dart';
 
 /// Section-level page padding. Every section uses this so the page
-/// has consistent horizontal breathing room — the design system
+/// has consistent horizontal breathing room. The design system
 /// page margin scales with viewport width.
 class _PagePad extends StatelessWidget {
   const _PagePad({required this.child});
@@ -30,7 +30,7 @@ class _PagePad extends StatelessWidget {
   }
 }
 
-/// Hero — a 2-column split, text on the left, the real app on the right.
+/// Hero: a 2-column split, text on the left, the real app on the right.
 /// No eyebrow. No "tiny text → huge text" formula. The screen itself
 /// is the hero.
 ///
@@ -47,7 +47,7 @@ class HeroSection extends StatelessWidget {
 
     return Stack(
       children: [
-        // Construction site background — dark gradient overlay preserves
+        // Construction site background; dark gradient overlay preserves
         // text legibility; left side nearly opaque, right side lighter so
         // the phone frame floats against the scene rather than the flat bg.
         Positioned.fill(
@@ -102,28 +102,24 @@ class HeroSection extends StatelessWidget {
                           ),
                         ],
                       )
-                    : IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: _CopyBlock(
-                                tt: tt,
-                                c: c,
-                                onHire: () => context.go('/for-builders'),
-                                onCrew: () => context.go('/for-crews'),
-                              ),
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: _CopyBlock(
+                              tt: tt,
+                              c: c,
+                              onHire: () => context.go('/for-builders'),
+                              onCrew: () => context.go('/for-crews'),
                             ),
-                            SizedBox(
-                              width: 64.w,
-                            ), // Gap breaks IntrinsicHeight baseline
-                            const Expanded(
-                              flex: 5,
-                              child: Center(child: _HeroPhone(width: 320)),
-                            ),
-                          ],
-                        ),
+                          ),
+                          SizedBox(width: 64.w),
+                          const Expanded(
+                            flex: 5,
+                            child: Center(child: _HeroPhone(width: 320)),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -157,7 +153,7 @@ class _CopyBlock extends StatelessWidget {
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // No logo here — the sticky SiteTopBar already carries the
+        // No logo here. The sticky SiteTopBar already carries the
         // wordmark. Rendering it twice in the same viewport made
         // the brand mark look like a repeating watermark.
         Semantics(
@@ -189,9 +185,18 @@ class _CopyBlock extends StatelessWidget {
               ? WrapAlignment.center
               : WrapAlignment.start,
           children: [
-            _Cta(label: "I'M HIRING", primary: true, onPressed: onHire),
             _Cta(
-              label: "I'M LOOKING FOR WORK",
+              label: 'I NEED THIS JOBDONE',
+              primary: true,
+              onPressed: onHire,
+            ),
+            _Cta(
+              label: 'I CAN GET THIS JOBDONE',
+              primary: false,
+              onPressed: onCrew,
+            ),
+            _Cta(
+              label: 'TEACH ME TO GET THE JOBDONE',
               primary: false,
               onPressed: onCrew,
             ),
@@ -204,7 +209,7 @@ class _CopyBlock extends StatelessWidget {
 
 /// The hero phone with the one sanctioned soft orange radial glow behind it.
 /// The glow is the single piece of "depth" the refined-flat+ direction allows
-/// on the marketing site — a quiet brand halo, not a drop shadow.
+/// on the marketing site: a quiet brand halo, not a drop shadow.
 class _HeroPhone extends StatelessWidget {
   const _HeroPhone({required this.width});
 

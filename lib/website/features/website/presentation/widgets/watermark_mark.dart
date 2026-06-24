@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/design/widgets/jobdun_logo.dart';
 
 /// A large hammer-J mark anchored to one corner of a section, used
-/// as a visual anchor (not a watermark — opacity is high enough to
+/// as a visual anchor (not a watermark; opacity is high enough to
 /// register as a mark, low enough to never compete with copy).
 ///
 /// Use on editorial / empty sections where the page needs a

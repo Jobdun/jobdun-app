@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../core/design/colors.dart';
 
 /// A 4-px orange rule used as a section divider in place of empty
-/// vertical space. Reads as a "section cut" / heavy underline —
+/// vertical space. Reads as a "section cut" / heavy underline:
 /// the visual equivalent of a band-saw mark on a board.
 ///
 /// Anti-pattern check: this is a *horizontal* line, not a side

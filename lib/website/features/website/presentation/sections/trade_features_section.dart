@@ -6,7 +6,7 @@ import '../../../../../core/design/colors.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// Trade feature rows — photo + copy + stat, alternating direction.
+/// Trade feature rows: photo + copy + stat, alternating direction.
 /// Replaces the text-only chip grid with a credibility-first layout:
 /// seeing real tradespeople at work does more trust work than a tag
 /// that says "Sparkies". Three rows (Sparkies, Chippies, Plumbers)
@@ -106,7 +106,7 @@ class TradeFeaturesSection extends StatelessWidget {
                       constraints: const BoxConstraints(maxWidth: 560),
                       child: Text(
                         'From the sparky wiring a new build to the chippie '
-                        'framing it — if you hold a licence, you belong here.',
+                        'framing it. If you hold a licence, you belong here.',
                         style: tt.bodyLarge!.copyWith(
                           color: c.text2,
                           height: 1.6,
@@ -140,9 +140,20 @@ class _TradeRow extends StatelessWidget {
   final _TradeData data;
   final bool stacked;
 
+  // Source photo aspect (720x500). AspectRatio on the photo gives it a
+  // finite height inside a Row, so the row lays out without needing
+  // IntrinsicHeight. IntrinsicHeight inside a SliverList / SliverToBoxAdapter
+  // returns 0 (Sliver constraints don't propagate the way regular boxes do),
+  // which made the entire row collapse to a hairline and pushed every
+  // section after TradeFeaturesSection down by ~4 slivers of empty space.
+  static const double _photoAspect = 720 / 500; // 1.44 landscape
+
   @override
   Widget build(BuildContext context) {
-    final photo = _TradePhoto(asset: data.asset);
+    final photo = AspectRatio(
+      aspectRatio: _photoAspect,
+      child: _TradePhoto(asset: data.asset),
+    );
     final copy = _TradeCopy(data: data);
 
     if (stacked) {
@@ -156,6 +167,9 @@ class _TradeRow extends StatelessWidget {
     }
 
     // Desktop: side-by-side, alternating which side the photo is on.
+    // Photo is finite via AspectRatio; copy stretches via
+    // CrossAxisAlignment.stretch so the row height = photo height and the
+    // copy block fills the same height.
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,

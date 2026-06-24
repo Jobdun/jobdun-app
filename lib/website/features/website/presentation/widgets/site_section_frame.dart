@@ -13,7 +13,7 @@ import '../../../../app/theme/breakpoints.dart';
 ///   - The max-width (1200) is wide enough for a 2-up phone layout
 ///     at desktop, narrow enough to keep the reading line under
 ///     75ch for editorial blocks.
-///   - The padding scales: 96 on ≥1100px, 64 on 720–1100, 24 below.
+///   - The padding scales: 96 on ≥1100px, 64 on 720 to 1100, 24 below.
 ///     The 96px matches the design system's `xxl` for "section-level
 ///     horizontal breathing room" (MASTER §149).
 class SiteSectionFrame extends StatelessWidget {

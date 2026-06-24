@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// An integer that counts up from zero the first time it scrolls into view.
-/// Used for the trust stat band — a [VisibilityDetector] starts the tween when
+/// Used for the trust stat band; a [VisibilityDetector] starts the tween when
 /// the number is actually on screen, so the count is never missed off-screen.
 ///
 /// Honours reduced-motion: when `MediaQuery.disableAnimations` is set the final

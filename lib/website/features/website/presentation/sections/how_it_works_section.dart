@@ -9,7 +9,7 @@ import '../widgets/illustrations/hammer_mark_illustration.dart';
 import '../widgets/illustrations/location_rings_illustration.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "How it works" — three vector illustrations + a few lines of body
+/// "How it works": three vector illustrations + a few lines of body
 /// copy each. The section deliberately *does not* use the
 /// eyebrow / huge headline / paragraph formula. Each block is a
 /// vector mark + a bold one-liner + a sentence of body. Reads as a
@@ -39,7 +39,7 @@ class HowItWorksSection extends StatelessWidget {
         title: 'Local by default.',
         body:
             'Pick the suburb you work in. The feed shows you the work '
-            "that's actually drivable from your yard — not 80 kilometres of "
+            "that's actually drivable from your yard, not 80 kilometres of "
             'scroll-and-guess.',
       ),
       _Step(

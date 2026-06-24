@@ -8,13 +8,13 @@ import '../../../../../core/design/colors.dart';
 ///
 /// Two states: idle (text2 colour, weight 600) and active (text1 colour, a
 /// short orange rule underneath, weight 700). The orange rule uses a 1px
-/// `border-bottom` rather than a `border-left` accent stripe — Jobdun's
+/// `border-bottom` rather than a `border-left` accent stripe. Jobdun's
 /// design system bans side-stripes, and a centered underline reads as a
 /// tab indicator (which is what an active nav item is).
 ///
 /// On desktop, hovering an inactive link lifts the label to text1 and fades a
 /// half-strength orange underline in (150ms). The font weight never changes on
-/// hover — only colour — so the row can't reflow under the pointer.
+/// hover: only colour, so the row can't reflow under the pointer.
 class SiteTopNavLink extends StatefulWidget {
   const SiteTopNavLink({
     super.key,

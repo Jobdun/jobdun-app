@@ -119,6 +119,18 @@ The script is **idempotent and re-runnable**. Run it any time the app's UI chang
 
 When the marketing site needs updated product visuals, edit the new `docs/verification/` PNGs down to the 3 site-consumed names (`ftue-splash.png`, `aussie-site.jpg`, `create-account.png`) in `assets/website/screenshots/`, rebuild, and redeploy.
 
+### Marketing site (`lib/website/`) — phone frame patterns
+
+`PhoneFrame` (`lib/website/features/website/presentation/widgets/phone_frame.dart`) is the shared widget for any in-app screenshot on the marketing site. It supports two modes.
+
+**Full mode** (default, `peekFromTop: 1.0`). The full 9:19.5 bezel renders around the entire screenshot. Rounded corners all around, faint orange right-edge glow, ambient bottom darkening, top-edge specular highlight. Width defaults to 320; pass `width` for smaller mobile-stack sizes.
+
+**Peek mode** (`peekFromTop` in `(0.0, 1.0)`, e.g. `0.36`). The widget renders **only the visible top slice** of the screenshot — the unshown part is not rendered at all. The widget sizes itself to the visible slice's natural height (= width × 9:19.5 × fraction). Top corners are rounded (40px); the bottom is a clean horizontal cut. Right-edge orange glow + top-edge specular highlight stay so the device still reads as a device.
+
+When the user says **"peeking screen"** they mean peek mode: only the top portion of the phone is visible, the rest of the bezel is gone, the device reads as rising up from below the surface. Never render a full bezel with a cropped screenshot inside — the dark bezel below the cropped edge reads as "phone continues down" and breaks the effect.
+
+**Layout convention for peek-mode sections**: text content sits in the **upper** portion of the section (above where the phone rises), the phone is bottom-aligned so its cropped edge sits flush with the section's bottom. On wide viewports the phone can sit to the left with the text to the right; on narrow viewports stack vertically with text on top and the phone below. The verified seal (or any companion ornament) floats above the phone's top-right corner.
+
 ### Admin web app (separate entrypoint)
 
 The admin console is a second Flutter entrypoint in the same repo, isolated under `lib/admin/`. It shares the Supabase project and design tokens with the mobile app but has its own router, login flow, and admin-role gate.

@@ -5,7 +5,7 @@ import '../../../../app/theme/breakpoints.dart';
 import '../../../../../core/design/colors.dart';
 import '../widgets/site_section_frame.dart';
 
-/// "Three things we won't do." — a single dense row of three short
+/// "Three things we won't do.": a single dense row of three short
 /// value-props. Each block is a bold one-liner + a one-sentence
 /// qualifier. The whole strip reads as the inside cover of a
 /// job-site clipboard, not a feature grid.
@@ -23,16 +23,16 @@ class ValuesStrip extends StatelessWidget {
 
     const items = [
       _Value(
-        label: 'No subscription.',
+        label: r'Free for tradies.',
         body:
-            'Builders post jobs. Trades apply. There is no monthly fee '
-            'and no "premium" tier that unlocks real features.',
+            'Tradies download, browse, and apply for jobs free, forever. '
+            'No subscription. No premium tier. No cut of your pay.',
       ),
       _Value(
-        label: 'No take rate.',
+        label: r'Builders: $10 a week.',
         body:
-            "We don't skim a cut off your pay. The job pays what you "
-            'agreed, and that is the whole story.',
+            'One flat weekly fee covers every job you post, every applicant '
+            'you message, and every licence check. Cancel any time.',
       ),
       _Value(
         label: 'No anonymous operators.',
@@ -62,7 +62,7 @@ class ValuesStrip extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Short orange tick — sits above the label
+                          // Short orange tick; sits above the label
                           // and reads as a "yes, this" affirmation.
                           Container(width: 28, height: 3, color: c.action),
                           const Gap(16),

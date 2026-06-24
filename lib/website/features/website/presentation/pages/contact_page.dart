@@ -13,7 +13,7 @@ import '../widgets/site_section_frame.dart';
 import '../widgets/site_shell.dart';
 import '../widgets/social_links.dart';
 
-/// `/contact` — talk to a human. A hero, then a two-column body (the form on
+/// `/contact`: talk to a human. A hero, then a two-column body (the form on
 /// the left, contact details + socials on the right), then the closing CTA.
 /// With no backend on the static site, the form composes a pre-filled email to
 /// the team via `mailto:` and confirms inline.
@@ -29,7 +29,7 @@ class ContactPage extends StatelessWidget {
             eyebrow: 'Contact',
             title: 'Talk to a human.',
             subtitle:
-                'Questions, partnerships, or you want on the roster early — '
+                'Questions, partnerships, or you want on the roster early. '
                 "drop us a line. We're a small team and we read every one.",
           ),
         ),
@@ -86,7 +86,7 @@ class _ContactFormState extends State<_ContactForm> {
     final state = _formKey.currentState!;
     if (!state.saveAndValidate()) return;
     final v = state.value;
-    final subject = Uri.encodeComponent('Jobdun enquiry — ${v['name']}');
+    final subject = Uri.encodeComponent('Jobdun enquiry: ${v['name']}');
     final body = Uri.encodeComponent(
       'Name: ${v['name']}\n'
       'Email: ${v['email']}\n'
@@ -206,7 +206,7 @@ class _SentConfirmation extends StatelessWidget {
                 ),
                 const Gap(6),
                 Text(
-                  'We just opened it in your mail app — hit send and we\'ll '
+                  'We just opened it in your mail app. Hit send and we\'ll '
                   'get back to you within a business day.',
                   style: tt.bodyMedium!.copyWith(color: c.text2, height: 1.5),
                 ),

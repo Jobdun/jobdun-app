@@ -30,7 +30,7 @@ class _SiteShellState extends ConsumerState<SiteShell> {
   void initState() {
     super.initState();
     _scroll = ScrollController()..addListener(_onScroll);
-    // Each page starts at the top — reset the nav's frosted flag so a route
+    // Each page starts at the top. Reset the nav's frosted flag so a route
     // change from a scrolled page doesn't carry a stale state in.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(navScrolledProvider.notifier).set(false);

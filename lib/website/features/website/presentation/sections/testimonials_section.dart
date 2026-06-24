@@ -8,11 +8,11 @@ import '../widgets/hover_lift_card.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// Social proof — three quotes from each side of the marketplace. Cards lift
+/// Social proof: three quotes from each side of the marketplace. Cards lift
 /// gently on hover (the one card-depth the refined-flat+ direction allows).
 ///
 /// Quotes are indicative placeholders the client swaps for real, consented
-/// testimonials — kept in AU voice and tagged by trade + state.
+/// testimonials. Kept in AU voice and tagged by trade + state.
 class TestimonialsSection extends StatelessWidget {
   const TestimonialsSection({super.key});
 

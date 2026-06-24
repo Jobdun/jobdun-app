@@ -7,11 +7,11 @@ import '../../../../../core/design/widgets/jobdun_logo.dart';
 import '../widgets/site_section_frame.dart';
 import '../widgets/social_links.dart';
 
-/// Footer — three columns on desktop, stacked on mobile. The contact
+/// Footer: three columns on desktop, stacked on mobile. The contact
 /// column lists both `sam@jobdun.com.au` (general) and
 /// `support@jobdun.com.au` (support) per the brief. Legal links point
 /// at the static `site/privacy/` and `site/delete-account/` pages (NOT
-/// routed through Flutter, by design — they boot faster as plain HTML
+/// routed through Flutter, by design. They boot faster as plain HTML
 /// and the marketing site has no need to own them).
 class SiteFooter extends StatelessWidget {
   const SiteFooter({super.key});
@@ -169,7 +169,7 @@ class _FooterLinkWidget extends StatelessWidget {
         final uri = Uri.parse(link.href);
         // Anchors + mailto: open in a new tab; absolute paths open
         // in the same tab. Falls through silently if `url_launcher`
-        // can't open (offline build, unsupported scheme) — the link
+        // can't open (offline build, unsupported scheme). The link
         // still renders and is hover-focusable, so accessibility
         // isn't broken.
         if (await canLaunchUrl(uri)) {

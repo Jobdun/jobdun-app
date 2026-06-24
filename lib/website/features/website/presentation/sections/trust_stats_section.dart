@@ -7,12 +7,12 @@ import '../widgets/count_up_text.dart';
 import '../widgets/reveal_on_scroll.dart';
 import '../widgets/site_section_frame.dart';
 
-/// Trust band — four numbers that prove the "only verified" promise the rest
+/// Trust band: four numbers that prove the "only verified" promise the rest
 /// of the page makes. Sits on `c.surface` so it reads as a distinct ledger
 /// strip between the hero and the editorial prose.
 ///
 /// Figures are indicative placeholders the client swaps for live platform
-/// numbers — kept realistic for the AU market (8 capital cities, etc.).
+/// numbers. Kept realistic for the AU market (8 capital cities, etc.).
 class TrustStatsSection extends StatelessWidget {
   const TrustStatsSection({super.key});
 

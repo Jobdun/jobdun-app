@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/theme/app_icons.dart';
 
-/// Follow row — Instagram / Facebook / LinkedIn / TikTok. Shared by the footer
+/// Follow row: Instagram / Facebook / LinkedIn / TikTok. Shared by the footer
 /// and the contact page. Each is a focusable, tooltipped icon button that opens
 /// the channel in a new tab. URLs are the public Jobdun handles (swap if the
 /// real handles differ).

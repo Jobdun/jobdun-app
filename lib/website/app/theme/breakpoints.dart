@@ -1,13 +1,13 @@
-/// Shared responsive breakpoints for the marketing site — one source of truth
+/// Shared responsive breakpoints for the marketing site. One source of truth
 /// so every section flips layout at the *same* widths instead of the ad-hoc
 /// per-section numbers (820 / 900 / 960 / 1100) it grew. Snapping to these keeps
 /// the tablet range coherent: neighbours no longer disagree on when to stack.
 ///
 /// Tiers (width in logical px):
-/// - **mobile**  `< tablet (768)`     — single column everywhere
-/// - **tablet**  `[768, 960)`         — 2-col card grids; split blocks still stacked
-/// - **laptop**  `≥ laptop (960)`     — split blocks (text + visual) go side-by-side
-/// - **desktop** `≥ desktop (1200)`   — widest page padding / max content gutter
+/// - **mobile**  `< tablet (768)`. Single column everywhere
+/// - **tablet**  `[768, 960)`. 2-col card grids; split blocks still stacked
+/// - **laptop**  `≥ laptop (960)`. Split blocks (text + visual) go side-by-side
+/// - **desktop** `≥ desktop (1200)`. Widest page padding / max content gutter
 ///
 /// Usage: `final w = MediaQuery.sizeOf(context).width;` then compare against
 /// `Bp.laptop` etc., or use the helpers (`Bp.isMobile(w)`).

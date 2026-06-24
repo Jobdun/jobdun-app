@@ -19,7 +19,7 @@ class RoadmapBar extends StatelessWidget {
   }
 }
 
-/// Custom clipper for the roadmap connector — reveals the drawn
+/// Custom clipper for the roadmap connector; reveals the drawn
 /// portion of a horizontal or vertical bar as `progress` goes
 /// 0 → 1. Used by the connector to "draw" the line on enter.
 class RoadmapProgressClipper extends CustomClipper<Rect> {
