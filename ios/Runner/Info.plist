@@ -68,6 +68,10 @@
 		<false/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Jobdun uses your location to show jobs and tradies near you on the map and to suggest nearby addresses when you set your service area.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>

@@ -165,7 +165,7 @@ name, coarse location, and photos/videos — all "linked, not used for tracking"
 # Terms of Service
 
 **Effective: [PLACEHOLDER — Ken to fill on first production release]**
-**Last updated: [PLACEHOLDER — Ken to fill]**
+**Last updated: [PLACEHOLDER — Ken totea fill]**
 **Version 1.0**
 
 ---

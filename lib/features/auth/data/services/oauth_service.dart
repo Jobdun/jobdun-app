@@ -16,6 +16,12 @@ class OAuthService {
   final supabase.SupabaseClient _client;
 
   static bool _googleInitialized = false;
+  // Generated once (when GoogleSignIn is initialized) and reused for the rest
+  // of the app run: the raw nonce whose SHA-256 hash is baked into every Google
+  // ID token this session produces. See signInWithGoogle for why it must be
+  // stable across sign-ins. Lives next to _googleInitialized so they stay in
+  // lockstep — both reset only on a fresh app process.
+  static String? _googleRawNonce;
 
   /// Throws if `GOOGLE_WEB_CLIENT_ID` isn't configured. The controller surfaces
   /// that as a user-facing error before falling through to the sign-in step.
@@ -26,12 +32,21 @@ class OAuthService {
         'Add GOOGLE_WEB_CLIENT_ID to your .env file.',
       );
     }
+    // Google's ID token carries a `nonce` claim, so Supabase's signInWithIdToken
+    // demands a matching nonce — pass neither and it throws "Passed nonce and
+    // nonce in id_token should either both exist or both not exist". In
+    // google_sign_in v7 the nonce is set on initialize() (which must run exactly
+    // once), so we generate the raw nonce once, hand Google its SHA-256 hash,
+    // and keep the raw value to give Supabase on every sign-in. Supabase hashes
+    // the raw nonce and compares — identical to the Apple flow below.
     if (!_googleInitialized) {
+      _googleRawNonce = _generateNonce();
       await GoogleSignIn.instance.initialize(
         clientId: AppEnv.googleIosClientId.isEmpty
             ? null
             : AppEnv.googleIosClientId,
         serverClientId: AppEnv.googleWebClientId,
+        nonce: _sha256ofString(_googleRawNonce!),
       );
       _googleInitialized = true;
     }
@@ -45,6 +60,7 @@ class OAuthService {
     final response = await _client.auth.signInWithIdToken(
       provider: supabase.OAuthProvider.google,
       idToken: idToken,
+      nonce: _googleRawNonce,
     );
 
     // Mirror Google profile bits we have on the account object into
