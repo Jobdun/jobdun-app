@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
-import '../../features/auth/presentation/pages/logo_compare_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/phone_auth_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -112,7 +111,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '/legal',
           '/legal/terms',
           '/legal/privacy',
-          if (kDebugMode) '/logo-compare',
           if (kDebugMode) '/dev/reset-ftue',
         };
         return publicRoutes.contains(location) ? null : '/login';
@@ -210,10 +208,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       if (kDebugMode) ...[
-        GoRoute(
-          path: '/logo-compare',
-          builder: (_, _) => const LogoComparePage(),
-        ),
         GoRoute(
           path: '/dev/reset-ftue',
           builder: (_, _) => const DevFtueResetPage(),
