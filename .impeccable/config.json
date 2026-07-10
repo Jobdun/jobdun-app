@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "reason": "Inter is the locked Jobdun design-system body face (Archivo + Inter ramp, lib/app/theme/app_typography.dart + CLAUDE.md)",
+        "createdAt": "2026-07-04T05:05:55.476Z"
+      }
+    ]
+  }
+}

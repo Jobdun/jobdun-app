@@ -116,3 +116,4 @@ ss/
 
 # Nested standalone admin console (own repo, deployed separately)
 /admin-web/
+.impeccable/hook.cache.json
