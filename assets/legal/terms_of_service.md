@@ -1,12 +1,10 @@
 # Terms of Service
 
-**Effective: [PLACEHOLDER — Ken to fill on first production release]**
-**Last updated: [PLACEHOLDER — Ken to fill]**
+**Effective: 10 July 2026**
+**Last updated: 10 July 2026**
 **Version 1.0**
 
 ---
-
-> **Legal disclaimer:** This document was drafted using current Australian law and standard marketplace patterns as a strong starting template. **Before you ship to production, have an AU-admitted lawyer review both this document and the Privacy Policy.** Especially: licensing/registration claims for trades, dispute resolution, payment-handling clauses, and worker-classification language (independent contractor vs employee — critical in AU construction). Budget AUD $1,500–3,500 for a one-time review with a tech/privacy lawyer. This template gets you 85% of the way; the last 15% is jurisdiction-specific risk that needs a human lawyer.
 
 ---
 
@@ -18,7 +16,7 @@
 
 **1.3** If you are using Jobdun on behalf of a business, company, or other legal entity, you warrant that you have the authority to bind that entity to these Terms. In that case, "you" and "your" refers to both you personally and the entity you represent.
 
-**1.4** These Terms form a legally binding agreement between you and Jobdun Pty Ltd [PLACEHOLDER — Ken to fill ABN] ("Jobdun", "we", "us", "our").
+**1.4** These Terms form a legally binding agreement between you and Jobdun Pty Ltd ("Jobdun", "we", "us", "our").
 
 ---
 
@@ -42,7 +40,7 @@
 
 **3.3 Admins** are authorised Jobdun personnel who manage the platform, verify user credentials, moderate content, and handle disputes and support.
 
-**3.4** Each user may register as either a Builder or a Trade/Crew. To switch roles, contact us at [PLACEHOLDER — support@jobdun.com.au].
+**3.4** Each user may register as either a Builder or a Trade/Crew. To switch roles, contact us at support@jobdun.com.au.
 
 ---
 
@@ -54,7 +52,7 @@
 
 **4.3** You are responsible for maintaining the security of your account credentials. Do not share your password with anyone. You are liable for all activity that occurs under your account.
 
-**4.4** If you believe your account has been compromised, notify us immediately at [PLACEHOLDER — support@jobdun.com.au].
+**4.4** If you believe your account has been compromised, notify us immediately at support@jobdun.com.au.
 
 **4.5** We reserve the right to verify your identity and eligibility at any time, and to suspend or terminate accounts that violate these Terms.
 
@@ -214,7 +212,7 @@ The following are strictly prohibited on Jobdun:
 
 **16.2** In less serious cases, we may issue a warning or temporary suspension before permanent termination.
 
-**16.3** If you believe your account has been suspended in error, you may appeal by contacting us at [PLACEHOLDER — support@jobdun.com.au] within 30 days of suspension. We will review and respond within 10 business days.
+**16.3** If you believe your account has been suspended in error, you may appeal by contacting us at support@jobdun.com.au within 30 days of suspension. We will review and respond within 10 business days.
 
 **16.4** Upon termination, your access to Jobdun ceases. Your data is handled in accordance with our Privacy Policy.
 
@@ -243,7 +241,7 @@ The following are strictly prohibited on Jobdun:
 
 **18.3** We do not warrant that the platform will be uninterrupted, error-free, or virus-free.
 
-**18.4** **Nothing in these Terms excludes, restricts, or modifies any consumer guarantee, right, or remedy provided under the *Australian Consumer Law* (Schedule 2 of the *Competition and Consumer Act 2010* (Cth)) that cannot lawfully be excluded.** [VERIFY WITH LAWYER — this exact phrasing is the ACL-required carve-out.]
+**18.4** **Nothing in these Terms excludes, restricts, or modifies any consumer guarantee, right, or remedy provided under the *Australian Consumer Law* (Schedule 2 of the *Competition and Consumer Act 2010* (Cth)) that cannot lawfully be excluded.**
 
 ---
 
@@ -312,7 +310,7 @@ The following are strictly prohibited on Jobdun:
 
 ## 24. Governing Law and Jurisdiction
 
-**24.1** These Terms are governed by the laws of New South Wales, Australia [PLACEHOLDER — confirm with lawyer if registered in another state].
+**24.1** These Terms are governed by the laws of New South Wales, Australia.
 
 **24.2** You agree to submit to the non-exclusive jurisdiction of the courts of New South Wales for any disputes arising under these Terms.
 
@@ -323,9 +321,7 @@ The following are strictly prohibited on Jobdun:
 For questions about these Terms, contact:
 
 **Jobdun Pty Ltd**
-ABN: [PLACEHOLDER — Ken to fill]
-Email: [PLACEHOLDER — support@jobdun.com.au]
-Address: [PLACEHOLDER — Ken to fill]
+Email: support@jobdun.com.au
 
 ---
 
@@ -341,4 +337,4 @@ These Terms, together with our Privacy Policy, constitute the entire agreement b
 
 ---
 
-*Jobdun Pty Ltd — [PLACEHOLDER — ABN] — [PLACEHOLDER — address] — [PLACEHOLDER — support@jobdun.com.au]*
+*Jobdun Pty Ltd — support@jobdun.com.au*

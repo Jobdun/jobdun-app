@@ -54,7 +54,7 @@ class LegalIndexPage extends ConsumerWidget {
           Gap(AppSpacing.xl.h),
           Center(
             child: Text(
-              'Jobdun Pty Ltd — ABN [PLACEHOLDER]\nAll rights reserved.',
+              'Jobdun Pty Ltd\nAll rights reserved.',
               style: tt.labelSmall!.copyWith(color: c.text3),
               textAlign: TextAlign.center,
             ),

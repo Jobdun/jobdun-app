@@ -1,12 +1,10 @@
 # Privacy Policy
 
-**Effective: [PLACEHOLDER — Ken to fill on first production release]**
-**Last updated: [PLACEHOLDER — Ken to fill]**
+**Effective: 10 July 2026**
+**Last updated: 10 July 2026**
 **Version 1.0**
 
 ---
-
-> **Legal disclaimer:** This policy was drafted using the *Privacy Act 1988* (Cth) and the 13 Australian Privacy Principles (APPs) as the primary framework. **Before going to production, have an AU-admitted privacy lawyer review this document.** Key review areas: cross-border disclosure clauses (APP 8), retention periods, the NDB response timeline, and any payment-data clauses added when payments are introduced. Budget AUD $1,500–3,500 for a one-time review. [VERIFY WITH LAWYER] markers indicate clauses requiring professional confirmation.
 
 ---
 
@@ -24,13 +22,13 @@
 
 *(APP 1 — Open and transparent management of personal information)*
 
-**1.1** This Privacy Policy explains how Jobdun Pty Ltd (ABN: [PLACEHOLDER]) ("Jobdun", "we", "us", "our") collects, uses, stores, and discloses personal information.
+**1.1** This Privacy Policy explains how Jobdun Pty Ltd ("Jobdun", "we", "us", "our") collects, uses, stores, and discloses personal information.
 
 **1.2** This policy applies to all users of the Jobdun mobile app — Builders, Trades/Crews, and Admins — and to anyone who contacts us for support.
 
 **1.3** We are committed to managing personal information in accordance with the *Privacy Act 1988* (Cth) and the Australian Privacy Principles (APPs).
 
-**1.4** Our Privacy Officer can be reached at: [PLACEHOLDER — privacy@jobdun.com.au]
+**1.4** Our Privacy Officer can be reached at: privacy@jobdun.com.au
 
 **1.5** This policy is available in-app (Settings → Legal → Privacy Policy) and linked from the registration screen.
 
@@ -188,7 +186,7 @@ We share personal information only as follows:
 
 | Provider | Purpose | Region | Privacy Policy |
 |---|---|---|---|
-| **Supabase Inc.** | Database, authentication, file storage | US/EU (data may be stored in Singapore or Sydney — [PLACEHOLDER — confirm with Supabase support]) | supabase.com/privacy |
+| **Supabase Inc.** | Database, authentication, file storage | Australia (Sydney), with some subprocessing in the US/EU | supabase.com/privacy |
 | **Sentry** | Crash and error monitoring | US/EU | sentry.io/privacy |
 | **Google LLC** | Sign in with Google; Firebase Cloud Messaging (push); Google Maps | US/global | policies.google.com/privacy |
 | **Apple Inc.** | Sign in with Apple | US/global | apple.com/legal/privacy |
@@ -205,13 +203,13 @@ We share personal information only as follows:
 
 *(APP 8 — Cross-border disclosure)*
 
-**7.1** Your data is primarily stored on infrastructure operated by Supabase Inc. Data may be stored in [PLACEHOLDER — confirm Supabase region: Singapore or Sydney] and processed in the United States and/or European Union by Supabase's subprocessors (AWS, Cloudflare).
+**7.1** Your data is primarily stored on infrastructure operated by Supabase Inc. Data may be stored in Sydney, Australia and processed in the United States and/or European Union by Supabase's subprocessors (AWS, Cloudflare).
 
 **7.2** Error logs are processed by Sentry, which operates in the United States and European Union.
 
 **7.3** If you use Google or Apple sign-in, your name and email are transmitted to and from Google's or Apple's servers in the United States.
 
-**7.4** Before disclosing your personal information to overseas recipients, we take reasonable steps to ensure the recipient handles it in a manner consistent with the Australian Privacy Principles. By accepting this policy, you consent to these cross-border disclosures. [VERIFY WITH LAWYER — the APP 8.2(b) consent carve-out vs. the APP 8.2(a) reasonable steps pathway]
+**7.4** Before disclosing your personal information to overseas recipients, we take reasonable steps to ensure the recipient handles it in a manner consistent with the Australian Privacy Principles. By accepting this policy, you consent to these cross-border disclosures.
 
 ---
 
@@ -241,7 +239,7 @@ We share personal information only as follows:
 | Active account data | While account is active | Operate the service |
 | Deleted account — basic profile | 30 days post-deletion | Allow account restoration within grace period |
 | Deleted account — in-app messages | 90 days post-deletion | Dispute resolution and legal claims |
-| Verification documents (licences, insurance) | 7 years post-account deletion | Legal compliance, trade dispute history, regulatory requirements [VERIFY WITH LAWYER] |
+| Verification documents (licences, insurance) | 7 years post-account deletion | Legal compliance, trade dispute history, regulatory requirements |
 | Crash logs (Sentry) | 90 days | Debugging and platform improvement |
 | Database backups | Up to 30 days rolling | Disaster recovery |
 | Legal acceptance records | 7 years | Legal compliance — proof of consent |
@@ -256,7 +254,7 @@ We share personal information only as follows:
 
 **10.1** You can update most of your personal information at any time via your profile settings in the app.
 
-**10.2** For data you cannot edit directly (e.g., email address linked to a social sign-in), contact our Privacy Officer at [PLACEHOLDER — privacy@jobdun.com.au].
+**10.2** For data you cannot edit directly (e.g., email address linked to a social sign-in), contact our Privacy Officer at privacy@jobdun.com.au.
 
 **10.3** We do not independently reverify your personal details beyond what is described in clause 5 (Trade Verification), except where we have reason to believe information is inaccurate or misleading.
 
@@ -268,7 +266,7 @@ We share personal information only as follows:
 
 **11.1** You have the right to request a copy of the personal information we hold about you.
 
-**11.2** To make an access request, email our Privacy Officer at [PLACEHOLDER — privacy@jobdun.com.au] with:
+**11.2** To make an access request, email our Privacy Officer at privacy@jobdun.com.au with:
 - Your full name
 - The email address associated with your Jobdun account
 - A description of the information you are seeking
@@ -330,7 +328,7 @@ We share personal information only as follows:
 
 **15.2** We do not knowingly collect personal information from minors. If we become aware that a user is under 18, we will immediately suspend the account and delete any data collected.
 
-**15.3** If you believe a minor has created a Jobdun account, please notify us at [PLACEHOLDER — privacy@jobdun.com.au] immediately.
+**15.3** If you believe a minor has created a Jobdun account, please notify us at privacy@jobdun.com.au immediately.
 
 ---
 
@@ -341,10 +339,10 @@ We share personal information only as follows:
 **16.1** If we become aware of a data breach that is likely to result in serious harm to you, we will:
 
 - Promptly investigate the breach.
-- If required, notify the **Office of the Australian Information Commissioner (OAIC)** within 30 days of the breach being assessed as notifiable. [VERIFY WITH LAWYER — confirm current NDB assessment timeline under the Act]
+- If required, notify the **Office of the Australian Information Commissioner (OAIC)** within 30 days of the breach being assessed as notifiable.
 - Notify affected individuals as soon as practicable, including details of the breach and recommended steps to protect yourself.
 
-**16.2** To report a suspected security or privacy incident: [PLACEHOLDER — privacy@jobdun.com.au]
+**16.2** To report a suspected security or privacy incident: privacy@jobdun.com.au
 
 ---
 
@@ -355,7 +353,7 @@ We share personal information only as follows:
 **17.1** If you believe we have not handled your personal information in accordance with the Australian Privacy Principles, you may make a complaint.
 
 **Step 1 — Contact us directly:**
-Email: [PLACEHOLDER — privacy@jobdun.com.au]
+Email: privacy@jobdun.com.au
 We will acknowledge your complaint within 5 business days and respond within 30 days.
 
 **Step 2 — If unresolved, escalate to the OAIC:**
@@ -385,9 +383,7 @@ Post: GPO Box 5218, Sydney NSW 2001
 For all privacy enquiries:
 
 **Privacy Officer — Jobdun Pty Ltd**
-ABN: [PLACEHOLDER — Ken to fill]
-Email: [PLACEHOLDER — privacy@jobdun.com.au]
-Address: [PLACEHOLDER — Ken to fill]
+Email: privacy@jobdun.com.au
 
 ---
 
@@ -406,8 +402,8 @@ Address: [PLACEHOLDER — Ken to fill]
 | APP 12 | Access to PI | 11 |
 | APP 13 | Correction of PI | 12 |
 
-*APPs 2, 4, and 9 are not directly applicable to Jobdun at this stage: APP 2 (anonymity) — Jobdun requires identity for safety reasons; APP 4 (unsolicited PI) — address if/when unsolicited PI is received; APP 9 (government identifiers) — not applicable unless TFN handling is added.* [VERIFY WITH LAWYER]
+*APPs 2, 4, and 9 are not directly applicable to Jobdun at this stage: APP 2 (anonymity) — Jobdun requires identity for safety reasons; APP 4 (unsolicited PI) — address if/when unsolicited PI is received; APP 9 (government identifiers) — not applicable unless TFN handling is added.*
 
 ---
 
-*Jobdun Pty Ltd — [PLACEHOLDER — ABN] — [PLACEHOLDER — privacy@jobdun.com.au]*
+*Jobdun Pty Ltd — privacy@jobdun.com.au*
