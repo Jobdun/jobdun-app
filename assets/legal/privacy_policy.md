@@ -28,7 +28,7 @@
 
 **1.3** We are committed to managing personal information in accordance with the *Privacy Act 1988* (Cth) and the Australian Privacy Principles (APPs).
 
-**1.4** Our Privacy Officer can be reached at: privacy@jobdun.com.au
+**1.4** Our Privacy Officer can be reached at: support@jobdun.com.au
 
 **1.5** This policy is available in-app (Settings → Legal → Privacy Policy) and linked from the registration screen.
 
@@ -254,7 +254,7 @@ We share personal information only as follows:
 
 **10.1** You can update most of your personal information at any time via your profile settings in the app.
 
-**10.2** For data you cannot edit directly (e.g., email address linked to a social sign-in), contact our Privacy Officer at privacy@jobdun.com.au.
+**10.2** For data you cannot edit directly (e.g., email address linked to a social sign-in), contact our Privacy Officer at support@jobdun.com.au.
 
 **10.3** We do not independently reverify your personal details beyond what is described in clause 5 (Trade Verification), except where we have reason to believe information is inaccurate or misleading.
 
@@ -266,7 +266,7 @@ We share personal information only as follows:
 
 **11.1** You have the right to request a copy of the personal information we hold about you.
 
-**11.2** To make an access request, email our Privacy Officer at privacy@jobdun.com.au with:
+**11.2** To make an access request, email our Privacy Officer at support@jobdun.com.au with:
 - Your full name
 - The email address associated with your Jobdun account
 - A description of the information you are seeking
@@ -328,7 +328,7 @@ We share personal information only as follows:
 
 **15.2** We do not knowingly collect personal information from minors. If we become aware that a user is under 18, we will immediately suspend the account and delete any data collected.
 
-**15.3** If you believe a minor has created a Jobdun account, please notify us at privacy@jobdun.com.au immediately.
+**15.3** If you believe a minor has created a Jobdun account, please notify us at support@jobdun.com.au immediately.
 
 ---
 
@@ -342,7 +342,7 @@ We share personal information only as follows:
 - If required, notify the **Office of the Australian Information Commissioner (OAIC)** within 30 days of the breach being assessed as notifiable.
 - Notify affected individuals as soon as practicable, including details of the breach and recommended steps to protect yourself.
 
-**16.2** To report a suspected security or privacy incident: privacy@jobdun.com.au
+**16.2** To report a suspected security or privacy incident: support@jobdun.com.au
 
 ---
 
@@ -353,7 +353,7 @@ We share personal information only as follows:
 **17.1** If you believe we have not handled your personal information in accordance with the Australian Privacy Principles, you may make a complaint.
 
 **Step 1 — Contact us directly:**
-Email: privacy@jobdun.com.au
+Email: support@jobdun.com.au
 We will acknowledge your complaint within 5 business days and respond within 30 days.
 
 **Step 2 — If unresolved, escalate to the OAIC:**
@@ -383,7 +383,7 @@ Post: GPO Box 5218, Sydney NSW 2001
 For all privacy enquiries:
 
 **Privacy Officer — Jobdun Pty Ltd**
-Email: privacy@jobdun.com.au
+Email: support@jobdun.com.au
 
 ---
 
@@ -406,4 +406,4 @@ Email: privacy@jobdun.com.au
 
 ---
 
-*Jobdun Pty Ltd — privacy@jobdun.com.au*
+*Jobdun Pty Ltd — support@jobdun.com.au*
