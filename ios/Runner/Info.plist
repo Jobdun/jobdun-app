@@ -28,17 +28,17 @@
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
-				<string>com.example.jobdun.auth</string>
+				<string>au.com.jobdun.app.auth</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>com.example.jobdun</string>
+					<string>au.com.jobdun.app</string>
 				</array>
 			</dict>
 			<dict>
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
-				<string>com.example.jobdun.googleSignIn</string>
+				<string>au.com.jobdun.app.googleSignIn</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.googleusercontent.apps.960216655470-8t1l2dgtl0ffb8rn830t654g7gbb1toh</string>

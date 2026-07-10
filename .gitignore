@@ -1,3 +1,8 @@
+# Standalone marketing site — its own git repo (github.com/KpG782/jobdun-web),
+# deployed separately on Vercel. Ignored here so this monorepo doesn't treat the
+# nested repo as a submodule.
+marketing-site/
+
 # Miscellaneous
 *.class
 *.log
@@ -108,3 +113,7 @@ android/upload-keystore.jks
 
 # Local screenshots from emulator runs (not for commit)
 ss/
+
+# Nested standalone admin console (own repo, deployed separately)
+/admin-web/
+.impeccable/hook.cache.json

@@ -11,7 +11,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/design/widgets/j_button.dart';
-import '../../../../core/design/widgets/animated_jobdun_logo.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_link_text.dart';
@@ -133,9 +133,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           SizedBox(
                             height: 140.h,
                             child: Center(
-                              child: AnimatedJobdunLogo(
-                                variant: JLogoAnim.forge,
-                                height: 80.r,
+                              child: JobdunLogo(
+                                variant: LogoVariant.full,
+                                height: 72.h,
                               ),
                             ),
                           ),

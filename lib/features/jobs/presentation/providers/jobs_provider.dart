@@ -8,6 +8,7 @@ import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../data/datasources/job_feed_cache_datasource.dart';
 import '../../data/datasources/job_interactions_datasource.dart';
 import '../../data/datasources/job_remote_datasource.dart';
 import '../../data/repositories/job_interactions_repository_impl.dart';
@@ -28,10 +29,15 @@ final jobDatasourceProvider = Provider<JobRemoteDataSource>(
   (ref) => JobRemoteDataSourceImpl(SupabaseConfig.client),
 );
 
+final jobFeedCacheDatasourceProvider = Provider<JobFeedCacheDataSource>(
+  (ref) => JobFeedCacheDataSourceImpl(SupabaseConfig.client),
+);
+
 final jobRepositoryProvider = Provider<JobRepository>(
   (ref) => JobRepositoryImpl(
     ref.read(jobDatasourceProvider),
     ref.read(cacheStoreProvider),
+    ref.read(jobFeedCacheDatasourceProvider),
   ),
 );
 

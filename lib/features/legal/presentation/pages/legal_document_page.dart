@@ -79,7 +79,7 @@ class LegalDocumentPage extends ConsumerWidget {
                 vertical: 8.h,
               ),
               child: Text(
-                'Version ${doc.version}  •  Effective [PLACEHOLDER — Ken to fill]',
+                'Version ${doc.version}  •  Effective 10 July 2026',
                 style: tt.labelSmall!.copyWith(color: c.text3),
               ),
             ),

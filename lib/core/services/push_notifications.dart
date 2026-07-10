@@ -43,6 +43,17 @@ class PushNotifications {
     try {
       await FirebaseMessaging.instance.requestPermission();
     } catch (_) {}
+    try {
+      // iOS suppresses banners for pushes arriving while the app is
+      // foregrounded unless we opt in. Android instead mirrors foreground
+      // pushes as local notifications in [_showBanner].
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+    } catch (_) {}
 
     await _register();
     await _initForegroundBanners();
@@ -116,6 +127,11 @@ class PushNotifications {
   }
 
   static Future<void> _showBanner(RemoteMessage message) async {
+    // Android-only: FCM suppresses its own display notification while the app
+    // is open, so we mirror it locally. iOS presents natively via the
+    // foreground presentation options set in [init] — mirroring here too
+    // would show the banner twice.
+    if (defaultTargetPlatform != TargetPlatform.android) return;
     final title = message.notification?.title;
     if (title == null) return;
     try {
@@ -150,10 +166,33 @@ class PushNotifications {
 
   static Future<void> _register() async {
     if (SupabaseConfig.client.auth.currentUser == null) return;
-    try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) await _upsert(token);
-    } catch (_) {}
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (defaultTargetPlatform == TargetPlatform.iOS) {
+          await _awaitApnsToken();
+        }
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await _upsert(token);
+          return;
+        }
+      } catch (e) {
+        debugPrint('PushNotifications._register attempt $attempt failed: $e');
+      }
+      await Future<void>.delayed(Duration(seconds: 2 * attempt));
+    }
+  }
+
+  /// On iOS [FirebaseMessaging.getToken] throws `apns-token-not-set` when
+  /// called before APNs hands the app its device token, which can lag app
+  /// launch by several seconds. Poll until it lands (or give up and let the
+  /// caller's retry loop handle it).
+  static Future<void> _awaitApnsToken() async {
+    for (var i = 0; i < 10; i++) {
+      final apns = await FirebaseMessaging.instance.getAPNSToken();
+      if (apns != null) return;
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
   }
 
   static Future<void> _upsert(String token) async {

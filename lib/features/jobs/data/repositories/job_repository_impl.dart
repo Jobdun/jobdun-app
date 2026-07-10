@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/cache/cache_store.dart';
@@ -6,13 +8,17 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/job.dart';
 import '../../domain/entities/job_filter.dart';
 import '../../domain/repositories/job_repository.dart';
+import '../datasources/job_feed_cache_datasource.dart';
 import '../datasources/job_remote_datasource.dart';
 import '../models/job_model.dart';
 
 class JobRepositoryImpl implements JobRepository {
-  const JobRepositoryImpl(this._datasource, this._cache);
+  const JobRepositoryImpl(this._datasource, this._cache, [this._feedCache]);
   final JobRemoteDataSource _datasource;
   final CacheStore _cache;
+  // Optional: the shared server-side feed cache. Null in tests/builds that don't
+  // wire it → getJobs reads Postgres directly, exactly as before.
+  final JobFeedCacheDataSource? _feedCache;
 
   // Bump either when JobModel's cache shape changes — old entries then purge on
   // read instead of mis-deserializing (docs/CACHING_ARCHITECTURE.md §3.3).
@@ -32,6 +38,15 @@ class JobRepositoryImpl implements JobRepository {
     // offline as before — caching every combination isn't worth it (doc §3.1).
     final isFirstPage =
         (offset == null || offset == 0) && (filter == null || filter.isEmpty);
+
+    // Shared server-side cache (Upstash via the jobs-feed Edge Function) for the
+    // bounded default first page. A hit also writes through to the disk cache so
+    // offline still works; any failure falls through to the direct read below.
+    if (isFirstPage && limit != null) {
+      final cached = await _tryServerFeedCache(limit);
+      if (cached != null) return right(cached);
+    }
+
     try {
       final jobs = await _datasource.getJobs(
         filter: filter,
@@ -59,6 +74,33 @@ class JobRepositoryImpl implements JobRepository {
       }
       return left(ServerFailure(e.message));
     }
+  }
+
+  // Returns the cached first page from the jobs-feed Edge Function, or null if
+  // the cache is disabled/absent/unavailable (the caller then reads Postgres).
+  Future<List<Job>?> _tryServerFeedCache(int limit) async {
+    final feedCache = _feedCache;
+    if (feedCache == null || !kFeedServerCacheEnabled) return null;
+    try {
+      final jobs = await feedCache.getFirstPage(limit: limit);
+      await _cache.write(
+        _openJobsFirstPageKey,
+        jobs.map((j) => j.toCacheMap()).toList(),
+        schemaVersion: _openJobsCacheVersion,
+      );
+      return jobs;
+    } on ServerException {
+      return null; // Edge Function / Upstash down → fall back to direct read.
+    }
+  }
+
+  // Fire-and-forget cache bust after a write so a new/changed job appears in the
+  // shared feed promptly (the 45s TTL is the backstop). Never blocks or fails the
+  // write — invalidate() swallows its own errors.
+  void _invalidateFeedCache() {
+    final feedCache = _feedCache;
+    if (feedCache == null || !kFeedServerCacheEnabled) return;
+    unawaited(feedCache.invalidate().catchError((Object _) {}));
   }
 
   @override
@@ -100,7 +142,9 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, Job>> createJob(Job job) async {
     try {
       final model = job is JobModel ? job : JobModel.fromEntity(job);
-      return right(await _datasource.createJob(model));
+      final created = await _datasource.createJob(model);
+      _invalidateFeedCache();
+      return right(created);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -110,7 +154,9 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, Job>> updateJob(Job job) async {
     try {
       final model = job is JobModel ? job : JobModel.fromEntity(job);
-      return right(await _datasource.updateJob(model));
+      final updated = await _datasource.updateJob(model);
+      _invalidateFeedCache();
+      return right(updated);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
     }
@@ -120,6 +166,7 @@ class JobRepositoryImpl implements JobRepository {
   Future<Either<Failure, void>> softDeleteJob(String id) async {
     try {
       await _datasource.softDeleteJob(id);
+      _invalidateFeedCache();
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));
@@ -133,6 +180,7 @@ class JobRepositoryImpl implements JobRepository {
   ) async {
     try {
       await _datasource.updateJobStatus(id, status);
+      _invalidateFeedCache();
       return right(null);
     } on ServerException catch (e) {
       return left(ServerFailure(e.message));

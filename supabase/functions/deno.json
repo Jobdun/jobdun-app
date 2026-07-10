@@ -1,0 +1,17 @@
+{
+  "fmt": {
+    "lineWidth": 80,
+    "useTabs": false,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "tasks": {
+    "test": "deno test --allow-net --allow-env"
+  }
+}

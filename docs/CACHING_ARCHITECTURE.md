@@ -1,6 +1,6 @@
 # Jobdun Caching Architecture
 
-> **Status:** planning / design doc · **Branch:** `feat/offline-cache-hardening` · **Last updated:** 2026-06-07
+> **Status:** Phases 1–2.5 (client cache) shipped; **Phase 4 shipped for the jobs feed** → [`JOBS_FEED_CACHE_PLAN.md`](JOBS_FEED_CACHE_PLAN.md). · **Last updated:** 2026-06-22
 >
 > This document explains — in plain English *and* in engineering terms — where
 > caching belongs in Jobdun, why "add Redis" is only one small piece of the
@@ -207,7 +207,7 @@ already exists — don't reinvent:**
 | **2** | **Client cache — persistent stale-while-revalidate.** Thin local `CacheStore` (one small persistence package — *to be confirmed*, leaning `hive_ce` or `drift`) + the SWR provider pattern + offline "show last-known" | Cold-start instant + real offline | one Flutter pkg (needs sign-off — CLAUDE.md package-list change) |
 | **2.5** | **Client cache — hardening (§3.3).** Schema versioning + purge-on-bump, fail-safe deserialize, eviction bounds (LRU + size ceiling), encryption at rest, honest reachability probe | Make Layer 1 *safe*: no stale-payload crashes, no unbounded disk, no plaintext PII, truthful OFFLINE chip | one Flutter pkg (`flutter_secure_storage` for the key — needs sign-off) |
 | **3** | **ABR result cache in Postgres.** `abr_cache` table + dedup lookup in `verify-abn` | Protect the ABR API | none |
-| **4** | **Redis (Upstash), only if warranted.** Move rate-limit/circuit-breaker counters to Redis; optionally bucketed search cache behind a new Edge Function | Cut load at scale | Upstash Redis |
+| **4** | **Redis (Upstash) — SHIPPED for the public jobs feed** (read-through behind the `jobs-feed` Edge Function, 45s TTL, write-invalidation; see [`JOBS_FEED_CACHE_PLAN.md`](JOBS_FEED_CACHE_PLAN.md)). Rate-limit/circuit-breaker-counter migration + bucketed search remain optional follow-ups. | Cut load at scale | Upstash Redis |
 
 We **measure between phases** (Supabase Dashboard query stats + simple in-app
 timing) so we never add infrastructure we can't show is needed.

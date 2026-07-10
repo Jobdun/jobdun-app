@@ -196,10 +196,6 @@ flutter:
     - assets/website/screenshots/
     - assets/website/construction/
     - lib/core/assets/
-    - lib/core/assets/logo-concepts/hammer-j-above/
-    - lib/core/assets/logo-concepts/hammer-j-fused/
-    - lib/core/assets/logo-concepts/hammer-j-side/
-    - lib/core/assets/logo-concepts/hammer-j-head/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

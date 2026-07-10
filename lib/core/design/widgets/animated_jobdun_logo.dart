@@ -229,11 +229,10 @@ class _DrawVariant extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    // Mirror the static mark: dark = orange J on transparent; light = white J
-    // on an orange rounded-square badge.
-    final ink = isDark ? c.action : Colors.white;
-    final badge = isDark ? null : c.action;
+    // Mirrors the static mark: orange on transparent in both themes — the new
+    // mark reads fine on light or dark, unlike the old glyph it replaced.
+    final ink = c.action;
+    const badge = null;
     return SizedBox(
       width: height,
       height: height,
@@ -254,10 +253,11 @@ class _DrawVariant extends StatelessWidget {
 
 // ── painters ─────────────────────────────────────────────────────────────────
 
-/// Traces the hammer-J outline (PathMetrics) for `progress` 0→0.75, then fades
-/// the fill in for 0.75→1.0. Theme-aware: in light mode it draws an orange
-/// rounded-square [badge] behind a white [ink] J (mirroring mark-jobdun-light);
-/// in dark mode [badge] is null and [ink] is the brand orange on transparent.
+/// Traces the mark's outline (PathMetrics) for `progress` 0→0.75, then fades
+/// the fill in for 0.75→1.0. [badge] draws an optional rounded-square behind
+/// the traced [ink] mark — currently unused ([badge] is always null) since the
+/// mark no longer needs a per-theme badge treatment, but left in place in case
+/// a future mark does.
 class _DrawTracePainter extends CustomPainter {
   _DrawTracePainter({required this.progress, required this.ink, this.badge});
 
@@ -267,7 +267,7 @@ class _DrawTracePainter extends CustomPainter {
 
   // Parsed once. even-odd matches the SVG's fill-rule so the negative-space
   // cuts render correctly.
-  static final Path _base = parseSvgPathData(kHammerJPathData)
+  static final Path _base = parseSvgPathData(kJobdunMarkPathData)
     ..fillType = PathFillType.evenOdd;
 
   @override
@@ -288,12 +288,18 @@ class _DrawTracePainter extends CustomPainter {
       );
     }
 
-    final s = size.width / kHammerJViewBox.width;
+    // Non-square viewBox (unlike the old glyph) — scale uniformly by the
+    // tighter axis, then centre the leftover space on the other axis.
+    final vb = kJobdunMarkViewBox;
+    final s = math.min(size.width / vb.width, size.height / vb.height);
+    final dx = (size.width / s - vb.width) / 2;
+    final dy = (size.height / s - vb.height) / 2;
     final drawP = (progress / 0.75).clamp(0.0, 1.0);
     final fillP = ((progress - 0.75) / 0.25).clamp(0.0, 1.0);
 
     canvas.save();
     canvas.scale(s);
+    canvas.translate(dx, dy);
 
     if (drawP > 0.0 && fillP < 1.0) {
       final traced = Path();
