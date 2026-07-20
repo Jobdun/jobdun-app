@@ -20,7 +20,10 @@ import '../../features/home/presentation/pages/design_preview_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/logo_animation_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
+import '../../core/providers/pending_return_provider.dart';
+import 'guest_browse_policy.dart';
 import '../../features/jobs/presentation/pages/job_create_page.dart';
+import '../../features/jobs/presentation/pages/job_detail_loader_page.dart';
 import '../../features/jobs/presentation/pages/job_detail_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
 import '../../features/applications/presentation/pages/applicant_detail_page.dart';
@@ -59,6 +62,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     // carousel never reappears retroactively.
     if (next.isAuthenticated) {
       ref.read(ftueGateProvider.notifier).markCompleted();
+    } else {
+      // Sign-out: drop any guest-gate return target so a later login never
+      // replays a stale destination.
+      ref.read(pendingReturnProvider.notifier).clear();
     }
     notifier.refresh();
   });
@@ -113,7 +120,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           '/legal/privacy',
           if (kDebugMode) '/dev/reset-ftue',
         };
-        return publicRoutes.contains(location) ? null : '/login';
+        return publicRoutes.contains(location) ||
+                isGuestBrowsableLocation(location)
+            ? null
+            : '/login';
       }
 
       const authPages = {
@@ -123,7 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/forgot-password',
         '/phone-auth',
       };
-      if (authPages.contains(location)) return '/home';
+      if (authPages.contains(location)) {
+        // A guest who authenticated from a gate (APPLY on a job) goes back
+        // to where they were; everyone else lands home.
+        final pending = ref.read(pendingReturnProvider.notifier).consume();
+        return pending ?? '/home';
+      }
 
       return null;
     },
@@ -166,6 +181,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const ForgotPasswordPage(),
       ),
       GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
+      // Public job browser (App Review 5.1.1(v)) — the same JobsPage the
+      // tab shell hosts, standalone. It renders guest chrome (SIGN IN bar,
+      // no saved/swipe affordances) whenever there is no session.
+      GoRoute(path: '/browse', builder: (_, _) => const JobsPage()),
       // Authed users land here from /profile/edit when their phone slot in
       // the completeness banner is still missing. Same widget as /phone-auth
       // but uses updateUser+phoneChange semantics so the existing session
@@ -288,8 +307,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     parentNavigatorKey: _rootNavigatorKey,
                     builder: (context, state) {
                       final args = state.extra as JobDetailArgs?;
-                      if (args == null) return const JobsPage();
-                      return JobDetailPage(args: args);
+                      if (args != null) return JobDetailPage(args: args);
+                      // No extra → deep link or post-auth return: fetch by
+                      // id and render the same detail UI.
+                      return JobDetailLoaderPage(
+                        jobId: state.pathParameters['id']!,
+                      );
                     },
                     routes: [
                       // Builder: applicants for this job (layout A) → applicant detail.

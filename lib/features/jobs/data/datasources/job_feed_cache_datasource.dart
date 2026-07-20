@@ -32,6 +32,12 @@ class JobFeedCacheDataSourceImpl implements JobFeedCacheDataSource {
 
   @override
   Future<List<JobModel>> getFirstPage({int? limit}) async {
+    // The jobs-feed Edge Function requires a user JWT; guests skip the
+    // shared cache without a network round-trip and the repository falls
+    // through to the direct jobs_public_browse read.
+    if (_client.auth.currentSession == null) {
+      throw const ServerException('jobs-feed cache requires a signed-in user');
+    }
     try {
       final response = await _client.functions.invoke(
         _fn,

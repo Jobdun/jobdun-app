@@ -107,9 +107,17 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     final isBuilder = ref.watch(
       authControllerProvider.select((s) => s.role == UserRole.builder),
     );
+    // Guest mode (App Review 5.1.1(v)) — this same page also serves the
+    // public /browse route. Guests browse and read freely; the account-based
+    // affordances (SAVED chip, save/hide swipes, verification nudge) hide,
+    // and a LOG IN action rides the header instead.
+    final isAuthed = ref.watch(
+      authControllerProvider.select((s) => s.isAuthenticated),
+    );
     // Builders get the dedicated listings-management view; tradies get the
     // browse feed below.
     if (isBuilder) return const BuilderListingsView();
+    final showSavedChip = isAuthed;
     final activeFilter = jobsState.filter?.tradeType;
     // Observing the paging controller via ref.read so this widget rebuilds
     // for filter/search changes (which run through it) without listening
@@ -135,6 +143,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PageHeader(
+                    eyebrow: isAuthed ? null : 'JOBDUN',
                     title: isBuilder ? 'Your listings' : 'Open near you',
                     trailing: isBuilder
                         ? SizedBox(
@@ -144,6 +153,15 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                               icon: AppIcons.add,
                               size: JButtonSize.compact,
                               onPressed: () => context.push('/jobs/create'),
+                            ),
+                          )
+                        : !isAuthed
+                        ? SizedBox(
+                            width: 110.w,
+                            child: JButton(
+                              label: 'LOG IN',
+                              size: JButtonSize.compact,
+                              onPressed: () => context.go('/login'),
                             ),
                           )
                         : null,
@@ -191,24 +209,24 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                   ),
                   Gap(12.h),
                   // ── Filter chips
-                  // Tradies get a SAVED chip in front of the trade filters
-                  // that switches the body to their saved jobs list.
-                  // Builders only see trade filters — they don't save jobs.
+                  // Signed-in tradies get a SAVED chip in front of the trade
+                  // filters that switches the body to their saved jobs list.
+                  // Builders don't save jobs; guests have nothing saved.
                   SizedBox(
                     height: 44.h,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: (isBuilder ? 0 : 1) + _tradeFilters.length,
+                      itemCount: (showSavedChip ? 1 : 0) + _tradeFilters.length,
                       separatorBuilder: (ctx, idx) => Gap(AppSpacing.sm.w),
                       itemBuilder: (context, i) {
-                        if (!isBuilder && i == 0) {
+                        if (showSavedChip && i == 0) {
                           return GvChip(
                             label: 'SAVED',
                             active: _viewingSaved,
                             onTap: () => _toggleSavedView(),
                           );
                         }
-                        final f = _tradeFilters[i - (isBuilder ? 0 : 1)];
+                        final f = _tradeFilters[i - (showSavedChip ? 1 : 0)];
                         final isActive =
                             !_viewingSaved &&
                             (f == 'All'
@@ -279,8 +297,9 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                 ),
               ),
             // ── Verification nudge banner (v2). Self-hides when already
-            // fully verified or dismissed for this session.
-            const VerificationNudgeBanner(),
+            // fully verified or dismissed for this session. Account-based —
+            // guests never see it.
+            if (isAuthed) const VerificationNudgeBanner(),
             // ── Results count. "X+ jobs found" while more pages remain so
             // the number never looks misleadingly small during scroll-load.
             Padding(
@@ -338,8 +357,11 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             );
                             // Builders don't save or hide their own listings — RLS
                             // would block writes anyway, and the swipe affordances
-                            // would just be noise. Tradies get the full slidable.
-                            if (isBuilder) return card;
+                            // would just be noise. Guests get the plain card too:
+                            // save/hide are account-based (5.1.1(v) keeps browsing
+                            // free, not the bookmarking). Signed-in tradies get
+                            // the full slidable.
+                            if (isBuilder || !isAuthed) return card;
                             final isSaved = jobsState.savedJobIds.contains(
                               j.id,
                             );
@@ -408,6 +430,13 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 activeFilter != null ||
                                 _searchCtrl.text.isNotEmpty,
                           ),
+                          // Only a guest reaching the end of their capped
+                          // preview sees the conversion nudge — a signed-in
+                          // user hitting the real end of the feed sees
+                          // nothing, same as before this feature existed.
+                          noMoreItemsIndicatorBuilder: isAuthed
+                              ? null
+                              : (_) => const _GuestSignInTeaser(),
                           firstPageErrorIndicatorBuilder: (_) => _PageError(
                             message:
                                 pagingController.error?.toString() ?? 'Error',

@@ -21,6 +21,7 @@ class SlideThreeAction extends StatelessWidget {
     required this.onWorking,
     this.onContinueWithGoogle,
     this.onLoginLink,
+    this.onBrowse,
   });
 
   static const heroAsset = 'assets/images/ftue/slide_3_aussie_site.jpg';
@@ -37,6 +38,10 @@ class SlideThreeAction extends StatelessWidget {
   /// null hides the bottom login link entirely. Passed null when the user
   /// reached /ftue via the Create-account link on /login.
   final VoidCallback? onLoginLink;
+
+  /// Guest browsing entry (App Review 5.1.1(v)) — when non-null, renders a
+  /// "browse open jobs" link so nobody has to register just to look.
+  final VoidCallback? onBrowse;
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +60,7 @@ class SlideThreeAction extends StatelessWidget {
         onWorking: onWorking,
         onContinueWithGoogle: onContinueWithGoogle,
         onLoginLink: onLoginLink,
+        onBrowse: onBrowse,
       ),
     );
   }
@@ -66,12 +72,14 @@ class _Ctas extends StatelessWidget {
     required this.onWorking,
     required this.onContinueWithGoogle,
     required this.onLoginLink,
+    required this.onBrowse,
   });
 
   final VoidCallback onHiring;
   final VoidCallback onWorking;
   final VoidCallback? onContinueWithGoogle;
   final VoidCallback? onLoginLink;
+  final VoidCallback? onBrowse;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +118,39 @@ class _Ctas extends StatelessWidget {
                 isLoading: false,
               ),
             ],
+          ),
+        ],
+        if (onBrowse != null) ...[
+          Gap(AppSpacing.md.h),
+          Semantics(
+            button: true,
+            label: 'Browse open jobs without an account.',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onBrowse,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: tt.bodySmall!.copyWith(color: c.text3),
+                    children: [
+                      const TextSpan(text: 'Just looking?  '),
+                      TextSpan(
+                        text: 'BROWSE OPEN JOBS',
+                        style: tt.bodySmall!.copyWith(
+                          color: c.text2,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          decoration: TextDecoration.underline,
+                          decorationColor: c.text2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
         if (onLoginLink != null) ...[

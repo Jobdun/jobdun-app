@@ -3,6 +3,95 @@ part of 'job_detail_page.dart';
 // Presentational leaves for the job detail page — split into a `part` so the
 // page stays under the file-size budget. Single-use, co-located with the page.
 
+// Tap through to the public builder profile (S13) — company, ABN ✓, track
+// record, reviews from tradies — so a tradie can vet who they're applying to
+// before they do. Guests hit the account gate instead: profile data is
+// served by authenticated-only views.
+class _PostedByCard extends StatelessWidget {
+  const _PostedByCard({required this.args, required this.isAuthed});
+
+  final JobDetailArgs args;
+  final bool isAuthed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: args.builderId == null
+          ? null
+          : !isAuthed
+          ? () => GuestGateSheet.show(
+              context,
+              actionCaps: 'SEE BUILDER PROFILES',
+              returnTo: args.id == null ? null : '/jobs/${args.id}',
+            )
+          : () => context.push('/builders/${args.builderId}'),
+      child: Container(
+        padding: EdgeInsets.all(14.r),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppRadius.card.r),
+          border: Border.all(color: c.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44.r,
+              height: 44.r,
+              decoration: BoxDecoration(
+                color: c.surfaceRaised,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.border),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                args.builderInitials ?? 'B',
+                style: tt.titleLarge!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: c.text2,
+                ),
+              ),
+            ),
+            Gap(12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    args.companyName ?? 'Builder',
+                    style: tt.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: c.text1,
+                    ),
+                  ),
+                  if (args.builderId != null) ...[
+                    Gap(2.h),
+                    Text(
+                      'View profile & reviews',
+                      style: tt.bodySmall!.copyWith(
+                        color: c.action,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (args.builderId != null)
+              Icon(
+                AppIcons.chevronRight,
+                size: AppIconSize.inline.r,
+                color: c.text3,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _InfoChip extends StatelessWidget {
   const _InfoChip({required this.icon, required this.label});
   final IconData icon;

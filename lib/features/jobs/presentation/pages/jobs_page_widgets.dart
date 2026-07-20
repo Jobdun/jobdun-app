@@ -198,6 +198,61 @@ class _JobCardPlaceholder extends StatelessWidget {
   }
 }
 
+// End-of-guest-feed conversion nudge (App Review 5.1.1(v): the guest preview
+// is capped — see JobsController._guestPageSize). Shown once, right after
+// the last card, via PagedChildBuilderDelegate.noMoreItemsIndicatorBuilder.
+// Same tinted-orange nudge language as VerificationNudgeBanner (the
+// authenticated-side equivalent on this same page), but framed as a
+// standalone card since it's the terminal state of the list, not a banner
+// squeezed above it. Copy stays honest regardless of current inventory size
+// — "browse every open job" is true whether the real total is above or
+// below the cap; "apply, save" is always exclusively account-based.
+class _GuestSignInTeaser extends StatelessWidget {
+  const _GuestSignInTeaser();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: c.actionBg,
+        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        border: Border.all(color: c.action.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(AppIcons.lock, size: AppIconSize.md.r, color: c.action),
+              Gap(AppSpacing.sm.w),
+              Expanded(
+                child: Text(
+                  'WANT TO SEE MORE?',
+                  style: tt.titleLarge!.copyWith(color: c.text1),
+                ),
+              ),
+            ],
+          ),
+          Gap(AppSpacing.sm.h),
+          Text(
+            'Create a free account to browse every open job, apply, and '
+            'save the ones you like.',
+            style: tt.bodyMedium!.copyWith(color: c.text2),
+          ),
+          Gap(AppSpacing.md.h),
+          JButton(
+            label: 'CREATE ACCOUNT',
+            onPressed: () => context.go('/register'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.hasFilter});
 
