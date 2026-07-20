@@ -20,7 +20,7 @@ steps Ken performs.
 > **Guideline 5.1.1(v) — account-free browsing.** The app no longer requires
 > registration to browse posted jobs. From the first-launch screens, tapping
 > "BROWSE OPEN JOBS" (also available as "Browse open jobs" on the log-in
-> screen) opens the public job board: full job list, search, trade filters,
+> screen) opens the public job board: real open jobs, search, trade filters,
 > and complete job details — no account, no personal information. An account
 > is only requested for the account-based features themselves: submitting a
 > quote/application, saving jobs, messaging, and viewing builder profiles.
