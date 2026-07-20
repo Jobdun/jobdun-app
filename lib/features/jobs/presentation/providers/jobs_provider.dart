@@ -145,6 +145,17 @@ void invalidateBuilderJobAggregates(WidgetRef ref) {
   }
 }
 
+// Deep links and post-auth returns land on /jobs/:id with no JobDetailArgs
+// extra — fetch the job (guests read the public view under the hood) so the
+// same detail UI can render. One-shot per visit via autoDispose.
+final jobByIdProvider = FutureProvider.autoDispose.family<Job, String>((
+  ref,
+  id,
+) async {
+  final result = await ref.read(getJobByIdUseCaseProvider).call(id);
+  return result.fold((f) => throw StateError(f.message), (job) => job);
+});
+
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
   JobsController.new,

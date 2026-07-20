@@ -16,6 +16,8 @@ import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/guest_gate_sheet.dart';
 import '../providers/jobs_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
@@ -72,6 +74,11 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     final isOwner =
         args.builderId != null &&
         args.builderId == ref.watch(currentUserIdSyncProvider);
+    // Guests can read everything on this page (App Review 5.1.1(v)); the
+    // account-based actions (apply, builder profile) open the sign-in gate.
+    final isAuthed = ref.watch(
+      authControllerProvider.select((s) => s.isAuthenticated),
+    );
 
     return Scaffold(
       backgroundColor: c.background,
@@ -202,75 +209,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     // ── Posted by
                     FieldLabel('POSTED BY'),
                     Gap(AppSpacing.sm.h),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      // Tap through to the public builder profile (S13) —
-                      // company, ABN ✓, track record, reviews from tradies — so
-                      // a tradie can vet who they're applying to before they do.
-                      onTap: args.builderId == null
-                          ? null
-                          : () => context.push('/builders/${args.builderId}'),
-                      child: Container(
-                        padding: EdgeInsets.all(14.r),
-                        decoration: BoxDecoration(
-                          color: c.card,
-                          borderRadius: BorderRadius.circular(AppRadius.card.r),
-                          border: Border.all(color: c.border),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44.r,
-                              height: 44.r,
-                              decoration: BoxDecoration(
-                                color: c.surfaceRaised,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: c.border),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                args.builderInitials ?? 'B',
-                                style: tt.titleLarge!.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: c.text2,
-                                ),
-                              ),
-                            ),
-                            Gap(12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    args.companyName ?? 'Builder',
-                                    style: tt.titleMedium!.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: c.text1,
-                                    ),
-                                  ),
-                                  if (args.builderId != null) ...[
-                                    Gap(2.h),
-                                    Text(
-                                      'View profile & reviews',
-                                      style: tt.bodySmall!.copyWith(
-                                        color: c.action,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            if (args.builderId != null)
-                              Icon(
-                                AppIcons.chevronRight,
-                                size: AppIconSize.inline.r,
-                                color: c.text3,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _PostedByCard(args: args, isAuthed: isAuthed),
                     Gap(20.h),
 
                     // ── Requirements
@@ -355,7 +294,15 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               BottomActionBar(
                 primary: JButton(
                   label: AppStrings.respondToJob,
-                  onPressed: () => _showApplySheet(context, c, args),
+                  // Applying is account-based — guests get the sign-in gate
+                  // and return here after auth (App Review 5.1.1(v)).
+                  onPressed: isAuthed
+                      ? () => _showApplySheet(context, c, args)
+                      : () => GuestGateSheet.show(
+                          context,
+                          actionCaps: 'APPLY',
+                          returnTo: args.id == null ? null : '/jobs/${args.id}',
+                        ),
                 ),
               ),
           ],
