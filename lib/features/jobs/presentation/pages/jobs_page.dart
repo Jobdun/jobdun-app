@@ -430,6 +430,13 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                                 activeFilter != null ||
                                 _searchCtrl.text.isNotEmpty,
                           ),
+                          // Only a guest reaching the end of their capped
+                          // preview sees the conversion nudge — a signed-in
+                          // user hitting the real end of the feed sees
+                          // nothing, same as before this feature existed.
+                          noMoreItemsIndicatorBuilder: isAuthed
+                              ? null
+                              : (_) => const _GuestSignInTeaser(),
                           firstPageErrorIndicatorBuilder: (_) => _PageError(
                             message:
                                 pagingController.error?.toString() ?? 'Error',

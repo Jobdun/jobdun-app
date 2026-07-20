@@ -191,7 +191,7 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   // a fixed teaser of real open jobs instead of the full marketplace feed —
   // sign-in unlocks everything else, this keeps the anon-readable surface
   // deliberately small. Never paginates past it.
-  static const _guestPageSize = 5;
+  static const _guestPageSize = 10;
 
   bool get _isGuest => !ref.read(authControllerProvider).isAuthenticated;
   int get _effectivePageSize => _isGuest ? _guestPageSize : _pageSize;

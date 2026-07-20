@@ -84,7 +84,7 @@ void main() {
     return container;
   }
 
-  test('guest feed caps at 5 jobs and never requests a second page', () async {
+  test('guest feed caps at 10 jobs and never requests a second page', () async {
     final container = buildContainer(authed: false);
     final notifier = container.read(jobsControllerProvider.notifier);
     final paging = notifier.pagingController;
@@ -92,14 +92,14 @@ void main() {
     paging.notifyPageRequestListeners(0);
     await pumpEventQueue();
 
-    expect(paging.itemList?.length, 5);
+    expect(paging.itemList?.length, 10);
     expect(paging.nextPageKey, isNull); // no further pages for a guest
 
-    // A guest scrolling shouldn't even reach page 2, but if the widget ever
-    // requests it, the controller must not serve more data.
+    // A guest scrolling shouldn't even reach page 2, but if the widget
+    // ever requests it, the controller must not serve more data.
     paging.notifyPageRequestListeners(1);
     await pumpEventQueue();
-    expect(paging.itemList?.length, 5);
+    expect(paging.itemList?.length, 10);
 
     final captured = verify(
       () => mockRepo.getJobs(
@@ -108,8 +108,8 @@ void main() {
         offset: captureAny(named: 'offset'),
       ),
     ).captured;
-    // First (and only) real fetch used limit 5.
-    expect(captured[1], 5);
+    // First (and only) real fetch used limit 10.
+    expect(captured[1], 10);
   });
 
   test('signed-in tradie keeps the normal 20-per-page feed', () async {
