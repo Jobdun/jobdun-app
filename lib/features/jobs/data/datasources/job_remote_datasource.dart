@@ -33,6 +33,14 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
       'status, published_at, created_at, updated_at, '
       'latitude, longitude, formatted_address, place_id';
 
+  // Guests read the anon-granted jobs_public_browse view (curated columns,
+  // rounded coords — App Review 5.1.1(v)); signed-in users read the base
+  // table under RLS. The view projects deleted_at as constant NULL so the
+  // shared `deleted_at=is.null` filter works against both. Public so the
+  // guest-path regression test can assert the switch.
+  String get readTable =>
+      _client.auth.currentSession == null ? 'jobs_public_browse' : 'jobs';
+
   @override
   Future<List<JobModel>> getJobs({
     JobFilter? filter,
@@ -41,7 +49,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   }) async {
     try {
       var query = _client
-          .from('jobs')
+          .from(readTable)
           .select(feedColumns)
           .isFilter('deleted_at', null);
 
@@ -110,7 +118,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   Future<JobModel> getJobById(String id) async {
     try {
       final data = await _client
-          .from('jobs')
+          .from(readTable)
           .select()
           .eq('id', id)
           .isFilter('deleted_at', null)
