@@ -23,12 +23,15 @@ class OnboardingAvatarStep extends StatelessWidget {
     required this.onGallery,
     required this.onSkip,
     required this.onFinish,
+    this.stepLabel = 'STEP 3 OF 3',
   });
 
   final File? pickedFile;
   final String name;
   final bool submitting;
-  final VoidCallback onBack;
+  // Null when this is the first step in the sheet's plan — no back arrow.
+  final VoidCallback? onBack;
+  final String stepLabel;
   final VoidCallback onCamera;
   final VoidCallback onGallery;
   final VoidCallback onSkip;
@@ -44,20 +47,22 @@ class OnboardingAvatarStep extends StatelessWidget {
       children: [
         Row(
           children: [
-            InkWell(
-              onTap: submitting ? null : onBack,
-              child: Padding(
-                padding: EdgeInsets.all(4.r),
-                child: Icon(
-                  AppIcons.back,
-                  size: AppIconSize.md.r,
-                  color: c.text2,
+            if (onBack != null) ...[
+              InkWell(
+                onTap: submitting ? null : onBack,
+                child: Padding(
+                  padding: EdgeInsets.all(4.r),
+                  child: Icon(
+                    AppIcons.back,
+                    size: AppIconSize.md.r,
+                    color: c.text2,
+                  ),
                 ),
               ),
-            ),
-            Gap(8.w),
+              Gap(8.w),
+            ],
             Text(
-              'STEP 3 OF 3',
+              stepLabel,
               style: tt.labelSmall!.copyWith(
                 color: c.text3,
                 letterSpacing: 1.6,

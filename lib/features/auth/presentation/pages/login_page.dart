@@ -16,6 +16,7 @@ import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_link_text.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/browse_jobs_link.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -87,6 +88,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // the redundant "I already have an account · LOG IN" link on slide 3 —
     // the user just came from there.
     context.go('/ftue?from=login');
+  }
+
+  // Guest browsing (App Review 5.1.1(v)) — the public job browser must be
+  // reachable from the auth wall without creating an account.
+  void _onBrowseJobs() {
+    context.go('/browse');
   }
 
   @override
@@ -260,6 +267,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 isLoading: isBusy,
                               ),
                             ],
+                          ),
+
+                          Gap(AppSpacing.md.h),
+
+                          BrowseJobsLink(
+                            key: const Key('login.browse_jobs_link'),
+                            onTap: _onBrowseJobs,
                           ),
 
                           const Spacer(),

@@ -120,6 +120,12 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     _exit(exitPath: 'login_link', route: '/login');
   }
 
+  // Guest browsing (App Review 5.1.1(v)) — straight to the public job
+  // browser, no account. Marks the FTUE complete like every other exit.
+  void _onBrowse() {
+    _exit(exitPath: 'guest_browse', route: '/browse');
+  }
+
   /// Shortcut for users who'd rather skip the role + email signup form and
   /// jump straight to Google SSO. The router redirect listens to auth state
   /// and routes to /home automatically on success; OnboardingCompletionSheet
@@ -173,6 +179,7 @@ class _FtuePageState extends ConsumerState<FtuePage> {
                     onWorking: () => _onCta('trade'),
                     onContinueWithGoogle: _onContinueWithGoogle,
                     onLoginLink: widget.fromLogin ? null : _onLoginLink,
+                    onBrowse: _onBrowse,
                   ),
                 ],
               ),

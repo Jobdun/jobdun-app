@@ -8,6 +8,7 @@ import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/job_feed_cache_datasource.dart';
 import '../../data/datasources/job_interactions_datasource.dart';
 import '../../data/datasources/job_remote_datasource.dart';
@@ -145,6 +146,17 @@ void invalidateBuilderJobAggregates(WidgetRef ref) {
   }
 }
 
+// Deep links and post-auth returns land on /jobs/:id with no JobDetailArgs
+// extra — fetch the job (guests read the public view under the hood) so the
+// same detail UI can render. One-shot per visit via autoDispose.
+final jobByIdProvider = FutureProvider.autoDispose.family<Job, String>((
+  ref,
+  id,
+) async {
+  final result = await ref.read(getJobByIdUseCaseProvider).call(id);
+  return result.fold((f) => throw StateError(f.message), (job) => job);
+});
+
 // ── Controller ────────────────────────────────────────────────────────────────
 final jobsControllerProvider = NotifierProvider<JobsController, JobsState>(
   JobsController.new,
@@ -175,6 +187,14 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   String? _builderScopeId;
 
   static const _pageSize = 20;
+  // Guests (App Review 5.1.1(v): browsing must work without an account) get
+  // a fixed teaser of real open jobs instead of the full marketplace feed —
+  // sign-in unlocks everything else, this keeps the anon-readable surface
+  // deliberately small. Never paginates past it.
+  static const _guestPageSize = 10;
+
+  bool get _isGuest => !ref.read(authControllerProvider).isAuthenticated;
+  int get _effectivePageSize => _isGuest ? _guestPageSize : _pageSize;
 
   PagingController<int, Job> get pagingController {
     final existing = _pagingController;
@@ -236,12 +256,20 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   }
 
   Future<void> _fetchPage(int pageKey) async {
+    final isGuest = _isGuest;
+    // A guest's single page IS the whole feed — never let a stray widget
+    // rebuild (or scroll-triggered prefetch) request page 2.
+    if (isGuest && pageKey > 0) {
+      _pagingController?.appendLastPage(const []);
+      return;
+    }
+    final pageSize = _effectivePageSize;
     final result = await ref
         .read(getJobsUseCaseProvider)
         .call(
           filter: _effectiveFilter(),
-          limit: _pageSize,
-          offset: pageKey * _pageSize,
+          limit: pageSize,
+          offset: pageKey * pageSize,
         );
     result.fold((f) => _pagingController?.error = f.message, (jobs) {
       final visible = state.hiddenJobIds.isEmpty
@@ -251,7 +279,7 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
       if (pageKey == 0) {
         state = state.copyWith(isLoading: false, jobs: visible);
       }
-      final isLast = jobs.length < _pageSize;
+      final isLast = isGuest || jobs.length < pageSize;
       if (isLast) {
         _pagingController?.appendLastPage(visible);
       } else {
@@ -269,7 +297,7 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
     state = state.copyWith(isLoading: true, error: null);
     final result = await ref
         .read(getJobsUseCaseProvider)
-        .call(filter: _effectiveFilter(), limit: _pageSize);
+        .call(filter: _effectiveFilter(), limit: _effectivePageSize);
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (jobs) {

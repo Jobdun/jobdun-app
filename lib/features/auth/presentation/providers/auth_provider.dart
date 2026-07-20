@@ -13,6 +13,7 @@ import '../../../../core/services/push_notifications.dart';
 import '../../data/services/email_auth_service.dart';
 import '../../data/services/account_deletion_service.dart';
 import '../../data/services/oauth_service.dart';
+import '../../data/services/sso_identity.dart';
 import '../../data/services/phone_auth_service.dart';
 import '../../data/services/role_resolver.dart';
 import '../../domain/entities/user_role.dart';
@@ -87,6 +88,10 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         infoMessage: null,
         clearPendingVerification: verified,
         clearRegisterDraft: verified,
+        ssoNameProvider: SsoIdentity.hasNameProvider(session.user.appMetadata),
+        metadataDisplayName: SsoIdentity.metadataDisplayName(
+          session.user.userMetadata,
+        ),
       );
       // Load role from JWT/DB after every session change — without this,
       // home would race-fire OnboardingCompletionSheet for users who already picked.
@@ -102,9 +107,12 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     // Session exists → user got past sign-in at some point. Hydrate role in
     // the background so home personalises correctly on cold start.
     Future.microtask(_loadRoleForCurrentUser);
+    final u = user ?? session!.user;
     return AuthState(
       isAuthenticated: true,
-      email: user?.email ?? session?.user.email,
+      email: u.email,
+      ssoNameProvider: SsoIdentity.hasNameProvider(u.appMetadata),
+      metadataDisplayName: SsoIdentity.metadataDisplayName(u.userMetadata),
     );
   }
 
@@ -406,13 +414,16 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
   /// Single atomic-from-the-user-view commit of the post-auth onboarding
   /// state — role + display_name. Used by [OnboardingCompletionSheet] for
   /// SSO and phone signups that arrive on /home with partial state.
+  /// [displayName] is null for SSO users we must not re-ask (G4) when no
+  /// name was captured — role-only completion; the profile nudge handles
+  /// the rest later.
   ///
   /// Avatar upload (if any) is a separate concern handled by
   /// ProfileController.uploadAvatar in the sheet — keeps the controller
   /// boundaries clean (auth owns identity, profile owns appearance).
   Future<bool> completeOnboarding({
     required UserRole role,
-    required String displayName,
+    String? displayName,
   }) async {
     if (!_ensureConfigured()) return false;
     final userId = SupabaseConfig.client.auth.currentUser?.id;

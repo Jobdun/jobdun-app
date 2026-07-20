@@ -489,6 +489,41 @@ COMMENT ON FUNCTION "public"."expire_stale_verifications"() IS 'Maintenance swee
 
 
 
+CREATE OR REPLACE FUNCTION "public"."forbid_identity_col_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Requests signed with the service-role key (admin Edge Functions / server jobs) bypass.
+  IF auth.role() = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_TABLE_NAME = 'messages' THEN
+    IF NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+       OR NEW.sender_id     IS DISTINCT FROM OLD.sender_id THEN
+      RAISE EXCEPTION 'messages.conversation_id and sender_id are immutable'
+        USING ERRCODE = '42501';
+    END IF;
+  ELSE
+    -- conversations, applications, bookings, quote_requests, timesheets
+    -- (all carry builder_id / trade_id / job_id).
+    IF NEW.builder_id IS DISTINCT FROM OLD.builder_id
+       OR NEW.trade_id IS DISTINCT FROM OLD.trade_id
+       OR NEW.job_id   IS DISTINCT FROM OLD.job_id THEN
+      RAISE EXCEPTION '%.builder_id / trade_id / job_id are immutable from the client', TG_TABLE_NAME
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."forbid_identity_col_change"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."forbid_role_mutation"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -847,6 +882,7 @@ CREATE OR REPLACE FUNCTION "public"."notifications_push_fanout"() RETURNS "trigg
 DECLARE
   v_category text;
   v_enabled  boolean;
+  v_token    text;
 BEGIN
   v_category := public.notification_category(NEW.type);
 
@@ -860,12 +896,21 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Read the shared secret; if Vault is unavailable, degrade to no-push (never break the insert).
+  BEGIN
+    SELECT decrypted_secret INTO v_token
+      FROM vault.decrypted_secrets WHERE name = 'push_internal_token';
+  EXCEPTION WHEN OTHERS THEN
+    v_token := NULL;
+  END;
+
   BEGIN
     PERFORM net.http_post(
       url := 'https://zethpanvkfyijislxesn.supabase.co/functions/v1/push-send',
       headers := jsonb_build_object(
         'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpldGhwYW52a2Z5aWppc2x4ZXNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MjYyMzUsImV4cCI6MjA5MzQwMjIzNX0.YvW3jHql3SfiwGo7y2y_AwewMa3igyz7nNTbhNC9s5E',
-        'Content-Type', 'application/json'
+        'Content-Type', 'application/json',
+        'x-internal-token', COALESCE(v_token, '')
       ),
       body := jsonb_build_object(
         'user_ids', jsonb_build_array(NEW.user_id),
@@ -1631,6 +1676,30 @@ $$;
 ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."sync_job_application_count"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF (TG_OP = 'INSERT') THEN
+    UPDATE public.jobs
+    SET application_count = application_count + 1
+    WHERE id = NEW.job_id;
+    RETURN NEW;
+  ELSIF (TG_OP = 'DELETE') THEN
+    UPDATE public.jobs
+    SET application_count = GREATEST(application_count - 1, 0)
+    WHERE id = OLD.job_id;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."sync_job_application_count"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."sync_phone_verified_at"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1994,6 +2063,45 @@ CREATE TABLE IF NOT EXISTS "public"."jobs" (
 
 
 ALTER TABLE "public"."jobs" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
+ SELECT "id",
+    "builder_id",
+    "title",
+    "description",
+    "suburb",
+    "state",
+    "postcode",
+    "trade_type_required",
+    "budget_amount",
+    "pricing_unit",
+    "pricing_type",
+    "urgency",
+    "requires_verified",
+    "requires_white_card",
+    "requires_public_liability",
+    "required_certifications",
+    "start_date",
+    "estimated_duration_days",
+    "duration_text",
+    "application_count",
+    "view_count",
+    "status",
+    "published_at",
+    "created_at",
+    "updated_at",
+    ("round"(("latitude")::numeric, 2))::double precision AS "latitude",
+    ("round"(("longitude")::numeric, 2))::double precision AS "longitude",
+    NULLIF("concat_ws"(', '::"text", NULLIF("suburb", ''::"text"), NULLIF("state", ''::"text")), ''::"text") AS "formatted_address",
+    NULL::"text" AS "place_id",
+    NULL::timestamp with time zone AS "deleted_at",
+    "search_vector"
+   FROM "public"."jobs" "j"
+  WHERE (("status" = ANY (ARRAY['open'::"public"."job_status", 'filled'::"public"."job_status"])) AND ("deleted_at" IS NULL));
+
+
+ALTER VIEW "public"."jobs_public_browse" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."legal_acceptances" (
@@ -2816,6 +2924,10 @@ CREATE INDEX "idx_builder_profiles_service_latlng" ON "public"."builder_profiles
 
 
 
+CREATE INDEX "idx_conversations_job_id" ON "public"."conversations" USING "btree" ("job_id");
+
+
+
 CREATE INDEX "idx_conversations_last_sender" ON "public"."conversations" USING "btree" ("last_message_sender_id");
 
 
@@ -2885,6 +2997,10 @@ CREATE INDEX "idx_vfe_user_id" ON "public"."verification_funnel_events" USING "b
 
 
 CREATE INDEX "jobs_builder_id_idx" ON "public"."jobs" USING "btree" ("builder_id");
+
+
+
+CREATE INDEX "jobs_feed_published_idx" ON "public"."jobs" USING "btree" ("published_at" DESC) WHERE (("deleted_at" IS NULL) AND ("status" = ANY (ARRAY['open'::"public"."job_status", 'filled'::"public"."job_status"])));
 
 
 
@@ -3112,7 +3228,35 @@ CREATE OR REPLACE TRIGGER "trg_forbid_role_mutation" BEFORE UPDATE ON "public"."
 
 
 
+CREATE OR REPLACE TRIGGER "trg_lock_identity_applications" BEFORE UPDATE ON "public"."applications" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lock_identity_bookings" BEFORE UPDATE ON "public"."bookings" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lock_identity_conversations" BEFORE UPDATE ON "public"."conversations" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lock_identity_messages" BEFORE UPDATE ON "public"."messages" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lock_identity_quote_requests" BEFORE UPDATE ON "public"."quote_requests" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lock_identity_timesheets" BEFORE UPDATE ON "public"."timesheets" FOR EACH ROW EXECUTE FUNCTION "public"."forbid_identity_col_change"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_log_role_event" AFTER INSERT OR UPDATE OF "role" ON "public"."user_roles" FOR EACH ROW EXECUTE FUNCTION "public"."log_role_event"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_sync_job_application_count" AFTER INSERT OR DELETE ON "public"."applications" FOR EACH ROW EXECUTE FUNCTION "public"."sync_job_application_count"();
 
 
 
@@ -4017,6 +4161,12 @@ GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."forbid_identity_col_change"() TO "anon";
+GRANT ALL ON FUNCTION "public"."forbid_identity_col_change"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."forbid_identity_col_change"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "anon";
 GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "service_role";
@@ -4182,7 +4332,6 @@ GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind
 
 
 
-GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "service_role";
 
@@ -4191,6 +4340,12 @@ GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng"
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "anon";
+GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "service_role";
 
 
 
@@ -4302,7 +4457,6 @@ GRANT INSERT("service_longitude"),UPDATE("service_longitude") ON TABLE "public".
 
 
 
-GRANT ALL ON TABLE "public"."builder_profiles_public" TO "anon";
 GRANT ALL ON TABLE "public"."builder_profiles_public" TO "authenticated";
 GRANT ALL ON TABLE "public"."builder_profiles_public" TO "service_role";
 
@@ -4335,6 +4489,12 @@ GRANT ALL ON TABLE "public"."hidden_jobs" TO "service_role";
 GRANT ALL ON TABLE "public"."jobs" TO "anon";
 GRANT ALL ON TABLE "public"."jobs" TO "authenticated";
 GRANT ALL ON TABLE "public"."jobs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."jobs_public_browse" TO "anon";
+GRANT ALL ON TABLE "public"."jobs_public_browse" TO "authenticated";
+GRANT ALL ON TABLE "public"."jobs_public_browse" TO "service_role";
 
 
 
@@ -4538,7 +4698,6 @@ GRANT ALL ON TABLE "public"."trade_categories" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."trade_profiles_public" TO "anon";
 GRANT ALL ON TABLE "public"."trade_profiles_public" TO "authenticated";
 GRANT ALL ON TABLE "public"."trade_profiles_public" TO "service_role";
 

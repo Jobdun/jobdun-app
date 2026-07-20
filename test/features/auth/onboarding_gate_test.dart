@@ -81,4 +81,67 @@ void main() {
       );
     });
   });
+
+  group('OnboardingGate.needsCompletion — SSO name providers (G4)', () {
+    // App Review Guideline 4: after Sign in with Apple (and Google, whose
+    // OIDC token always carries a name) the app must never require the name
+    // again — even when nothing was captured, completion is role-only.
+    test(
+      'apple user with role and no name anywhere does not need completion',
+      () {
+        expect(
+          OnboardingGate.needsCompletion(
+            hasProfile: true,
+            hasRole: true,
+            displayName: null,
+            metadataName: null,
+            ssoNameProvider: true,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('apple user without role still needs completion (role step only)', () {
+      expect(
+        OnboardingGate.needsCompletion(
+          hasProfile: true,
+          hasRole: false,
+          displayName: null,
+          metadataName: null,
+          ssoNameProvider: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'metadata name satisfies the name requirement for email/phone users',
+      () {
+        expect(
+          OnboardingGate.needsCompletion(
+            hasProfile: true,
+            hasRole: true,
+            displayName: null,
+            metadataName: 'Kel Tradie',
+            ssoNameProvider: false,
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('phone user with role but no name still needs completion', () {
+      expect(
+        OnboardingGate.needsCompletion(
+          hasProfile: true,
+          hasRole: true,
+          displayName: ' ',
+          metadataName: null,
+          ssoNameProvider: false,
+        ),
+        isTrue,
+      );
+    });
+  });
 }

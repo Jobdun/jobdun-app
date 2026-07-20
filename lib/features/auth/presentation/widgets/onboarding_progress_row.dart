@@ -3,20 +3,22 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/design/colors.dart';
 
-/// Three-dot progress indicator for [OnboardingCompletionSheet]. The active
+/// Dot progress indicator for [OnboardingCompletionSheet]. The active
 /// dot widens to a pill; the rest stay small. Extracted from the sheet to keep
-/// that file under the size budget.
+/// that file under the size budget. [total] tracks the sheet's dynamic step
+/// plan — SSO users may see fewer than three steps.
 class OnboardingProgressRow extends StatelessWidget {
-  const OnboardingProgressRow({super.key, required this.step});
+  const OnboardingProgressRow({super.key, required this.step, this.total = 3});
 
   final int step;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (i) {
+      children: List.generate(total, (i) {
         final active = i == step;
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: 4.w),

@@ -26,6 +26,10 @@ class AuthState {
     this.registerDraft,
     this.errorMessage,
     this.infoMessage,
+    // True when any linked identity (Apple/Google) supplied the user's name
+    // at auth time — the onboarding flow must never re-ask for it (G4).
+    this.ssoNameProvider = false,
+    this.metadataDisplayName,
   });
 
   final bool isAuthenticated;
@@ -38,6 +42,8 @@ class AuthState {
   final RegisterDraft? registerDraft;
   final String? errorMessage;
   final String? infoMessage;
+  final bool ssoNameProvider;
+  final String? metadataDisplayName;
 
   AuthState copyWith({
     bool? isAuthenticated,
@@ -50,6 +56,8 @@ class AuthState {
     RegisterDraft? registerDraft,
     String? errorMessage,
     String? infoMessage,
+    bool? ssoNameProvider,
+    String? metadataDisplayName,
     bool clearRole = false,
     bool clearPendingVerification = false,
     bool clearPhone = false,
@@ -72,6 +80,8 @@ class AuthState {
           : registerDraft ?? this.registerDraft,
       errorMessage: errorMessage,
       infoMessage: infoMessage,
+      ssoNameProvider: ssoNameProvider ?? this.ssoNameProvider,
+      metadataDisplayName: metadataDisplayName ?? this.metadataDisplayName,
     );
   }
 }

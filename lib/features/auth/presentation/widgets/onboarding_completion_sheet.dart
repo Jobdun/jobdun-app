@@ -16,23 +16,25 @@ import 'onboarding_avatar_step.dart';
 import 'onboarding_name_step.dart';
 import 'onboarding_progress_row.dart';
 import 'onboarding_role_step.dart';
+import 'onboarding_step_plan.dart';
 
-/// Single, non-dismissible sheet that finishes a signup. Replaces the older
-/// `RoleSelectionSheet`, which only captured the role. The three steps are:
+/// Single, non-dismissible sheet that finishes a signup. Steps are computed
+/// up front by [OnboardingStepPlan]:
 ///
-///   1. Role pick  — always shown when `auth.role == null`
-///   2. Confirm name — shown when display_name is null OR (for SSO/phone)
-///      always shown so users see what we captured and can edit it
-///   3. Optional avatar — shown when profiles.avatar_url is null; can SKIP
+///   • Role pick — when `auth.role == null`
+///   • Name — only for providers that never supply one (email/phone), and
+///     only when no name exists in the profile or auth metadata. Apple and
+///     Google users are never asked (App Review Guideline 4); a captured
+///     metadata name is persisted silently when the sheet finishes.
+///   • Avatar — always offered last; skippable.
 ///
-/// Pre-fill on step 2 + step 3 comes from `profileControllerProvider.profile`,
-/// which after Phase 1 carries the Google name + picture even for users who
-/// signed up before the trigger was fixed (the one-shot backfill caught
-/// existing rows).
+/// Pre-fill comes from `profileControllerProvider.profile`, falling back to
+/// `AuthState.metadataDisplayName` (the SSO capture path writes there before
+/// the profile row can be updated).
 ///
-/// Layout: PageView with progress dots. Back arrow on steps 2/3 to revise an
-/// earlier choice. Non-dismissible via PopScope until `_onFinish` resolves —
-/// matches the previous role sheet's lock.
+/// Layout: PageView with progress dots sized to the plan. The back arrow
+/// hides on a plan's first step. Non-dismissible via PopScope until
+/// `_onFinish` resolves — matches the previous role sheet's lock.
 class OnboardingCompletionSheet extends ConsumerStatefulWidget {
   const OnboardingCompletionSheet({super.key});
 
@@ -55,7 +57,8 @@ class _OnboardingCompletionSheetState
   final _pageController = PageController();
   final _nameController = TextEditingController();
 
-  int _step = 0; // 0 = role, 1 = name, 2 = avatar
+  int _step = 0; // index into _steps
+  late List<OnboardingStep> _steps;
   UserRole? _role;
   File? _pickedAvatar;
   bool _submitting = false;
@@ -69,31 +72,26 @@ class _OnboardingCompletionSheetState
     final auth = ref.read(authControllerProvider);
     final profile = ref.read(profileControllerProvider).profile;
     _role = auth.role;
-    // Pre-fill name from profile (which after Phase 1 reflects whatever the
-    // auth provider supplied). Falls back to the email-derived name only on
-    // step 2 render, not here, so the user sees an empty field when we
-    // really have nothing — clearer signal than "your @gmail.com" as a name.
-    final cachedName = profile?.displayName?.trim() ?? '';
-    if (cachedName.isNotEmpty) {
-      _nameController.text = cachedName;
+    // Effective name: profiles.display_name first, then whatever the auth
+    // provider left in user_metadata (the Apple/Google capture path writes
+    // there before the profile row can be updated). Decided once here so the
+    // step plan stays stable for the sheet's lifetime.
+    final profileName = profile?.displayName?.trim() ?? '';
+    final effectiveName = profileName.isNotEmpty
+        ? profileName
+        : (auth.metadataDisplayName ?? '').trim();
+    if (effectiveName.isNotEmpty) {
+      _nameController.text = effectiveName;
     }
-    // Skip ahead: if role + name are already populated, jump to avatar step.
-    // The sheet wouldn't normally open in that state (home page gate checks
-    // both) but a race or stale watch could send us here.
-    final hasRole = _role != null;
-    final hasName = cachedName.isNotEmpty;
-    if (hasRole && hasName) {
-      _step = 2;
-    } else if (hasRole) {
-      _step = 1;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _step > 0) _pageController.jumpToPage(_step);
-    });
-    AuthAnalytics.completionSheetOpened(startingStep: _step);
+    // G4: Apple/Google users never get a name step — role (if missing) then
+    // the skippable avatar. Email/phone keep the name step when unnamed.
+    _steps = OnboardingStepPlan.compute(
+      hasRole: _role != null,
+      effectiveName: effectiveName,
+      ssoNameProvider: auth.ssoNameProvider,
+    );
+    AuthAnalytics.completionSheetOpened(startingStep: _steps.first.index);
   }
-
-  static const _stepNames = ['role', 'name', 'avatar'];
 
   @override
   void dispose() {
@@ -102,12 +100,15 @@ class _OnboardingCompletionSheetState
     super.dispose();
   }
 
+  String _stepLabel(OnboardingStep s) =>
+      'STEP ${_steps.indexOf(s) + 1} OF ${_steps.length}';
+
   void _goToStep(int step) {
     final previousStep = _step;
     final msOnStep = DateTime.now().difference(_stepEnteredAt).inMilliseconds;
-    if (previousStep >= 0 && previousStep < _stepNames.length) {
+    if (previousStep >= 0 && previousStep < _steps.length) {
       AuthAnalytics.completionStep(
-        step: _stepNames[previousStep],
+        step: _steps[previousStep].name,
         skipped: false,
         msOnStep: msOnStep,
       );
@@ -128,7 +129,7 @@ class _OnboardingCompletionSheetState
     setState(() => _role = role);
     // Give a brief beat for the optimistic highlight before advancing.
     await Future.delayed(const Duration(milliseconds: 120));
-    if (mounted) _goToStep(1);
+    if (mounted) _goToStep(_step + 1);
   }
 
   Future<void> _pickAvatar(ImageSource source) async {
@@ -148,7 +149,13 @@ class _OnboardingCompletionSheetState
   Future<void> _onFinish({required bool skipAvatar}) async {
     final role = _role;
     final name = _nameController.text.trim();
-    if (role == null || name.isEmpty) {
+    if (role == null) {
+      setState(() => _errorMessage = "Pick how you'll use Jobdun to finish.");
+      return;
+    }
+    // Only a planned name step makes the name mandatory — SSO users finish
+    // with whatever was captured (possibly nothing; G4 forbids re-asking).
+    if (_steps.contains(OnboardingStep.name) && name.isEmpty) {
       setState(() => _errorMessage = 'Tell us your name to finish.');
       return;
     }
@@ -159,7 +166,7 @@ class _OnboardingCompletionSheetState
     final authNotifier = ref.read(authControllerProvider.notifier);
     final ok = await authNotifier.completeOnboarding(
       role: role,
-      displayName: name,
+      displayName: name.isEmpty ? null : name,
     );
     if (!ok || !mounted) {
       if (mounted) {
@@ -233,7 +240,7 @@ class _OnboardingCompletionSheetState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              OnboardingProgressRow(step: _step),
+              OnboardingProgressRow(step: _step, total: _steps.length),
               Gap(AppSpacing.lg.h),
               SizedBox(
                 height: 460.h,
@@ -241,35 +248,45 @@ class _OnboardingCompletionSheetState
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    OnboardingRoleStep(
-                      selected: _role,
-                      disabled: _submitting,
-                      onPick: _onPickRole,
-                    ),
-                    OnboardingNameStep(
-                      controller: _nameController,
-                      role: _role,
-                      onBack: () => _goToStep(0),
-                      onContinue: () {
-                        if (_nameController.text.trim().isEmpty) {
-                          setState(
-                            () => _errorMessage = 'Enter a name to continue.',
-                          );
-                          return;
-                        }
-                        _goToStep(2);
+                    for (final s in _steps)
+                      switch (s) {
+                        OnboardingStep.role => OnboardingRoleStep(
+                          selected: _role,
+                          disabled: _submitting,
+                          onPick: _onPickRole,
+                        ),
+                        OnboardingStep.name => OnboardingNameStep(
+                          controller: _nameController,
+                          role: _role,
+                          stepLabel: _stepLabel(s),
+                          onBack: _steps.first == s
+                              ? null
+                              : () => _goToStep(_step - 1),
+                          onContinue: () {
+                            if (_nameController.text.trim().isEmpty) {
+                              setState(
+                                () =>
+                                    _errorMessage = 'Enter a name to continue.',
+                              );
+                              return;
+                            }
+                            _goToStep(_step + 1);
+                          },
+                        ),
+                        OnboardingStep.avatar => OnboardingAvatarStep(
+                          pickedFile: _pickedAvatar,
+                          name: _nameController.text,
+                          submitting: _submitting,
+                          stepLabel: _stepLabel(s),
+                          onBack: _steps.first == s
+                              ? null
+                              : () => _goToStep(_step - 1),
+                          onCamera: () => _pickAvatar(ImageSource.camera),
+                          onGallery: () => _pickAvatar(ImageSource.gallery),
+                          onSkip: () => _onFinish(skipAvatar: true),
+                          onFinish: () => _onFinish(skipAvatar: false),
+                        ),
                       },
-                    ),
-                    OnboardingAvatarStep(
-                      pickedFile: _pickedAvatar,
-                      name: _nameController.text,
-                      submitting: _submitting,
-                      onBack: () => _goToStep(1),
-                      onCamera: () => _pickAvatar(ImageSource.camera),
-                      onGallery: () => _pickAvatar(ImageSource.gallery),
-                      onSkip: () => _onFinish(skipAvatar: true),
-                      onFinish: () => _onFinish(skipAvatar: false),
-                    ),
                   ],
                 ),
               ),

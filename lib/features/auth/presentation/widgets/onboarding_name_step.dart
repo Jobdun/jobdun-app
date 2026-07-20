@@ -17,12 +17,15 @@ class OnboardingNameStep extends StatelessWidget {
     required this.role,
     required this.onBack,
     required this.onContinue,
+    this.stepLabel = 'STEP 2 OF 3',
   });
 
   final TextEditingController controller;
   final UserRole? role;
-  final VoidCallback onBack;
+  // Null when this is the first step in the sheet's plan — no back arrow.
+  final VoidCallback? onBack;
   final VoidCallback onContinue;
+  final String stepLabel;
 
   String get _explanation => role == UserRole.builder
       ? 'Trades see this on your job posts and messages.'
@@ -37,20 +40,22 @@ class OnboardingNameStep extends StatelessWidget {
       children: [
         Row(
           children: [
-            InkWell(
-              onTap: onBack,
-              child: Padding(
-                padding: EdgeInsets.all(4.r),
-                child: Icon(
-                  AppIcons.back,
-                  size: AppIconSize.md.r,
-                  color: c.text2,
+            if (onBack != null) ...[
+              InkWell(
+                onTap: onBack,
+                child: Padding(
+                  padding: EdgeInsets.all(4.r),
+                  child: Icon(
+                    AppIcons.back,
+                    size: AppIconSize.md.r,
+                    color: c.text2,
+                  ),
                 ),
               ),
-            ),
-            Gap(8.w),
+              Gap(8.w),
+            ],
             Text(
-              'STEP 2 OF 3',
+              stepLabel,
               style: tt.labelSmall!.copyWith(
                 color: c.text3,
                 letterSpacing: 1.6,
