@@ -18,6 +18,7 @@ import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_gate_sheet.dart';
+import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../providers/jobs_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
@@ -78,6 +79,14 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     // account-based actions (apply, builder profile) open the sign-in gate.
     final isAuthed = ref.watch(
       authControllerProvider.select((s) => s.isAuthenticated),
+    );
+    // A brand-new SSO user can land straight back here from the guest gate
+    // (pendingReturn) without ever visiting /home — no role row yet, so an
+    // apply would fail RLS. Finish onboarding at the action point instead.
+    final needsOnboarding = ref.watch(
+      authControllerProvider.select(
+        (s) => s.isAuthenticated && s.isRoleLoaded && s.role == null,
+      ),
     );
 
     return Scaffold(
@@ -295,14 +304,17 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 primary: JButton(
                   label: AppStrings.respondToJob,
                   // Applying is account-based — guests get the sign-in gate
-                  // and return here after auth (App Review 5.1.1(v)).
-                  onPressed: isAuthed
-                      ? () => _showApplySheet(context, c, args)
-                      : () => GuestGateSheet.show(
+                  // and return here after auth (App Review 5.1.1(v)); a
+                  // signed-in user with no role yet finishes onboarding first.
+                  onPressed: !isAuthed
+                      ? () => GuestGateSheet.show(
                           context,
                           actionCaps: 'APPLY',
                           returnTo: args.id == null ? null : '/jobs/${args.id}',
-                        ),
+                        )
+                      : needsOnboarding
+                      ? () => OnboardingCompletionSheet.show(context)
+                      : () => _showApplySheet(context, c, args),
                 ),
               ),
           ],
