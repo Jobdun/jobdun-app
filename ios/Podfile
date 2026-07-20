@@ -42,6 +42,12 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Force dSYM generation for every pod target (Release/Profile). Without
+      # this, natively-compiled plugin frameworks — e.g. objective_c.framework,
+      # pulled in transitively by an FFI/ObjC-interop plugin — archive without
+      # a matching DWARF file, which App Store Connect rejects at upload:
+      # "The archive did not include a dSYM for objective_c.framework...".
+      config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
     end
   end
 end
