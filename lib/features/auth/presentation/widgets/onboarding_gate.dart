@@ -16,9 +16,17 @@ class OnboardingGate {
     required bool hasProfile,
     required bool hasRole,
     required String? displayName,
+    String? metadataName,
+    bool ssoNameProvider = false,
   }) {
     if (!hasProfile) return false;
-    final needsName = (displayName ?? '').trim().isEmpty;
+    final hasAnyName =
+        (displayName ?? '').trim().isNotEmpty ||
+        (metadataName ?? '').trim().isNotEmpty;
+    // Apple/Google supplied identity at auth time — never re-ask for a name
+    // (App Review Guideline 4 / Sign in with Apple HIG). Email/phone signups
+    // may still be prompted when no name was ever captured.
+    final needsName = !hasAnyName && !ssoNameProvider;
     return !hasRole || needsName;
   }
 }
