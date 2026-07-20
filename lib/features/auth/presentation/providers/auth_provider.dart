@@ -414,13 +414,16 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
   /// Single atomic-from-the-user-view commit of the post-auth onboarding
   /// state — role + display_name. Used by [OnboardingCompletionSheet] for
   /// SSO and phone signups that arrive on /home with partial state.
+  /// [displayName] is null for SSO users we must not re-ask (G4) when no
+  /// name was captured — role-only completion; the profile nudge handles
+  /// the rest later.
   ///
   /// Avatar upload (if any) is a separate concern handled by
   /// ProfileController.uploadAvatar in the sheet — keeps the controller
   /// boundaries clean (auth owns identity, profile owns appearance).
   Future<bool> completeOnboarding({
     required UserRole role,
-    required String displayName,
+    String? displayName,
   }) async {
     if (!_ensureConfigured()) return false;
     final userId = SupabaseConfig.client.auth.currentUser?.id;

@@ -44,10 +44,13 @@ void main() {
       );
     });
 
-    test('falls back to the singular provider key when providers is absent', () {
-      expect(SsoIdentity.hasNameProvider({'provider': 'apple'}), isTrue);
-      expect(SsoIdentity.hasNameProvider({'provider': 'phone'}), isFalse);
-    });
+    test(
+      'falls back to the singular provider key when providers is absent',
+      () {
+        expect(SsoIdentity.hasNameProvider({'provider': 'apple'}), isTrue);
+        expect(SsoIdentity.hasNameProvider({'provider': 'phone'}), isFalse);
+      },
+    );
 
     test('false on empty metadata', () {
       expect(SsoIdentity.hasNameProvider({}), isFalse);
@@ -66,8 +69,10 @@ void main() {
     });
 
     test('reads a plain string name', () {
-      expect(SsoIdentity.metadataDisplayName({'name': 'Kel Tradie'}),
-          'Kel Tradie');
+      expect(
+        SsoIdentity.metadataDisplayName({'name': 'Kel Tradie'}),
+        'Kel Tradie',
+      );
     });
 
     test('composes given_name + family_name', () {

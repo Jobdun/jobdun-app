@@ -153,11 +153,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       // After hydration the controller's role is updated if a DB row existed.
       final refreshed = ref.read(authControllerProvider);
       final profile = ref.read(profileControllerProvider).profile;
-      final needsName = (profile?.displayName ?? '').trim().isEmpty;
+      final needsName =
+          (profile?.displayName ?? '').trim().isEmpty &&
+          (refreshed.metadataDisplayName ?? '').trim().isEmpty &&
+          !refreshed.ssoNameProvider;
       final shouldShow = OnboardingGate.needsCompletion(
         hasProfile: profile != null,
         hasRole: refreshed.role != null,
         displayName: profile?.displayName,
+        metadataName: refreshed.metadataDisplayName,
+        ssoNameProvider: refreshed.ssoNameProvider,
       );
       if (!shouldShow) return;
       if (hadRowInDb && !needsName) return; // role hydrated + name present
