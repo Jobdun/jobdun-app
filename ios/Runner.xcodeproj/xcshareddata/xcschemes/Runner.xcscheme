@@ -97,5 +97,23 @@
    <ArchiveAction
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Fix missing objective_c.framework dSYM"
+               scriptText = "#!/bin/sh&#10;set -e&#10;# Dart&apos;s native-assets build (native_toolchain_c) compiles objective_c.framework&#10;# outside CocoaPods/Xcode, with no embedded debug info and no dSYM of its own &#10;# &#8212; App Store Connect rejects the archive at upload without one. dsymutil&#10;# can&apos;t recover real debug data from a stripped binary, but the resulting&#10;# stub dSYM still carries the matching UUID, which is what Apple&apos;s upload&#10;# validation actually checks for. Guarded + idempotent so a future Dart/Flutter&#10;# release that starts shipping a real dSYM here is never clobbered.&#10;FW=&quot;${ARCHIVE_PRODUCTS_PATH}/Applications/Runner.app/Frameworks/objective_c.framework/objective_c&quot;&#10;OUT=&quot;${ARCHIVE_DSYMS_PATH}/objective_c.framework.dSYM&quot;&#10;if [ -f &quot;$FW&quot; ] &amp;&amp; [ ! -d &quot;$OUT&quot; ]; then&#10;  mkdir -p &quot;${ARCHIVE_DSYMS_PATH}&quot;&#10;  dsymutil &quot;$FW&quot; -o &quot;$OUT&quot; || true&#10;fi&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "97C146ED1CF9000F007C117D"
+                     BuildableName = "Runner.app"
+                     BlueprintName = "Runner"
+                     ReferencedContainer = "container:Runner.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
    </ArchiveAction>
 </Scheme>
