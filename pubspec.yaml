@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # Build number 5 — App Store resubmission after the 2026-07-15 rejection of
 # 1.0 (4) (guest browsing 5.1.1(v) + Sign in with Apple G4 fixes).
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.11.5
