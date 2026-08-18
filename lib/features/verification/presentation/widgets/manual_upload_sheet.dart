@@ -141,12 +141,28 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     // F2: mirror the auto-path phone gate. Both edge functions refuse to mint
     // a verified row without a verified phone (the identity anchor); the manual
     // path must hold the same bar. Read the verified state off the profile
-    // controller (never Supabase from a widget) — it's already hydrated by the
-    // profile page that hosts every entry point into this sheet.
-    final phoneVerified = ref.read(
-      profileControllerProvider.select((s) => s.profile?.isPhoneVerified),
-    );
-    if (phoneVerified != true) {
+    // controller (never Supabase from a widget). An un-hydrated controller is
+    // NOT "not verified" — entry paths that skip Home/Profile (deep link,
+    // jobs-page nudge) used to falsely block phone-verified tradies here
+    // (live bug S1 #1, 2026-08-18 audit) — load before judging.
+    var profile = ref.read(profileControllerProvider.select((s) => s.profile));
+    if (profile == null) {
+      await ref.read(profileControllerProvider.notifier).loadProfile();
+      if (!mounted) return;
+      profile = ref.read(profileControllerProvider.select((s) => s.profile));
+    }
+    if (profile == null) {
+      // Load failed (offline / server) — say that, don't misdiagnose it as
+      // a missing phone verification.
+      setState(() {
+        _uploading = false;
+        _error =
+            "Couldn't confirm your details — check your connection and "
+            'try again.';
+      });
+      return;
+    }
+    if (!profile.isPhoneVerified) {
       _showPhoneRequired();
       return;
     }

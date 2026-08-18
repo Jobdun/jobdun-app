@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -219,9 +220,13 @@ class _VerificationWizardPageState
         // public liability, each with its own upload CTA. Builders keep the
         // ABN choose-then-verify intro (their ABR auto-path is live).
         if (role == UserRole.trade) {
-          return _TradeCredentialsStep(
-            userId: ref.read(currentUserIdSyncProvider) ?? '',
-          );
+          final userId = ref.read(currentUserIdSyncProvider);
+          if (userId == null) {
+            // Never query with '' — Postgres rejects the empty uuid and the
+            // raw parse error used to reach the UI (live bug S1 #3).
+            return const _SignedOutStep();
+          }
+          return _TradeCredentialsStep(userId: userId);
         }
         return WizardIntroStep(
           role: role,
@@ -363,6 +368,33 @@ class _TradeCredentialsStep extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Shown when the wizard is reached without a session (expired mid-
+/// navigation). Replaces the old empty-uuid query whose raw Postgres error
+/// ("invalid input syntax for type uuid") reached the UI (live bug S1 #3,
+/// 2026-08-18 audit).
+class _SignedOutStep extends StatelessWidget {
+  const _SignedOutStep();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('SESSION EXPIRED', style: tt.titleLarge),
+        Gap(8.h),
+        Text(
+          'Log in again to manage your credentials.',
+          style: tt.bodyMedium!.copyWith(color: c.text2),
+        ),
+        Gap(24.h),
+        JButton(label: 'LOG IN', onPressed: () => context.go('/login')),
+      ],
     );
   }
 }

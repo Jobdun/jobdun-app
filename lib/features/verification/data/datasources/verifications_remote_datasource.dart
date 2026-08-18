@@ -104,13 +104,43 @@ class VerificationsRemoteDataSourceImpl
       final response = await _client.functions.invoke(fn, body: body);
       final data = response.data;
       if (data is Map<String, dynamic>) return verifyResultFromJson(data);
-      throw ServerException('Edge function $fn returned unexpected payload');
+      throw const ServerException(_genericVerifyCopy);
+    } on ServerException {
+      rethrow;
     } on FunctionException catch (e) {
-      throw ServerException(
-        'Edge function $fn failed: ${e.details ?? e.reasonPhrase}',
-      );
-    } catch (e) {
-      throw ServerException(e.toString());
+      throw ServerException(_verifyErrorCopy(e));
+    } catch (_) {
+      // FormatException from an unexpected payload, network errors, anything
+      // else — the message on ServerException is rendered verbatim by the
+      // wizard steps, so it must always be human copy, never a raw body
+      // (live bug S1 #2, 2026-08-18 audit).
+      throw const ServerException(_genericVerifyCopy);
+    }
+  }
+
+  static const _genericVerifyCopy =
+      "The check didn't go through. Please try again in a moment.";
+
+  /// Human copy for edge-function failures. Status first (auth/rate-limit
+  /// have fixed meanings), then known error tokens, then generic — raw
+  /// response bodies, ISO timestamps and Postgres messages stay out of the UI.
+  static String _verifyErrorCopy(FunctionException e) {
+    if (e.status == 401) {
+      return 'Your session has expired — log in again, then retry the check.';
+    }
+    if (e.status == 429) {
+      return 'Too many attempts — wait a few minutes and try again.';
+    }
+    final details = e.details;
+    final token = details is Map ? details['error'] : null;
+    switch (token) {
+      case 'unauthenticated':
+        return 'Your session has expired — log in again, then retry the '
+            'check.';
+      case 'rate_limited':
+        return 'Too many attempts — wait a few minutes and try again.';
+      default:
+        return _genericVerifyCopy;
     }
   }
 }

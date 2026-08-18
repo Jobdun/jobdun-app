@@ -62,6 +62,9 @@ class ProfileController extends Notifier<ProfileState>
     with AccountScoped<ProfileState> {
   late ProfileRepository _repo;
 
+  /// Coalesces concurrent [loadProfile] calls onto one in-flight read.
+  Future<void>? _inflightLoad;
+
   @override
   ProfileState build() {
     _repo = ref.read(profileRepositoryProvider);
@@ -69,10 +72,23 @@ class ProfileController extends Notifier<ProfileState>
     // Clear state on logout or account switch to prevent stale data
     resetOnAccountChange((_) => state = const ProfileState());
 
+    // NOTE: this controller does NOT self-hydrate — Home/Profile load it on
+    // mount. Anything else that judges the user off this state (gates,
+    // banners) must treat `profile == null` as UNKNOWN, never as "not
+    // verified"/"empty", and call loadProfile() first if it needs truth
+    // (live bug S1 #1, 2026-08-18 audit: the manual-upload phone gate).
     return const ProfileState();
   }
 
-  Future<void> loadProfile() async {
+  Future<void> loadProfile() {
+    final inflight = _inflightLoad;
+    if (inflight != null) return inflight;
+    final load = _doLoadProfile().whenComplete(() => _inflightLoad = null);
+    _inflightLoad = load;
+    return load;
+  }
+
+  Future<void> _doLoadProfile() async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
 

@@ -80,11 +80,16 @@ class VerificationReceipts extends ConsumerWidget {
       error: (e, _) => JCard(
         title: 'WHAT\'S BEEN CHECKED',
         children: [
-          ReceiptRow(
+          const ReceiptRow(
             icon: AppIcons.closeCircle,
             label: 'Couldn\'t load verification status',
-            sub: '$e',
+            sub: 'Check your connection, then tap RETRY.',
             isVerified: false,
+          ),
+          TextButton(
+            onPressed: () =>
+                ref.invalidate(verificationsForUserProvider(userId)),
+            child: const Text('RETRY'),
           ),
         ],
       ),
