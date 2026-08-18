@@ -279,6 +279,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h + viewInsets),
         child: Column(
           mainAxisSize: MainAxisSize.min,

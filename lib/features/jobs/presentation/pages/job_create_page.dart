@@ -343,6 +343,8 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
 
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: EdgeInsets.fromLTRB(
                     20.w,
                     20.h,

@@ -93,6 +93,8 @@ class EditSheetScaffold extends StatelessWidget {
               ),
               Flexible(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 0),
                   child: body,
                 ),

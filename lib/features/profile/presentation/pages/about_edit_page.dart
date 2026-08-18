@@ -161,6 +161,10 @@ class _AboutEditPageState extends ConsumerState<AboutEditPage> {
                     if (!_dirty) setState(() => _dirty = true);
                   },
                   child: SingleChildScrollView(
+                    // S3: the field fills the whole view, so a scroll-drag is the
+                    // only reachable dismiss gesture on this screen.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h),
                     child: JTextField(
                       name: 'about',

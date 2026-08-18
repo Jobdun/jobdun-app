@@ -372,6 +372,8 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                         Expanded(
                           child: ListView.builder(
                             controller: _scrollCtrl,
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
                             padding: EdgeInsets.symmetric(
                               horizontal: AppSpacing.md.w,
                               vertical: AppSpacing.md.h,
