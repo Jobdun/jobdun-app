@@ -345,10 +345,16 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                               title: j.title,
                               description: j.description,
                               rate: j.displayBudget,
+                              // 'TBD' matches job_detail_args; the old
+                              // displayLocation fallback painted the suburb
+                              // under the Start label (K8). distanceKm null
+                              // hides the chip — there is no distance source
+                              // yet, and 0.0 rendered as a fabricated
+                              // 'Distance 0.0 km' on every card (K7).
                               startDate: j.startDate != null
                                   ? StringUtils.fmtDate(j.startDate!)
-                                  : j.displayLocation,
-                              distanceKm: 0.0,
+                                  : 'TBD',
+                              distanceKm: null,
                               isUrgent: j.urgency == JobUrgency.urgent,
                               onTap: () => context.push(
                                 '/jobs/${j.id}',

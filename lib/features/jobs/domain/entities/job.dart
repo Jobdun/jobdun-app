@@ -190,7 +190,13 @@ class Job extends Equatable {
     return '\$${budgetAmount!.toStringAsFixed(0)}${pricingUnit.suffix}';
   }
 
-  String get displayLocation => '$suburb, $state';
+  /// Null/blank-tolerant join — region-level autocomplete picks and legacy
+  /// rows can leave either part empty; never render 'Australia,' (K8,
+  /// 2026-08-18 audit). Mirrors trade_profile/builder_profile.
+  String get displayLocation {
+    final parts = [suburb, state].where((p) => p.trim().isNotEmpty).toList();
+    return parts.isEmpty ? 'Location TBC' : parts.join(', ');
+  }
 
   bool get hasLocation => latitude != null && longitude != null;
 

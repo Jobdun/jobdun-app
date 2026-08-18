@@ -166,7 +166,7 @@ class _SavedJobsList extends StatelessWidget {
             rate: j.displayBudget,
             startDate: j.startDate != null
                 ? StringUtils.fmtDate(j.startDate!)
-                : j.displayLocation,
+                : 'TBD',
             distanceKm: null,
             isUrgent: j.urgency == JobUrgency.urgent,
             onTap: () =>

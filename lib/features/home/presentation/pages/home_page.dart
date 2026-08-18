@@ -360,7 +360,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         rate: j.displayBudget,
                         startDate: j.startDate != null
                             ? _fmtDate(j.startDate!)
-                            : j.displayLocation,
+                            : 'TBD',
                         distanceKm: null,
                         isUrgent: j.urgency == JobUrgency.urgent,
                         onTap: () => context.push(

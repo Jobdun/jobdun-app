@@ -171,6 +171,14 @@ class MapTilerPlacesService implements PlacesService {
     if (placeName == null || placeName.isEmpty) return null;
     if (mainText == null || mainText.isEmpty) return null;
 
+    // Country/state-level features are not job locations. Accepting them
+    // persisted suburb: 'Australia', state: '' to jobs.state and rendered
+    // 'Australia,' on cards (K8 #3, 2026-08-18 audit).
+    final layer = placeId.split('.').first;
+    if (layer == 'country' || layer == 'region' || layer == 'state') {
+      return null;
+    }
+
     // Context → AU-specific components. MapTiler's `context` is a list of
     // {id, text, ...} entries; the `id` prefix tells us the layer
     // (postcode., region., country.).
@@ -192,6 +200,10 @@ class MapTilerPlacesService implements PlacesService {
 
     final state = _normaliseAuState(region);
     final suburb = _titleCase(mainText);
+
+    // A real AU suburb always resolves a state or a postcode; a pick with
+    // neither would store an unlocatable job row.
+    if (state.isEmpty && postcode.isEmpty) return null;
 
     return JPlaceResult(
       placeId: placeId,
