@@ -107,14 +107,20 @@ class ProfileController extends Notifier<ProfileState>
       (profile) => state = state.copyWith(profile: profile),
     );
 
+    // A missing row is Right(null); Left is a real failure (network, RLS)
+    // that must land in state.error — swallowing it rendered a failed load
+    // as a pristine empty profile (K9/P6, 2026-08-18 audit).
     final builderResult = await _repo.getBuilderProfile(userId);
     builderResult.fold(
-      (_) {},
+      (f) => state = state.copyWith(error: f.message),
       (bp) => state = state.copyWith(builderProfile: bp),
     );
 
     final tradeResult = await _repo.getTradeProfile(userId);
-    tradeResult.fold((_) {}, (tp) => state = state.copyWith(tradeProfile: tp));
+    tradeResult.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (tp) => state = state.copyWith(tradeProfile: tp),
+    );
 
     state = state.copyWith(isLoading: false);
   }
@@ -343,7 +349,13 @@ class ProfileState {
   //   builder → company_name · abn · service_suburb · phone_verified  (×25)
   //   trade   → primary_trade · licence_url · base_suburb ·
   //             phone_verified · portfolio (≥1 image)                (×20)
-  int get profileCompletenessPct {
+  int get profileCompletenessPct => completenessPct();
+
+  /// [hasVerifiedLicence] lets callers OR in the wizard/regulator truth from
+  /// `public.verifications` — the wizard never writes `licence_url`, so a
+  /// regulator-verified tradie scored 0 licence points forever off this
+  /// state alone (K9, 2026-08-18 audit).
+  int completenessPct({bool hasVerifiedLicence = false}) {
     if (profile == null) return 0;
     final phoneVerified = profile!.isPhoneVerified;
 
@@ -361,7 +373,7 @@ class ProfileState {
       final tp = tradeProfile!;
       final done =
           (tp.primaryTrade.isNotEmpty ? 1 : 0) +
-          (tp.hasLicence ? 1 : 0) +
+          ((tp.hasLicence || hasVerifiedLicence) ? 1 : 0) +
           ((tp.baseSuburb != null && tp.baseSuburb!.isNotEmpty) ? 1 : 0) +
           (phoneVerified ? 1 : 0) +
           (tp.portfolioCount > 0 ? 1 : 0);

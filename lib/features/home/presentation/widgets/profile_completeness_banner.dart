@@ -10,6 +10,7 @@ import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/profile_analytics.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../verification/presentation/providers/verifications_provider.dart';
 
 // Per-session dismiss — banner hides for the rest of the run after dismiss
 // and re-appears on next cold start. Riverpod-scoped so the home screen and
@@ -53,11 +54,28 @@ class ProfileCompletenessBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final pct = ref.watch(
-      profileControllerProvider.select((s) => s.profileCompletenessPct),
+    // Wizard/regulator licence lives in public.verifications, which the
+    // profile state can't see (K9) — OR it into the score.
+    final wizardLicence = ref.watch(myWizardLicenceVerifiedProvider) ?? false;
+    final snap = ref.watch(
+      profileControllerProvider.select(
+        (s) => (
+          pct: s.completenessPct(hasVerifiedLicence: wizardLicence),
+          isLoading: s.isLoading,
+          hasProfile: s.profile != null,
+          error: s.error,
+        ),
+      ),
     );
     final dismissed = ref.watch(_completenessBannerDismissedProvider);
 
+    // Loading and failed loads are UNKNOWN — rendering them as "0%" (and
+    // firing a false banner_shown event) told complete users their profile
+    // was empty (K9, 2026-08-18 audit).
+    if (snap.isLoading || snap.error != null || !snap.hasProfile) {
+      return const SizedBox.shrink();
+    }
+    final pct = snap.pct;
     if (pct >= 100 || dismissed) return const SizedBox.shrink();
 
     // Fire profile.banner_shown once per (pct, mounted) cycle. Guard against

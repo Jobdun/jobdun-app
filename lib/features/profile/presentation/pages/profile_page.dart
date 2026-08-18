@@ -82,7 +82,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             phoneVerified: phoneVerified,
           )
         : topTradeGap(
-            hasLicence: tp?.hasLicence ?? false,
+            // OR in the wizard/regulator truth — licence_url alone misses
+            // regulator-verified tradies (K9, 2026-08-18 audit).
+            hasLicence:
+                (tp?.hasLicence ?? false) ||
+                (ref.watch(myWizardLicenceVerifiedProvider) ?? false),
             hasPortfolio: (tp?.portfolioCount ?? 0) > 0,
             hasSuburb: tp?.baseSuburb?.isNotEmpty ?? false,
             hasTrade: tp?.primaryTrade.isNotEmpty ?? false,

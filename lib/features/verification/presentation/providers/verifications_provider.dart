@@ -56,6 +56,17 @@ final verificationsForUserProvider =
     });
 
 // Convenience: the current user's own verifications.
+/// True when the signed-in user holds a currently-verified licence row in
+/// `public.verifications` (the wizard/regulator path). Null while the rows
+/// are still loading or failed — callers must treat null as UNKNOWN, never
+/// as "no licence" (K9, 2026-08-18 audit). The legacy manual-upload path
+/// writes `trade_profiles.licence_url` instead; surfaces should OR the two.
+final myWizardLicenceVerifiedProvider = Provider<bool?>((ref) {
+  final rows = ref.watch(myVerificationsProvider).asData?.value;
+  if (rows == null) return null;
+  return rows.any((v) => v.isVerified && v.kind == VerificationKind.licence);
+});
+
 final myVerificationsProvider = Provider<AsyncValue<List<Verification>>>((ref) {
   final userId = ref.watch(currentUserIdSyncProvider);
   if (userId == null) return const AsyncData(<Verification>[]);
