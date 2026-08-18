@@ -349,6 +349,7 @@ ALTER FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text
 
 CREATE OR REPLACE FUNCTION "public"."applications_protect_quote"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   IF NEW.quote_amount IS DISTINCT FROM OLD.quote_amount
@@ -365,6 +366,7 @@ ALTER FUNCTION "public"."applications_protect_quote"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."bookings_touch_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -549,6 +551,7 @@ ALTER FUNCTION "public"."forbid_role_mutation"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."forbid_self_admin"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   IF NEW.role = 'admin' THEN
@@ -857,6 +860,7 @@ ALTER FUNCTION "public"."log_role_event"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."notification_category"("p_type" "text") RETURNS "text"
     LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public'
     AS $$
   SELECT CASE
     WHEN p_type = 'new_job'                 THEN 'jobs'
@@ -1298,6 +1302,7 @@ COMMENT ON FUNCTION "public"."notify_trades_on_new_job"() IS '#8 in-app fan-out:
 
 CREATE OR REPLACE FUNCTION "public"."quote_requests_touch_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -1665,6 +1670,7 @@ ALTER FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double
 
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -1805,6 +1811,7 @@ COMMENT ON FUNCTION "public"."sync_trade_is_verified"() IS 'Trigger fn — mirro
 
 CREATE OR REPLACE FUNCTION "public"."update_conversation_last_message"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   UPDATE public.conversations c
@@ -1966,6 +1973,35 @@ ALTER TABLE "public"."builder_unverified_acknowledgements" OWNER TO "postgres";
 
 
 COMMENT ON TABLE "public"."builder_unverified_acknowledgements" IS 'One-time consent that the builder understands the risk of including unverified workers in their applicant filter. Immutable record per builder.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."contact_enquiries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "name" "text" NOT NULL,
+    "email" "text" NOT NULL,
+    "phone" "text",
+    "role" "text",
+    "state" "text",
+    "message" "text" NOT NULL,
+    "user_agent" "text",
+    "ip_hash" "text",
+    CONSTRAINT "contact_enquiries_email_check" CHECK ((("char_length"("email") >= 3) AND ("char_length"("email") <= 320))),
+    CONSTRAINT "contact_enquiries_ip_hash_check" CHECK ((("ip_hash" IS NULL) OR ("char_length"("ip_hash") <= 64))),
+    CONSTRAINT "contact_enquiries_message_check" CHECK ((("char_length"("message") >= 1) AND ("char_length"("message") <= 5000))),
+    CONSTRAINT "contact_enquiries_name_check" CHECK ((("char_length"("name") >= 1) AND ("char_length"("name") <= 200))),
+    CONSTRAINT "contact_enquiries_phone_check" CHECK ((("phone" IS NULL) OR ("char_length"("phone") <= 40))),
+    CONSTRAINT "contact_enquiries_role_check" CHECK ((("role" IS NULL) OR ("char_length"("role") <= 40))),
+    CONSTRAINT "contact_enquiries_state_check" CHECK ((("state" IS NULL) OR ("char_length"("state") <= 10))),
+    CONSTRAINT "contact_enquiries_user_agent_check" CHECK ((("user_agent" IS NULL) OR ("char_length"("user_agent") <= 512)))
+);
+
+
+ALTER TABLE "public"."contact_enquiries" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."contact_enquiries" IS 'Marketing-site contact form submissions. Service-role only (contact-send edge function).';
 
 
 
@@ -2674,6 +2710,11 @@ ALTER TABLE ONLY "public"."builder_profiles"
 
 ALTER TABLE ONLY "public"."builder_unverified_acknowledgements"
     ADD CONSTRAINT "builder_unverified_acknowledgements_pkey" PRIMARY KEY ("builder_id");
+
+
+
+ALTER TABLE ONLY "public"."contact_enquiries"
+    ADD CONSTRAINT "contact_enquiries_pkey" PRIMARY KEY ("id");
 
 
 
@@ -3683,6 +3724,9 @@ CREATE POLICY "builder_profiles_update_own" ON "public"."builder_profiles" FOR U
 ALTER TABLE "public"."builder_unverified_acknowledgements" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."contact_enquiries" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 
 
@@ -4092,34 +4136,30 @@ GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
 
 
 REVOKE ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "service_role";
 
@@ -4137,8 +4177,7 @@ GRANT ALL ON FUNCTION "public"."bookings_touch_updated_at"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "anon";
-GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "service_role";
 
 
@@ -4155,8 +4194,7 @@ GRANT ALL ON FUNCTION "public"."delete_my_account"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "anon";
-GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."expire_stale_verifications"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "service_role";
 
 
@@ -4167,8 +4205,7 @@ GRANT ALL ON FUNCTION "public"."forbid_identity_col_change"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "anon";
-GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."forbid_role_mutation"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "service_role";
 
 
@@ -4185,14 +4222,13 @@ GRANT ALL ON FUNCTION "public"."get_builder_public_verification"("p_user_id" "uu
 
 
 
-GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "service_role";
 
@@ -4204,9 +4240,9 @@ GRANT ALL ON FUNCTION "public"."get_trade_public_credentials"("p_user_id" "uuid"
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "supabase_auth_admin";
 
 
 
@@ -4216,14 +4252,13 @@ GRANT ALL ON FUNCTION "public"."is_builder_abn_verified"("p_uid" "uuid") TO "ser
 
 
 
-GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."log_role_event"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_role_event"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_role_event"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_role_event"() TO "service_role";
 
 
@@ -4234,57 +4269,47 @@ GRANT ALL ON FUNCTION "public"."notification_category"("p_type" "text") TO "serv
 
 
 
-GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notifications_push_fanout"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_builder_on_new_application"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_builder_on_quote_response"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_on_new_message"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_on_new_review"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trade_on_application_status"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trade_on_quote_request"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trades_on_new_job"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "service_role";
 
 
@@ -4295,38 +4320,34 @@ GRANT ALL ON FUNCTION "public"."quote_requests_touch_updated_at"() TO "service_r
 
 
 
-GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "anon";
-GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."reviews_sync_trade_rating"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "service_role";
 
@@ -4343,20 +4364,18 @@ GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_job_application_count"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_phone_verified_at"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "supabase_auth_admin";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_trade_is_verified"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "service_role";
 
 
@@ -4465,6 +4484,10 @@ GRANT ALL ON TABLE "public"."builder_profiles_public" TO "service_role";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "anon";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "authenticated";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."contact_enquiries" TO "service_role";
 
 
 
