@@ -219,6 +219,13 @@ class _OnboardingCompletionSheetState
     Navigator.of(context).pop();
   }
 
+  Future<void> _logOut() async {
+    await ref.read(authControllerProvider.notifier).signOut();
+    // Auth reset drives the router to /login; the modal route itself still
+    // needs the imperative pop (PopScope only guards user-initiated pops).
+    if (mounted) Navigator.of(context).pop();
+  }
+
   /// Best-effort attribution of which provider got the user this far. The
   /// signupStarted event on /login carries the provider explicitly; we
   /// recover it here from auth.users.app_metadata.provider so the funnel
@@ -315,6 +322,32 @@ class _OnboardingCompletionSheetState
                   textAlign: TextAlign.center,
                 ),
               ],
+
+              // Escape hatch (P1 #2, 2026-08-18 audit): the sheet is
+              // deliberately undismissable — role is required — but an
+              // offline failure or a wrong-account sign-in still needs a
+              // way out that isn't force-killing the app.
+              Gap(AppSpacing.sm.h),
+              Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _submitting ? null : _logOut,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    child: Text(
+                      'Log out',
+                      style: tt.bodySmall!.copyWith(
+                        color: c.text3,
+                        decoration: TextDecoration.underline,
+                        decorationColor: c.text3,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

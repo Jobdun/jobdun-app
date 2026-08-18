@@ -60,6 +60,14 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     context.go('/register');
   }
 
+  void _backToLogin() {
+    // Escape hatch (P1 #3, 2026-08-18 audit): the router pins users here
+    // while pendingVerificationEmail is set — with an inaccessible inbox the
+    // page was a trap with no path back to login.
+    ref.read(authControllerProvider.notifier).clearPendingVerification();
+    context.go('/login');
+  }
+
   void _startCooldown() {
     _cooldownTimer?.cancel();
     setState(() => _cooldownSeconds = 60);
@@ -255,6 +263,30 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              Gap(4.h),
+
+              // ── Escape hatch — never trap a user with a dead inbox here ──
+              Center(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: isLoading ? null : _backToLogin,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
+                    child: Text(
+                      'Back to log in',
+                      style: tt.bodySmall!.copyWith(
+                        color: c.text3,
+                        decoration: TextDecoration.underline,
+                        decorationColor: c.text3,
                       ),
                     ),
                   ),
