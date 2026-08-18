@@ -43,7 +43,9 @@ class HomeStatusBar extends ConsumerWidget {
         if (isTrade)
           _AvailabilityPill(
             available: available ?? true,
-            onTap: () => context.go('/schedule'),
+            // push (not go): the availability calendar has its own back
+            // button; go left it stackless (K11, 2026-08-18 audit).
+            onTap: () => context.push('/settings/availability'),
           )
         else
           Text(

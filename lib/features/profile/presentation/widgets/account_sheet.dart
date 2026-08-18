@@ -103,13 +103,10 @@ class _AccountSheetBody extends ConsumerWidget {
                   _AccountRow(
                     icon: AppIcons.calendar,
                     label: 'Availability schedule',
-                    // go (not push): /schedule is the Schedule TAB — switching the
-                    // branch keeps the dock visible; a push would render it
-                    // dockless with no back affordance.
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      context.go('/schedule');
-                    },
+                    // The old '/schedule' shell branch rendered the calendar
+                    // dockless with no highlighted tab (K11, 2026-08-18
+                    // audit); the settings route has a real back button.
+                    onTap: () => go('/settings/availability'),
                   ),
                 _AccountRow(
                   icon: AppIcons.settings,

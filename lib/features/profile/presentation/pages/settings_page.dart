@@ -12,6 +12,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_switch.dart';
 import '../../../../core/design/widgets/page_header.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
 import '../../../auth/presentation/widgets/delete_account_sheet.dart';
 import '../providers/profile_provider.dart';
@@ -23,6 +24,24 @@ import '../providers/profile_provider.dart';
 /// in the profile header; full-screen with its own back button, no bottom nav.
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
+
+  /// Change password = the shipped reset-email flow (2026-07-31) pointed at
+  /// the signed-in address. Replaces a dead row (K11, 2026-08-18 audit).
+  Future<void> _sendPasswordReset(BuildContext context, WidgetRef ref) async {
+    final email = ref.read(authControllerProvider.select((s) => s.email));
+    final messenger = ScaffoldMessenger.of(context);
+    if (email == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Couldn't find your account email.")),
+      );
+      return;
+    }
+    await ref.read(authControllerProvider.notifier).sendPasswordReset(email);
+    final error = ref.read(authControllerProvider).errorMessage;
+    messenger.showSnackBar(
+      SnackBar(content: Text(error ?? 'Password reset link sent to $email.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -80,10 +99,14 @@ class SettingsPage extends ConsumerWidget {
                     JCard(
                       title: 'ACCOUNT',
                       children: [
-                        _ActionRow(icon: AppIcons.email, label: 'Change email'),
+                        // (K11, 2026-08-18 audit) 'Change email' and 'Privacy
+                        // settings' rows are gone — they drew chevrons with
+                        // no handler. Change password reuses the shipped
+                        // reset-email flow.
                         _ActionRow(
                           icon: AppIcons.lock,
                           label: 'Change password',
+                          onTap: () => _sendPasswordReset(context, ref),
                         ),
                         _ActionRow(
                           icon: AppIcons.notification,
@@ -93,7 +116,10 @@ class SettingsPage extends ConsumerWidget {
                         _ActionRow(
                           icon: AppIcons.calendar,
                           label: 'Schedule',
-                          onTap: () => context.go('/schedule'),
+                          // push (not go): SchedulePage pops back here. The
+                          // old go() left it stackless AND the duplicate
+                          // shell route shadowed the real bookings page.
+                          onTap: () => context.push('/schedule'),
                         ),
                         if (ref.watch(
                           profileControllerProvider.select(
@@ -111,10 +137,6 @@ class SettingsPage extends ConsumerWidget {
                             onTap: () => context.push('/quotes'),
                           ),
                         ],
-                        _ActionRow(
-                          icon: AppIcons.policy,
-                          label: 'Privacy settings',
-                        ),
                       ],
                     ),
                     Gap(12.h),
@@ -204,11 +226,17 @@ class SettingsPage extends ConsumerWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.icon, required this.label, this.onTap});
+  // onTap is required: the old `onTap ?? () {}` default let rows ship with a
+  // chevron and no behavior (K11, 2026-08-18 audit).
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +245,7 @@ class _ActionRow extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap ?? () {},
+      onTap: onTap,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: AppSpacing.md.w,

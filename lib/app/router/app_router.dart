@@ -375,18 +375,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // Tab 4 — Schedule (trade only; builders get a 4-tab bar and this
-          // branch is simply never navigated to). Option A nav: the Profile
-          // tab is gone — account access moved to the avatar → account sheet.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/schedule',
-                builder: (_, _) =>
-                    const AvailabilityCalendarPage(showBack: false),
-              ),
-            ],
-          ),
+          // (K11, 2026-08-18 audit) The old Tab-4 '/schedule' branch is gone:
+          // it duplicated the top-level route below, shadowed the real
+          // SchedulePage (bookings), and rendered dockless-highlight chrome.
+          // Availability lives at /settings/availability; bookings at
+          // /schedule.
         ],
       ),
 
