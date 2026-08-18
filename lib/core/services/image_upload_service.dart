@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -97,23 +98,36 @@ class ImageUploadService {
     int minOutputWidth = 1080,
     int compressQuality = 80,
   }) async {
-    // 1. Pick
+    // 1. Pick. Camera-sourced picks are the ones that actually throw —
+    // permission denials, no camera on the device, a second picker opened
+    // mid-flight. Convert them all into the same typed exception the
+    // guard-rails use so call sites surface real copy instead of silently
+    // discarding the failure (live bug S6, 2026-08-18).
     final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: maxPickerSize,
-      maxHeight: maxPickerSize,
-    );
+    final XFile? picked;
+    try {
+      picked = await picker.pickImage(
+        source: source,
+        maxWidth: maxPickerSize,
+        maxHeight: maxPickerSize,
+      );
+    } on PlatformException catch (e) {
+      throw UploadGuardException(pickErrorCopy(e, source));
+    }
     if (picked == null) return null;
 
     // 1a. Guard-rails — extension allowlist + max size. Surfaces a typed
     // exception so the snackbar copy at the call site is friendly. We check
     // size against the raw picker output (pre-compress) so a 50 MB camera
     // RAW doesn't waste cycles in the cropper before failing.
-    final ext = picked.name.split('.').last.toLowerCase();
+    final name = picked.name;
+    final dot = name.lastIndexOf('.');
+    final ext = dot == -1 ? '' : name.substring(dot + 1).toLowerCase();
     if (!allowedExtensions.contains(ext)) {
       throw UploadGuardException(
-        "Photos must be JPG, PNG, WebP, or HEIC. We can't accept .$ext.",
+        ext.isEmpty
+            ? 'Photos must be JPG, PNG, WebP, or HEIC.'
+            : "Photos must be JPG, PNG, WebP, or HEIC. We can't accept .$ext.",
       );
     }
     final size = await picked.length();
@@ -131,7 +145,14 @@ class ImageUploadService {
     // like a real messenger, and there's nothing to frame for a site photo.
     final String sourceForCompress;
     if (crop) {
-      final cropped = await _runCropper(picked.path, aspect);
+      final CroppedFile? cropped;
+      try {
+        cropped = await _runCropper(picked.path, aspect);
+      } on PlatformException {
+        throw const UploadGuardException(
+          "Couldn't open the photo editor. Please try again.",
+        );
+      }
       if (cropped == null) return null;
       sourceForCompress = cropped.path;
     } else {
@@ -141,19 +162,49 @@ class ImageUploadService {
     // 3. Compress to JPEG. Write next to the source temp file (image_picker /
     // image_cropper both drop their output in the OS temp dir) so we avoid a
     // path_provider dependency just for getTemporaryDirectory.
-    final outPath = '${sourceForCompress}_c.jpg';
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      sourceForCompress,
-      outPath,
-      quality: compressQuality,
-      minWidth: minOutputWidth,
-      format: CompressFormat.jpeg,
-    );
     // If compression fails for any reason (rare — usually unsupported
     // source format) fall back to the source file so the upload still
     // succeeds rather than silently dropping the user's pick.
-    if (compressed == null) return File(sourceForCompress);
-    return File(compressed.path);
+    final outPath = '${sourceForCompress}_c.jpg';
+    final File? compressed;
+    try {
+      final out = await FlutterImageCompress.compressAndGetFile(
+        sourceForCompress,
+        outPath,
+        quality: compressQuality,
+        minWidth: minOutputWidth,
+        format: CompressFormat.jpeg,
+      );
+      compressed = out == null ? null : File(out.path);
+    } on Exception {
+      return File(sourceForCompress);
+    }
+    return compressed ?? File(sourceForCompress);
+  }
+
+  /// Human copy for the [PlatformException]s `image_picker` actually throws.
+  /// Camera permission/hardware failures are the S6 live-bug class; the
+  /// fallthrough keeps any unknown code from ever reaching the UI raw.
+  @visibleForTesting
+  static String pickErrorCopy(PlatformException e, ImageSource source) {
+    switch (e.code) {
+      case 'camera_access_denied':
+        return 'Camera access is off for Jobdun. Turn it on in your phone '
+            'Settings, then try again — or choose from your gallery.';
+      case 'photo_access_denied':
+      case 'photo_access_restricted':
+        return 'Photo access is off for Jobdun. Turn it on in your phone '
+            'Settings, then try again.';
+      case 'no_available_camera':
+        return 'No camera available on this device — choose a photo from '
+            'your gallery instead.';
+      case 'already_active':
+        return 'A photo picker is already open. Close it and try again.';
+      default:
+        return source == ImageSource.camera
+            ? "Couldn't open the camera. Please try again."
+            : "Couldn't open your photos. Please try again.";
+    }
   }
 
   static Future<CroppedFile?> _runCropper(

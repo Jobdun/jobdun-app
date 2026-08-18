@@ -140,9 +140,14 @@ class _OnboardingCompletionSheetState
       );
       if (!mounted || file == null) return;
       setState(() => _pickedAvatar = file);
-    } catch (e) {
+    } on UploadGuardException catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.toString());
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _errorMessage = "Couldn't add that photo. Please try again.",
+      );
     }
   }
 
@@ -181,10 +186,12 @@ class _OnboardingCompletionSheetState
     }
     // Avatar (optional) uploads after role+name so the AuthController state
     // is settled first. Failure here doesn't roll back — the user has
-    // completed the critical bits and can re-pick a photo from /profile/edit.
+    // completed the critical bits and can re-pick a photo from /profile/edit —
+    // but it must not be silent either (live bug S6 class).
+    var avatarUploaded = true;
     if (!skipAvatar && _pickedAvatar != null) {
       final profileNotifier = ref.read(profileControllerProvider.notifier);
-      await profileNotifier.uploadAvatar(_pickedAvatar!);
+      avatarUploaded = await profileNotifier.uploadAvatar(_pickedAvatar!);
     }
     AuthAnalytics.completionStep(
       step: 'avatar',
@@ -199,7 +206,17 @@ class _OnboardingCompletionSheetState
     if (!mounted) return;
     // Refresh profile so display_name + avatar populate immediately.
     await ref.read(profileControllerProvider.notifier).loadProfile();
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    if (!avatarUploaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Your photo didn't upload — add it any time from your profile.",
+          ),
+        ),
+      );
+    }
+    Navigator.of(context).pop();
   }
 
   /// Best-effort attribution of which provider got the user this far. The

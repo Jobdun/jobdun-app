@@ -197,7 +197,19 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
         aspect: ImageAspect.free,
         crop: false, // chat photos send straight through — no crop screen
       );
+    } on UploadGuardException catch (e) {
+      // Camera permission denials, oversize picks, bad formats — the service
+      // already wrote user-ready copy, so show it instead of swallowing it.
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
     } on Exception {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't attach that photo. Try again.")),
+      );
       return;
     }
     if (file == null || !mounted) return;
