@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -161,31 +162,30 @@ void main() {
     expect(router.state.uri.toString(), '/login');
   });
 
-  testWidgets(
-    'FTUE from /login: slide 3 hides "I already have an account" link',
-    (tester) async {
-      final router = buildRouter(initial: '/ftue?from=login');
-      await tester.pumpWidget(wrap(router));
-      await tester.pumpAndSettle();
-      drainAssetErrors(tester);
+  testWidgets('FTUE from /login: slide 3 keeps the LOG IN link (S4 escape)', (
+    tester,
+  ) async {
+    final router = buildRouter(initial: '/ftue?from=login');
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+    drainAssetErrors(tester);
 
-      // jumpToPage(2) is more deterministic than flinging through pages —
-      // the new wow-pass slide layout uses SingleChildScrollView and a
-      // single -400px fling can overshoot to slide 3 when content is tall.
-      final pageView = tester.widget<PageView>(find.byType(PageView));
-      pageView.controller!.jumpToPage(2);
-      await tester.pumpAndSettle();
-      drainAssetErrors(tester);
+    // jumpToPage(2) is more deterministic than flinging through pages —
+    // the new wow-pass slide layout uses SingleChildScrollView and a
+    // single -400px fling can overshoot to slide 3 when content is tall.
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    pageView.controller!.jumpToPage(2);
+    await tester.pumpAndSettle();
+    drainAssetErrors(tester);
 
-      // Both CTAs render.
-      expect(find.text("I'M HIRING"), findsOneWidget);
-      expect(find.text("I'M LOOKING FOR WORK"), findsOneWidget);
-      // The redundant login link must not appear — the user just came from
-      // /login, rendering it would just send them back in a loop.
-      expect(find.text('I already have an account'), findsNothing);
-      expect(find.text('LOG IN'), findsNothing);
-    },
-  );
+    // Both CTAs render.
+    expect(find.text("I'M HIRING"), findsOneWidget);
+    expect(find.text("I'M LOOKING FOR WORK"), findsOneWidget);
+    // Live bug S4 (2026-08-18): hiding this link for from=login users made
+    // the role slide a trap (back + SKIP were gone too). The escape now
+    // always renders — a redundant hop back to /login beats a dead end.
+    expect(find.text('LOG IN'), findsOneWidget);
+  });
 
   // ───────────────────────────────────────────────────────────────────────────
   // Phone icon → /phone-auth
@@ -230,7 +230,7 @@ void main() {
   // SSO entry points are interactive icon tiles (not plain text labels) —
   // the second of the three problems called out in the brief.
   // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('Google, Apple, Phone render as tappable icon tiles', (
+  testWidgets('Google and Phone render as icon tiles; no Apple on Android', (
     tester,
   ) async {
     final router = buildRouter();
@@ -238,14 +238,32 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('login.sso.google')), findsOneWidget);
-    expect(find.byKey(const Key('login.sso.apple')), findsOneWidget);
     expect(find.byKey(const Key('login.sso.phone')), findsOneWidget);
+    // Sign in with Apple has no Android configuration — the tile failed on
+    // 100% of Android taps (K10, 2026-08-18 audit), so it must not render
+    // there. Tests run as TargetPlatform.android by default.
+    expect(find.byKey(const Key('login.sso.apple')), findsNothing);
 
-    // All three are icon-only — no visible captions. Screen readers get the
-    // accessible name via the SocialAuthButton's Semantics wrapper.
+    // Icon-only — no visible captions. Screen readers get the accessible
+    // name via the SocialAuthButton's Semantics wrapper.
     expect(find.text('Phone'), findsNothing);
     expect(find.text('Google'), findsNothing);
     expect(find.text('Apple'), findsNothing);
+  });
+
+  testWidgets('Apple tile renders on iOS', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      final router = buildRouter();
+      await tester.pumpWidget(wrap(router));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('login.sso.apple')), findsOneWidget);
+    } finally {
+      // Must reset inside the test body — the binding asserts foundation
+      // debug variables are untouched before tearDowns run.
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
 

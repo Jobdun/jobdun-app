@@ -62,6 +62,8 @@ class AuthState {
     bool clearPendingVerification = false,
     bool clearPhone = false,
     bool clearRegisterDraft = false,
+    bool clearError = false,
+    bool clearInfo = false,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -78,8 +80,11 @@ class AuthState {
       registerDraft: clearRegisterDraft
           ? null
           : registerDraft ?? this.registerDraft,
-      errorMessage: errorMessage,
-      infoMessage: infoMessage,
+      // Preserved unless explicitly cleared — background updates (role
+      // hydration, session refresh) used to silently erase live banners
+      // because omitting these dropped them (K10, 2026-08-18 audit).
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      infoMessage: clearInfo ? null : infoMessage ?? this.infoMessage,
       ssoNameProvider: ssoNameProvider ?? this.ssoNameProvider,
       metadataDisplayName: metadataDisplayName ?? this.metadataDisplayName,
     );

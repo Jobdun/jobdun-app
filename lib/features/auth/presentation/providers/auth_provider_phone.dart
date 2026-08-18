@@ -86,15 +86,21 @@ mixin _AuthControllerPhone on Notifier<AuthState> {
     }
   }
 
-  Future<void> resendPhoneOtp() async {
+  /// Returns true only when the SMS was actually handed to the provider —
+  /// callers must start their resend cooldown ONLY on true, otherwise a
+  /// failed resend locks the button for 60 s with no SMS coming (S2,
+  /// 2026-08-18 audit).
+  Future<bool> resendPhoneOtp() async {
     final phone = state.pendingPhoneNumber;
-    if (phone == null || !_ensureConfigured()) return;
+    if (phone == null || !_ensureConfigured()) return false;
     _startLoading();
     try {
       await _phone.resendOtp(phone);
       state = state.copyWith(isLoading: false, infoMessage: 'New code sent.');
+      return true;
     } catch (e) {
       _failLoading(e);
+      return false;
     }
   }
 

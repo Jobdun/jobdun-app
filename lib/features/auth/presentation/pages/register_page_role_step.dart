@@ -113,11 +113,14 @@ class _RoleStep extends StatelessWidget {
                 onTap: isBusy ? () {} : onGoogle,
                 isLoading: isBusy,
               ),
-              SocialAuthButton.apple(
-                key: const Key('register.sso.apple'),
-                onTap: isBusy ? () {} : onApple,
-                isLoading: isBusy,
-              ),
+              // Apple tile is iOS/web-only — it can only fail on Android
+              // (no webAuthenticationOptions; K10, 2026-08-18 audit).
+              if (kIsWeb || defaultTargetPlatform == TargetPlatform.iOS)
+                SocialAuthButton.apple(
+                  key: const Key('register.sso.apple'),
+                  onTap: isBusy ? () {} : onApple,
+                  isLoading: isBusy,
+                ),
               SocialAuthButton.phone(
                 key: const Key('register.sso.phone'),
                 onTap: isBusy ? () {} : onPhone,

@@ -63,6 +63,11 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A banner earned on another auth screen must not re-render here.
+      ref.read(authControllerProvider.notifier).clearMessages();
+    });
     if (widget.mode == PhoneAuthMode.signIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -276,8 +281,13 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
       _friendlyErrorOverride = null;
     });
     _otpController.clear();
-    await ref.read(authControllerProvider.notifier).resendPhoneOtp();
-    _startResendTimer();
+    final sent = await ref
+        .read(authControllerProvider.notifier)
+        .resendPhoneOtp();
+    if (!mounted) return;
+    // Cooldown only when the SMS actually went out — a failed resend used to
+    // grey the button for 60 s on top of the error (S2, 2026-08-18 audit).
+    if (sent) _startResendTimer();
   }
 
   Future<void> _backToPhone() async {

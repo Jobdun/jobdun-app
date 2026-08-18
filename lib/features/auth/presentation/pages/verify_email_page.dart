@@ -31,9 +31,15 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     super.dispose();
   }
 
-  void _resend() {
-    ref.read(authControllerProvider.notifier).resendVerificationEmail();
-    _startCooldown();
+  Future<void> _resend() async {
+    await ref.read(authControllerProvider.notifier).resendVerificationEmail();
+    if (!mounted) return;
+    // Cooldown only when the resend actually succeeded — otherwise the user
+    // is locked out for 60 s on top of the failure (S2-class bug, 2026-08-18
+    // audit; this call wasn't even awaited before).
+    if (ref.read(authControllerProvider).errorMessage == null) {
+      _startCooldown();
+    }
   }
 
   Future<void> _checkVerified() async {

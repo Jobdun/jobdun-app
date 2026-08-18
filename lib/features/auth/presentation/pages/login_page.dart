@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +40,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.initState();
     AuthAnalytics.loginScreenViewed();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _ready = true);
+      if (!mounted) return;
+      // A banner earned on another auth screen must not re-render here.
+      ref.read(authControllerProvider.notifier).clearMessages();
+      setState(() => _ready = true);
     });
   }
 
@@ -254,12 +258,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 onTap: _onGoogle,
                                 isLoading: isBusy,
                               ),
-                              _BrandSsoTile(
-                                key: const Key('login.sso.apple'),
-                                provider: _SsoProvider.apple,
-                                onTap: _onApple,
-                                isLoading: isBusy,
-                              ),
+                              // Sign in with Apple has no Android config
+                              // (no webAuthenticationOptions) — the tile
+                              // failed on 100% of Android taps, so it only
+                              // renders where it can work (K10, 2026-08-18).
+                              if (kIsWeb ||
+                                  defaultTargetPlatform == TargetPlatform.iOS)
+                                _BrandSsoTile(
+                                  key: const Key('login.sso.apple'),
+                                  provider: _SsoProvider.apple,
+                                  onTap: _onApple,
+                                  isLoading: isBusy,
+                                ),
                               _BrandSsoTile(
                                 key: const Key('login.sso.phone'),
                                 provider: _SsoProvider.phone,

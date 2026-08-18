@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +46,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A banner earned on another auth screen must not re-render here.
+      ref.read(authControllerProvider.notifier).clearMessages();
+    });
     // Priority order for initial role:
     //   1. registerDraft.role — user bounced back from /verify-email
     //   2. widget.initialRole — entered via /register?role=…

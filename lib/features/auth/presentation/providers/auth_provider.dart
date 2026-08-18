@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../core/config/supabase_config.dart';
@@ -84,8 +85,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         isAuthenticated: true,
         email: session.user.email,
         isLoading: false,
-        errorMessage: null,
-        infoMessage: null,
+        clearError: true,
+        clearInfo: true,
         clearPendingVerification: verified,
         clearRegisterDraft: verified,
         ssoNameProvider: SsoIdentity.hasNameProvider(session.user.appMetadata),
@@ -124,11 +125,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
 
   @override
   void _startLoading() {
-    state = state.copyWith(
-      isLoading: true,
-      errorMessage: null,
-      infoMessage: null,
-    );
+    state = state.copyWith(isLoading: true, clearError: true, clearInfo: true);
   }
 
   @override
@@ -136,7 +133,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     state = state.copyWith(
       isLoading: false,
       errorMessage: _mapAuthError(e),
-      infoMessage: null,
+      clearInfo: true,
     );
     // Every auth catch block funnels through here, so reporting once means
     // every login / register / OAuth / OTP failure reaches Sentry without
@@ -158,7 +155,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
       errorMessage:
           'Supabase is not configured. Fill .env and run with '
           '--dart-define-from-file=.env.',
-      infoMessage: null,
+      clearInfo: true,
     );
     return false;
   }
@@ -215,8 +212,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     // can route back to /register step 2 with everything pre-filled.
     state = state.copyWith(
       isLoading: true,
-      errorMessage: null,
-      infoMessage: null,
+      clearError: true,
+      clearInfo: true,
       registerDraft: RegisterDraft(
         fullName: fullName.trim(),
         email: email.trim(),
@@ -352,6 +349,16 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         email: response.user?.email,
         isLoading: false,
       );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // User closed the Apple sheet → drop the spinner silently, mirroring
+      // the Google cancel guard above. A cancel is not an error: it used to
+      // paint "Something went wrong" under the dismissing sheet AND report
+      // to Sentry as a real failure (K10, 2026-08-18 audit).
+      if (e.code == AuthorizationErrorCode.canceled) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      _failLoading(e);
     } catch (e) {
       _failLoading(e);
     }
@@ -365,6 +372,13 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
 
   void clearRegisterDraft() {
     state = state.copyWith(clearRegisterDraft: true);
+  }
+
+  /// Drop any live error/info banner. Auth pages call this on mount so a
+  /// failure on one screen doesn't re-render on the next (K10 #3).
+  void clearMessages() {
+    if (state.errorMessage == null && state.infoMessage == null) return;
+    state = state.copyWith(clearError: true, clearInfo: true);
   }
 
   // Phone / OTP flows live in `_AuthControllerPhone` (auth_provider_phone.dart),
@@ -393,7 +407,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     if (!_ensureConfigured()) return false;
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return false;
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final effective = await _roles.setRoleAndStubProfile(
         userId: userId,
@@ -428,7 +442,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     if (!_ensureConfigured()) return false;
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return false;
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
       final effective = await _roles.setRoleAndStubProfile(
         userId: userId,
@@ -455,10 +469,22 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
 
   Future<void> signOut() async {
     if (SupabaseConfig.isInitialized) {
-      // Stop pushes to this device first — needs the live session for RLS.
-      // Best-effort inside; never blocks the sign-out.
-      await PushNotifications.unregister();
-      await _email.signOut();
+      try {
+        // Stop pushes to this device first — needs the live session for RLS.
+        // Best-effort inside; never blocks the sign-out.
+        await PushNotifications.unregister();
+        await _email.signOut();
+      } catch (e, st) {
+        // A dead session / network blip must not leave the user visibly
+        // signed in — always fall through to the local reset.
+        unawaited(
+          SentryReporter.reportError(
+            e,
+            stackTrace: st,
+            tags: {'feature': 'auth', 'action': 'signOut'},
+          ),
+        );
+      }
     }
     state = const AuthState();
   }
