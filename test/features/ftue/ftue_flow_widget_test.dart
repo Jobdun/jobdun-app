@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jobdun/app/theme/app_theme.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:jobdun/core/services/ftue_service.dart';
 import 'package:jobdun/features/auth/domain/entities/user_role.dart';
 import 'package:jobdun/features/auth/presentation/pages/login_page.dart';
@@ -90,7 +91,11 @@ void main() {
     return GoRouter(
       initialLocation: initial,
       routes: [
-        GoRoute(path: '/ftue', builder: (_, _) => const FtuePage()),
+        GoRoute(
+          path: '/ftue',
+          builder: (_, state) =>
+              FtuePage(fromLogin: state.uri.queryParameters['from'] == 'login'),
+        ),
         GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
         GoRoute(
           path: '/register',
@@ -347,6 +352,77 @@ void main() {
 
     expect(find.text('JOBS NEAR YOU.'), findsOneWidget);
     expect(find.text('APPLY IN THREE TAPS.'), findsOneWidget);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // S4 regression — the role slide must never be a trap
+  // ───────────────────────────────────────────────────────────────────────────
+  Future<void> jumpToSlideThree(WidgetTester tester) async {
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    pageView.controller!.jumpToPage(2);
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+  }
+
+  testWidgets('fromLogin: slide 3 keeps the LOG IN link and a back caret', (
+    tester,
+  ) async {
+    final router = buildRouter(initial: '/ftue?from=login');
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+    await jumpToSlideThree(tester);
+
+    expect(find.text('LOG IN'), findsOneWidget);
+    expect(find.byIcon(AppIcons.arrowLeft), findsOneWidget);
+  });
+
+  testWidgets('back caret on slide 3 steps back to slide 2', (tester) async {
+    final router = buildRouter();
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+    await jumpToSlideThree(tester);
+
+    expect(find.text('BUILT FOR'), findsOneWidget);
+    await tester.tap(find.byIcon(AppIcons.arrowLeft));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    expect(find.text('JOBS NEAR YOU.'), findsOneWidget);
+    expect(router.state.uri.path, '/ftue');
+  });
+
+  testWidgets('system back on slide 3 steps back a slide, not out of the app', (
+    tester,
+  ) async {
+    final router = buildRouter();
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+    await jumpToSlideThree(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    expect(find.text('JOBS NEAR YOU.'), findsOneWidget);
+    expect(router.state.uri.path, '/ftue');
+  });
+
+  testWidgets('fromLogin: back caret on slide 1 returns to /login', (
+    tester,
+  ) async {
+    final router = buildRouter(initial: '/ftue?from=login');
+    await tester.pumpWidget(wrap(router));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    await tester.tap(find.byIcon(AppIcons.arrowLeft));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+
+    expect(router.state.uri.toString(), '/login');
   });
 }
 

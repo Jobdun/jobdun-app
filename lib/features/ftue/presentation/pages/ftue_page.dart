@@ -19,9 +19,12 @@ import '../widgets/ftue_page_indicator.dart';
 // so the user never sees it again.
 //
 // [fromLogin] is true when the user tapped "Create account →" on /login —
-// they already know the app, just need a signup path. In that case slide 1
-// shows a back-arrow (return to /login) and slide 3 hides the redundant
-// "I already have an account · LOG IN" footer link.
+// they already know the app, just need a signup path. Slide 1 then shows a
+// back-arrow returning to /login. Every later slide shows a back-arrow that
+// steps to the previous slide, and the role slide always keeps the
+// "I already have an account · LOG IN" footer link — the FTUE is entered via
+// context.go (empty stack), so without these escapes system back exits the
+// app and a wrong role tap is unrecoverable (live bug S4, 2026-08-18).
 class FtuePage extends ConsumerStatefulWidget {
   const FtuePage({super.key, this.fromLogin = false});
 
@@ -150,48 +153,69 @@ class _FtuePageState extends ConsumerState<FtuePage> {
     context.go('/login');
   }
 
+  void _onBack() {
+    if (_currentSlide > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    } else if (widget.fromLogin) {
+      _onBackToLogin();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final isFinalSlide = _currentSlide == _slideCount - 1;
-    final showBack = widget.fromLogin && _currentSlide == 0;
+    final showBack = widget.fromLogin || _currentSlide > 0;
 
-    return Scaffold(
-      backgroundColor: c.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(
-              showSkip: !isFinalSlide,
-              onSkip: _onSkip,
-              showBack: showBack,
-              onBack: _onBackToLogin,
-            ),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                children: [
-                  const SlideOneTrust(),
-                  const SlideTwoSpeed(),
-                  SlideThreeAction(
-                    onHiring: () => _onCta('builder'),
-                    onWorking: () => _onCta('trade'),
-                    onContinueWithGoogle: _onContinueWithGoogle,
-                    onLoginLink: widget.fromLogin ? null : _onLoginLink,
-                    onBrowse: _onBrowse,
-                  ),
-                ],
+    return PopScope(
+      canPop: _currentSlide == 0 && !widget.fromLogin,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _onBack();
+      },
+      child: Scaffold(
+        backgroundColor: c.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(
+                showSkip: !isFinalSlide,
+                onSkip: _onSkip,
+                showBack: showBack,
+                onBack: _onBack,
+                backLabel: _currentSlide == 0
+                    ? 'Back to log in.'
+                    : 'Back to previous slide.',
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
-              child: FtuePageIndicator(
-                controller: _pageController,
-                count: _slideCount,
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: _onPageChanged,
+                  children: [
+                    const SlideOneTrust(),
+                    const SlideTwoSpeed(),
+                    SlideThreeAction(
+                      onHiring: () => _onCta('builder'),
+                      onWorking: () => _onCta('trade'),
+                      onContinueWithGoogle: _onContinueWithGoogle,
+                      onLoginLink: _onLoginLink,
+                      onBrowse: _onBrowse,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.lg.h),
+                child: FtuePageIndicator(
+                  controller: _pageController,
+                  count: _slideCount,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -208,12 +232,14 @@ class _TopBar extends StatelessWidget {
     required this.onSkip,
     this.showBack = false,
     this.onBack,
+    this.backLabel = 'Back.',
   });
 
   final bool showSkip;
   final VoidCallback onSkip;
   final bool showBack;
   final VoidCallback? onBack;
+  final String backLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +255,7 @@ class _TopBar extends StatelessWidget {
             if (showBack && onBack != null)
               Semantics(
                 button: true,
-                label: 'Back to log in.',
+                label: backLabel,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: onBack,
