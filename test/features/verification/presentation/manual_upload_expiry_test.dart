@@ -77,6 +77,7 @@ void main() {
                 onAttestedChanged: (_) {},
                 onCamera: () {},
                 onGallery: () {},
+                onPdf: () {},
                 onUpload: () {},
               ),
             ),

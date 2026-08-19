@@ -105,6 +105,7 @@ class ManualUploadActiveBody extends StatelessWidget {
     required this.onAttestedChanged,
     required this.onCamera,
     required this.onGallery,
+    required this.onPdf,
     required this.onUpload,
   });
 
@@ -142,6 +143,7 @@ class ManualUploadActiveBody extends StatelessWidget {
 
   final VoidCallback onCamera;
   final VoidCallback onGallery;
+  final VoidCallback onPdf;
   final VoidCallback onUpload;
 
   bool _isFormReady() => pickedFile != null && (formKey.currentState != null);
@@ -249,6 +251,7 @@ class ManualUploadActiveBody extends StatelessWidget {
           uploadEnabled: attested,
           onCamera: onCamera,
           onGallery: onGallery,
+          onPdf: onPdf,
           onUpload: () {
             formKey.currentState?.saveAndValidate();
             if (_isFormReady() && attested) onUpload();

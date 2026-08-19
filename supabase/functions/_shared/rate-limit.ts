@@ -30,7 +30,17 @@ async function consume(limit: Limit): Promise<RateLimitResult> {
     .eq("endpoint", limit.endpoint)
     .gte("window_start", windowStart.toISOString());
 
-  if (error) throw error;
+  if (error) {
+    // Fail open: a broken rate-limit table must degrade to "allowed", not
+    // become an unhandled 500 whose raw body reached the client UI
+    // (P4, 2026-08-18 audit).
+    console.error("rate-limit read failed; failing open:", error.message);
+    return {
+      allowed: true,
+      remaining: limit.maxAttempts - 1,
+      resetAt: new Date(now.getTime() + limit.windowMs),
+    };
+  }
 
   const used = (rows ?? []).reduce((sum, r) => sum + (r.attempt_count ?? 0), 0);
   if (used >= limit.maxAttempts) {
@@ -46,20 +56,19 @@ async function consume(limit: Limit): Promise<RateLimitResult> {
   const minuteBucket = new Date(now);
   minuteBucket.setSeconds(0, 0);
 
-  const { error: upsertErr } = await db.rpc("increment_rate_limit", {
-    p_bucket_key: limit.bucket,
-    p_endpoint: limit.endpoint,
-    p_window_start: minuteBucket.toISOString(),
-  });
-
-  // If the RPC doesn't exist yet (early dev), fall back to a plain insert.
-  if (upsertErr) {
-    await db.from("verification_rate_limits").insert({
+  // One row per attempt; the read side sums attempt_count so multiple rows
+  // in a window count correctly. (The old code called an
+  // `increment_rate_limit` RPC that exists in no migration, so every call
+  // error'd into this insert anyway — P4, 2026-08-18 audit.)
+  const { error: insertErr } = await db.from("verification_rate_limits")
+    .insert({
       bucket_key: limit.bucket,
       endpoint: limit.endpoint,
       window_start: minuteBucket.toISOString(),
       attempt_count: 1,
     });
+  if (insertErr) {
+    console.error("rate-limit insert failed:", insertErr.message);
   }
 
   return {

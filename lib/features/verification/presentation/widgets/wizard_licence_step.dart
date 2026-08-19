@@ -153,10 +153,15 @@ class _WizardLicenceStepState extends ConsumerState<WizardLicenceStep> {
         }),
       );
     }
-    final detail = pending is VerifyFailed
-        ? pending.detail
+    // Human copy only — the server's `detail` when present, never the raw
+    // reason token ('auto_verify_disabled', 'manual_review') and never an
+    // empty string (P4, 2026-08-18 audit).
+    final failedDetail = pending is VerifyFailed ? pending.detail.trim() : '';
+    final detail = failedDetail.isNotEmpty
+        ? failedDetail
         : pending is VerifyManualReview
-        ? pending.reason
+        ? 'This licence needs a quick manual review — upload a photo and '
+              'we\'ll take it from there.'
         : 'We couldn\'t confirm this licence automatically.';
     final allowUpload = pending is VerifyManualReview
         ? true

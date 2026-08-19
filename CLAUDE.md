@@ -338,7 +338,7 @@ Use pinned versions before production release.
 
 ## Supabase storage buckets
 
-`avatars`, `company-logos`, `portfolio-images`, `verification-documents`, `job-attachments`
+`public-media` (avatars `{uid}/avatar.jpg`, portfolio `{uid}/portfolio/…`), `private-docs` (verification documents, trade licences), `chat-attachments` (`{conversationId}/…`). (The five legacy names previously listed here — avatars/company-logos/portfolio-images/verification-documents/job-attachments — never shipped; corrected 2026-08-19 per the live-bug audit.)
 
 ## Branch strategy
 

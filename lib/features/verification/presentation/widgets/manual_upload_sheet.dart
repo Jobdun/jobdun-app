@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
@@ -104,6 +105,35 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
     } catch (e) {
       if (!mounted) return;
       // U1.2: human copy to the user; the raw error goes to the funnel log.
+      setState(() => _error = humanUploadError(e));
+      _logRawError('manual_upload_pick_failed', e);
+    }
+  }
+
+  /// PDF pick path — insurance/licence certs commonly arrive as PDFs; the
+  /// bucket + upload datasource + error copy always supported them but no
+  /// pick path existed (P3, 2026-08-18 audit).
+  Future<void> _pickPdf() async {
+    setState(() => _error = null);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      );
+      final path = result?.files.single.path;
+      if (!mounted || path == null) return;
+      final file = File(path);
+      final size = await file.length();
+      if (size > ImageUploadService.maxBytes) {
+        final mb = (size / (1024 * 1024)).toStringAsFixed(1);
+        setState(() {
+          _error = 'PDF is $mb MB — please pick one under 10 MB.';
+        });
+        return;
+      }
+      setState(() => _pickedFile = file);
+    } catch (e) {
+      if (!mounted) return;
       setState(() => _error = humanUploadError(e));
       _logRawError('manual_upload_pick_failed', e);
     }
@@ -334,6 +364,7 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
                 onAttestedChanged: (v) => setState(() => _attested = v),
                 onCamera: () => _pick(ImageSource.camera),
                 onGallery: () => _pick(ImageSource.gallery),
+                onPdf: _pickPdf,
                 onUpload: _upload,
               ),
             ],

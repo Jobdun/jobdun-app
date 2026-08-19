@@ -20,6 +20,7 @@ class ManualUploadPickerBlock extends StatelessWidget {
     required this.uploadEnabled,
     required this.onCamera,
     required this.onGallery,
+    required this.onPdf,
     required this.onUpload,
   });
 
@@ -32,7 +33,15 @@ class ManualUploadPickerBlock extends StatelessWidget {
 
   final VoidCallback onCamera;
   final VoidCallback onGallery;
+
+  /// Pick a PDF (insurance/licence certificates arrive as PDFs; the bucket,
+  /// upload datasource and error copy always supported them but no pick path
+  /// existed — P3, 2026-08-18 audit).
+  final VoidCallback onPdf;
   final VoidCallback onUpload;
+
+  bool get _pickedIsPdf =>
+      pickedFile != null && pickedFile!.path.toLowerCase().endsWith('.pdf');
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +66,15 @@ class ManualUploadPickerBlock extends StatelessWidget {
               onPressed: onGallery,
             ),
           ),
+          Gap(12.w),
+          Expanded(
+            child: JButton(
+              label: 'PDF',
+              variant: JButtonVariant.secondary,
+              size: JButtonSize.standard,
+              onPressed: onPdf,
+            ),
+          ),
         ],
       );
     }
@@ -66,31 +84,36 @@ class ManualUploadPickerBlock extends StatelessWidget {
       children: [
         // U1.5: the priming card's first rule is "no glare, edges in frame" —
         // tap-to-enlarge lets the user actually self-check legibility before
-        // committing to a 24 h review round-trip.
-        GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => _PickedPreviewViewer(file: pickedFile!),
+        // committing to a 24 h review round-trip. PDFs get a document tile
+        // instead (no in-app PDF renderer).
+        if (_pickedIsPdf)
+          _PickedPdfTile(file: pickedFile!)
+        else ...[
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _PickedPreviewViewer(file: pickedFile!),
+              ),
             ),
-          ),
-          child: Hero(
-            tag: 'verification:picked',
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.r),
-              child: Image.file(
-                pickedFile!,
-                height: 180.h,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            child: Hero(
+              tag: 'verification:picked',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: Image.file(
+                  pickedFile!,
+                  height: 180.h,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
-        ),
-        Gap(4.h),
-        Text(
-          "Tap to check it's readable",
-          style: tt.bodySmall!.copyWith(color: c.text3),
-        ),
+          Gap(4.h),
+          Text(
+            "Tap to check it's readable",
+            style: tt.bodySmall!.copyWith(color: c.text3),
+          ),
+        ],
         Gap(12.h),
         Row(
           children: [
@@ -99,7 +122,9 @@ class ManualUploadPickerBlock extends StatelessWidget {
                 label: 'CHANGE',
                 variant: JButtonVariant.secondary,
                 size: JButtonSize.standard,
-                onPressed: uploading ? null : onGallery,
+                onPressed: uploading
+                    ? null
+                    : (_pickedIsPdf ? onPdf : onGallery),
               ),
             ),
             Gap(12.w),
@@ -129,6 +154,47 @@ class ManualUploadPickerBlock extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Compact tile confirming the picked PDF (name only — no in-app renderer).
+/// Single caller — the picker block above.
+class _PickedPdfTile extends StatelessWidget {
+  const _PickedPdfTile({required this.file});
+
+  final File file;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final name = file.path.split(Platform.pathSeparator).last;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.document, size: AppIconSize.md.r, color: c.action),
+          Gap(10.w),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tt.bodyMedium!.copyWith(
+                color: c.text1,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
