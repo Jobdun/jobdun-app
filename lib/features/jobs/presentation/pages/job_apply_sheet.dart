@@ -18,8 +18,11 @@ class JobApplySheet extends StatefulWidget {
 
   /// Submits the application. Receives the parsed quote + trimmed cover note
   /// (null when blank) and awaits the caller's write so the button can show
-  /// progress and stay disabled until the round-trip resolves.
-  final Future<void> Function(double? quote, String? coverNote) onSubmit;
+  /// progress and stay disabled until the round-trip resolves. Returns an
+  /// error string to render INSIDE the sheet (null = success) — a page-level
+  /// SnackBar paints under the modal barrier, so a failed submit used to
+  /// look like nothing happened (races audit, 2026-08-18).
+  final Future<String?> Function(double? quote, String? coverNote) onSubmit;
 
   @override
   State<JobApplySheet> createState() => _JobApplySheetState();
@@ -29,6 +32,7 @@ class _JobApplySheetState extends State<JobApplySheet> {
   final _rateCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   bool _submitting = false;
+  String? _error;
 
   @override
   void initState() {
@@ -46,9 +50,16 @@ class _JobApplySheetState extends State<JobApplySheet> {
   Future<void> _submit() async {
     final rate = double.tryParse(_rateCtrl.text.trim());
     final note = _noteCtrl.text.trim();
-    setState(() => _submitting = true);
-    await widget.onSubmit(rate, note.isEmpty ? null : note);
-    if (mounted) setState(() => _submitting = false);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    final error = await widget.onSubmit(rate, note.isEmpty ? null : note);
+    if (!mounted) return;
+    setState(() {
+      _submitting = false;
+      _error = error;
+    });
   }
 
   @override
@@ -122,6 +133,10 @@ class _JobApplySheetState extends State<JobApplySheet> {
               hintText: "Tell the builder why you're the right fit…",
             ),
           ),
+          if (_error != null) ...[
+            Gap(AppSpacing.sm.h),
+            Text(_error!, style: tt.bodyMedium!.copyWith(color: c.urgent)),
+          ],
           Gap(20.h),
           JButton(
             label: _submitting

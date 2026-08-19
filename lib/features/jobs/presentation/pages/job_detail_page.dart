@@ -331,36 +331,45 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     final router = GoRouter.of(context);
     showJSheet<void>(
       context: context,
-      builder: (ctx) => _DeleteConfirmSheet(
-        onConfirm: () async {
-          final ok = await ref
-              .read(jobsControllerProvider.notifier)
-              .deleteJob(jobId);
-          if (!ctx.mounted) return;
-          Navigator.pop(ctx);
-          if (ok && mounted) {
-            // Bust the builder aggregate caches so home/profile/listings drop
-            // the deleted job instead of serving a stale Phase 1 cache.
-            invalidateBuilderJobAggregates(ref);
-            router.pop();
-            messenger.showSnackBar(
-              SnackBar(
-                content: const Text('Listing deleted.'),
-                backgroundColor: c.surfaceRaised,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          } else if (!ok) {
-            _showError(
-              messenger,
-              c,
-              tt,
-              ref.read(jobsControllerProvider).error ??
-                  'Could not delete the listing.',
-            );
-          }
-        },
-      ),
+      builder: (ctx) {
+        // Re-entry guard: DELETE had no in-flight state, so a double tap ran
+        // the whole handler twice — four pops, landing the builder two
+        // screens back (races audit, 2026-08-18).
+        var deleting = false;
+        return _DeleteConfirmSheet(
+          onConfirm: () async {
+            if (deleting) return;
+            deleting = true;
+            final ok = await ref
+                .read(jobsControllerProvider.notifier)
+                .deleteJob(jobId);
+            if (!ctx.mounted) return;
+            Navigator.pop(ctx);
+            if (ok && mounted) {
+              // Bust the builder aggregate caches so home/profile/listings drop
+              // the deleted job instead of serving a stale Phase 1 cache.
+              invalidateBuilderJobAggregates(ref);
+              router.pop();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: const Text('Listing deleted.'),
+                  backgroundColor: c.surfaceRaised,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            } else if (!ok) {
+              deleting = false;
+              _showError(
+                messenger,
+                c,
+                tt,
+                ref.read(jobsControllerProvider).error ??
+                    'Could not delete the listing.',
+              );
+            }
+          },
+        );
+      },
     );
   }
 
@@ -386,7 +395,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               tt,
               'This is a sample listing — open a real job to apply.',
             );
-            return;
+            return null;
           }
           final ok = await ref
               .read(applicationsControllerProvider.notifier)
@@ -396,16 +405,16 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                 coverNote: note,
                 quoteAmount: rate,
               );
-          if (!ctx.mounted) return;
+          if (!ctx.mounted) return null;
           if (ok) {
             Navigator.pop(ctx);
             if (mounted) setState(() => _applied = true);
-          } else {
-            final err =
-                ref.read(applicationsControllerProvider).error ??
-                'Could not submit application. Please try again.';
-            _showError(messenger, c, tt, err);
+            return null;
           }
+          // Rendered inside the sheet — a SnackBar here painted under the
+          // modal barrier and the failure looked like a dead button.
+          return ref.read(applicationsControllerProvider).error ??
+              'Could not submit application. Please try again.';
         },
       ),
     );

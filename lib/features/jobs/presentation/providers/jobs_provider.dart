@@ -92,8 +92,10 @@ final builderActiveJobsCountProvider = FutureProvider.autoDispose<int>((
   if (builderId == null) return 0;
   cacheFor(ref, kDefaultCacheTtl);
   final result = await ref.read(getBuilderJobsUseCaseProvider).call(builderId);
+  // P6, 2026-08-18 audit: propagate failure as AsyncError — folding it into 0
+  // made a failed load render as a real-looking "0 active" home tile.
   return result.fold(
-    (_) => 0,
+    (f) => throw Exception(f.message),
     (jobs) => jobs.where((j) => j.status.isActive).length,
   );
 });
@@ -122,7 +124,9 @@ final builderListingsProvider = FutureProvider.autoDispose<List<Job>>((
   if (uid == null) return const [];
   cacheFor(ref, kDefaultCacheTtl);
   final result = await ref.read(getBuilderJobsUseCaseProvider).call(uid);
-  return result.fold((_) => const <Job>[], (jobs) => jobs);
+  // P6, 2026-08-18 audit: propagate failure as AsyncError — folding it into an
+  // empty list made a failed load render as "NO LISTINGS YET".
+  return result.fold((f) => throw Exception(f.message), (jobs) => jobs);
 });
 
 // ── Cache invalidation (Phase 1) ──────────────────────────────────────────────
@@ -255,7 +259,16 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
     );
   }
 
+  /// Bumped on every refresh; a page response from a superseded fetch is
+  /// discarded. PagingController.refresh() has no in-flight dedupe, so a
+  /// slow old-query response could land after the new query's page-0 and
+  /// appendPage the previous search's jobs into the fresh feed (races audit,
+  /// 2026-08-18).
+  int _feedGeneration = 0;
+
   Future<void> _fetchPage(int pageKey) async {
+    if (pageKey == 0) _feedGeneration++;
+    final generation = _feedGeneration;
     final isGuest = _isGuest;
     // A guest's single page IS the whole feed — never let a stray widget
     // rebuild (or scroll-triggered prefetch) request page 2.
@@ -271,6 +284,7 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
           limit: pageSize,
           offset: pageKey * pageSize,
         );
+    if (generation != _feedGeneration) return;
     result.fold((f) => _pagingController?.error = f.message, (jobs) {
       final visible = state.hiddenJobIds.isEmpty
           ? jobs

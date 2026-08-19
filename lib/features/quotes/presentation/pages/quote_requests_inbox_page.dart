@@ -151,6 +151,21 @@ class _Centered extends StatelessWidget {
   }
 }
 
+/// In-flight DECLINE request ids. Without this a double tap declined once,
+/// then hit the already-declined row and flashed a contradictory "Couldn't
+/// decline." toast (races audit, 2026-08-18).
+class _DecliningIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+  void start(String id) => state = {...state, id};
+  void done(String id) => state = {...state}..remove(id);
+}
+
+final _decliningIdsProvider =
+    NotifierProvider<_DecliningIdsNotifier, Set<String>>(
+      _DecliningIdsNotifier.new,
+    );
+
 class _QuoteRequestCard extends ConsumerWidget {
   const _QuoteRequestCard({required this.req});
 
@@ -160,6 +175,9 @@ class _QuoteRequestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    final declining = ref.watch(
+      _decliningIdsProvider.select((s) => s.contains(req.id)),
+    );
 
     return Container(
       width: double.infinity,
@@ -214,7 +232,8 @@ class _QuoteRequestCard extends ConsumerWidget {
                     label: 'DECLINE',
                     size: JButtonSize.compact,
                     variant: JButtonVariant.secondary,
-                    onPressed: () => _decline(context, ref),
+                    isLoading: declining,
+                    onPressed: declining ? null : () => _decline(context, ref),
                   ),
                 ),
               ],
@@ -240,10 +259,19 @@ class _QuoteRequestCard extends ConsumerWidget {
 
   Future<void> _decline(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await ref.read(quoteRequestActionsProvider).decline(req.id);
-    if (!context.mounted) return;
-    messenger.showSnackBar(
-      SnackBar(content: Text(ok ? 'Request declined.' : "Couldn't decline.")),
-    );
+    ref.read(_decliningIdsProvider.notifier).start(req.id);
+    try {
+      final ok = await ref.read(quoteRequestActionsProvider).decline(req.id);
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(ok ? 'Request declined.' : "Couldn't decline.")),
+      );
+    } finally {
+      // ref is unusable once the card is disposed (e.g. list refreshed after
+      // a successful decline removed this row).
+      if (context.mounted) {
+        ref.read(_decliningIdsProvider.notifier).done(req.id);
+      }
+    }
   }
 }

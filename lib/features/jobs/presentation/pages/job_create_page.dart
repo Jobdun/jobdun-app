@@ -71,6 +71,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   };
 
   Future<void> _post(BuildContext context, JColors c) async {
+    if (_isPosting) return; // re-entry guard — see _isPosting note below
     final tt = Theme.of(context).textTheme;
     final formState = _formKey.currentState;
     if (formState == null || !formState.saveAndValidate()) {
@@ -88,12 +89,19 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       return;
     }
 
+    // _isPosting must flip BEFORE the verification await — it used to flip
+    // after, leaving POST JOB tappable through a full network round-trip:
+    // two taps created two identical live listings (P0, races audit
+    // 2026-08-18).
+    setState(() => _isPosting = true);
+
     // Soft gate: only Verified businesses (ABN) can publish a job. Unverified
     // builders are routed through the ~15s ABN wizard, then they retry POST.
     // The form stays intact behind the sheet. RLS is the hard backstop.
     final verified = await _isVerifiedBusiness(builderId);
     if (!context.mounted) return;
     if (!verified) {
+      setState(() => _isPosting = false);
       HapticFeedback.mediumImpact();
       await showJSheet<void>(
         context: context,
@@ -101,8 +109,6 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       );
       return;
     }
-
-    setState(() => _isPosting = true);
     final result = await ref
         .read(createJobUseCaseProvider)
         .call(_buildJob(builderId, formState.value));

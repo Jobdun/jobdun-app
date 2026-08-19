@@ -122,18 +122,25 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
     _debounceTimer = Timer(_debounce, () => unawaited(_runQuery(query)));
   }
 
+  /// Bumped per query AND on select/clear. Only the newest request may write
+  /// results — a slower earlier autocomplete response used to overwrite the
+  /// fresher list, and could even re-open the dropdown over a chosen address
+  /// (feeding job posts the wrong suburb/lat-lng — races audit, 2026-08-18).
+  int _queryGeneration = 0;
+
   Future<void> _runQuery(String query) async {
+    final generation = ++_queryGeneration;
     final service = ref.read(placesServiceProvider);
     try {
       final results = await service.autocomplete(query);
-      if (!mounted) return;
+      if (!mounted || generation != _queryGeneration) return;
       setState(() {
         _suggestions = results;
         _loadingSuggestions = false;
         _error = results.isEmpty ? const PlacesNoResults() : null;
       });
     } on PlacesException catch (error) {
-      if (!mounted) return;
+      if (!mounted || generation != _queryGeneration) return;
       setState(() {
         _suggestions = const [];
         _loadingSuggestions = false;
@@ -143,6 +150,7 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
   }
 
   void _select(JPlaceResult result, FormFieldState<JPlaceResult> field) {
+    _queryGeneration++; // kill any in-flight autocomplete response
     _debounceTimer?.cancel();
     _controller.text = result.formattedAddress;
     setState(() {
@@ -157,6 +165,7 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
   }
 
   void _clear(FormFieldState<JPlaceResult> field) {
+    _queryGeneration++; // kill any in-flight autocomplete response
     _debounceTimer?.cancel();
     _controller.clear();
     setState(() {

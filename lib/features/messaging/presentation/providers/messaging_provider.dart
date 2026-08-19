@@ -157,7 +157,14 @@ class MessagingController extends Notifier<MessagingState>
     final stream = ref.read(watchMessagesUseCaseProvider).call(conversationId);
     _messageSubs[conversationId] = stream.listen(
       (msgs) => _mergeConfirmed(conversationId, msgs),
-      onError: (Object e) => state = state.copyWith(error: e.toString()),
+      onError: (Object e) {
+        // Drop the dead entry so re-entering the thread resubscribes — the
+        // containsKey guard above otherwise pinned a broken stream for the
+        // rest of the app session and live delivery never recovered
+        // (lifecycle audit, 2026-08-18).
+        _messageSubs.remove(conversationId)?.cancel();
+        state = state.copyWith(error: e.toString());
+      },
     );
   }
 

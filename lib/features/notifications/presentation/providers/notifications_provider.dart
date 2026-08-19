@@ -95,9 +95,14 @@ class NotificationsController extends Notifier<NotificationsState>
   }
 
   Future<void> markRead(String notificationId) async {
-    // Optimistic — stamp readAt locally, roll back on failure.
+    // Optimistic — stamp readAt locally, ROLL BACK on failure (the old
+    // comment promised a rollback that never existed: badges cleared
+    // locally, nothing persisted, counts came back on restart — races
+    // audit, 2026-08-18).
+    final prev = state.notifications;
+    final prevUnread = state.unreadCount;
     final now = DateTime.now();
-    final next = state.notifications
+    final next = prev
         .map((n) => n.id == notificationId ? n.asRead(now) : n)
         .toList();
     state = state.copyWith(
@@ -107,17 +112,33 @@ class NotificationsController extends Notifier<NotificationsState>
     final result = await ref
         .read(markAsReadUseCaseProvider)
         .call(notificationId);
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
+    result.fold(
+      (f) => state = state.copyWith(
+        notifications: prev,
+        unreadCount: prevUnread,
+        error: f.message,
+      ),
+      (_) {},
+    );
   }
 
   Future<void> markAllRead() async {
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
+    final prev = state.notifications;
+    final prevUnread = state.unreadCount;
     final now = DateTime.now();
-    final next = state.notifications.map((n) => n.asRead(now)).toList();
+    final next = prev.map((n) => n.asRead(now)).toList();
     state = state.copyWith(notifications: next, unreadCount: 0);
     final result = await ref.read(markAllAsReadUseCaseProvider).call(userId);
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {});
+    result.fold(
+      (f) => state = state.copyWith(
+        notifications: prev,
+        unreadCount: prevUnread,
+        error: f.message,
+      ),
+      (_) {},
+    );
   }
 }
 

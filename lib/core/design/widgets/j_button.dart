@@ -67,6 +67,11 @@ class JButton extends StatelessWidget {
 
     final labelStyle = tt.labelLarge!.copyWith(color: _labelColor(c));
 
+    // A spinning button is never tappable: call sites that passed isLoading
+    // but forgot to null onPressed shipped double-submits (double quotes,
+    // double job posts — races audit, 2026-08-18).
+    final effectiveOnPressed = isLoading ? null : onPressed;
+
     final Widget content = isLoading
         ? SizedBox.square(
             dimension: 18.r,
@@ -100,7 +105,7 @@ class JButton extends StatelessWidget {
 
     return switch (variant) {
       JButtonVariant.primary => FilledButton(
-        onPressed: onPressed,
+        onPressed: effectiveOnPressed,
         style: FilledButton.styleFrom(
           backgroundColor: c.action,
           foregroundColor: c.onAction,
@@ -116,7 +121,7 @@ class JButton extends StatelessWidget {
         child: content,
       ),
       JButtonVariant.secondary => FilledButton(
-        onPressed: onPressed,
+        onPressed: effectiveOnPressed,
         style: FilledButton.styleFrom(
           backgroundColor: c.surfaceRaised,
           foregroundColor: c.text1,
@@ -132,7 +137,7 @@ class JButton extends StatelessWidget {
         child: content,
       ),
       JButtonVariant.text => TextButton(
-        onPressed: onPressed,
+        onPressed: effectiveOnPressed,
         style: TextButton.styleFrom(
           foregroundColor: c.action,
           minimumSize: Size.fromHeight(
@@ -142,7 +147,7 @@ class JButton extends StatelessWidget {
         child: content,
       ),
       JButtonVariant.danger => FilledButton(
-        onPressed: onPressed,
+        onPressed: effectiveOnPressed,
         style: FilledButton.styleFrom(
           backgroundColor: c.urgent,
           foregroundColor: c.onAction,

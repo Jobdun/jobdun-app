@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -44,29 +46,62 @@ class _AvailabilityCalendarPageState
     );
   }
 
+  // Serialize the full-array writes: rapid taps used to race whole-array
+  // upserts (whichever the server committed last won — possibly an older
+  // one) and a failed FIRST write rolled the UI back past later taps that
+  // had already persisted (races audit, 2026-08-18). One write in flight at
+  // a time; the latest desired state is flushed after it settles.
+  bool _writing = false;
+  bool _writeQueued = false;
+
   Future<void> _toggle(DateTime day) async {
     final picked = dateOnly(day);
     if (picked.isBefore(_today)) return;
 
-    final prev = _dates;
-    final next = toggleUnavailableDay(_dates, picked);
     setState(() {
-      _dates = next;
+      _dates = toggleUnavailableDay(_dates, picked);
       _focusedDay = picked;
     });
+    unawaited(_flushWrites());
+  }
 
-    final messenger = ScaffoldMessenger.of(context);
-    final ok = await ref
-        .read(profileControllerProvider.notifier)
-        .setTradeUnavailableDates(next);
-    if (!mounted) return;
-    if (!ok) {
-      setState(() => _dates = prev);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text("Couldn't update availability. Try again."),
-        ),
-      );
+  Future<void> _flushWrites() async {
+    if (_writing) {
+      _writeQueued = true;
+      return;
+    }
+    _writing = true;
+    try {
+      while (true) {
+        _writeQueued = false;
+        final snapshot = List<DateTime>.from(_dates);
+        final ok = await ref
+            .read(profileControllerProvider.notifier)
+            .setTradeUnavailableDates(snapshot);
+        if (!mounted) return;
+        if (!ok) {
+          // Re-sync from the last known server truth instead of a pre-tap
+          // snapshot that may discard taps that DID persist.
+          setState(() {
+            _dates = List<DateTime>.from(
+              ref
+                      .read(profileControllerProvider)
+                      .tradeProfile
+                      ?.unavailableDates ??
+                  const <DateTime>[],
+            );
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Couldn't update availability. Try again."),
+            ),
+          );
+          return;
+        }
+        if (!_writeQueued) return;
+      }
+    } finally {
+      _writing = false;
     }
   }
 

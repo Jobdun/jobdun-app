@@ -448,6 +448,12 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
                     isLoading: _locationStatus == _LocationStatus.requesting,
                     hasLocation: _userLocation != null,
                     onTap: () {
+                      // In-flight guard: a second tap mid-request used to
+                      // start a second _initLocation and stack two modal
+                      // rationale dialogs (races audit, 2026-08-18).
+                      if (_locationStatus == _LocationStatus.requesting) {
+                        return;
+                      }
                       if (_userLocation != null) {
                         // Match the initial framing zoom so the radius circle
                         // stays visible after recentering.
