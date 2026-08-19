@@ -44,6 +44,10 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
     });
   }
 
+  void _retryLoad() {
+    ref.read(messagingControllerProvider.notifier).loadConversations();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -143,57 +147,88 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                         ),
                       ),
                     )
-                  : msgState.conversations.isEmpty
-                  ? _EmptyState(isBuilder: isBuilder)
-                  : msgState.filteredConversations.isEmpty
-                  ? Center(
-                      child: Text(
-                        'NO CONVERSATIONS MATCH.',
-                        style: tt.bodyMedium!.copyWith(color: c.text3),
-                      ),
-                    )
-                  : JStaggeredList(
-                      itemCount: msgState.filteredConversations.length,
-                      separatorBuilder: (_, _) =>
-                          Divider(height: 1, color: c.border),
-                      itemBuilder: (ctx, i) {
-                        final conv = msgState.filteredConversations[i];
-                        final unread = conv.unreadCountFor(userId);
-                        final row = ConversationRow(
-                          isPinned: conv.isPinnedFor(userId),
-                          isMuted: conv.isMutedFor(userId),
-                          isBlocked: conv.status == ConversationStatus.blocked,
-                          initials: _initials(conv.otherUserDisplayName ?? '?'),
-                          name: conv.otherUserDisplayName ?? 'Unknown',
-                          preview: conv.lastMessagePreview ?? '',
-                          time: conv.lastMessageAt != null
-                              ? _relTime(conv.lastMessageAt!)
-                              : '',
-                          unreadCount: unread,
-                          jobTitle: conv.jobTitle,
-                          avatarUrl: conv.otherUserAvatarUrl,
-                          onLongPress: () {
-                            HapticFeedback.mediumImpact();
-                            _showActionsSheet(conv, userId);
-                          },
-                          onTap: () => context.push(
-                            '/messages/${conv.id}',
-                            extra: ConversationArgs(
-                              conversationId: conv.id,
-                              otherName: conv.otherUserDisplayName ?? 'Unknown',
-                              jobTitle: conv.jobTitle,
-                              otherInitials: _initials(
-                                conv.otherUserDisplayName ?? '?',
-                              ),
-                              otherUserId: conv.builderId == userId
-                                  ? conv.tradeId
-                                  : conv.builderId,
-                              otherAvatarUrl: conv.otherUserAvatarUrl,
+                  // P6, 2026-08-18 audit: a failed load must render as an
+                  // error with RETRY (never a fake-empty inbox), and every
+                  // branch is pull-to-refreshable — the inbox previously
+                  // loaded exactly once with no recovery path.
+                  : RefreshIndicator(
+                      color: c.action,
+                      backgroundColor: c.surface,
+                      onRefresh: () => ref
+                          .read(messagingControllerProvider.notifier)
+                          .loadConversations(),
+                      child: msgState.filteredConversations.isEmpty
+                          ? CustomScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              slivers: [
+                                SliverFillRemaining(
+                                  hasScrollBody: false,
+                                  child:
+                                      msgState.error != null &&
+                                          msgState.conversations.isEmpty
+                                      ? _InboxError(onRetry: _retryLoad)
+                                      : msgState.conversations.isEmpty
+                                      ? _EmptyState(isBuilder: isBuilder)
+                                      : Center(
+                                          child: Text(
+                                            'NO CONVERSATIONS MATCH.',
+                                            style: tt.bodyMedium!.copyWith(
+                                              color: c.text3,
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            )
+                          : JStaggeredList(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: msgState.filteredConversations.length,
+                              separatorBuilder: (_, _) =>
+                                  Divider(height: 1, color: c.border),
+                              itemBuilder: (ctx, i) {
+                                final conv = msgState.filteredConversations[i];
+                                final unread = conv.unreadCountFor(userId);
+                                final row = ConversationRow(
+                                  isPinned: conv.isPinnedFor(userId),
+                                  isMuted: conv.isMutedFor(userId),
+                                  isBlocked:
+                                      conv.status == ConversationStatus.blocked,
+                                  initials: _initials(
+                                    conv.otherUserDisplayName ?? '?',
+                                  ),
+                                  name: conv.otherUserDisplayName ?? 'Unknown',
+                                  preview: conv.lastMessagePreview ?? '',
+                                  time: conv.lastMessageAt != null
+                                      ? _relTime(conv.lastMessageAt!)
+                                      : '',
+                                  unreadCount: unread,
+                                  jobTitle: conv.jobTitle,
+                                  avatarUrl: conv.otherUserAvatarUrl,
+                                  onLongPress: () {
+                                    HapticFeedback.mediumImpact();
+                                    _showActionsSheet(conv, userId);
+                                  },
+                                  onTap: () => context.push(
+                                    '/messages/${conv.id}',
+                                    extra: ConversationArgs(
+                                      conversationId: conv.id,
+                                      otherName:
+                                          conv.otherUserDisplayName ??
+                                          'Unknown',
+                                      jobTitle: conv.jobTitle,
+                                      otherInitials: _initials(
+                                        conv.otherUserDisplayName ?? '?',
+                                      ),
+                                      otherUserId: conv.builderId == userId
+                                          ? conv.tradeId
+                                          : conv.builderId,
+                                      otherAvatarUrl: conv.otherUserAvatarUrl,
+                                    ),
+                                  ),
+                                );
+                                return row;
+                              },
                             ),
-                          ),
-                        );
-                        return row;
-                      },
                     ),
             ),
           ],
@@ -287,9 +322,57 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
 
   static String _relTime(DateTime t) {
     final diff = DateTime.now().difference(t);
+    // P6, 2026-08-18 audit: guard "0m" and negative values (clock skew).
+    if (diff.isNegative || diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     return '${diff.inDays}d';
+  }
+}
+
+// ── Error state ────────────────────────────────────────────────────────────────
+
+// Full-page inbox error + RETRY (P6, 2026-08-18 audit). Mirrors the jobs feed
+// `_PageError` pattern (jobs_page_widgets.dart).
+class _InboxError extends StatelessWidget {
+  const _InboxError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              "Couldn't load your messages.",
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

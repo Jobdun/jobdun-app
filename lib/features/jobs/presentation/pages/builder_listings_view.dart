@@ -45,7 +45,10 @@ class _BuilderListingsState extends ConsumerState<BuilderListingsView> {
   Widget build(BuildContext context) {
     final c = context.c;
     final async = ref.watch(builderListingsProvider);
-    final all = async.asData?.value ?? const <Job>[];
+    // P6, 2026-08-18 audit: keep any previously loaded value on a refresh
+    // error; a failed FIRST load renders the error state below, never the
+    // "NO LISTINGS YET" empty state.
+    final all = async.value ?? const <Job>[];
 
     return Scaffold(
       backgroundColor: c.background,
@@ -120,6 +123,11 @@ class _BuilderListingsState extends ConsumerState<BuilderListingsView> {
             Expanded(
               child: async.isLoading && all.isEmpty
                   ? const _ListingsSkeleton()
+                  // P6, 2026-08-18 audit: failed load → error + RETRY.
+                  : async.hasError && all.isEmpty
+                  ? _ListingsError(
+                      onRetry: () => ref.invalidate(builderListingsProvider),
+                    )
                   : _ListingsBody(
                       jobs: all.where(_matches).toList(),
                       tab: _tab,

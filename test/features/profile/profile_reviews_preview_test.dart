@@ -85,6 +85,57 @@ void main() {
     expect(find.text('REVIEWS'), findsNothing);
   });
 
+  // P6, 2026-08-18 audit: a failed load must render the couldn't-load line
+  // with RETRY — never the "No reviews yet" empty-state copy (the old
+  // `asData?.value ?? []` collapse made failures look like zero reviews).
+  testWidgets('failed load shows couldnt-load line + RETRY, not empty note', (
+    tester,
+  ) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        // Riverpod 3 auto-retries failed providers with backoff; disable it so
+        // the error state is deterministic (only the RETRY tap re-fetches).
+        retry: (retryCount, error) => null,
+        overrides: [
+          reviewsForUserProvider('u1').overrideWith((ref) async {
+            calls++;
+            if (calls == 1) throw Exception('network down');
+            return [_review('a')];
+          }),
+        ],
+        child: ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, _) => MaterialApp(
+            theme: AppTheme.dark(),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ProfileReviewsPreview(
+                  userId: 'u1',
+                  emptyMessage: 'No reviews yet — complete a job to earn one.',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't load reviews"), findsOneWidget);
+    expect(find.text('RETRY'), findsOneWidget);
+    expect(
+      find.text('No reviews yet — complete a job to earn one.'),
+      findsNothing,
+    );
+
+    // RETRY invalidates the provider and the re-fetch succeeds.
+    await tester.tap(find.text('RETRY'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ReviewCard), findsOneWidget);
+    expect(find.text("Couldn't load reviews"), findsNothing);
+  });
+
   // Owner mode: empty + emptyMessage shows the eyebrow + an informational note
   // (you can't add your own reviews, so it's a note, not an Add CTA).
   testWidgets('shows eyebrow + note when empty and emptyMessage given', (

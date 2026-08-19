@@ -55,12 +55,13 @@ final myReviewForJobProvider = FutureProvider.autoDispose
 // ── Read-only family ──────────────────────────────────────────────────────────
 // Watchable list of reviews ABOUT a given user — for embeddable previews
 // (e.g. the profile reviews block) that shouldn't drive the page-level
-// ReviewsController. autoDispose so each mount re-fetches; failures degrade to
-// an empty list so the host surface just hides its reviews section.
+// ReviewsController. autoDispose so each mount re-fetches. Failures propagate
+// as AsyncError so hosts can render an error (P6, 2026-08-18 audit — folding
+// failures into an empty list made a failed load look like "no reviews").
 final reviewsForUserProvider = FutureProvider.autoDispose
     .family<List<Review>, String>((ref, userId) async {
       final res = await ref.read(getReviewsForUserUseCaseProvider).call(userId);
-      return res.fold((_) => const <Review>[], (r) => r);
+      return res.fold((f) => throw Exception(f.message), (r) => r);
     });
 
 // ── Controller ────────────────────────────────────────────────────────────────

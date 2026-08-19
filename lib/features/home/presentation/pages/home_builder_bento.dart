@@ -50,8 +50,10 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
     ref.listen<ProfileState>(profileControllerProvider, (_, _) => _maybeLoad());
     // Real count of the builder's live (open + filled) jobs. The old
     // builderProfile.activeJobsCount read a non-existent DB column → always 0.
+    // P6, 2026-08-18 audit: a failed load renders '—' (unknown), never a
+    // real-looking 0. A stale value survives a refresh error via `.value`.
     final activeAsync = ref.watch(builderActiveJobsCountProvider);
-    final active = activeAsync.asData?.value ?? 0;
+    final active = activeAsync.value;
     final activeLoading = activeAsync.isLoading;
     final applicants = ref.watch(
       applicationsControllerProvider.select((s) => s.pendingIncomingCount),
@@ -77,7 +79,13 @@ class _BuilderBentoGridState extends ConsumerState<_BuilderBentoGrid> {
           Gap(10.h),
           DeckStrip(
             cells: [
-              (value: activeLoading ? '—' : active.toString(), label: 'ACTIVE'),
+              (
+                value: activeLoading
+                    ? '—'
+                    // P6, 2026-08-18 audit: error → unknown '—', not 0.
+                    : active?.toString() ?? '—',
+                label: 'ACTIVE',
+              ),
               (
                 value: applicantsLoading ? '—' : applicants.toString(),
                 label: 'APPLICANTS',

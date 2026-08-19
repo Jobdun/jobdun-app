@@ -21,6 +21,33 @@ Widget _wrap(List<Booking> data, {String uid = 'b1'}) => ProviderScope(
 );
 
 void main() {
+  // P6, 2026-08-18 audit: a failed bookings load must render the page-level
+  // error + RETRY — never a plausible empty calendar / no-work message.
+  testWidgets('a failed load shows the error state with RETRY', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        // Disable Riverpod 3 auto-retry so the error state is deterministic.
+        retry: (retryCount, error) => null,
+        overrides: [
+          myBookingsProvider.overrideWith(
+            (ref) async => throw Exception('network down'),
+          ),
+          currentUserIdSyncProvider.overrideWithValue('b1'),
+        ],
+        child: ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, _) =>
+              MaterialApp(theme: AppTheme.dark(), home: const SchedulePage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't load your schedule."), findsOneWidget);
+    expect(find.text('RETRY'), findsOneWidget);
+    expect(find.text('No work scheduled for this day.'), findsNothing);
+  });
+
   testWidgets('an empty day shows the no-work message', (tester) async {
     await tester.pumpWidget(_wrap(const []));
     await tester.pumpAndSettle();

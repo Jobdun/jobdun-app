@@ -44,7 +44,13 @@ class ProfileReviewsPreview extends ConsumerWidget {
     // Don't flash the empty note while the first fetch is still in flight.
     if (async.isLoading && !async.hasValue) return const SizedBox.shrink();
 
-    final reviews = async.asData?.value ?? const <Review>[];
+    // P6, 2026-08-18 audit: a failed load must not render as "No reviews yet".
+    // Render a muted couldn't-load line with a retry instead.
+    if (async.hasError && !async.hasValue) {
+      return _PreviewLoadError(userId: userId);
+    }
+
+    final reviews = async.value ?? const <Review>[];
 
     if (reviews.isEmpty) {
       final note = emptyMessage;
@@ -69,6 +75,47 @@ class ProfileReviewsPreview extends ConsumerWidget {
         Gap(AppSpacing.sm.h),
         for (final r in preview) ReviewCard(review: r),
         if (hasMore) _SeeAllRow(count: reviews.length),
+      ],
+    );
+  }
+}
+
+/// Muted couldn't-load line + RETRY for the preview card (P6, 2026-08-18
+/// audit). Small-tile surface, so no full-page error chrome — just an honest
+/// line and a re-load affordance.
+class _PreviewLoadError extends ConsumerWidget {
+  const _PreviewLoadError({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const FieldLabel('REVIEWS'),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                "Couldn't load reviews",
+                style: tt.bodyMedium!.copyWith(color: c.text3),
+              ),
+            ),
+            TextButton(
+              onPressed: () => ref.invalidate(reviewsForUserProvider(userId)),
+              child: Text(
+                'RETRY',
+                style: tt.labelMedium!.copyWith(
+                  color: c.actionInk,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

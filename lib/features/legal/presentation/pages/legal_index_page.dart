@@ -9,6 +9,19 @@ import '../../../../core/design/colors.dart';
 import '../../domain/legal_document.dart';
 import '../providers/legal_provider.dart';
 
+// P6, 2026-08-18 audit: lastAcceptedVersionsProvider folds a failed read into
+// an empty map, which rendered every document as un-accepted. This page-local
+// read keeps the failure visible so the tiles can treat it as UNKNOWN (hide
+// the accepted/pending chrome) instead of lying. Page-scoped on purpose — the
+// shared provider's swallow-to-{} behaviour is load-bearing for the
+// re-acceptance gate (pendingReacceptanceProvider).
+final _acceptedVersionsProvider =
+    FutureProvider.autoDispose<Map<String, String>>((ref) async {
+      final repo = ref.read(legalAcceptanceRepositoryProvider);
+      final result = await repo.lastAcceptedVersions();
+      return result.fold((err) => throw Exception(err), (v) => v);
+    });
+
 class LegalIndexPage extends ConsumerWidget {
   const LegalIndexPage({super.key});
 
@@ -17,7 +30,7 @@ class LegalIndexPage extends ConsumerWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final versionsAsync = ref.watch(legalVersionsProvider);
-    final acceptedAsync = ref.watch(lastAcceptedVersionsProvider);
+    final acceptedAsync = ref.watch(_acceptedVersionsProvider);
 
     return Scaffold(
       backgroundColor: c.background,
@@ -82,7 +95,10 @@ class _LegalDocSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentVersions = versionsAsync.asData?.value ?? {};
-    final acceptedVersions = acceptedAsync.asData?.value ?? {};
+    // P6, 2026-08-18 audit: null = the accepted-versions read failed or is
+    // still loading → acceptance status is UNKNOWN, so the tiles hide the
+    // accepted/pending chrome rather than marking documents un-accepted.
+    final acceptedVersions = acceptedAsync.value;
 
     return Container(
       decoration: BoxDecoration(
@@ -115,7 +131,8 @@ class _LegalDocSection extends StatelessWidget {
               tt: tt,
               type: type,
               currentVersion: currentVersions[type.dbKey] ?? '1.0.0',
-              acceptedVersion: acceptedVersions[type.dbKey],
+              statusKnown: acceptedVersions != null,
+              acceptedVersion: acceptedVersions?[type.dbKey],
               onTap: () {
                 final path = type == LegalDocumentType.termsOfService
                     ? '/legal/terms'
@@ -138,6 +155,7 @@ class _DocTile extends StatelessWidget {
     required this.tt,
     required this.type,
     required this.currentVersion,
+    required this.statusKnown,
     required this.acceptedVersion,
     required this.onTap,
   });
@@ -146,13 +164,20 @@ class _DocTile extends StatelessWidget {
   final TextTheme tt;
   final LegalDocumentType type;
   final String currentVersion;
+
+  /// False when the accepted-versions read failed (or hasn't resolved yet):
+  /// acceptance status is unknown, so no accepted/pending chrome is shown
+  /// (P6, 2026-08-18 audit — unknown must not render as un-accepted).
+  final bool statusKnown;
   final String? acceptedVersion;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final accepted =
-        acceptedVersion != null && acceptedVersion == currentVersion;
+        statusKnown &&
+        acceptedVersion != null &&
+        acceptedVersion == currentVersion;
 
     return ListTile(
       onTap: onTap,
@@ -175,7 +200,9 @@ class _DocTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        accepted
+        !statusKnown
+            ? 'Version $currentVersion'
+            : accepted
             ? 'Version $currentVersion — Accepted'
             : 'Version $currentVersion${acceptedVersion != null ? ' — Update pending' : ''}',
         style: tt.labelSmall!.copyWith(color: accepted ? c.verified : c.text3),

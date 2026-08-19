@@ -6,6 +6,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/design/widgets/animated_empty_glyph.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../domain/entities/review.dart';
@@ -28,10 +29,14 @@ class _ReviewsPageState extends ConsumerState<ReviewsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final userId = ref.read(currentUserIdSyncProvider);
-      if (userId == null) return;
-      ref.read(reviewsControllerProvider.notifier).loadFor(userId);
+      _reload();
     });
+  }
+
+  void _reload() {
+    final userId = ref.read(currentUserIdSyncProvider);
+    if (userId == null) return;
+    ref.read(reviewsControllerProvider.notifier).loadFor(userId);
   }
 
   @override
@@ -54,6 +59,10 @@ class _ReviewsPageState extends ConsumerState<ReviewsPage> {
                     ),
                   ),
                 )
+              // P6, 2026-08-18 audit: a failed load must render as an error
+              // with a retry, never as the "No reviews yet" empty state.
+              : state.error != null && state.reviews.isEmpty
+              ? _ReviewsError(onRetry: _reload)
               : state.reviews.isEmpty
               ? _Empty()
               : ListView.builder(
@@ -75,6 +84,50 @@ Review _placeholderReview() => Review(
   createdAt: DateTime.now(),
   comment: 'Loading review content placeholder.',
 );
+
+// Full-page error + RETRY (P6, 2026-08-18 audit). Mirrors the jobs feed
+// `_PageError` pattern (jobs_page_widgets.dart).
+class _ReviewsError extends StatelessWidget {
+  const _ReviewsError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              "Couldn't load your reviews.",
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _Empty extends StatelessWidget {
   @override

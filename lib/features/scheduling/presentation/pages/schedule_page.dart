@@ -7,6 +7,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../timesheets/presentation/pages/timesheet_args.dart';
@@ -41,7 +42,10 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final async = ref.watch(myBookingsProvider);
-    final bookings = async.asData?.value ?? const <Booking>[];
+    // P6, 2026-08-18 audit: keep any previously loaded value on a refresh
+    // error; a failed FIRST load renders the page-level error below, never a
+    // plausible empty calendar.
+    final bookings = async.value ?? const <Booking>[];
     final meId = ref.watch(currentUserIdSyncProvider);
     final dayList = bookingsOn(bookings, _selectedDay);
     final now = DateTime.now();
@@ -75,97 +79,168 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
             ),
             Divider(height: 1, color: c.border),
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, AppSpacing.xl.h),
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(AppSpacing.sm.w),
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.card.r),
-                      border: Border.all(color: c.border),
-                    ),
-                    child: TableCalendar<Booking>(
-                      firstDay: DateTime(now.year - 1, now.month, now.day),
-                      lastDay: DateTime(now.year + 1, now.month, now.day),
-                      focusedDay: _focusedDay,
-                      startingDayOfWeek: StartingDayOfWeek.monday,
-                      availableGestures: AvailableGestures.horizontalSwipe,
-                      selectedDayPredicate: (d) => isSameDay(d, _selectedDay),
-                      eventLoader: (day) => bookingsOn(bookings, day),
-                      onDaySelected: (sel, foc) => setState(() {
-                        _selectedDay = sel;
-                        _focusedDay = foc;
-                      }),
-                      onPageChanged: (foc) => _focusedDay = foc,
-                      headerStyle: HeaderStyle(
-                        formatButtonVisible: false,
-                        titleCentered: true,
-                        leftChevronIcon: Icon(
-                          AppIcons.back,
-                          size: AppIconSize.md.r,
-                          color: c.text1,
-                        ),
-                        rightChevronIcon: Icon(
-                          AppIcons.chevronRight,
-                          size: AppIconSize.md.r,
-                          color: c.text1,
-                        ),
-                        titleTextStyle: tt.titleMedium!.copyWith(
-                          color: c.text1,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      daysOfWeekStyle: DaysOfWeekStyle(
-                        weekdayStyle: tt.labelSmall!.copyWith(color: c.text3),
-                        weekendStyle: tt.labelSmall!.copyWith(color: c.text3),
-                      ),
-                      calendarStyle: CalendarStyle(
-                        markerDecoration: BoxDecoration(
-                          color: c.action,
-                          shape: BoxShape.circle,
-                        ),
-                        markersMaxCount: 1,
-                        selectedDecoration: BoxDecoration(
-                          color: c.action,
-                          shape: BoxShape.circle,
-                        ),
-                        selectedTextStyle: tt.bodyMedium!.copyWith(
-                          color: c.onAction,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        todayDecoration: BoxDecoration(
-                          color: Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: c.action, width: 1.5),
-                        ),
-                        todayTextStyle: tt.bodyMedium!.copyWith(color: c.text1),
-                        defaultTextStyle: tt.bodyMedium!.copyWith(
-                          color: c.text1,
-                        ),
-                        weekendTextStyle: tt.bodyMedium!.copyWith(
-                          color: c.text1,
-                        ),
-                        outsideTextStyle: tt.bodyMedium!.copyWith(
-                          color: c.text3,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Gap(AppSpacing.lg.h),
-                  if (async.hasError)
-                    Text(
-                      "Couldn't load your schedule.",
-                      style: tt.bodyMedium!.copyWith(color: c.text2),
+              // P6, 2026-08-18 audit: a failed bookings load used to render an
+              // empty calendar — error + RETRY instead.
+              child: async.hasError && !async.hasValue
+                  ? _ScheduleError(
+                      onRetry: () => ref.invalidate(myBookingsProvider),
                     )
-                  else if (dayList.isEmpty)
-                    Text(
-                      'No work scheduled for this day.',
-                      style: tt.bodyMedium!.copyWith(color: c.text2),
-                    )
-                  else
-                    ...dayList.map((b) => _BookingTile(booking: b, meId: meId)),
-                ],
+                  : ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        20.w,
+                        20.h,
+                        20.w,
+                        AppSpacing.xl.h,
+                      ),
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(AppSpacing.sm.w),
+                          decoration: BoxDecoration(
+                            color: c.surface,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.card.r,
+                            ),
+                            border: Border.all(color: c.border),
+                          ),
+                          child: TableCalendar<Booking>(
+                            firstDay: DateTime(
+                              now.year - 1,
+                              now.month,
+                              now.day,
+                            ),
+                            lastDay: DateTime(now.year + 1, now.month, now.day),
+                            focusedDay: _focusedDay,
+                            startingDayOfWeek: StartingDayOfWeek.monday,
+                            availableGestures:
+                                AvailableGestures.horizontalSwipe,
+                            selectedDayPredicate: (d) =>
+                                isSameDay(d, _selectedDay),
+                            eventLoader: (day) => bookingsOn(bookings, day),
+                            onDaySelected: (sel, foc) => setState(() {
+                              _selectedDay = sel;
+                              _focusedDay = foc;
+                            }),
+                            onPageChanged: (foc) => _focusedDay = foc,
+                            headerStyle: HeaderStyle(
+                              formatButtonVisible: false,
+                              titleCentered: true,
+                              leftChevronIcon: Icon(
+                                AppIcons.back,
+                                size: AppIconSize.md.r,
+                                color: c.text1,
+                              ),
+                              rightChevronIcon: Icon(
+                                AppIcons.chevronRight,
+                                size: AppIconSize.md.r,
+                                color: c.text1,
+                              ),
+                              titleTextStyle: tt.titleMedium!.copyWith(
+                                color: c.text1,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            daysOfWeekStyle: DaysOfWeekStyle(
+                              weekdayStyle: tt.labelSmall!.copyWith(
+                                color: c.text3,
+                              ),
+                              weekendStyle: tt.labelSmall!.copyWith(
+                                color: c.text3,
+                              ),
+                            ),
+                            calendarStyle: CalendarStyle(
+                              markerDecoration: BoxDecoration(
+                                color: c.action,
+                                shape: BoxShape.circle,
+                              ),
+                              markersMaxCount: 1,
+                              selectedDecoration: BoxDecoration(
+                                color: c.action,
+                                shape: BoxShape.circle,
+                              ),
+                              selectedTextStyle: tt.bodyMedium!.copyWith(
+                                color: c.onAction,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              todayDecoration: BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: c.action, width: 1.5),
+                              ),
+                              todayTextStyle: tt.bodyMedium!.copyWith(
+                                color: c.text1,
+                              ),
+                              defaultTextStyle: tt.bodyMedium!.copyWith(
+                                color: c.text1,
+                              ),
+                              weekendTextStyle: tt.bodyMedium!.copyWith(
+                                color: c.text1,
+                              ),
+                              outsideTextStyle: tt.bodyMedium!.copyWith(
+                                color: c.text3,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Gap(AppSpacing.lg.h),
+                        if (async.hasError)
+                          Text(
+                            "Couldn't load your schedule.",
+                            style: tt.bodyMedium!.copyWith(color: c.text2),
+                          )
+                        else if (dayList.isEmpty)
+                          Text(
+                            'No work scheduled for this day.',
+                            style: tt.bodyMedium!.copyWith(color: c.text2),
+                          )
+                        else
+                          ...dayList.map(
+                            (b) => _BookingTile(booking: b, meId: meId),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Full-page error + RETRY (P6, 2026-08-18 audit). Mirrors the jobs feed
+// `_PageError` pattern (jobs_page_widgets.dart).
+class _ScheduleError extends StatelessWidget {
+  const _ScheduleError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              "Couldn't load your schedule.",
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
               ),
             ),
           ],
@@ -175,14 +250,46 @@ class _SchedulePageState extends ConsumerState<SchedulePage> {
   }
 }
 
-class _BookingTile extends ConsumerWidget {
+class _BookingTile extends ConsumerStatefulWidget {
   const _BookingTile({required this.booking, required this.meId});
 
   final Booking booking;
   final String? meId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BookingTile> createState() => _BookingTileState();
+}
+
+class _BookingTileState extends ConsumerState<_BookingTile> {
+  // P6, 2026-08-18 audit: MARK DONE used to fire-and-forget setStatus — no
+  // in-flight state, no failure feedback, repeatable taps.
+  bool _marking = false;
+
+  Future<void> _markDone() async {
+    if (_marking) return;
+    setState(() => _marking = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final c = context.c;
+    final ok = await ref
+        .read(bookingActionsProvider)
+        .setStatus(widget.booking.id, BookingStatus.completed);
+    if (!mounted) return;
+    setState(() => _marking = false);
+    if (!ok) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text("Couldn't update the booking. Try again."),
+          backgroundColor: c.urgent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final booking = widget.booking;
+    final meId = widget.meId;
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     // Show the other party: a builder sees the tradie; a tradie sees the company.
@@ -250,13 +357,11 @@ class _BookingTile extends ConsumerWidget {
               ),
               if (booking.isActive)
                 TextButton(
-                  onPressed: () => ref
-                      .read(bookingActionsProvider)
-                      .setStatus(booking.id, BookingStatus.completed),
+                  onPressed: _marking ? null : _markDone,
                   child: Text(
-                    'MARK DONE',
+                    _marking ? 'MARKING…' : 'MARK DONE',
                     style: tt.labelMedium!.copyWith(
-                      color: c.action,
+                      color: _marking ? c.text3 : c.action,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

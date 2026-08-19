@@ -220,72 +220,10 @@ class _ListingCard extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final messenger = ScaffoldMessenger.of(context);
     showJSheet<void>(
       context: context,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 20.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Delete this listing?',
-              style: tt.headlineSmall!.copyWith(
-                fontWeight: FontWeight.w700,
-                color: c.text1,
-              ),
-            ),
-            Gap(8.h),
-            Text(
-              "Applicants will no longer see it. This can't be undone "
-              'from the app.',
-              style: tt.bodyMedium!.copyWith(color: c.text3, height: 1.5),
-            ),
-            Gap(20.h),
-            Row(
-              children: [
-                Expanded(
-                  child: JButton(
-                    label: 'CANCEL',
-                    variant: JButtonVariant.secondary,
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ),
-                Gap(10.w),
-                Expanded(
-                  child: JButton(
-                    label: 'DELETE',
-                    icon: AppIcons.trash,
-                    variant: JButtonVariant.danger,
-                    onPressed: () async {
-                      final ok = await ref
-                          .read(jobsControllerProvider.notifier)
-                          .deleteJob(job.id);
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                      // Bust every builder aggregate (not just listings) so the
-                      // home/profile counts drop the deleted job too.
-                      invalidateBuilderJobAggregates(ref);
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            ok ? 'Listing deleted.' : 'Delete failed.',
-                          ),
-                          backgroundColor: ok ? c.surfaceRaised : c.urgent,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => _DeleteConfirmSheet(job: job, messenger: messenger),
     );
   }
 
@@ -303,6 +241,139 @@ class _ListingCard extends ConsumerWidget {
     if (d.inHours >= 1) return '${d.inHours}h ago';
     if (d.inMinutes >= 1) return '${d.inMinutes}m ago';
     return 'just now';
+  }
+}
+
+/// Delete confirmation sheet. Stateful so the DELETE button carries an
+/// in-flight guard — double-tapping used to double-pop and close the listings
+/// page underneath (P6 companion fix, 2026-08-18 audit).
+class _DeleteConfirmSheet extends ConsumerStatefulWidget {
+  const _DeleteConfirmSheet({required this.job, required this.messenger});
+
+  final Job job;
+  final ScaffoldMessengerState messenger;
+
+  @override
+  ConsumerState<_DeleteConfirmSheet> createState() =>
+      _DeleteConfirmSheetState();
+}
+
+class _DeleteConfirmSheetState extends ConsumerState<_DeleteConfirmSheet> {
+  bool _deleting = false;
+
+  Future<void> _delete() async {
+    if (_deleting) return;
+    setState(() => _deleting = true);
+    final c = context.c;
+    final ok = await ref
+        .read(jobsControllerProvider.notifier)
+        .deleteJob(widget.job.id);
+    if (!mounted) return;
+    // Bust every builder aggregate (not just listings) so the home/profile
+    // counts drop the deleted job too.
+    invalidateBuilderJobAggregates(ref);
+    Navigator.pop(context);
+    widget.messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Listing deleted.' : 'Delete failed.'),
+        backgroundColor: ok ? c.surfaceRaised : c.urgent,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 20.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Delete this listing?',
+            style: tt.headlineSmall!.copyWith(
+              fontWeight: FontWeight.w700,
+              color: c.text1,
+            ),
+          ),
+          Gap(8.h),
+          Text(
+            "Applicants will no longer see it. This can't be undone "
+            'from the app.',
+            style: tt.bodyMedium!.copyWith(color: c.text3, height: 1.5),
+          ),
+          Gap(20.h),
+          Row(
+            children: [
+              Expanded(
+                child: JButton(
+                  label: 'CANCEL',
+                  variant: JButtonVariant.secondary,
+                  onPressed: _deleting ? null : () => Navigator.pop(context),
+                ),
+              ),
+              Gap(10.w),
+              Expanded(
+                child: JButton(
+                  label: 'DELETE',
+                  icon: AppIcons.trash,
+                  variant: JButtonVariant.danger,
+                  isLoading: _deleting,
+                  onPressed: _deleting ? null : _delete,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Full-page error + RETRY for the listings view (P6, 2026-08-18 audit).
+// Mirrors the jobs feed `_PageError` pattern (jobs_page_widgets.dart).
+class _ListingsError extends StatelessWidget {
+  const _ListingsError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              "Couldn't load your listings.",
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
