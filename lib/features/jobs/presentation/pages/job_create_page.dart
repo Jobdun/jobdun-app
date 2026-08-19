@@ -71,7 +71,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   };
 
   Future<void> _post(BuildContext context, JColors c) async {
-    if (_isPosting) return; // re-entry guard — see _isPosting note below
+    if (_isPosting) return;
     final tt = Theme.of(context).textTheme;
     final formState = _formKey.currentState;
     if (formState == null || !formState.saveAndValidate()) {
@@ -89,15 +89,11 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
       return;
     }
 
-    // _isPosting must flip BEFORE the verification await — it used to flip
-    // after, leaving POST JOB tappable through a full network round-trip:
-    // two taps created two identical live listings (P0, races audit
-    // 2026-08-18).
+    // Flip BEFORE the await: two taps = two listings (P0, 2026-08-18).
     setState(() => _isPosting = true);
 
-    // Soft gate: only Verified businesses (ABN) can publish a job. Unverified
-    // builders are routed through the ~15s ABN wizard, then they retry POST.
-    // The form stays intact behind the sheet. RLS is the hard backstop.
+    // Soft gate: only Verified (ABN) businesses publish; unverified go via
+    // the ABN wizard then retry. RLS is the hard backstop.
     final verified = await _isVerifiedBusiness(builderId);
     if (!context.mounted) return;
     if (!verified) {
@@ -121,10 +117,9 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
         _showError(messenger, c, tt, failure.message);
       },
       (_) {
-        // Refresh the open-jobs feed so the new listing shows immediately.
+        // Refresh the feed + bust builder aggregate caches so the new post
+        // shows immediately everywhere.
         ref.read(jobsControllerProvider.notifier).refresh();
-        // Bust the builder aggregate caches so home/profile/listings reflect
-        // the new post instead of serving a stale Phase 1 cache.
         invalidateBuilderJobAggregates(ref);
         router.pop();
         messenger.showSnackBar(

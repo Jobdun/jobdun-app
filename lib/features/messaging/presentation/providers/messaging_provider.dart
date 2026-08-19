@@ -158,10 +158,8 @@ class MessagingController extends Notifier<MessagingState>
     _messageSubs[conversationId] = stream.listen(
       (msgs) => _mergeConfirmed(conversationId, msgs),
       onError: (Object e) {
-        // Drop the dead entry so re-entering the thread resubscribes — the
-        // containsKey guard above otherwise pinned a broken stream for the
-        // rest of the app session and live delivery never recovered
-        // (lifecycle audit, 2026-08-18).
+        // Drop the dead entry so re-entering the thread resubscribes —
+        // else live delivery never recovers (2026-08-18 audit).
         _messageSubs.remove(conversationId)?.cancel();
         state = state.copyWith(error: e.toString());
       },

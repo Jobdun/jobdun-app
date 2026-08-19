@@ -94,8 +94,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
           session.user.userMetadata,
         ),
       );
-      // Load role from JWT/DB after every session change — without this,
-      // home would race-fire OnboardingCompletionSheet for users who already picked.
+      // Role hydration after every session change — else home race-fires
+      // OnboardingCompletionSheet for users who already picked.
       _loadRoleForCurrentUser();
     });
     ref.onDispose(() => _authSubscription?.cancel());
@@ -135,11 +135,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
       errorMessage: _mapAuthError(e),
       clearInfo: true,
     );
-    // Every auth catch block funnels through here, so reporting once means
-    // every login / register / OAuth / OTP failure reaches Sentry without
-    // touching individual call sites. AuthException is mapped to plain
-    // English upstream — Sentry sees the original message + the action tag
-    // (e.g. action: signIn) so it's filterable in the dashboard.
+    // Every auth catch block funnels through here — one Sentry report per
+    // failure, tagged with the action so it's filterable in the dashboard.
     final tags = <String, String>{'feature': 'auth'};
     if (action != null) tags['action'] = action;
     unawaited(
@@ -350,10 +347,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         isLoading: false,
       );
     } on SignInWithAppleAuthorizationException catch (e) {
-      // User closed the Apple sheet → drop the spinner silently, mirroring
-      // the Google cancel guard above. A cancel is not an error: it used to
-      // paint "Something went wrong" under the dismissing sheet AND report
-      // to Sentry as a real failure (K10, 2026-08-18 audit).
+      // Cancel is not an error — mirror the Google guard above; it used to
+      // paint the generic banner AND Sentry-report (K10, 2026-08-18 audit).
       if (e.code == AuthorizationErrorCode.canceled) {
         state = state.copyWith(isLoading: false);
         return;
@@ -374,8 +369,8 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
     state = state.copyWith(clearRegisterDraft: true);
   }
 
-  /// Drop any live error/info banner. Auth pages call this on mount so a
-  /// failure on one screen doesn't re-render on the next (K10 #3).
+  /// Auth pages call this on mount so a failure on one screen doesn't
+  /// re-render on the next (K10 #3).
   void clearMessages() {
     if (state.errorMessage == null && state.infoMessage == null) return;
     state = state.copyWith(clearError: true, clearInfo: true);
@@ -475,8 +470,7 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         await PushNotifications.unregister();
         await _email.signOut();
       } catch (e, st) {
-        // A dead session / network blip must not leave the user visibly
-        // signed in — always fall through to the local reset.
+        // Never leave the user visibly signed in — always reset locally.
         unawaited(
           SentryReporter.reportError(
             e,

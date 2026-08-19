@@ -51,9 +51,8 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   bool _alreadyVerified = false;
   String? _verifiedPhone;
 
-  // Briefly rendered after a successful verify so the user sees confirmation
-  // before the page pops back to /profile/edit. Without this, the previous
-  // implementation popped silently â easy to mistake for "nothing happened".
+  // Brief confirmation after a successful verify before popping back —
+  // a silent pop read as "nothing happened".
   bool _justVerified = false;
 
   // Local override for authState.errorMessage when the raw Supabase auth
@@ -64,9 +63,8 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      // A banner earned on another auth screen must not re-render here.
-      ref.read(authControllerProvider.notifier).clearMessages();
+      // Drop banners earned on other auth screens (K10 #3).
+      if (mounted) ref.read(authControllerProvider.notifier).clearMessages();
     });
     if (widget.mode == PhoneAuthMode.signIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -74,9 +72,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         _restorePendingPhone();
       });
     } else {
-      // addToAccount: check the live profile state before exposing the form
-      // so a returning user doesn't get re-routed through OTP for a phone
-      // that's already verified.
+      // addToAccount: don't re-OTP an already-verified phone.
       _checkingVerifiedStatus = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -285,8 +281,7 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
         .read(authControllerProvider.notifier)
         .resendPhoneOtp();
     if (!mounted) return;
-    // Cooldown only when the SMS actually went out — a failed resend used to
-    // grey the button for 60 s on top of the error (S2, 2026-08-18 audit).
+    // Cooldown only when the SMS actually went out (S2, 2026-08-18 audit).
     if (sent) _startResendTimer();
   }
 

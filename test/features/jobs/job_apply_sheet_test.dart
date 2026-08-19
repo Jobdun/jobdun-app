@@ -39,6 +39,7 @@ void main() {
           onSubmit: (rate, note) async {
             gotRate = rate;
             gotNote = note;
+            return null;
           },
         ),
       ),
@@ -69,6 +70,7 @@ void main() {
           onSubmit: (rate, note) async {
             submitted = true;
             gotNote = note;
+            return null;
           },
         ),
       ),
