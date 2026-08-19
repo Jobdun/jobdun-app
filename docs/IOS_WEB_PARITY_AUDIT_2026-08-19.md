@@ -30,7 +30,7 @@ and three of the Aug-19 fixes behaved differently or wrongly off-Android.
 | Platform | Verdict |
 |---|---|
 | **iOS** | All 10 App Store gates PASS. Blocked only on the build number — 1.0 (5) is already live, so the current pubspec could not be uploaded. Fixed. |
-| **Web** | Builds and boots clean (0 console errors, first frame at 1.3 s). Was shipping the *marketing site's* HTML shell, had its camera + geolocation switched off by an inherited header policy, and three Aug-19 fixes misbehaved in a browser. All fixed. |
+| **Web** | Builds and boots clean (0 console errors, first frame at 1.3 s). Three Aug-19 fixes misbehaved in a browser; camera + geolocation are **blocked in production today** by a header policy. Fixed in the repo — but see the correction box: the live app is still `1.0.0+1` and its deploy pipeline is untracked, so none of it is deployable until that is reconciled. |
 
 ---
 
@@ -108,7 +108,46 @@ non-issues and it matters that they were tested:
 
 ### Web findings
 
-**W-1 — The web app was serving the marketing site's HTML shell. (P1) — FIXED**
+> ## ⚠️ Correction (2026-08-19, after checking the live host)
+>
+> The web section below was written from this checkout alone. Curling
+> app.jobdun.com.au and finding the real deploy pipeline changed three
+> findings. **The corrections are worse news, not better:**
+>
+> 1. **The live web app is `1.0.0+1`.** `curl https://app.jobdun.com.au/version.json`
+>    → `{"version":"1.0.0","build_number":"1"}`. That is the *first ever* build.
+>    It predates the guest-browsing App Review work, the 20 bug fixes,
+>    everything. The web app is not "one release behind" — it has never been
+>    redeployed.
+> 2. **W-2 is LIVE, not latent.** I wrote that `_headers` is ignored on Vercel
+>    so the app was serving no headers. Wrong — it serves a full set, including
+>    `permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()`.
+>    **Camera and geolocation are blocked on app.jobdun.com.au right now**, for
+>    real users, today. The severity goes up, not down.
+> 3. **W-1 does not describe what is deployed.** The live shell is already
+>    app-correct (`<title>Jobdun — the app for Australian builders and trades</title>`,
+>    `og:url = https://app.jobdun.com.au`). The marketing shell is what sits in
+>    `web/` on `main` and on this branch.
+>
+> **Why the divergence:** the web app is deployed by
+> `scripts/deploy-app-vercel.sh` from the `feature/web-app-desktop-responsive`
+> worktree, and that script is **untracked** — it exists only in
+> `.claude/worktrees/feature+web-app-flutter/`. It keeps the app-specific shell
+> in a separate `web-app/` directory and does `cp -r web-app/. web/` **over**
+> the repo's `web/` immediately before building. So my `web/index.html` and
+> `web/vercel.json` fixes would be **overwritten at deploy time** and never
+> reach production. It also builds `-t lib/main_web.dart`, an entrypoint that
+> no longer exists on this branch — the script cannot run here as written.
+>
+> Net effect: the `web/` fixes below are correct but **not yet deployable**.
+> Reconciling the pipeline is Phase 1 of
+> `docs/superpowers/plans/2026-08-19-ios-web-release-verification.md`.
+>
+> Also corrected: `/assets/*` is already `max-age=3600, must-revalidate` in the
+> live config (only `/canvaskit/*` still carries the year-long `immutable`), and
+> a `rewrites` SPA fallback **is** present live — harmless under hash routing.
+
+**W-1 — The web app was serving the marketing site's HTML shell. (P1) — FIXED IN REPO, NOT YET DEPLOYABLE**
 `web/index.html` still carried jobdun.com.au's `<title>`, description, and
 Open Graph/Twitter cards, with `og:url` pointing at the **marketing homepage**,
 plus a header comment claiming it was built from
@@ -127,14 +166,28 @@ the nearby-jobs map. An empty allowlist blocks them for *every* origin
 including self. Now `camera=(self), geolocation=(self)`, with microphone,
 payment and usb still off.
 
-> This was latent rather than live: `_headers` is the Cloudflare Pages /
-> Netlify convention and the app is on **Vercel**, which ignores the file. So
-> the practical state was the opposite problem — app.jobdun.com.au was serving
-> **no security headers at all**. Both halves are fixed: `_headers` is now
-> correct, and a matching `web/vercel.json` gives the actual host the same
-> policy. No SPA rewrite is needed — nothing in `lib/` calls
-> `usePathUrlStrategy`, so GoRouter is on the default **hash** strategy and
-> deep links (`/#/jobs/123`) never reach the server as a path.
+> **Corrected:** I first assessed this as latent, reasoning that `_headers` is
+> a Cloudflare/Netlify convention that Vercel ignores. The reasoning was right
+> but the conclusion was wrong — the policy reaches production through a
+> *different* file (`web-app/vercel.json` in the deploy worktree), so it is
+> **live today**. Verified:
+>
+> ```
+> $ curl -sSD - -o /dev/null https://app.jobdun.com.au/
+> permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+> ```
+>
+> An empty allowlist blocks the feature for every origin including self, so on
+> the web app the camera button and "use my current location" cannot work at
+> all. Fixed here in `web/_headers` + `web/vercel.json`, but see the correction
+> box above: the deploy pipeline stages `web-app/` over `web/`, so
+> **`web-app/vercel.json` is the copy that has to change** for this to reach
+> production.
+>
+> No SPA rewrite is needed on the app's own account — nothing in `lib/` calls
+> `usePathUrlStrategy`, so GoRouter is on the default **hash** strategy and deep
+> links (`/#/jobs/123`) never reach the server as a path. The live config
+> carries one anyway; it is harmless and worth keeping.
 
 **W-3 — Aug-19's new PDF picker silently swallows the file on web. (P1) — FIXED**
 The PDF pick path added in `5c1d976` does:
@@ -195,6 +248,13 @@ versioning is, in Flutter 3.41, a **self-unregistering stub** (it calls
 `registration.unregister()` on activate). A returning user could therefore be
 pinned to a year-old bundle. Now short-TTL + `must-revalidate`, with `no-cache`
 on the entry document and loader.
+
+> **Corrected:** the deployed config is already ahead of the repo here —
+> `/assets/*` is live as `max-age=3600, must-revalidate`. Only `/canvaskit/*`
+> still carries the year-long `immutable` in `web-app/vercel.json`. That one is
+> the least dangerous of the three (CanvasKit changes only with the Flutter
+> engine) but it is still a non-hashed URL, so it should come down to the same
+> short TTL when the pipeline is reconciled.
 
 **W-8 — Bundled `.env` is a public URL on web. (P3, accepted) — DOCUMENTED**
 `.env` is a pubspec asset, so on web it is fetchable:
@@ -289,9 +349,13 @@ Not blockers found in code — these need a device, a console, or a decision.
    the bump) and `worktree-play-versioncode-6` (bump only) both need to reach
    `develop`/`main`. The +7 chosen here supersedes the +6 branch, which can be
    retired rather than merged.
-3. **Redeploy the web app.** app.jobdun.com.au is still serving a build from
-   before the 2026-08-18 audit — none of the 20 fixes, plus every W-finding
-   above, are live for web users today.
+3. **Reconcile the web deploy pipeline, then redeploy.** app.jobdun.com.au is
+   serving **`1.0.0+1`** — the first build ever cut. Its deploy script,
+   `web-app/` template and `vercel.json` are untracked files living in the
+   `feature/web-app-desktop-responsive` worktree, and the script targets a
+   `lib/main_web.dart` that no longer exists. Until those come into the repo,
+   the `web/` fixes above cannot ship. Phase 1 of
+   `docs/superpowers/plans/2026-08-19-ios-web-release-verification.md`.
 4. **App Store Connect**: create the 1.0.1 version record; the metadata pack is
    ready in `docs/APP_STORE_METADATA.md`.
 5. **Domain-restrict the MapTiler key** (W-8).
