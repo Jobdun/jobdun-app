@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Credentials are loaded from the .env asset at runtime (dotenv.load in main).
@@ -66,15 +67,21 @@ class AppEnv {
       (dotenv.env['SENTRY_DSN'] ?? const String.fromEnvironment('SENTRY_DSN'))
           .trim();
 
+  /// Sentry environment tag, derived from the build mode.
+  ///
+  /// Deliberately does NOT read `.env`. That file is a single asset bundled
+  /// into every build and it took precedence over `--dart-define`, so the
+  /// `SENTRY_ENVIRONMENT=development` line in it tagged the shipped App Store,
+  /// Play and web builds as `development` — every real user crash landed in
+  /// the wrong Sentry environment and prod triage saw an empty project
+  /// (platform audit, 2026-08-19).
+  ///
+  /// A `--dart-define` still wins, so a release-mode staging build can be
+  /// tagged explicitly (`--dart-define=SENTRY_ENVIRONMENT=staging`).
   static String get sentryEnvironment {
-    final raw =
-        (dotenv.env['SENTRY_ENVIRONMENT'] ??
-                const String.fromEnvironment(
-                  'SENTRY_ENVIRONMENT',
-                  defaultValue: 'development',
-                ))
-            .trim();
-    return raw.isEmpty ? 'development' : raw;
+    const override = String.fromEnvironment('SENTRY_ENVIRONMENT');
+    if (override.trim().isNotEmpty) return override.trim();
+    return kReleaseMode ? 'production' : 'development';
   }
 
   static bool get hasSentryDsn => sentryDsn.isNotEmpty;

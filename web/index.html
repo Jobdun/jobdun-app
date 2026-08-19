@@ -1,11 +1,15 @@
 <!DOCTYPE html><html lang="en-AU">
 <head>
   <!--
-    Jobdun marketing site — jobdun.com.au
-    Built with Flutter Web from lib/website/main_website.dart.
-    The Flutter app takes over the page; legal sub-routes
-    (/privacy, /delete-account) are served as static HTML from /site/
-    by Cloudflare Pages and never hit this shell.
+    Jobdun web app — app.jobdun.com.au
+    Built with Flutter Web from lib/main.dart (the SAME consumer app that
+    ships on iOS and Android; there is no separate web entrypoint since
+    main_web.dart was folded back into main.dart).
+
+    NOT the marketing site. jobdun.com.au is a separate Next.js repo
+    (KpG782/jobdun-web) — this shell used to carry that site's copy, which
+    meant every link preview of the app pointed at the marketing homepage
+    (platform audit, 2026-08-19).
   -->
   <base href="$FLUTTER_BASE_HREF">
 
@@ -16,16 +20,21 @@
   <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
   <meta name="color-scheme" content="light dark">
 
-  <title>Jobdun — workforce platform for Australian construction trades</title>
-  <meta name="description" content="Jobdun connects Australian builders with verified trades. Every licence checked, every builder verified, no dud operators. Built for sparkies, chippies, plumbers, and crews.">
+  <title>Jobdun</title>
+  <meta name="description" content="Sign in to Jobdun — post jobs, review applicants, and manage your trade work from any browser.">
   <meta name="author" content="Jobdun Pty Ltd">
 
-  <!-- Open Graph -->
+  <!-- The app is a signed-in product surface, not a landing page. Keep it out
+       of search results so jobdun.com.au stays the indexed entry point and
+       users never land on a bare login screen from Google. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Open Graph — points at the APP, not the marketing site. -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Jobdun">
-  <meta property="og:title" content="Jobdun — verified trades for Australian builders">
-  <meta property="og:description" content="Every trade licence-checked. Every builder verified. No timewasters.">
-  <meta property="og:url" content="https://jobdun.com.au">
+  <meta property="og:title" content="Jobdun">
+  <meta property="og:description" content="Post jobs, review applicants, and manage your trade work from any browser.">
+  <meta property="og:url" content="https://app.jobdun.com.au">
   <meta property="og:image" content="https://jobdun.com.au/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -33,8 +42,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Jobdun — verified trades for Australian builders">
-  <meta name="twitter:description" content="Every trade licence-checked. Every builder verified. No timewasters.">
+  <meta name="twitter:title" content="Jobdun">
+  <meta name="twitter:description" content="Post jobs, review applicants, and manage your trade work from any browser.">
   <meta name="twitter:image" content="https://jobdun.com.au/og-image.png">
 
   <!-- iOS / mobile web -->
@@ -50,9 +59,9 @@
 
   <link rel="manifest" href="manifest.json">
 
-  <!-- Brand splash — pre-Flutter paint. Matches the marketing-site dark
-       slate background so there's no white flash. The hammer-J badge
-       mark stays centred until Flutter takes over. -->
+  <!-- Brand splash — pre-Flutter paint. Matches the app's dark slate
+       background so there's no white flash while main.dart.js downloads.
+       The hammer-J badge mark stays centred until Flutter takes over. -->
   <style>
     html, body {
       margin: 0;
@@ -71,6 +80,7 @@
       align-items: center;
       justify-content: center;
       background-color: #0F172A;
+      transition: opacity 300ms ease;
     }
 
     .splash img {
@@ -89,23 +99,54 @@
     }
   </style>
   <script>
-    // Remove the splash once Flutter tells us it has taken over the page.
-    // The Flutter app calls window.removeSplash() via a JS interop hook
-    // (set up in lib/website/app/website_app.dart) on its first frame.
-    window.removeSplash = function () {
-      var el = document.getElementById('splash');
-      if (el) el.remove();
-    };
-    // Failsafe: if Flutter never bootstraps (network error, etc.), remove
-    // the splash after 8 seconds so the user sees something other than a
-    // pulsing mark forever.
-    setTimeout(function () {
-      if (document.getElementById('splash')) {
-        document.getElementById('splash').style.opacity = '0';
-        document.getElementById('splash').style.transition = 'opacity 300ms ease';
-        setTimeout(window.removeSplash, 350);
+    // Remove the splash once Flutter has actually mounted its view.
+    //
+    // This used to wait on window.removeSplash() being called from
+    // lib/website/app/website_app.dart — a file the app entrypoint never
+    // loads, so nothing ever called it and the splash node lived on until
+    // the 8s failsafe (verified in-browser, 2026-08-19). It sat *behind*
+    // <flutter-view> so users never saw it, but "invisible only because of
+    // DOM ordering" is not a load screen we want to rely on.
+    //
+    // Observing the DOM for <flutter-view> needs no Dart-side hook and works
+    // with any renderer.
+    (function () {
+      var removed = false;
+      function removeSplash() {
+        if (removed) return;
+        removed = true;
+        var el = document.getElementById('splash');
+        if (!el) return;
+        el.style.opacity = '0';
+        setTimeout(function () { if (el.parentNode) el.remove(); }, 320);
       }
-    }, 8000);
+      window.removeSplash = removeSplash;
+
+      function flutterMounted() {
+        return !!document.querySelector('flutter-view, flt-glass-pane');
+      }
+
+      if (flutterMounted()) {
+        removeSplash();
+      } else {
+        var observer = new MutationObserver(function () {
+          if (flutterMounted()) {
+            observer.disconnect();
+            removeSplash();
+          }
+        });
+        observer.observe(document.body || document.documentElement, {
+          childList: true,
+          subtree: true,
+        });
+        // Failsafe: if Flutter never bootstraps (network error, unsupported
+        // browser), don't leave a pulsing mark on screen forever.
+        setTimeout(function () {
+          observer.disconnect();
+          removeSplash();
+        }, 8000);
+      }
+    })();
   </script>
 </head>
 <body>

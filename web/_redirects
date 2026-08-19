@@ -1,5 +1,7 @@
-# Cloudflare Pages SPA fallback — GoRouter handles routing client-side,
-# so every unknown path must serve index.html (200, not a redirect).
-# Real assets (main.dart.js, canvaskit, etc.) are served first; this is
-# only the fallback for paths that don't map to a file.
+# SPA fallback for Cloudflare Pages / Netlify. Vercel ignores this file (see
+# vercel.json), and it is currently a no-op there anyway: GoRouter runs on
+# Flutter web's default HASH strategy — nothing in lib/ calls
+# usePathUrlStrategy — so deep links look like /#/jobs/123 and the server only
+# ever sees "/". Kept so the app doesn't 404 on refresh the day someone
+# switches to the path URL strategy or moves the host.
 /*  /index.html  200

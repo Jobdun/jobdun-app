@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,8 +121,25 @@ class _ManualUploadSheetState extends ConsumerState<_ManualUploadSheet> {
         type: FileType.custom,
         allowedExtensions: const ['pdf'],
       );
-      final path = result?.files.single.path;
-      if (!mounted || path == null) return;
+      if (!mounted) return;
+      // Cancelling the picker is not a failure — nothing to say.
+      if (result == null) return;
+      // `path` is null on web by design: file_picker hands back `bytes` there
+      // because a browser has no filesystem the upload chain could read. The
+      // old `path == null` early-return made a picked PDF vanish with no error
+      // and no file — the exact silent-failure class this audit set out to
+      // kill. Say so instead (platform audit, 2026-08-19).
+      final path = result.files.single.path;
+      if (path == null) {
+        setState(() {
+          _error = kIsWeb
+              ? "PDF uploads aren't supported in the browser yet — "
+                    'use the Jobdun app on your phone, or upload a photo of '
+                    'the document instead.'
+              : "Couldn't read that PDF. Try picking it again.";
+        });
+        return;
+      }
       final file = File(path);
       final size = await file.length();
       if (size > ImageUploadService.maxBytes) {

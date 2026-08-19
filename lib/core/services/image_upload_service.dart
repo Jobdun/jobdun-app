@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -98,6 +99,22 @@ class ImageUploadService {
     int minOutputWidth = 1080,
     int compressQuality = 80,
   }) async {
+    // 0. Web bail-out. This pipeline is filesystem-bound end to end and none
+    // of it survives a browser: image_cropper needs cropper.js injected into
+    // index.html (it isn't), FlutterImageCompress.compressAndGetFile has no
+    // web implementation, and the returned dart:io File constructs fine but
+    // throws `UnsupportedError: _Namespace` the moment the upload reads it.
+    // That Error is not an Exception, so it slipped past both the catch below
+    // and every call site's `on UploadGuardException` — the user got a red
+    // error screen or a dead button. Fail here with copy they can act on
+    // (platform audit, 2026-08-19).
+    if (kIsWeb) {
+      throw const UploadGuardException(
+        "Photo uploads aren't supported in the browser yet — "
+        'use the Jobdun app on your phone.',
+      );
+    }
+
     // 1. Pick. Camera-sourced picks are the ones that actually throw —
     // permission denials, no camera on the device, a second picker opened
     // mid-flight. Convert them all into the same typed exception the

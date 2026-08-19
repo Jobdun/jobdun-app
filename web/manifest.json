@@ -1,12 +1,12 @@
 {
-    "name": "Jobdun — workforce platform for Australian construction trades",
+    "name": "Jobdun",
     "short_name": "Jobdun",
     "start_url": ".",
     "scope": ".",
     "display": "standalone",
     "background_color": "#0F172A",
     "theme_color": "#F97316",
-    "description": "Jobdun connects Australian builders with verified trades. Every licence checked, every builder verified, no dud operators.",
+    "description": "Post jobs, review applicants, and manage your trade work from any browser.",
     "orientation": "any",
     "prefer_related_applications": false,
     "icons": [

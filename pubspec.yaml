@@ -16,9 +16,22 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-# Build number 5 — App Store resubmission after the 2026-07-15 rejection of
-# 1.0 (4) (guest browsing 5.1.1(v) + Sign in with Apple G4 fixes).
-version: 1.0.0+5
+# 1.0.1 (7) — the live-user bug-fix release (2026-08-18/19 audit).
+#
+# Why the name moves to 1.0.1: 1.0 is already RELEASED on the App Store at
+# build 5, and Apple won't attach a new build to a shipped version — a new
+# version record is required either way, so the name reflects the fix release.
+#
+# Why the build number jumps to 7, not 6: build 5 is live on the App Store AND
+# was uploaded to Play; versionCode 6 was already minted for a Play upload on
+# `worktree-play-versioncode-6` after Play rejected 5 as "already used". Both
+# stores require a strictly increasing build number and allow gaps, so 7 is the
+# first value that is unambiguously free on both regardless of whether that 6
+# bundle was ever accepted.
+#
+# One number covers all three targets: Android reads it via flutter.versionCode,
+# iOS via $(FLUTTER_BUILD_NUMBER) → CFBundleVersion, web via version.json.
+version: 1.0.1+7
 
 environment:
   sdk: ^3.11.5

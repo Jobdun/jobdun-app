@@ -95,18 +95,23 @@
 		<string>LaunchScreen</string>
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
+		<!-- Portrait-only, matching the SystemChrome.setPreferredOrientations
+		     call in main(). The Dart lock alone is not enough: iOS intersects
+		     the view controller's mask with THIS list, but the window that
+		     exists before Dart runs (launch storyboard) only obeys the plist —
+		     so a device held sideways launched Jobdun in landscape and snapped
+		     to portrait once the engine came up. The UI scales off ScreenUtil's
+		     390×844 portrait design size, so landscape blew every .w dimension
+		     up ~2.16× (platform audit, 2026-08-18). -->
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<!-- TARGETED_DEVICE_FAMILY = 1 (iPhone only), so iPad runs Jobdun in
+		     compatibility mode and reads this key. Kept portrait for parity. -->
 		<key>UISupportedInterfaceOrientations~ipad</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>

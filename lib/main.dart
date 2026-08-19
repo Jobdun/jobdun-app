@@ -24,11 +24,21 @@ import 'core/services/push_notifications.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Portrait-only, matching android:screenOrientation="portrait" in the
-  // manifest. The UI scales off ScreenUtil's portrait design size, so iOS
-  // rotation (which the plist allowed) blew every .w dimension up ~2.16×,
-  // overflowed forms and dropped their state (platform audit, 2026-08-18).
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Portrait-only on the phone targets. The UI scales off ScreenUtil's
+  // 390×844 portrait design size, so rotation blew every .w dimension up
+  // ~2.16×, overflowed forms and dropped their state (platform audit,
+  // 2026-08-18). iOS needs the matching UISupportedInterfaceOrientations in
+  // Info.plist too — iOS intersects the two, and the pre-engine launch window
+  // obeys only the plist.
+  //
+  // Skipped on web: app.jobdun.com.au is a responsive desktop surface (left
+  // sidebar, master-detail splits) that must rotate freely, and ScreenUtil's
+  // proportional scaling is already disabled there. The browser Screen
+  // Orientation API also only honours a lock in fullscreen, so this was at
+  // best a no-op and at worst a portrait lock on a fullscreen mobile browser.
+  if (!kIsWeb) {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
   // Edge-to-edge chrome that matches the dark brand background. Per-screen
   // AppBarTheme.systemOverlayStyle still overrides where an AppBar is mounted
   // (e.g. messaging thread, settings). This baseline catches the many
