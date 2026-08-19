@@ -446,6 +446,9 @@ class _AppCard extends StatelessWidget {
 
   static String _relDate(DateTime d) {
     final diff = DateTime.now().difference(d);
+    // 2026-08-18 audit (#7): first minute read "0m ago" and clock skew
+    // produced negative values ("-3m ago").
+    if (diff.isNegative || diff.inMinutes < 1) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';

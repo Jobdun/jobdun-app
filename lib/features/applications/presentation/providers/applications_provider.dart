@@ -116,31 +116,48 @@ class ApplicationsController extends Notifier<ApplicationsState>
     );
   }
 
-  // Builder: shortlist, hire, or reject an applicant
-  Future<void> updateStatus(
+  // Builder: shortlist, hire, or reject an applicant.
+  // 2026-08-18 audit (#4): returns whether the write succeeded so callers can
+  // gate navigation (pop only on success) instead of assuming it worked.
+  Future<bool> updateStatus(
     String applicationId,
     ApplicationStatus status,
   ) async {
     final result = await ref
         .read(updateApplicationStatusUseCaseProvider)
         .call(applicationId, status);
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {
-      final builderId = readCurrentUserId(ref);
-      if (builderId != null) {
-        unawaited(loadIncomingApplications(builderId));
-      }
-    });
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
+        final builderId = readCurrentUserId(ref);
+        if (builderId != null) {
+          unawaited(loadIncomingApplications(builderId));
+        }
+        return true;
+      },
+    );
   }
 
-  // Trade: withdraw their application
-  Future<void> withdraw(String applicationId) async {
+  // Trade: withdraw their application.
+  // 2026-08-18 audit (#3): returns success so the page can surface failures.
+  Future<bool> withdraw(String applicationId) async {
     final result = await ref
         .read(withdrawApplicationUseCaseProvider)
         .call(applicationId);
-    result.fold((f) => state = state.copyWith(error: f.message), (_) {
-      final tradeId = readCurrentUserId(ref);
-      if (tradeId != null) unawaited(loadMyApplications(tradeId));
-    });
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
+        final tradeId = readCurrentUserId(ref);
+        if (tradeId != null) unawaited(loadMyApplications(tradeId));
+        return true;
+      },
+    );
   }
 
   // Trade: apply to a job. [builderId] is the JOB OWNER (recipient of the

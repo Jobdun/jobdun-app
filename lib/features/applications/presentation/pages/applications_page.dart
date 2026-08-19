@@ -41,11 +41,24 @@ class ApplicationsPage extends ConsumerStatefulWidget {
 class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
   AppTab _tab = AppTab.all;
 
+  // 2026-08-18 audit (#9): in-flight guard so a double-tap on MESSAGE can't
+  // fire the get_or_create_conversation RPC twice and push the thread twice.
+  bool _openingConversation = false;
+
+  // 2026-08-18 audit (#3): reentrancy guard for status mutations — a second
+  // tap while a shortlist/reject/withdraw is in flight is ignored.
+  bool _mutating = false;
+
+  // 2026-08-18 audit (#1): remembers which error message the user dismissed
+  // from the inline banner, so it doesn't re-appear on every rebuild.
+  String? _dismissedError;
+
   // Pull-to-refresh: re-run the role-appropriate load. The initial load is
   // owned by the controller's build() (see applications_provider.dart).
   Future<void> _refresh() async {
     final userId = ref.read(currentUserIdSyncProvider);
     if (userId == null) return;
+    _dismissedError = null; // a new attempt re-arms the error banner
     final notifier = ref.read(applicationsControllerProvider.notifier);
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     if (isBuilder) {
@@ -59,22 +72,63 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
   // conversation, then navigate to the thread. The tradie sees it in their
   // inbox and can reply.
   Future<void> _openConversation(JobApplication app) async {
-    final convId = await ref
-        .read(messagingControllerProvider.notifier)
-        .getOrCreateConversation(
-          builderId: app.builderId,
-          tradeId: app.tradeId,
-          jobId: app.jobId,
+    if (_openingConversation) return;
+    _openingConversation = true;
+    try {
+      final convId = await ref
+          .read(messagingControllerProvider.notifier)
+          .getOrCreateConversation(
+            builderId: app.builderId,
+            tradeId: app.tradeId,
+            jobId: app.jobId,
+          );
+      if (convId == null || !mounted) return;
+      context.push(
+        '/messages/$convId',
+        extra: ConversationArgs(
+          conversationId: convId,
+          otherName: app.tradeFullName ?? 'Tradesperson',
+          jobTitle: app.jobTitle,
+        ),
+      );
+    } finally {
+      _openingConversation = false;
+    }
+  }
+
+  // 2026-08-18 audit (#3): await the mutation and surface failures — these
+  // were fire-and-forget, so a failed shortlist/reject looked like success.
+  Future<void> _updateStatus(String applicationId, ApplicationStatus status) =>
+      _runMutation(
+        () => ref
+            .read(applicationsControllerProvider.notifier)
+            .updateStatus(applicationId, status),
+      );
+
+  Future<void> _withdraw(String applicationId) => _runMutation(
+    () => ref
+        .read(applicationsControllerProvider.notifier)
+        .withdraw(applicationId),
+  );
+
+  Future<void> _runMutation(Future<bool> Function() action) async {
+    if (_mutating) return;
+    _mutating = true;
+    try {
+      final ok = await action();
+      if (!ok && mounted) {
+        final error = ref.read(applicationsControllerProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error ?? "Couldn't complete that action. Please try again.",
+            ),
+          ),
         );
-    if (convId == null || !mounted) return;
-    context.push(
-      '/messages/$convId',
-      extra: ConversationArgs(
-        conversationId: convId,
-        otherName: app.tradeFullName ?? 'Tradesperson',
-        jobTitle: app.jobTitle,
-      ),
-    );
+      }
+    } finally {
+      _mutating = false;
+    }
   }
 
   @override
@@ -161,66 +215,90 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
               ),
             ),
             // ── List
+            // 2026-08-18 audit (#1): a failed load now renders an error state
+            // with RETRY (empty list) or a dismissible banner (stale data),
+            // instead of masquerading as "no applications yet".
+            // 2026-08-18 audit (#2): RefreshIndicator wraps EVERY branch so a
+            // failed/empty load is always recoverable by pull — the tab lives
+            // in an IndexedStack shell, so initState never re-runs.
             Expanded(
-              child: appsState.isLoading && filtered.isEmpty
-                  ? JSkeletonList(
-                      enabled: true,
-                      child: ListView.separated(
-                        padding: EdgeInsets.fromLTRB(
-                          20.w,
-                          AppSpacing.md.h,
-                          20.w,
-                          AppSpacing.xl.h,
-                        ),
-                        itemCount: 4,
-                        separatorBuilder: (_, _) => Gap(10.h),
-                        itemBuilder: (_, _) => _AppCard(
-                          app: _placeholderApp,
-                          isBuilder: isBuilder,
-                        ),
-                      ),
-                    )
-                  : filtered.isEmpty
-                  ? _EmptyTab(tab: _tab, isBuilder: isBuilder)
-                  : RefreshIndicator(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (appsState.error != null &&
+                      rawList.isNotEmpty &&
+                      appsState.error != _dismissedError)
+                    _ErrorBanner(
+                      message: appsState.error!,
+                      onDismiss: () =>
+                          setState(() => _dismissedError = appsState.error),
+                    ),
+                  Expanded(
+                    child: RefreshIndicator(
                       onRefresh: _refresh,
                       color: c.action,
                       backgroundColor: c.card,
-                      child: JStaggeredList(
-                        animationKey: ValueKey(_tab),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(
-                          20.w,
-                          AppSpacing.md.h,
-                          20.w,
-                          AppSpacing.xl.h +
-                              MediaQuery.of(context).padding.bottom,
-                        ),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => Gap(10.h),
-                        itemBuilder: (ctx, i) => _AppCard(
-                          app: filtered[i],
-                          isBuilder: isBuilder,
-                          onUpdateStatus: isBuilder
-                              ? (status) => ref
-                                    .read(
-                                      applicationsControllerProvider.notifier,
-                                    )
-                                    .updateStatus(filtered[i].id, status)
-                              : null,
-                          onWithdraw: !isBuilder
-                              ? () => ref
-                                    .read(
-                                      applicationsControllerProvider.notifier,
-                                    )
-                                    .withdraw(filtered[i].id)
-                              : null,
-                          onMessage: isBuilder
-                              ? () => _openConversation(filtered[i])
-                              : null,
-                        ),
-                      ),
+                      child: appsState.isLoading && filtered.isEmpty
+                          ? JSkeletonList(
+                              enabled: true,
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: EdgeInsets.fromLTRB(
+                                  20.w,
+                                  AppSpacing.md.h,
+                                  20.w,
+                                  AppSpacing.xl.h,
+                                ),
+                                itemCount: 4,
+                                separatorBuilder: (_, _) => Gap(10.h),
+                                itemBuilder: (_, _) => _AppCard(
+                                  app: _placeholderApp,
+                                  isBuilder: isBuilder,
+                                ),
+                              ),
+                            )
+                          : appsState.error != null && rawList.isEmpty
+                          ? _ScrollableFill(
+                              child: _ErrorState(
+                                message: appsState.error!,
+                                onRetry: () => _refresh(),
+                              ),
+                            )
+                          : filtered.isEmpty
+                          ? _ScrollableFill(
+                              child: _EmptyTab(tab: _tab, isBuilder: isBuilder),
+                            )
+                          : JStaggeredList(
+                              animationKey: ValueKey(_tab),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.fromLTRB(
+                                20.w,
+                                AppSpacing.md.h,
+                                20.w,
+                                AppSpacing.xl.h +
+                                    MediaQuery.of(context).padding.bottom,
+                              ),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, _) => Gap(10.h),
+                              itemBuilder: (ctx, i) => _AppCard(
+                                app: filtered[i],
+                                isBuilder: isBuilder,
+                                onUpdateStatus: isBuilder
+                                    ? (status) =>
+                                          _updateStatus(filtered[i].id, status)
+                                    : null,
+                                onWithdraw: !isBuilder
+                                    ? () => _withdraw(filtered[i].id)
+                                    : null,
+                                onMessage: isBuilder
+                                    ? () => _openConversation(filtered[i])
+                                    : null,
+                              ),
+                            ),
                     ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

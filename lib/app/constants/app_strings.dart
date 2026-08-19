@@ -40,6 +40,9 @@ class AppStrings {
   /// Confirmed state once the tradie has quoted.
   static const String respondedState = 'QUOTE SENT';
 
-  /// Inline action for a tradie to pull back a pending quote.
-  static const String withdrawFromJob = 'Withdraw quote';
+  /// Inline action for a tradie to pull back a pending application.
+  /// 2026-08-18 audit (#8): the handler withdraws the APPLICATION (the swipe
+  /// action for the same callback says 'WITHDRAW'), so the label must not
+  /// say "quote".
+  static const String withdrawFromJob = 'Withdraw application';
 }

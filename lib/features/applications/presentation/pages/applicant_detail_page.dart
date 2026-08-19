@@ -43,8 +43,11 @@ final _tradeProfileProvider = FutureProvider.autoDispose
       return res.fold((_) => null, (p) => p);
     });
 
-/// First verified row of [kind], or null. Loading/error read as null — the
-/// chips simply don't render until the data lands.
+/// First verified row of [kind], or null when absent (or when the async value
+/// hasn't produced data). 2026-08-18 audit (#6): callers must ALSO check
+/// `ver.hasValue` before treating null as "not verified" — while the load is
+/// pending or failed the state is UNKNOWN, and the chips must render nothing
+/// rather than silently downgrading a verified applicant.
 Verification? _firstVerified(
   AsyncValue<List<Verification>> ver,
   VerificationKind kind,
@@ -86,15 +89,30 @@ class ApplicantDetailPage extends ConsumerWidget {
     );
   }
 
+  // 2026-08-18 audit (#4): pop ONLY when the write succeeded — a failed HIRE
+  // used to close the page silently, leaving the builder believing they had
+  // hired someone. On failure, stay put and surface the error.
   Future<void> _setStatus(
     BuildContext context,
     WidgetRef ref,
     ApplicationStatus status,
   ) async {
-    await ref
+    final ok = await ref
         .read(applicationsControllerProvider.notifier)
         .updateStatus(args.application.id, status);
-    if (context.mounted) context.pop();
+    if (!context.mounted) return;
+    if (ok) {
+      context.pop();
+      return;
+    }
+    final error = ref.read(applicationsControllerProvider).error;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          error ?? "Couldn't update this application. Please try again.",
+        ),
+      ),
+    );
   }
 
   @override
@@ -107,6 +125,9 @@ class ApplicantDetailPage extends ConsumerWidget {
     // provenance sheet with the register/as-at/expiry detail.
     final licenceVerif = _firstVerified(ver, VerificationKind.licence);
     final abnVerif = _firstVerified(ver, VerificationKind.abn);
+    // 2026-08-18 audit (#6): loading/error is UNKNOWN, not "unverified" —
+    // the header hides the verification chips entirely until data lands.
+    final verificationsKnown = ver.hasValue;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -164,6 +185,7 @@ class ApplicantDetailPage extends ConsumerWidget {
                         profile: profile,
                         licenceVerif: licenceVerif,
                         abnVerif: abnVerif,
+                        verificationsKnown: verificationsKnown,
                       ),
                       Gap(AppSpacing.lg.h),
                       _QuoteBlock(app: app),

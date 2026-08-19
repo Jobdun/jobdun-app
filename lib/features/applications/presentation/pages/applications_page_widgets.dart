@@ -61,6 +61,115 @@ class _EmptyTab extends StatelessWidget {
   }
 }
 
+// 2026-08-18 audit (#1): full error state for a failed load with nothing to
+// show — mirrors the jobs feed `_PageError` pattern (warning glyph + message
+// + RETRY re-triggering the load).
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg.r),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.warning,
+              size: AppIconSize.feature.r,
+              color: c.urgent,
+            ),
+            Gap(AppSpacing.md.h),
+            Text(
+              message,
+              style: tt.bodyMedium!.copyWith(color: c.urgentTx),
+              textAlign: TextAlign.center,
+            ),
+            Gap(AppSpacing.md.h),
+            SizedBox(
+              width: 160.w,
+              child: JButton(
+                label: 'RETRY',
+                variant: JButtonVariant.secondary,
+                onPressed: onRetry,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 2026-08-18 audit (#1): dismissible banner for a failed refresh when stale
+// data is still on screen — the list stays usable, the failure stays visible.
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message, required this.onDismiss});
+
+  final String message;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      color: c.urgentBg,
+      padding: EdgeInsets.fromLTRB(20.w, 6.h, 6.w, 6.h),
+      child: Row(
+        children: [
+          Icon(AppIcons.warning, size: AppIconSize.inline.r, color: c.urgentTx),
+          Gap(10.w),
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tt.bodySmall!.copyWith(color: c.urgentTx),
+            ),
+          ),
+          IconButton(
+            onPressed: onDismiss,
+            tooltip: 'Dismiss',
+            icon: Icon(
+              AppIcons.close,
+              size: AppIconSize.inline.r,
+              color: c.urgentTx,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 2026-08-18 audit (#2): makes a non-list state (empty / error) scrollable so
+// the surrounding RefreshIndicator can always trigger pull-to-refresh.
+class _ScrollableFill extends StatelessWidget {
+  const _ScrollableFill({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 // Loading-state placeholder. Real-shaped JobApplication so Skeletonizer can
 // mask the card layout into shimmer blocks during initial load.
 final _placeholderApp = JobApplication(

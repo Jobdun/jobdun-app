@@ -10,15 +10,22 @@ class _DetailHeader extends StatelessWidget {
     required this.profile,
     required this.licenceVerif,
     required this.abnVerif,
+    required this.verificationsKnown,
   });
 
   final JobApplication app;
   final TradeProfile? profile;
 
-  /// Verified licence / ABN rows (null = not verified or still loading).
-  /// Full rows, not booleans, so the chips can show provenance on tap (U2).
+  /// Verified licence / ABN rows (null = not verified — only meaningful when
+  /// [verificationsKnown] is true). Full rows, not booleans, so the chips can
+  /// show provenance on tap (U2).
   final Verification? licenceVerif;
   final Verification? abnVerif;
+
+  /// 2026-08-18 audit (#6): false while the verifications load is pending or
+  /// failed — the chips render NOTHING then, so an unknown state never reads
+  /// as "not verified".
+  final bool verificationsKnown;
 
   @override
   Widget build(BuildContext context) {
@@ -77,26 +84,31 @@ class _DetailHeader extends StatelessWidget {
                 runSpacing: 6.h,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (licenceVerif != null)
-                    TrustChip(
-                      label: 'Licence',
-                      state: TrustChipState.verified,
-                      onTap: () => _openLicenceDetail(context, licenceVerif!),
-                    ),
-                  if (abnVerif != null)
-                    TrustChip(
-                      label: 'ABN',
-                      state: TrustChipState.verified,
-                      onTap: () => _openAbnDetail(context, abnVerif!),
-                    ),
-                  if (licenceVerif == null &&
-                      abnVerif == null &&
-                      app.tradeIsVerified == true)
-                    // Legacy flag only — no row to show provenance from.
-                    const TrustChip(
-                      label: 'Verified',
-                      state: TrustChipState.verified,
-                    ),
+                  // 2026-08-18 audit (#6): render the verification chips only
+                  // once the load has produced data — loading/error is
+                  // UNKNOWN, never "not verified".
+                  if (verificationsKnown) ...[
+                    if (licenceVerif != null)
+                      TrustChip(
+                        label: 'Licence',
+                        state: TrustChipState.verified,
+                        onTap: () => _openLicenceDetail(context, licenceVerif!),
+                      ),
+                    if (abnVerif != null)
+                      TrustChip(
+                        label: 'ABN',
+                        state: TrustChipState.verified,
+                        onTap: () => _openAbnDetail(context, abnVerif!),
+                      ),
+                    if (licenceVerif == null &&
+                        abnVerif == null &&
+                        app.tradeIsVerified == true)
+                      // Legacy flag only — no row to show provenance from.
+                      const TrustChip(
+                        label: 'Verified',
+                        state: TrustChipState.verified,
+                      ),
+                  ],
                   // Approved White Card / public liability — counterparty trust
                   // signals from the supplementary-credentials projection.
                   TradeCredentialBadges(userId: app.tradeId),
@@ -307,9 +319,18 @@ class _Stat extends StatelessWidget {
   }
 }
 
+// Which bottom-bar action is currently in flight (null = idle).
+enum _BarAction { message, shortlist, reject, hire }
+
 // Bottom action bar — MESSAGE is always primary; the state-specific action
 // (shortlist / hire) leads when it matters; reject stays available.
-class _ActionBar extends StatelessWidget {
+//
+// 2026-08-18 audit (#5, #9): stateful with a single in-flight guard — two
+// fast taps on HIRE used to double-pop the navigator (dismissing the
+// applicants list too), and double-tapping MESSAGE pushed the thread twice.
+// While any action runs, all buttons disable and the tapped one shows its
+// loading spinner.
+class _ActionBar extends StatefulWidget {
   const _ActionBar({
     required this.status,
     required this.onMessage,
@@ -319,10 +340,30 @@ class _ActionBar extends StatelessWidget {
   });
 
   final ApplicationStatus status;
-  final VoidCallback onMessage;
-  final VoidCallback onShortlist;
-  final VoidCallback onReject;
-  final VoidCallback onHire;
+  final Future<void> Function() onMessage;
+  final Future<void> Function() onShortlist;
+  final Future<void> Function() onReject;
+  final Future<void> Function() onHire;
+
+  @override
+  State<_ActionBar> createState() => _ActionBarState();
+}
+
+class _ActionBarState extends State<_ActionBar> {
+  _BarAction? _busy;
+
+  Future<void> _run(_BarAction action, Future<void> Function() task) async {
+    if (_busy != null) return;
+    setState(() => _busy = action);
+    try {
+      await task();
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  VoidCallback? _guarded(_BarAction action, Future<void> Function() task) =>
+      _busy != null ? null : () => _run(action, task);
 
   @override
   Widget build(BuildContext context) {
@@ -335,17 +376,19 @@ class _ActionBar extends StatelessWidget {
       icon: AppIcons.chat,
       variant: JButtonVariant.secondary,
       size: JButtonSize.compact,
-      onPressed: onMessage,
+      isLoading: _busy == _BarAction.message,
+      onPressed: _guarded(_BarAction.message, widget.onMessage),
     );
     final reject = JButton(
       label: 'REJECT',
       variant: JButtonVariant.secondary,
       size: JButtonSize.compact,
-      onPressed: onReject,
+      isLoading: _busy == _BarAction.reject,
+      onPressed: _guarded(_BarAction.reject, widget.onReject),
     );
 
     final Widget body;
-    if (status == ApplicationStatus.pending) {
+    if (widget.status == ApplicationStatus.pending) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -355,7 +398,8 @@ class _ActionBar extends StatelessWidget {
                 child: JButton(
                   label: 'SHORTLIST',
                   size: JButtonSize.compact,
-                  onPressed: onShortlist,
+                  isLoading: _busy == _BarAction.shortlist,
+                  onPressed: _guarded(_BarAction.shortlist, widget.onShortlist),
                 ),
               ),
               Gap(8.w),
@@ -366,7 +410,7 @@ class _ActionBar extends StatelessWidget {
           Row(children: [Expanded(child: messageSecondary)]),
         ],
       );
-    } else if (status == ApplicationStatus.shortlisted) {
+    } else if (widget.status == ApplicationStatus.shortlisted) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -376,7 +420,8 @@ class _ActionBar extends StatelessWidget {
                 child: JButton(
                   label: 'HIRE',
                   size: JButtonSize.compact,
-                  onPressed: onHire,
+                  isLoading: _busy == _BarAction.hire,
+                  onPressed: _guarded(_BarAction.hire, widget.onHire),
                 ),
               ),
               Gap(8.w),
@@ -397,7 +442,8 @@ class _ActionBar extends StatelessWidget {
               label: 'MESSAGE',
               icon: AppIcons.chat,
               size: JButtonSize.compact,
-              onPressed: onMessage,
+              isLoading: _busy == _BarAction.message,
+              onPressed: _guarded(_BarAction.message, widget.onMessage),
             ),
           ),
         ],
