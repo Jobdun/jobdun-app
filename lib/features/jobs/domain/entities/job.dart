@@ -187,7 +187,35 @@ class Job extends Equatable {
   String get displayBudget {
     if (pricingType == PricingType.requestQuote) return 'Quotes requested';
     if (budgetAmount == null) return 'Negotiable';
-    return '\$${budgetAmount!.toStringAsFixed(0)}${pricingUnit.suffix}';
+    // Thousands separator: '\$120000' read as an unparseable digit string in
+    // the Rate slot (display audit, 2026-08-18).
+    return '\$${_groupThousands(budgetAmount!)}${pricingUnit.suffix}';
+  }
+
+  /// Short form for map pins — the 86px pin ellipsized '\$120000' into a
+  /// misleading '\$1200…' (display audit, 2026-08-18).
+  String get compactBudget {
+    final v = budgetAmount;
+    if (v == null) return 'OPEN';
+    if (v >= 10000) {
+      final k = v / 1000;
+      final digits = k == k.roundToDouble()
+          ? k.round().toString()
+          : k.toStringAsFixed(1);
+      return '\$${digits}k${pricingUnit.suffix}';
+    }
+    return '\$${_groupThousands(v)}${pricingUnit.suffix}';
+  }
+
+  // Pure-Dart grouping (domain stays free of formatting packages).
+  static String _groupThousands(double value) {
+    final digits = value.toStringAsFixed(0);
+    final out = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
+      out.write(digits[i]);
+    }
+    return out.toString();
   }
 
   /// Null/blank-tolerant join — region-level autocomplete picks and legacy

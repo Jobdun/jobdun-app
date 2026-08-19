@@ -62,6 +62,9 @@ class ConversationActionsSheet extends StatelessWidget {
                     color: c.text1,
                     letterSpacing: 0.6,
                   ),
+                  // 2026-08-18 audit: overflow without maxLines wraps instead
+                  // of ellipsizing.
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (jobTitle != null) ...[
@@ -69,6 +72,7 @@ class ConversationActionsSheet extends StatelessWidget {
                   Text(
                     jobTitle!,
                     style: tt.bodySmall!.copyWith(color: c.text3),
+                    maxLines: 1, // 2026-08-18 audit
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -162,6 +166,7 @@ class _ActionRow extends StatelessWidget {
                   color: color,
                   letterSpacing: 0.4,
                 ),
+                maxLines: 1, // 2026-08-18 audit
                 overflow: TextOverflow.ellipsis,
               ),
             ),

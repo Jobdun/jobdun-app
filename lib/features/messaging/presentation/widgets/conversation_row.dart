@@ -77,6 +77,9 @@ class ConversationRow extends StatelessWidget {
                                 : FontWeight.w600,
                             color: c.text1,
                           ),
+                          // 2026-08-18 audit: overflow without maxLines wraps
+                          // instead of ellipsizing.
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -106,6 +109,7 @@ class ConversationRow extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                         color: c.text2,
                       ),
+                      maxLines: 1, // 2026-08-18 audit
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

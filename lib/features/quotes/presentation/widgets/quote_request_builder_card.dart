@@ -73,12 +73,18 @@ class _QuoteRequestBuilderCardState
             onPressed: _busy ? null : _request,
           ),
         ),
-        QuoteRequestStatus.requested || QuoteRequestStatus.withdrawn => Text(
+        QuoteRequestStatus.requested => Text(
           'Quote requested — awaiting their response.',
           style: tt.bodyLarge!.copyWith(
             color: c.text1,
             fontWeight: FontWeight.w600,
           ),
+        ),
+        // 2026-08-18 audit: withdrawn shared the "awaiting" arm — a withdrawn
+        // request read as still pending.
+        QuoteRequestStatus.withdrawn => Text(
+          'They withdrew this request.',
+          style: tt.bodyLarge!.copyWith(color: c.text2),
         ),
         QuoteRequestStatus.declined => Text(
           'This tradie declined to quote.',
@@ -88,7 +94,11 @@ class _QuoteRequestBuilderCardState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Quoted \$${q!.quoteAmount!.toStringAsFixed(2)}',
+              // 2026-08-18 audit: quote_amount is a nullable column — never
+              // force-unwrap; an accepted row without an amount must not throw.
+              q!.quoteAmount == null
+                  ? 'Quoted —'
+                  : 'Quoted \$${q.quoteAmount!.toStringAsFixed(2)}',
               style: tt.titleMedium!.copyWith(
                 color: c.text1,
                 fontWeight: FontWeight.w700,

@@ -12,7 +12,7 @@ class TradieCard extends StatelessWidget {
     required this.name,
     required this.trade,
     required this.suburb,
-    required this.rating,
+    this.rating,
     required this.jobCount,
     required this.isVerified,
     required this.isAvailable,
@@ -25,7 +25,10 @@ class TradieCard extends StatelessWidget {
   final String name;
   final String trade;
   final String suburb;
-  final double rating;
+
+  /// Null = unrated. The rating block is hidden entirely rather than showing
+  /// a hollow "0.0 /5" (2026-08-18 audit — mirrors profile_rating_block).
+  final double? rating;
   final int jobCount;
   final bool isVerified;
   final bool isAvailable;
@@ -74,30 +77,36 @@ class TradieCard extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                   color: c.text1,
                                 ),
+                                // 2026-08-18 audit: overflow without maxLines
+                                // wraps instead of ellipsizing.
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  rating.toStringAsFixed(1),
-                                  // titleLarge (Archivo) + tabular figures — an
-                                  // on-scale role, not an 18.sp override.
-                                  style: AppTypography.numeric(tt.titleLarge!)
-                                      .copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: c.text1,
-                                        height: 1,
-                                      ),
-                                ),
-                                Text(
-                                  '/5',
-                                  style: tt.bodySmall!.copyWith(color: c.text3),
-                                ),
-                              ],
-                            ),
+                            if (rating != null)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    rating!.toStringAsFixed(1),
+                                    // titleLarge (Archivo) + tabular figures —
+                                    // an on-scale role, not an 18.sp override.
+                                    style: AppTypography.numeric(tt.titleLarge!)
+                                        .copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: c.text1,
+                                          height: 1,
+                                        ),
+                                  ),
+                                  Text(
+                                    '/5',
+                                    style: tt.bodySmall!.copyWith(
+                                      color: c.text3,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                         Gap(2.h),
@@ -109,7 +118,10 @@ class TradieCard extends StatelessWidget {
                         ),
                         Gap(2.h),
                         Text(
-                          '$jobCount jobs completed',
+                          // 2026-08-18 audit: pluralise — "1 jobs completed".
+                          jobCount == 1
+                              ? '1 job completed'
+                              : '$jobCount jobs completed',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodySmall!.copyWith(color: c.text3),

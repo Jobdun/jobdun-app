@@ -21,7 +21,9 @@ class DiscoveryTradieTile extends StatelessWidget {
       name: t.fullName,
       trade: t.displayTrade,
       suburb: t.baseSuburb ?? t.baseState ?? '',
-      rating: t.averageRating ?? 0,
+      // 2026-08-18 audit: pass null through for unrated tradies — `?? 0`
+      // rendered brand-new tradies as "0.0 /5".
+      rating: t.ratingCount == 0 ? null : t.averageRating,
       jobCount: t.jobsCompleted,
       isVerified: t.isVerified,
       isAvailable: availableNow,

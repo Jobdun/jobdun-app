@@ -37,6 +37,12 @@ class TradeSearchController extends Notifier<TradeSearchState>
   late SearchTrades _search;
   PagingController<int, TradeSearchResult>? _pagingController;
 
+  // 2026-08-18 audit: generation token — a slow response from a superseded
+  // fetch cycle (filter change / refresh / account switch) must not append
+  // stale rows or overwrite newer state. Bumped whenever a new cycle starts;
+  // in-flight fetches capture it before the await and discard on mismatch.
+  int _generation = 0;
+
   static const _pageSize = 20;
 
   PagingController<int, TradeSearchResult> get pagingController {
@@ -56,6 +62,7 @@ class TradeSearchController extends Notifier<TradeSearchState>
 
     // Clear state on logout or account switch to prevent stale data.
     resetOnAccountChange((_) {
+      _generation++; // discard any fetch still in flight for the old account
       state = const TradeSearchState();
       _pagingController?.refresh();
     });
@@ -65,11 +72,16 @@ class TradeSearchController extends Notifier<TradeSearchState>
   }
 
   Future<void> _fetchPage(int pageKey) async {
+    // Page 0 starts a new cycle (refresh / filter change) — invalidate any
+    // in-flight fetch from the previous one.
+    if (pageKey == 0) _generation++;
+    final gen = _generation;
     final result = await _search(
       filter: state.filter,
       limit: _pageSize,
       offset: pageKey * _pageSize,
     );
+    if (gen != _generation) return; // stale response — discard
     result.fold((f) => _pagingController?.error = f.message, (hits) {
       if (pageKey == 0) state = state.copyWith(isLoading: false, results: hits);
       final isLast = hits.length < _pageSize;
@@ -88,8 +100,10 @@ class TradeSearchController extends Notifier<TradeSearchState>
       paging.refresh();
       return;
     }
+    final gen = ++_generation;
     state = state.copyWith(isLoading: true, error: null);
     final result = await _search(filter: state.filter, limit: _pageSize);
+    if (gen != _generation) return; // stale response — discard
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (hits) => state = state.copyWith(isLoading: false, results: hits),

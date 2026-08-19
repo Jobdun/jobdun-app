@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
@@ -410,28 +411,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  static String _fmtDate(DateTime d) {
-    final now = DateTime.now();
-    final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
-    return '${d.day} ${_months[d.month - 1]}';
-  }
-
-  static const _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  // Delegates to the shared helper — this file used to carry a duplicate
+  // with the DST Today/Tomorrow misbucket StringUtils.fmtDate fixed
+  // (display audit, 2026-08-18).
+  static String _fmtDate(DateTime d) => StringUtils.fmtDate(d);
 }
 
 /// Inline feed action link (MAP →, SEE ALL JOBS →) — 48dp hit target per

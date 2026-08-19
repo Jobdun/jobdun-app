@@ -66,7 +66,15 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
         }
         if (perm == LocationPermission.always ||
             perm == LocationPermission.whileInUse) {
-          final pos = await Geolocator.getCurrentPosition();
+          // 2026-08-18 audit: without a timeLimit a cold GPS fix can hang the
+          // skeleton forever — 10s cap, then fall through to the AU default
+          // (mirrors home_map_view / j_place_field).
+          final pos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 10),
+            ),
+          );
           return (pos.latitude, pos.longitude);
         }
       }
@@ -145,8 +153,12 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
                   ),
                   separatorBuilder: (_, _) => Gap(9.h),
                   builderDelegate: PagedChildBuilderDelegate<TradeSearchResult>(
+                    // 2026-08-18 audit: `onTap: () {}` swallowed taps on every
+                    // row while looking tappable. No trade public-profile
+                    // route exists yet — pass null so the card renders with no
+                    // tap affordance; wire a route here when one lands.
                     itemBuilder: (context, result, i) =>
-                        DiscoveryTradieTile(result: result, onTap: () {}),
+                        DiscoveryTradieTile(result: result),
                     firstPageProgressIndicatorBuilder: (_) =>
                         const _DiscoverySkeleton(),
                     newPageProgressIndicatorBuilder: (_) => Padding(

@@ -25,7 +25,11 @@ void main() {
 
       expect(model.gstRegistered, isTrue);
       expect(model.registerSource, 'ABR');
-      expect(model.detailCapturedAt, DateTime.parse('2026-05-29T03:00:00Z'));
+      // 2026-08-18 audit: timestamps convert to local at the parse boundary
+      // so calendar-date rendering shows the viewer's day, not the UTC day.
+      final captured = model.detailCapturedAt!;
+      expect(captured.isUtc, isFalse);
+      expect(captured, DateTime.parse('2026-05-29T03:00:00Z').toLocal());
     });
 
     test('missing curated fields parse as null', () {

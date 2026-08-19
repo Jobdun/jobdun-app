@@ -53,6 +53,10 @@ class _JobsSearchPlaceChipState extends ConsumerState<JobsSearchPlaceChip> {
   JPlaceResult? _topMatch;
   String _lastQuery = '';
 
+  // 2026-08-18 audit: request id — a slower earlier autocomplete response
+  // must not overwrite the newer one after the user keeps typing.
+  int _requestSeq = 0;
+
   @override
   void didUpdateWidget(JobsSearchPlaceChip oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -84,15 +88,16 @@ class _JobsSearchPlaceChipState extends ConsumerState<JobsSearchPlaceChip> {
 
   Future<void> _resolve(String query) async {
     if (query == _lastQuery && _topMatch != null) return;
+    final requestId = ++_requestSeq;
     try {
       final results = await ref.read(placesServiceProvider).autocomplete(query);
-      if (!mounted) return;
+      if (!mounted || requestId != _requestSeq) return; // stale — discard
       setState(() {
         _topMatch = results.isEmpty ? null : results.first;
         _lastQuery = query;
       });
     } on PlacesException {
-      if (!mounted) return;
+      if (!mounted || requestId != _requestSeq) return; // stale — discard
       setState(() {
         _topMatch = null;
         _lastQuery = query;
@@ -136,11 +141,17 @@ class _JobsSearchPlaceChipState extends ConsumerState<JobsSearchPlaceChip> {
                     color: c.action,
                   ),
                   Gap(8.w),
-                  Text(
-                    'SUBURB: $upperSuburb$stateChip',
-                    style: tt.labelMedium!.copyWith(
-                      color: c.action,
-                      letterSpacing: 1.1,
+                  // 2026-08-18 audit: Flexible + ellipsis — long suburbs at
+                  // large text scale overflowed the unconstrained Row.
+                  Flexible(
+                    child: Text(
+                      'SUBURB: $upperSuburb$stateChip',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.labelMedium!.copyWith(
+                        color: c.action,
+                        letterSpacing: 1.1,
+                      ),
                     ),
                   ),
                 ],

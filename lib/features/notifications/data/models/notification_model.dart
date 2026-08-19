@@ -20,9 +20,10 @@ class NotificationModel extends AppNotification {
         title: json['title'] as String,
         body: json['body'] as String,
         readAt: json['read_at'] != null
-            ? DateTime.parse(json['read_at'] as String)
+            ? DateTime.parse(json['read_at'] as String).toLocal()
             : null,
         data: json['data'] as Map<String, dynamic>?,
-        createdAt: DateTime.parse(json['created_at'] as String),
+        // 2026-08-18 audit: .toLocal() so date rendering shows the AU day.
+        createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       );
 }

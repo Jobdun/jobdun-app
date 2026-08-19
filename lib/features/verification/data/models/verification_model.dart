@@ -58,7 +58,9 @@ class VerificationModel extends Verification {
 
   static DateTime? _parseDate(Object? value) {
     if (value == null) return null;
-    return DateTime.parse(value as String);
+    // 2026-08-18 audit: .toLocal() at the parse boundary — timestamptz shown
+    // as a calendar date otherwise renders the UTC day (one day early in AU).
+    return DateTime.parse(value as String).toLocal();
   }
 
   static VerificationKind _kindFrom(String raw) {

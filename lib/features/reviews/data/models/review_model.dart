@@ -21,7 +21,8 @@ class ReviewModel extends Review {
       revieweeId: json['reviewee_id'] as String,
       rating: json['rating'] as int,
       comment: json['comment'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      // 2026-08-18 audit: .toLocal() so date rendering shows the AU day.
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       verificationSnapshot: snap is Map<String, dynamic>
           ? VerificationSnapshot.fromJson(snap)
           : null,

@@ -20,7 +20,15 @@ abstract final class StringUtils {
   /// Formats a [DateTime] as "Today", "Tomorrow", or "12 May".
   static String fmtDate(DateTime d) {
     final now = DateTime.now();
-    final diff = d.difference(DateTime(now.year, now.month, now.day)).inDays;
+    // 2026-08-18 audit: diff date-only components, not elapsed hours — the
+    // old Duration-based diff misbucketed Today/Tomorrow across DST (a 23h
+    // local day truncates to 0 days). UTC-constructed dates are always exact
+    // multiples of 24h apart.
+    final diff = DateTime.utc(
+      d.year,
+      d.month,
+      d.day,
+    ).difference(DateTime.utc(now.year, now.month, now.day)).inDays;
     if (diff == 0) return 'Today';
     if (diff == 1) return 'Tomorrow';
     return '${d.day} ${_months[d.month - 1]}';

@@ -55,8 +55,9 @@ class JobApplicationModel extends JobApplication {
           ? DateTime.parse(json['available_from'] as String)
           : null,
       rejectionReason: json['rejection_reason'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      // 2026-08-18 audit: .toLocal() so date rendering shows the AU day.
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
       // Joined job fields
       jobTitle: jobData?['title'] as String?,
       jobSuburb: jobData?['suburb'] as String?,

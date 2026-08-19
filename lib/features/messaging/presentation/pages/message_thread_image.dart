@@ -159,6 +159,25 @@ class _ImageViewer extends StatelessWidget {
           backgroundDecoration: const BoxDecoration(
             color: Colors.black, // intentional
           ),
+          // 2026-08-18 audit: an expired signed URL rendered the anonymous
+          // broken-image glyph (debug: a throw). Mirror the inline bubble's
+          // error/loading treatment.
+          errorBuilder: (_, _, _) => const _ImageError(),
+          loadingBuilder: (context, event) => Center(
+            child: SizedBox(
+              width: 26.r,
+              height: 26.r,
+              // Overlay progress on the full-screen viewer — allowed spinner
+              // use (not page-body loading).
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: context.c.action,
+                value: (event != null && (event.expectedTotalBytes ?? 0) > 0)
+                    ? event.cumulativeBytesLoaded / event.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          ),
         ),
       ),
     );

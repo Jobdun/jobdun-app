@@ -9,7 +9,7 @@ String _jobPinLabel(Job job) {
   if (job.urgency == JobUrgency.urgent) return 'URGENT';
   if (job.pricingType == PricingType.requestQuote) return 'QUOTE';
   if (job.budgetAmount == null) return 'OPEN';
-  return '\$${job.budgetAmount!.toStringAsFixed(0)}${job.pricingUnit.suffix}';
+  return job.compactBudget;
 }
 
 /// Two-way pin ↔ carousel sync for the jobs map: swipe a card → its pin
