@@ -40,9 +40,10 @@ class PushNotifications {
   );
 
   static Future<void> init() async {
-    try {
-      await FirebaseMessaging.instance.requestPermission();
-    } catch (_) {}
+    // NOTE: no requestPermission() here. The prompt used to fire during
+    // main(), over the splash before FTUE — the highest-deny-rate moment
+    // possible (lifecycle audit, 2026-08-18). [ensurePermission] asks after
+    // sign-in instead. Token registration works without display permission.
     try {
       // iOS suppresses banners for pushes arriving while the app is
       // foregrounded unless we opt in. Android instead mirrors foreground
@@ -55,9 +56,9 @@ class PushNotifications {
           );
     } catch (_) {}
 
-    await _register();
-    await _initForegroundBanners();
-
+    // Tap handlers FIRST — _register can poll APNs for up to ~30 s on iOS,
+    // and a cold-start tap route buffered after the app's one auth-driven
+    // flush was silently dropped (lifecycle audit, 2026-08-18).
     if (!_wired) {
       _wired = true;
       FirebaseMessaging.instance.onTokenRefresh.listen(_upsert);
@@ -66,6 +67,23 @@ class PushNotifications {
       });
       _wireTapHandlers();
     }
+    await _initForegroundBanners();
+    await _register();
+  }
+
+  static bool _permissionAsked = false;
+
+  /// Ask for notification permission at a sensible moment — after sign-in,
+  /// never over the splash/FTUE. Safe to call repeatedly; the OS prompt only
+  /// ever shows once per install anyway.
+  static Future<void> ensurePermission() async {
+    if (_permissionAsked) return;
+    _permissionAsked = true;
+    try {
+      await FirebaseMessaging.instance.requestPermission();
+    } catch (_) {}
+    // Re-register in case the grant just unlocked a fresh token path.
+    await _register();
   }
 
   // ── Tap deep-linking ───────────────────────────────────────────────────────
@@ -88,8 +106,15 @@ class PushNotifications {
         (m) => _open(resolveNotificationRoute(data: m.data)),
       );
       FirebaseMessaging.instance.getInitialMessage().then((m) {
-        if (m != null) {
-          _pendingRoute = resolveNotificationRoute(data: m.data);
+        if (m == null) return;
+        final route = resolveNotificationRoute(data: m.data);
+        // Cold start with a restored session: the app's auth listener only
+        // flushes on a false→true TRANSITION, which never fires when the
+        // session was restored before first build — navigate directly.
+        if (SupabaseConfig.client.auth.currentSession != null) {
+          _open(route);
+        } else {
+          _pendingRoute = route;
         }
       });
     } catch (_) {}

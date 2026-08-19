@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -24,7 +27,13 @@ class JobdunApp extends ConsumerWidget {
       _,
       authed,
     ) {
-      if (authed) PushNotifications.flushPendingRoute();
+      if (authed) {
+        PushNotifications.flushPendingRoute();
+        // First sensible moment for the notification-permission prompt —
+        // the user is signed in, not staring at the splash/FTUE
+        // (lifecycle audit, 2026-08-18).
+        unawaited(PushNotifications.ensurePermission());
+      }
     });
 
     return ScreenUtilInit(
@@ -38,6 +47,16 @@ class JobdunApp extends ConsumerWidget {
         themeMode: themeMode,
         routerConfig: router,
         debugShowCheckedModeBanner: false,
+        // en_AU everywhere: native date pickers ran in en_US (mm/dd/yyyy
+        // entry, Sunday-first weeks) and silently swapped day/month for
+        // typed dates (display audit, 2026-08-18).
+        locale: const Locale('en', 'AU'),
+        supportedLocales: const [Locale('en', 'AU')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         // Honor the OS text-size setting but clamp it so fixed-height controls
         // (buttons, nav, badges) don't break at extreme Dynamic Type. 0.9–1.3
         // is the band vetted on the home preview.

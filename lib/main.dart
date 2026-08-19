@@ -24,6 +24,11 @@ import 'core/services/push_notifications.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Portrait-only, matching android:screenOrientation="portrait" in the
+  // manifest. The UI scales off ScreenUtil's portrait design size, so iOS
+  // rotation (which the plist allowed) blew every .w dimension up ~2.16×,
+  // overflowed forms and dropped their state (platform audit, 2026-08-18).
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   // Edge-to-edge chrome that matches the dark brand background. Per-screen
   // AppBarTheme.systemOverlayStyle still overrides where an AppBar is mounted
   // (e.g. messaging thread, settings). This baseline catches the many

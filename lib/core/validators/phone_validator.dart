@@ -36,16 +36,30 @@ class Country {
   /// Human-readable format hint (e.g. "4XX XXX XXX").
   final String localFormatHint;
 
-  /// Builds the E.164 string Supabase wants: `+<dialCode><nationalDigits>`.
-  /// Strips any non-digit from input first.
-  String toE164(String nationalInput) {
+  /// Countries whose national format is commonly written with a leading
+  /// trunk '0' ('0412 345 678') that E.164 drops. US/CA (NANP) have none.
+  static const _trunkZeroCountries = {'AU', 'NZ', 'GB', 'IE', 'IN', 'PH'};
+
+  /// Digits of the national number with at most one leading trunk '0'
+  /// stripped. Without this, Australians typing their number the normal way
+  /// (04xx…) were rejected outright — and had validation been looser, the
+  /// E.164 would have been the malformed '+610412…' (2026-08-18 audit; the
+  /// old comment claimed "we drop the leading 0" but no code did).
+  String nationalDigits(String nationalInput) {
     final digits = nationalInput.replaceAll(RegExp(r'\D'), '');
-    return '+$dialCode$digits';
+    if (_trunkZeroCountries.contains(code) && digits.startsWith('0')) {
+      return digits.substring(1);
+    }
+    return digits;
   }
+
+  /// Builds the E.164 string Supabase wants: `+<dialCode><nationalDigits>`.
+  String toE164(String nationalInput) =>
+      '+$dialCode${nationalDigits(nationalInput)}';
 
   /// Returns null on valid input, or an error string for the field.
   String? validate(String nationalInput) {
-    final digits = nationalInput.replaceAll(RegExp(r'\D'), '');
+    final digits = nationalDigits(nationalInput);
     if (digits.isEmpty) return 'Mobile number is required.';
     if (!nationalRegexFor(this).hasMatch(digits)) {
       return 'Enter a valid $name mobile (e.g. $exampleNational).';

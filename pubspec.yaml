@@ -32,6 +32,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # en_AU material localizations — without them every native date picker ran
+  # in en_US (mm/dd/yyyy keyboard entry, Sunday-first grids), silently
+  # swapping day/month for AU users (display audit, 2026-08-18).
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
   go_router: ^17.2.3
