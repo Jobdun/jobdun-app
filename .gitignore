@@ -117,3 +117,11 @@ ss/
 # Nested standalone admin console (own repo, deployed separately)
 /admin-web/
 .impeccable/hook.cache.json
+
+# Design-handoff bundle — 177 MB of generated screenshots + a 169 MB zip of
+# the same. Regenerate with `node scripts/capture_ui_handoff.mjs`; never
+# commit it. Untracked and unignored, a single `git add -A` would create a
+# commit GitHub can only reject (100 MB per-file hard limit) and that is
+# painful to strip back out of history.
+JOBDUN-UI-HANDOFF/
+JOBDUN-UI-HANDOFF.zip
