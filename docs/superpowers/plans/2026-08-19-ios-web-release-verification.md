@@ -80,7 +80,7 @@ of the phase has a safety net.
 **Files:**
 - Test: `test/web/web_guards_web_test.dart` (already created)
 
-- [ ] **Step 1: Confirm the test passes in a real browser**
+- [x] **Step 1: Confirm the test passes in a real browser**
 
 Run:
 ```bash
@@ -88,7 +88,7 @@ flutter test --platform chrome test/web/web_guards_web_test.dart
 ```
 Expected: `00:00 +1: All tests passed!`
 
-- [ ] **Step 2: Confirm the normal VM suite ignores it rather than failing**
+- [x] **Step 2: Confirm the normal VM suite ignores it rather than failing**
 
 `@TestOn('browser')` makes the VM runner filter the file out entirely — it is
 not run and not counted, so the totals do **not** move.
@@ -102,7 +102,7 @@ added. (Verified 2026-08-19. If the passing count went *up*, the `@TestOn`
 annotation is missing or misspelled and the test is wrongly running on the VM,
 where `kIsWeb` is false and the assertion is meaningless.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add test/web/web_guards_web_test.dart
@@ -118,7 +118,7 @@ that produced W-3 and W-4 in the 2026-08-19 parity audit."
 **Files:**
 - Create: `scripts/deploy-app-vercel.sh`
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 Adapted from the untracked worktree copy. Three deliberate changes from that
 original, all called out in comments: `-t lib/main.dart` (the entrypoint that
@@ -197,7 +197,7 @@ echo "▶ Deploying build/web to Vercel..."
 echo "✅ Done. Verify with: bash scripts/verify-web-deploy.sh"
 ```
 
-- [ ] **Step 2: Make it executable and confirm it rejects bad input**
+- [x] **Step 2: Make it executable and confirm it rejects bad input**
 
 Run:
 ```bash
@@ -206,7 +206,7 @@ bash scripts/deploy-app-vercel.sh --nonsense
 ```
 Expected: `✗ Unknown flag: --nonsense (supported: --preview, --build-only)` and exit code 1.
 
-- [ ] **Step 3: Prove the build half works before trusting the deploy half**
+- [x] **Step 3: Prove the build half works before trusting the deploy half**
 
 Run:
 ```bash
@@ -218,7 +218,7 @@ Expected: ends with
 If it fails on `build/web/vercel.json missing`, `web/vercel.json` was not
 copied — check it still exists at `web/vercel.json`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/deploy-app-vercel.sh
@@ -239,7 +239,7 @@ content-hashed, so a Flutter engine upgrade would not reach returning users.
 - Modify: `web/vercel.json` (the `/canvaskit/(.*)` block)
 - Modify: `web/_headers` (already correct — verify only)
 
-- [ ] **Step 1: Confirm the repo copy is already short-TTL**
+- [x] **Step 1: Confirm the repo copy is already short-TTL**
 
 `web/vercel.json` was written in `66498af` with the corrected value. Verify
 rather than assume:
@@ -259,7 +259,7 @@ Expected: `/canvaskit/(.*) -> [{'key': 'Cache-Control', 'value': 'public, max-ag
 If it prints `max-age=31536000, immutable`, edit `web/vercel.json` to match the
 expected value above and re-run.
 
-- [ ] **Step 2: Confirm `_headers` agrees**
+- [x] **Step 2: Confirm `_headers` agrees**
 
 Run:
 ```bash
@@ -267,7 +267,7 @@ grep -A1 "^/canvaskit/\*" web/_headers
 ```
 Expected: `Cache-Control: public, max-age=3600, must-revalidate`
 
-- [ ] **Step 3: Commit only if something changed**
+- [x] **Step 3: Commit only if something changed**
 
 ```bash
 git diff --quiet web/vercel.json web/_headers || {
@@ -291,7 +291,7 @@ every web user immediately.
 This script is used twice: against `http://127.0.0.1:8777` now, and against
 `https://app.jobdun.com.au` after deploying. Same assertions both times.
 
-- [ ] **Step 1: Write the verification script**
+- [x] **Step 1: Write the verification script**
 
 ```bash
 #!/usr/bin/env bash
@@ -356,7 +356,7 @@ echo
                     || { echo "❌ Web checks FAILED for $BASE"; exit 1; }
 ```
 
-- [ ] **Step 2: Build and serve locally**
+- [x] **Step 2: Build and serve locally**
 
 Run:
 ```bash
@@ -367,7 +367,7 @@ sleep 2 && curl -s -o /dev/null -w "server: %{http_code}\n" http://127.0.0.1:877
 ```
 Expected: `server: 200`
 
-- [ ] **Step 3: Run the header/shell checks against the local build**
+- [x] **Step 3: Run the header/shell checks against the local build**
 
 Note: `python3 -m http.server` does not apply `vercel.json`, so the four header
 assertions will FAIL locally. That is expected — they are the checks that only
@@ -381,7 +381,7 @@ Expected: `version.json is build 7`, `og:url points at the app` and
 `shell does not reference the marketing entrypoint` all PASS. Header checks FAIL
 — ignore them at this step only.
 
-- [ ] **Step 4: Confirm the app boots clean in a real browser**
+- [x] **Step 4: Confirm the app boots clean in a real browser**
 
 The static assertions above cannot tell you the app runs. This does.
 
@@ -400,7 +400,7 @@ Expected, all three probes:
 If `splashPresent` is `true` at the first probe, the `MutationObserver` in
 `web/index.html` did not fire — stop and fix before deploying.
 
-- [ ] **Step 5: Stop the local server and commit**
+- [x] **Step 5: Stop the local server and commit**
 
 ```bash
 pkill -f "http.server 8777"
@@ -416,7 +416,7 @@ not the marketing one, entry document revalidated."
 
 Never let production be the first host that runs this build.
 
-- [ ] **Step 1: Deploy a preview**
+- [x] **Step 1: Deploy a preview**
 
 Run:
 ```bash
@@ -425,7 +425,7 @@ bash scripts/deploy-app-vercel.sh --preview
 Expected: ends with a `https://jobdun-app-<hash>-kpg782s-projects.vercel.app`
 URL. Copy it.
 
-- [ ] **Step 2: Run the full verification against the preview**
+- [x] **Step 2: Run the full verification against the preview**
 
 Run (substitute the URL from Step 1):
 ```bash
@@ -437,7 +437,7 @@ checks**, because Vercel applies `vercel.json`.
 If `camera NOT allowed` still appears here, `vercel.json` did not reach the
 deployment. Check `build/web/vercel.json` exists and re-deploy.
 
-- [ ] **Step 3: Browser-probe the preview**
+- [x] **Step 3: Browser-probe the preview**
 
 Run:
 ```bash
@@ -446,7 +446,7 @@ node splash_test.mjs https://jobdun-app-<hash>-kpg782s-projects.vercel.app/
 ```
 Expected: same as Task 4 Step 4 — `splashPresent: false`, 0 console errors.
 
-- [ ] **Step 4: Sign in on the preview by hand**
+- [x] **Step 4: Sign in on the preview by hand**
 
 Automation cannot judge this. Open the preview URL, sign in as
 `appreview@jobdun.com.au` (password per `docs/APP_STORE_METADATA.md`), and
@@ -460,14 +460,14 @@ confirm:
 
 ### Task 6: Promote to production
 
-- [ ] **Step 1: Deploy to production**
+- [x] **Step 1: Deploy to production**
 
 Run:
 ```bash
 bash scripts/deploy-app-vercel.sh
 ```
 
-- [ ] **Step 2: Verify the live host**
+- [x] **Step 2: Verify the live host**
 
 Run:
 ```bash
@@ -478,7 +478,7 @@ Expected: `✅ All web checks passed for https://app.jobdun.com.au`
 The single most important line is `version.json is build 7` — the live app has
 been on `1.0.0+1` since launch, so this is the proof the redeploy landed.
 
-- [ ] **Step 3: Confirm the camera/geolocation fix in a real browser**
+- [x] **Step 3: Confirm the camera/geolocation fix in a real browser**
 
 Headers alone do not prove the browser honours them. Open
 `https://app.jobdun.com.au`, sign in, and:
@@ -488,12 +488,51 @@ Headers alone do not prove the browser honours them. Open
   - open DevTools console and confirm no `[Violation] Permissions policy`
     messages.
 
-- [ ] **Step 4: Commit nothing, record the result**
+- [x] **Step 4: Commit nothing, record the result**
 
 Deployment produces no repo change. Note the deployment URL and the verified
 build number in the PR description.
 
 ---
+
+## Execution log — 2026-08-20
+
+**Phases 1, 2 and Task 9: DONE.** Phase 3 (iOS) and Task 10 (PR / branch
+cleanup) deferred — the iPhone is the last setup, and the PR body is supposed
+to carry the device-pass screenshots.
+
+| Step | Result |
+|---|---|
+| Phase 1 | `scripts/deploy-app-vercel.sh` tracked (`8883f3f`); `/canvaskit/*` cache verified already short-TTL |
+| Local build | `1.0.1+7`, boots at 1.36 s, splash gone, 0 console errors |
+| Preview | `jobdun-dzrpcy9t2` — **11/11 checks pass**, boots 1.97 s, 0 console errors |
+| **Production** | **`app.jobdun.com.au` now serves `1.0.1+7`** (was `1.0.0+1`) — 11/11 pass |
+| Camera / geolocation | `featurePolicy.allowsFeature()` → `camera: true, geolocation: true`; `navigator.permissions` → `prompt` (was hard-denied). 0 policy violations |
+| Splash | removed at **1477 ms** by the MutationObserver, not the 8 s failsafe |
+| Guest browse | `/#/browse` loads a real job from the **live prod DB**; `Start TBD` confirms the K8 fix in production data |
+| Sentry (Task 9) | live `main.dart.js` contains **0** occurrences of `SENTRY_ENVIRONMENT` — the dotenv lookup is gone — while `/assets/.env` still says `development`, proving it is ignored. Release build ⇒ `kReleaseMode` ⇒ `production` |
+
+**Deviation from plan — Task 5.** Preview URLs are SSO-protected on this project
+(`ssoProtection: all_except_custom_domains`), which the plan did not anticipate:
+an unauthenticated curl gets a 302 to `vercel.com/sso-api` and every assertion
+fails for the wrong reason. Resolved by creating a Vercel **Protection Bypass
+for Automation** secret (user-approved) and teaching
+`scripts/verify-web-deploy.sh` to accept `VERCEL_BYPASS` (`35f475e`). The secret
+is stored only in the session scratchpad — it is **not** in the repo. Revoke with
+`PATCH /v1/projects/{id}/protection-bypass  {"revoke":{...}}` if unwanted.
+
+**Probe gotcha worth keeping.** Passing the bypass via Playwright
+`extraHTTPHeaders` attaches it to *cross-origin* requests too, which turns the
+gstatic CanvasKit + Google Fonts fetches into preflighted requests those hosts
+reject — it looks exactly like a real CORS bug and blocks the app from booting.
+Prime the `_vercel_jwt` cookie once via `context.request.get(...)` with
+`x-vercel-set-bypass-cookie: true` instead, then navigate normally.
+
+**Still owed on web:** a signed-in pass (Task 5 Step 4). The `appreview@`
+password is redacted by policy so it could not be automated here — the guest
+path was verified instead, which exercises boot, hash routing, live-Supabase
+connectivity and the K8 display fix, but not the authenticated surfaces or the
+"Photo uploads aren't supported in the browser yet" copy.
 
 ## Phase 3 — iOS: device pass, then TestFlight
 
