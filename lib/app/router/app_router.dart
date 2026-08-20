@@ -3,7 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/pages/auth_callback_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/phone_auth_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -16,12 +18,12 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/ftue/presentation/pages/dev_ftue_reset_page.dart';
 import '../../features/ftue/presentation/pages/ftue_page.dart';
 import '../../features/ftue/presentation/providers/ftue_gate_provider.dart';
+import 'router_redirect.dart';
 import '../../features/home/presentation/pages/design_preview_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/home/presentation/pages/logo_animation_page.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
 import '../../core/providers/pending_return_provider.dart';
-import 'guest_browse_policy.dart';
 import '../../features/jobs/presentation/pages/job_create_page.dart';
 import '../../features/jobs/presentation/pages/job_detail_loader_page.dart';
 import '../../features/jobs/presentation/pages/job_detail_page.dart';
@@ -75,73 +77,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: notifier,
-    redirect: (context, state) {
-      final auth = ref.read(authControllerProvider);
-      final ftue = ref.read(ftueGateProvider);
-      final location = state.matchedLocation;
-
-      if (location == '/splash') return null;
-
-      // While the FTUE flag is still being read from SharedPreferences keep
-      // unauthenticated users on splash — otherwise we'd flash /login before
-      // a first-launch user ever sees the carousel.
-      if (!ftue.isLoaded && !auth.isAuthenticated) return '/splash';
-
-      // Splash hands off to '/' so the router (not splash) decides where the
-      // user lands. Same auth-aware fork as the onboarding redirect below.
-      if (location == '/') {
-        if (auth.isAuthenticated) return '/home';
-        return ftue.hasCompleted ? '/login' : '/ftue';
-      }
-
-      // Legacy onboarding route — wall was removed in T1.3 (friction-reduction
-      // sprint). Anyone landing here from a deep link / stale session goes
-      // home, and the ProfileCompletenessBanner handles the nudge.
-      if (location == '/onboarding') {
-        return auth.isAuthenticated ? '/home' : '/login';
-      }
-
-      if (auth.pendingVerificationEmail != null) {
-        return location == '/verify-email' ? null : '/verify-email';
-      }
-
-      // Authenticated users never see the FTUE — including direct deep links.
-      if (auth.isAuthenticated && location == '/ftue') return '/home';
-
-      if (!auth.isAuthenticated) {
-        final publicRoutes = <String>{
-          '/ftue',
-          '/login',
-          '/register',
-          '/forgot-password',
-          '/phone-auth',
-          '/legal',
-          '/legal/terms',
-          '/legal/privacy',
-          if (kDebugMode) '/dev/reset-ftue',
-        };
-        return publicRoutes.contains(location) ||
-                isGuestBrowsableLocation(location)
-            ? null
-            : '/login';
-      }
-
-      const authPages = {
-        '/login',
-        '/register',
-        '/verify-email',
-        '/forgot-password',
-        '/phone-auth',
-      };
-      if (authPages.contains(location)) {
-        // A guest who authenticated from a gate (APPLY on a job) goes back
-        // to where they were; everyone else lands home.
-        final pending = ref.read(pendingReturnProvider.notifier).consume();
-        return pending ?? '/home';
-      }
-
-      return null;
-    },
+    // The full decision table lives in router_redirect.dart — see there for
+    // why the branch ordering matters (a recovery session is authenticated).
+    redirect: (context, state) => resolveRedirect(
+      auth: ref.read(authControllerProvider),
+      ftue: ref.read(ftueGateProvider),
+      location: state.matchedLocation,
+      consumePendingReturn: () =>
+          ref.read(pendingReturnProvider.notifier).consume(),
+    ),
     routes: [
       // ── Pre-shell ──────────────────────────────────────────────────────────
       GoRoute(path: '/splash', builder: (_, _) => const SplashPage()),
@@ -179,6 +123,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (_, _) => const ForgotPasswordPage(),
+      ),
+      // Where Supabase sends the browser back on web (a custom URL scheme
+      // can't be opened by a browser). supabase_flutter parses the session
+      // out of the URL itself; this page just holds a spinner while the
+      // router's auth-reactive redirect takes over.
+      GoRoute(
+        path: '/auth/callback',
+        builder: (_, _) => const AuthCallbackPage(),
+      ),
+      // Terminus of the password-reset link. Deliberately NOT in `authPages`
+      // below — that set bounces authenticated users to /home, and a recovery
+      // session *is* authenticated, which would make this route unreachable.
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, _) => const ResetPasswordPage(),
       ),
       GoRoute(path: '/phone-auth', builder: (_, _) => const PhoneAuthPage()),
       // Public job browser (App Review 5.1.1(v)) — the same JobsPage the

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'env.dart';
@@ -12,6 +13,18 @@ class SupabaseConfig {
   // bounces tappers back into the app instead of a localhost web page.
   // Hosted Supabase project must allowlist this exact URL.
   static const String authRedirectUrl = 'au.com.jobdun.app://login-callback/';
+
+  // A custom URL scheme can't be opened by a browser at all — web needs a
+  // real https:// landing page instead. Must also be allowlisted in the
+  // Supabase Dashboard's redirect-URL config, and routed in app_router.dart.
+  static const String webAuthRedirectUrl =
+      'https://app.jobdun.com.au/auth/callback';
+
+  /// The redirect URL to use for the current platform — native deep link on
+  /// Android/iOS, an https:// page on web. Used for both `emailRedirectTo`
+  /// and the password-reset `redirectTo`.
+  static String get effectiveAuthRedirectUrl =>
+      kIsWeb ? webAuthRedirectUrl : authRedirectUrl;
 
   static bool get isConfigured => AppEnv.isSupabaseConfigured;
   static bool get isInitialized => _initialized;

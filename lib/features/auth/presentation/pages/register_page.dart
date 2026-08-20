@@ -18,6 +18,7 @@ import '../../../../core/widgets/social_auth_button.dart';
 import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_acceptance_checkbox.dart';
 import '../providers/auth_provider.dart';
+import '../validators/password_rules.dart';
 
 part 'register_page_role_step.dart';
 part 'register_page_form_step.dart';

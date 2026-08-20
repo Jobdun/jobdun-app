@@ -24,6 +24,7 @@ export '../../domain/entities/user_role.dart';
 export 'auth_state.dart';
 
 part 'auth_provider_phone.dart';
+part 'auth_provider_password.dart';
 
 // ── Service providers (public so tests can override) ──────────────────────────
 final emailAuthServiceProvider = Provider<EmailAuthService>(
@@ -52,7 +53,9 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 /// every state transition lives in one file — easier to reason about role
 /// hydration, error mapping, and the "pending verification" gate without
 /// chasing through SDK calls.
-class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
+class AuthController extends Notifier<AuthState>
+    with _AuthControllerPhone, _AuthControllerPassword {
+  @override
   late EmailAuthService _email;
   late OAuthService _oauth;
   @override
@@ -77,6 +80,15 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         state = const AuthState();
         return;
       }
+      // A password-reset link hands back a genuine session, so this listener
+      // would otherwise mark the user signed-in and let the router send them
+      // to /home — password unchanged, reset silently skipped. gotrue tags the
+      // stored PKCE verifier with the originating event and replays it as
+      // passwordRecovery on exchange, which is the only signal distinguishing
+      // "followed a reset link" from "signed in". Latch it so the router can
+      // pin them to /reset-password until they finish or cancel.
+      final isRecovery =
+          event.event == supabase.AuthChangeEvent.passwordRecovery;
       // If the user just landed back via the email-verify deep link, the
       // incoming session's emailConfirmedAt is non-null. Clear the pending
       // gate so the router stops pinning them to /verify-email.
@@ -87,6 +99,9 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         isLoading: false,
         clearError: true,
         clearInfo: true,
+        // Latch-only: a later tokenRefreshed/userUpdated event must not clear
+        // a recovery still in progress. updatePassword/cancel own the reset.
+        isPasswordRecovery: isRecovery ? true : null,
         clearPendingVerification: verified,
         clearRegisterDraft: verified,
         ssoNameProvider: SsoIdentity.hasNameProvider(session.user.appMetadata),
@@ -293,20 +308,6 @@ class AuthController extends Notifier<AuthState> with _AuthControllerPhone {
         errorMessage: "Couldn't check status. Try again in a moment.",
       );
       return false;
-    }
-  }
-
-  Future<void> sendPasswordReset(String email) async {
-    if (!_ensureConfigured()) return;
-    _startLoading();
-    try {
-      await _email.sendPasswordReset(email);
-      state = state.copyWith(
-        isLoading: false,
-        infoMessage: 'Check your email for a reset link.',
-      );
-    } catch (e) {
-      _failLoading(e);
     }
   }
 

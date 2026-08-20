@@ -23,6 +23,12 @@ class AuthState {
     this.email,
     this.pendingVerificationEmail,
     this.pendingPhoneNumber,
+    // True only between "user followed the password-reset link" and "user set
+    // a new password". A recovery link hands back a *real* session, so without
+    // this flag the app just silently signs them in and drops them on /home
+    // with their old password still live — the reset never happens. The router
+    // uses it to pin them to /reset-password until they finish or cancel.
+    this.isPasswordRecovery = false,
     this.registerDraft,
     this.errorMessage,
     this.infoMessage,
@@ -39,6 +45,7 @@ class AuthState {
   final String? email;
   final String? pendingVerificationEmail;
   final String? pendingPhoneNumber;
+  final bool isPasswordRecovery;
   final RegisterDraft? registerDraft;
   final String? errorMessage;
   final String? infoMessage;
@@ -53,6 +60,7 @@ class AuthState {
     String? email,
     String? pendingVerificationEmail,
     String? pendingPhoneNumber,
+    bool? isPasswordRecovery,
     RegisterDraft? registerDraft,
     String? errorMessage,
     String? infoMessage,
@@ -77,6 +85,7 @@ class AuthState {
       pendingPhoneNumber: clearPhone
           ? null
           : pendingPhoneNumber ?? this.pendingPhoneNumber,
+      isPasswordRecovery: isPasswordRecovery ?? this.isPasswordRecovery,
       registerDraft: clearRegisterDraft
           ? null
           : registerDraft ?? this.registerDraft,
