@@ -5,23 +5,43 @@
 #
 #   bash scripts/verify-web-deploy.sh                          # live
 #   bash scripts/verify-web-deploy.sh http://127.0.0.1:8777    # local build
+#   VERCEL_BYPASS=<secret> bash scripts/verify-web-deploy.sh <preview-url>
 #
 # Note: a plain `python3 -m http.server` does not apply vercel.json, so the
 # header assertions are expected to FAIL locally. They only carry meaning
 # against a Vercel deployment (preview or production).
+#
+# Preview URLs are SSO-protected on this project (ssoProtection =
+# all_except_custom_domains), so an unauthenticated curl gets a 302 to
+# vercel.com/sso-api and every assertion fails misleadingly. Set VERCEL_BYPASS
+# to the project's "Protection Bypass for Automation" secret to read them.
+# Production (app.jobdun.com.au) is a custom domain and needs no bypass.
 set -uo pipefail
 
 BASE="${1:-https://app.jobdun.com.au}"
 FAIL=0
+
+CURL=(curl -sSL --max-time 30)
+if [[ -n "${VERCEL_BYPASS:-}" ]]; then
+  CURL+=(-H "x-vercel-protection-bypass: ${VERCEL_BYPASS}")
+fi
 
 pass() { printf '  \033[0;32mPASS\033[0m  %s\n' "$1"; }
 fail() { printf '  \033[0;31mFAIL\033[0m  %s\n' "$1"; FAIL=1; }
 
 echo "=== Verifying $BASE ==="
 
-HDRS="$(curl -sS -D - -o /dev/null --max-time 30 "$BASE/")"
-BODY="$(curl -sS --max-time 30 "$BASE/")"
-VERSION="$(curl -sS --max-time 30 "$BASE/version.json")"
+HDRS="$("${CURL[@]}" -D - -o /dev/null "$BASE/")"
+BODY="$("${CURL[@]}" "$BASE/")"
+VERSION="$("${CURL[@]}" "$BASE/version.json")"
+
+# An unauthenticated hit on a protected preview returns the SSO redirect, which
+# would fail every assertion below for the wrong reason. Say so plainly.
+if echo "$HDRS" | grep -qi 'vercel.com/sso-api'; then
+  echo "  ✗ $BASE is SSO-protected and no VERCEL_BYPASS was supplied."
+  echo "    Re-run with: VERCEL_BYPASS=<secret> bash scripts/verify-web-deploy.sh $BASE"
+  exit 2
+fi
 
 # 1. The release actually shipped.
 echo "$VERSION" | grep -q '"build_number":"7"' \
