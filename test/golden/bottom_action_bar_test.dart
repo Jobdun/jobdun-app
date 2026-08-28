@@ -6,7 +6,7 @@ import 'package:jobdun/core/design/widgets/j_button.dart';
 import '_harness.dart';
 
 void main() {
-  group('BottomActionBar goldens (dark)', () {
+  group('BottomActionBar goldens (light)', () {
     testWidgets('primary only', (tester) async {
       await pumpGolden(
         tester,

@@ -76,8 +76,10 @@ Skip all four — not applicable.
 ### Sign-In Information — toggle "Sign-in required" ON
 
 - User name: `appreview@jobdun.com.au`
-- Password: *(the password set for this account on 2026-07-09 — verify it signs
-  in on a production build before submitting)*
+- Password: rotated + verified live 2026-07-21 (see
+  `docs/PLAY_STORE_METADATA.md` → Session update — Supabase Admin API reset
+  + password-grant sign-in test, access token issued). Not written here,
+  same redaction policy as the rest of this doc.
 
 Account state (verified in prod DB): display name "App Review Tester",
 Trade role, onboarding complete, active.
@@ -175,7 +177,7 @@ compliance questions appear. After upload, the build shows on the version page
 ## Pre-submit checklist
 
 - [ ] Add 1–2 extra realistic open jobs from your builder account so the feed looks alive
-- [ ] Confirm `appreview@jobdun.com.au` password signs in on the release build
+- [x] Confirm `appreview@jobdun.com.au` password signs in on the release build — verified 2026-07-21
 - [ ] Screenshots uploaded (first 3 = feed, job detail, applications)
 - [ ] App Information: privacy URL, category, age rating (incl. social questions)
 - [ ] App Privacy questionnaire completed

@@ -193,20 +193,24 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/jobdun-icon.png"
-  adaptive_icon_background: "#F97316"
+  adaptive_icon_background: "#FC5101"
   adaptive_icon_foreground: "assets/icon/jobdun-icon-foreground.png"
   adaptive_icon_monochrome: "assets/icon/jobdun-icon-foreground.png"
   remove_alpha_ios: true
   min_sdk_android: 21
 
-# Cold-start splash — dark brand background so there's no white flash before the
-# Flutter app boots (the Flutter splash_page then renders the hammer-J mark). On
-# Android 12+ the system shows the launcher icon on this background automatically.
+# Cold-start splash — the brand orange field with the mark reversed out in
+# white. This is Figma frame 1 of the loading sequence (JobDun-Screens node
+# 17:5059), and it is deliberately identical to the first beat of SplashShutter:
+# the OS paints this, Flutter takes over mid-hold, and the handoff is invisible.
+# Stays orange in both themes so the sequence reads the same on every device.
 # Regenerate with: dart run flutter_native_splash:create
 flutter_native_splash:
-  color: "#0F172A"
+  color: "#FC5101"
+  image: assets/icon/splash-mark.png
   android_12:
-    color: "#0F172A"
+    color: "#FC5101"
+    image: assets/icon/splash-mark-android12.png
 
 flutter:
 

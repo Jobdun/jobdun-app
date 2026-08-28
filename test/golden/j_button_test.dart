@@ -4,7 +4,7 @@ import 'package:jobdun/core/design/widgets/j_button.dart';
 import '_harness.dart';
 
 void main() {
-  group('JButton goldens (dark)', () {
+  group('JButton goldens (light)', () {
     testWidgets('primary default', (tester) async {
       await pumpGolden(
         tester,

@@ -4,7 +4,7 @@ import 'package:jobdun/core/design/widgets/j_switch.dart';
 import '_harness.dart';
 
 void main() {
-  group('JSwitch goldens (dark)', () {
+  group('JSwitch goldens (light)', () {
     testWidgets('off', (tester) async {
       await pumpGolden(tester, JSwitch(value: false, onChanged: (_) {}));
       await expectLater(

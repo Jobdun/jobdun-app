@@ -10,10 +10,12 @@ import 'package:jobdun/app/theme/app_colors.dart';
 /// — and initialise `ScreenUtil` with the same size so `.w / .h / .sp / .r`
 /// resolve to a stable baseline.
 ///
-/// **Dark-only.** Jobdun's light theme is gated (`app_colors.dart:88`); the
-/// app ships dark. Goldens follow.
+/// **Light-only.** Light is Jobdun's canonical theme — the Figma foundation is
+/// authored on a light ground and new installs start there. Goldens follow the
+/// canonical theme; dark is guarded by `colors_contrast_test.dart` rather than
+/// by a second set of pixels.
 ///
-/// **Fonts.** Production `AppTheme.dark()` wires every text style through
+/// **Fonts.** Production `AppTheme.light()` wires every text style through
 /// `google_fonts`, which fetches Archivo / Inter over the network on
 /// first paint. CI sandboxes have no network access and the fetch throws
 /// asynchronously, killing the test. We build a parallel `_goldenTheme()`
@@ -24,20 +26,24 @@ import 'package:jobdun/app/theme/app_colors.dart';
 const Size kGoldenSurface = Size(393, 852);
 
 ThemeData _goldenTheme() {
-  const c = JColors.dark;
+  const c = JColors.light;
+  // Every role is DERIVED from the tokens — never a literal. A hardcoded hex
+  // here silently outlives the next palette change and the goldens quietly
+  // stop mirroring production (which is exactly what happened to `primary`
+  // across the #F97316 → #FC5101 migration).
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     scaffoldBackgroundColor: c.background,
-    colorScheme: const ColorScheme.dark(
-      primary: Color(0xFFF97316),
-      onPrimary: Color(0xFFFFFFFF),
-      secondary: Color(0xFF334155),
-      onSecondary: Color(0xFFF1F5F9),
-      surface: Color(0xFF1E293B),
-      onSurface: Color(0xFFF1F5F9),
-      error: Color(0xFFEF4444),
-      onError: Color(0xFFFFFFFF),
+    colorScheme: ColorScheme.light(
+      primary: c.action,
+      onPrimary: c.onAction,
+      secondary: c.surfaceRaised,
+      onSecondary: c.text1,
+      surface: c.surface,
+      onSurface: c.text1,
+      error: c.urgent,
+      onError: const Color(0xFFFFFFFF),
     ),
     extensions: const [c],
   );

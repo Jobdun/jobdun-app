@@ -73,9 +73,9 @@ the home feed.
    with build 5.
 3. Paste section **A** as the reply in the Resolution Center thread (replying
    keeps the same review context).
-4. Replace the review **Notes** with section **B**; leave the demo-account
-   sign-in info as-is; verify `appreview@jobdun.com.au` still signs in on a
-   release build first (existing checklist item in APP_STORE_METADATA.md).
+4. Replace the review **Notes** with section **B**; demo-account sign-in
+   was rotated + verified live 2026-07-21 (see `PLAY_STORE_METADATA.md` →
+   Session update) — checklist item in APP_STORE_METADATA.md now closed.
 5. Screenshots: current screenshots remain valid (no store-screenshot claims
    changed). Optional: add one showing the public job board later.
 6. Submit for review.

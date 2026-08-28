@@ -52,10 +52,10 @@ Profile is credibility. Dashboard is status. Both should communicate competence 
 ## Color Overrides
 
 Dashboard chart colors:
-- Bar fill: `#F97316` (primary) or `#64748B` (comparison/secondary)
-- Grid lines: `#334155`
-- Axis labels: `#94A3B8`
-- Selected bar: `#F97316` with white value label on top
+- Bar fill: `c.action` (primary) or `c.text3` (comparison/secondary)
+- Grid lines: `c.border`
+- Axis labels: `c.text2`
+- Selected bar: `c.action` with white value label on top
 
 ---
 
@@ -63,34 +63,34 @@ Dashboard chart colors:
 
 ### Avatar
 - Size: 72dp circle for feed, 96dp for own profile
-- Border: 2dp `#F97316` if verified, `#334155` if not
-- Fallback: initials on `#1E293B` background, Inter Bold
+- Border: 2dp `c.action` if verified, `c.border` if not
+- Fallback: initials on `c.surface` background, Inter Bold
 
 ### Verification Badges
 - Row of small chips: "ID VERIFIED", "LICENSED", "INSURED", "BACKGROUND CHECK"
-- Verified chip: `#22C55E` border, green text — `#1E293B` background
-- Missing/pending chip: `#334155` border, `#64748B` text
+- Verified chip: `c.verified` border, green text — `c.surface` background
+- Missing/pending chip: `c.border` border, `c.text3` text
 - Size: 28dp height, 8dp horizontal padding, 4dp border radius
 
 ### Stats Row
-- 3 equal columns, dividers between them (`#334155`, 1dp)
-- Number: Inter Black (900), 22sp, `#F1F5F9`
-- Label: Inter SemiBold (600), 11sp, `#94A3B8`, all caps, letter-spacing 0.5
-- Background: `#1E293B` card
+- 3 equal columns, dividers between them (`c.border`, 1dp)
+- Number: Inter Black (900), 22sp, `c.text1`
+- Label: Inter SemiBold (600), 11sp, `c.text2`, all caps, letter-spacing 0.5
+- Background: `c.surface` card
 
 ### Rating Display
-- `flutter_rating_bar`, star color `#F97316`, empty `#334155`
-- Show numeric average bold next to stars: "4.8" in `#F1F5F9`, 16sp Bold
-- Review count: `(24 reviews)` in `#94A3B8`, 13sp
+- `flutter_rating_bar`, star color `c.action`, empty `c.border`
+- Show numeric average bold next to stars: "4.8" in `c.text1`, 16sp Bold
+- Review count: `(24 reviews)` in `c.text2`, 13sp
 
 ### Earnings Total
-- Inter Black (900), 36sp, `#F1F5F9`
-- Period label above: "THIS MONTH" — `#94A3B8`, 11sp, SemiBold, all caps
+- Inter Black (900), 36sp, `c.text1`
+- Period label above: "THIS MONTH" — `c.text2`, 11sp, SemiBold, all caps
 - Change indicator: `+12%` in green or `-5%` in red, 14sp SemiBold
 
 ### Skills Chips
 - Same style as filter chips but non-interactive (no active state)
-- Background `#334155`, text `#94A3B8`, 12sp SemiBold
+- Background `c.border`, text `c.text2`, 12sp SemiBold
 - Wrap layout (not scroll)
 
 ### Edit Profile Button

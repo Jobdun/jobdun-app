@@ -6,7 +6,7 @@ import 'package:jobdun/core/widgets/inputs/j_text_field.dart';
 import '_harness.dart';
 
 void main() {
-  group('JTextField goldens (dark)', () {
+  group('JTextField goldens (light)', () {
     testWidgets('default — empty with prefix icon', (tester) async {
       await pumpGolden(
         tester,

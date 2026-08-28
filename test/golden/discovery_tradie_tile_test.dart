@@ -6,7 +6,7 @@ import 'package:jobdun/features/profile/domain/entities/trade_profile.dart';
 import '_harness.dart';
 
 void main() {
-  group('DiscoveryTradieTile goldens (dark)', () {
+  group('DiscoveryTradieTile goldens (light)', () {
     testWidgets('available tradie with rating + distance', (tester) async {
       const result = TradeSearchResult(
         trade: TradeProfile(

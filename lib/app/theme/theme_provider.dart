@@ -11,10 +11,14 @@ Future<ThemeMode> loadSavedTheme() async {
   final saved = prefs.getString(_kThemeKey);
   if (saved == 'dark') return ThemeMode.dark;
   if (saved == 'light') return ThemeMode.light;
-  // Default for new installs: follow the OS setting. The brand is dark-first,
-  // so dark-mode devices land on the intended #0F172A look; users can still
-  // pin an explicit light/dark choice in Settings (which persists above).
-  return ThemeMode.system;
+  // Default for new installs: LIGHT. The design system is light-first — the
+  // Figma foundation is authored on a light ground and that is the canonical
+  // look, so a first run should show it regardless of the OS setting. Dark is
+  // a fully-designed peer (not an inversion) and is one tap away in Settings,
+  // where the choice persists above.
+  //
+  // To go back to honouring the OS on first run, return ThemeMode.system here.
+  return ThemeMode.light;
 }
 
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
@@ -22,7 +26,7 @@ final themeProvider = NotifierProvider<ThemeNotifier, ThemeMode>(
 );
 
 class ThemeNotifier extends Notifier<ThemeMode> {
-  ThemeNotifier({ThemeMode initial = ThemeMode.system}) : _initial = initial;
+  ThemeNotifier({ThemeMode initial = ThemeMode.light}) : _initial = initial;
 
   final ThemeMode _initial;
 

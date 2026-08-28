@@ -4,12 +4,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// - [full]      horizontal lockup (mark + JOBDUN wordmark), brightness-adaptive.
 /// - [mark]      the bare glyph on a transparent ground, brightness-adaptive.
+/// - [wordmark]  JOBDUN lettering WITHOUT the glyph, brightness-adaptive (navy
+///               on light, `text1` on dark). Only for surfaces that animate the
+///               mark and the lettering independently — the splash shutter
+///               slides the mark left, then opens the wordmark beside it.
+///               Anywhere the two are static, use [full] instead.
 /// - [badge]     the universal app-icon badge — orange circle, white mark.
 ///               Self-contained colour; reads on any background. Leave [color] null.
 /// - [trademark] the registered trademark lockup — mark + JOBDUN wordmark in
 ///               white on a solid safety-orange field. Self-contained colour
 ///               (do not tint); clip with rounded corners when placed in chrome.
-enum LogoVariant { full, mark, badge, trademark }
+enum LogoVariant { full, mark, wordmark, badge, trademark }
 
 class JobdunLogo extends StatelessWidget {
   const JobdunLogo({
@@ -30,6 +35,8 @@ class JobdunLogo extends StatelessWidget {
 
   static const _markDark = 'lib/core/assets/mark-jobdun.svg';
   static const _markLight = 'lib/core/assets/mark-jobdun-light.svg';
+  static const _wordDark = 'lib/core/assets/wordmark-jobdun.svg';
+  static const _wordLight = 'lib/core/assets/wordmark-jobdun-light.svg';
   static const _fullDark = 'lib/core/assets/logo-jobdun.svg';
   static const _fullLight = 'lib/core/assets/logo-jobdun-light.svg';
   static const _badge = 'lib/core/assets/badge-jobdun.svg';
@@ -43,6 +50,7 @@ class JobdunLogo extends StatelessWidget {
         switch (variant) {
           LogoVariant.full => 32.h,
           LogoVariant.mark => 28.h,
+          LogoVariant.wordmark => 16.h,
           LogoVariant.badge => 32.h,
           LogoVariant.trademark => 32.h,
         };
@@ -50,6 +58,7 @@ class JobdunLogo extends StatelessWidget {
     final asset = switch (variant) {
       LogoVariant.full => isDark ? _fullDark : _fullLight,
       LogoVariant.mark => isDark ? _markDark : _markLight,
+      LogoVariant.wordmark => isDark ? _wordDark : _wordLight,
       LogoVariant.badge => _badge,
       LogoVariant.trademark => _trademark,
     };

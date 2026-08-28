@@ -5,7 +5,7 @@ import 'package:jobdun/core/design/widgets/page_header.dart';
 import '_harness.dart';
 
 void main() {
-  group('PageHeader goldens (dark)', () {
+  group('PageHeader goldens (light)', () {
     testWidgets('hero — /home only', (tester) async {
       await pumpGolden(
         tester,

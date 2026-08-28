@@ -7,7 +7,7 @@ import 'package:jobdun/core/design/widgets/j_card.dart';
 import '_harness.dart';
 
 void main() {
-  group('JCard goldens (dark)', () {
+  group('JCard goldens (light)', () {
     testWidgets('basic card with eyebrow + rows', (tester) async {
       await pumpGolden(
         tester,

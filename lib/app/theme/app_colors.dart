@@ -15,16 +15,17 @@ part 'app_palette.dart';
 
 // ─── Colour system ─────────────────────────────────────────────────────────────
 // Two tiers:
-//   Tier 1 — `_Palette` (private): the raw Tailwind v3 ramps plus 4 hand-tuned
-//            custom steps that fill gaps the ramp skips. Declared ONCE; widgets
-//            never touch these.
+//   Tier 1 — `_Palette` (private): the six Figma foundation ramps plus 2
+//            hand-tuned custom steps that fill gaps the ramps skip. Declared
+//            ONCE; widgets never touch these.
 //   Tier 2 — `JColors` (ThemeExtension): the semantic tokens widgets reference
 //            via `context.c.xxx`. Theming + the WCAG contrast guard
 //            (test/colors_contrast_test.dart) both live at this layer.
 //
-// Every fg/bg pair in the dark theme is verified ≥ its WCAG 2.2 bar by that
-// test (normal text 4.5:1 · large text / UI components 3:1). Change a hex here
-// and the guard re-checks it.
+// Every fg/bg pair in BOTH themes is verified ≥ its WCAG 2.2 bar by that test
+// (normal text 4.5:1 · large text / UI components 3:1). Light is the canonical
+// theme; dark is designed as its peer, not derived by inversion. Change a hex
+// here and the guard re-checks it.
 
 // Tier 1 primitives (`_Palette`) live in `app_palette.dart` (a `part` of this
 // library) — kept private there so widgets can only reach colour through JColors.
@@ -65,9 +66,10 @@ class JColors extends ThemeExtension<JColors> {
     required this.star,
   });
 
-  /// App background — dark slate (#0F172A). MASTER §38.
+  /// App background — neutral50 (#F8F8F8) light / neutral950 (#181818) dark.
   /// MUST be used as the Scaffold background on every screen.
-  /// MUST NOT be replaced by white or light gray (#F8FAFC) anywhere.
+  /// MUST NOT be replaced by a literal hex — read it from the token so the
+  /// screen follows the active theme.
   final Color background;
 
   /// Standard surface — cards, bottom sheets, input fills. MASTER §39.
@@ -90,11 +92,11 @@ class JColors extends ThemeExtension<JColors> {
 
   /// Stronger boundary for INTERACTIVE controls (input fields, focusable
   /// surfaces) whose resting edge must clear the WCAG 1.4.11 3:1 non-text floor.
-  /// `border` (#334155) is only ~1.4:1 — too faint for a control boundary — so
-  /// inputs use this (#708096, 3.63:1 on surface) while cards keep `border`.
+  /// `border` is only ~1.3:1 — too faint for a control boundary — so inputs use
+  /// this (3.19:1 light / 4.25:1 dark on surface) while cards keep `border`.
   final Color borderStrong;
 
-  /// Primary text on dark backgrounds. MASTER §43.
+  /// Primary text on c.background / c.surface. MASTER §43.
   /// MUST be used for headlines, body copy, primary labels.
   final Color text1;
 
@@ -113,7 +115,8 @@ class JColors extends ThemeExtension<JColors> {
   /// MUST NOT be used decoratively (avatar initials, location pins, timestamps) — use c.text2/c.text3 instead.
   final Color action;
 
-  /// Pressed-state orange for c.action surfaces. ~12% darker than c.action.
+  /// Pressed-state orange for c.action surfaces. ~6% darker than c.action —
+  /// the ramp's own brand700 would drop `onAction` to 3.61:1 and fail.
   /// MUST be used only for pressed/highlight overlays on c.action elements.
   final Color actionPressed;
 
@@ -185,74 +188,79 @@ class JColors extends ThemeExtension<JColors> {
   /// Tinted amber text for c.warningBg backgrounds. Internal pair helper.
   final Color warningTx;
 
-  /// Star/rating amber. Decorative within rating widgets only.
+  /// Star/rating olive-gold. Decorative within rating widgets only.
   final Color star;
 
   static JColors of(BuildContext context) =>
       Theme.of(context).extension<JColors>()!;
 
-  // ── Dark (the shipping theme — every pair verified by colors_contrast_test) ──
-  static const dark = JColors(
-    background: _Palette.slate900,
-    surface: _Palette.slate800,
-    card: _Palette.slate800,
-    surfaceRaised: _Palette.slate700,
-    border: _Palette.slate700,
-    borderStrong: _Palette.slate550,
-    text1: _Palette.slate100,
-    text2: _Palette.slate400,
-    text3: _Palette.slate450,
-    action: _Palette.orange500,
-    actionPressed: _Palette.orange550,
-    actionBg: _Palette.orange950,
-    actionTx: _Palette.orange200,
-    actionInk: _Palette.orange500,
-    onAction: _Palette.slate900,
-    verified: _Palette.green500,
-    verifiedBg: _Palette.green950,
-    verifiedTx: _Palette.green300,
-    urgent: _Palette.red500,
-    urgentBg: _Palette.red950,
-    urgentTx: _Palette.red300,
-    available: _Palette.blue500,
-    availableBg: _Palette.navy900,
-    availableTx: _Palette.blue300,
-    warning: _Palette.amber500,
-    warningBg: _Palette.amber950,
-    warningTx: _Palette.amber300,
-    star: _Palette.amber500,
-  );
-
-  // ── Light (gated — app is dark-only; access via AppTheme._light() only) ───
+  // ── Light — the canonical theme. Every pair verified by
+  //    test/colors_contrast_test.dart. Tightest: borderStrong/background 3.17.
   static const light = JColors(
-    background: _Palette.slate50,
+    background: _Palette.neutral50,
     surface: _Palette.white,
     card: _Palette.white,
-    surfaceRaised: _Palette.slate100,
-    border: _Palette.slate300,
-    borderStrong: _Palette.slate550,
-    text1: _Palette.slate900,
-    text2: _Palette.slate600,
-    text3: _Palette.slate500,
-    action: _Palette.orange500,
-    actionPressed: _Palette.orange550,
-    actionBg: _Palette.orange100,
-    actionTx: _Palette.orange800,
-    actionInk: _Palette.orange700,
-    onAction: _Palette.slate900,
-    verified: _Palette.green600,
-    verifiedBg: _Palette.green100,
-    verifiedTx: _Palette.green800,
-    urgent: _Palette.red600,
-    urgentBg: _Palette.red100,
-    urgentTx: _Palette.red800,
-    available: _Palette.blue600,
-    availableBg: _Palette.blue100,
-    availableTx: _Palette.blue700,
-    warning: _Palette.amber600,
-    warningBg: _Palette.amber100,
-    warningTx: _Palette.amber800,
-    star: _Palette.amber600,
+    surfaceRaised: _Palette.neutral100,
+    border: _Palette.neutral200,
+    borderStrong: _Palette.neutral550,
+    text1: _Palette.ink,
+    text2: _Palette.neutral800,
+    text3: _Palette.neutral700,
+    action: _Palette.brand600,
+    actionPressed: _Palette.brand650,
+    actionBg: _Palette.brand50,
+    actionTx: _Palette.brand800,
+    actionInk: _Palette.brand700,
+    onAction: _Palette.neutral950,
+    verified: _Palette.success600,
+    verifiedBg: _Palette.success50,
+    verifiedTx: _Palette.success800,
+    urgent: _Palette.danger600,
+    urgentBg: _Palette.danger50,
+    urgentTx: _Palette.danger800,
+    available: _Palette.info600,
+    availableBg: _Palette.info50,
+    availableTx: _Palette.info800,
+    warning: _Palette.warning600,
+    warningBg: _Palette.warning50,
+    warningTx: _Palette.warning800,
+    star: _Palette.warning600,
+  );
+
+  // ── Dark — a peer of light, not an inversion of it. Each token is chosen
+  //    independently off the same ramps so it clears WCAG on its own ground:
+  //    text steps UP the neutral ramp, `actionInk` lightens to brand500, and
+  //    `warning` lightens to warning400 because the olive 600 is 2.06 on
+  //    surface. Tightest: onAction/actionPressed 4.76.
+  static const dark = JColors(
+    background: _Palette.neutral950,
+    surface: _Palette.neutral900,
+    card: _Palette.neutral900,
+    surfaceRaised: _Palette.neutral800,
+    border: _Palette.neutral800,
+    borderStrong: _Palette.neutral500,
+    text1: _Palette.neutral50,
+    text2: _Palette.neutral300,
+    text3: _Palette.neutral400,
+    action: _Palette.brand600,
+    actionPressed: _Palette.brand650,
+    actionBg: _Palette.brand950,
+    actionTx: _Palette.brand200,
+    actionInk: _Palette.brand500,
+    onAction: _Palette.neutral950,
+    verified: _Palette.success500,
+    verifiedBg: _Palette.success950,
+    verifiedTx: _Palette.success300,
+    urgent: _Palette.danger500,
+    urgentBg: _Palette.danger950,
+    urgentTx: _Palette.danger300,
+    available: _Palette.info500,
+    availableBg: _Palette.info950,
+    availableTx: _Palette.info300,
+    warning: _Palette.warning400,
+    warningBg: _Palette.warning950,
+    warningTx: _Palette.warning300,
+    star: _Palette.warning400,
   );
 
   @override

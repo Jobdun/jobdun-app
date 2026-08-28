@@ -6,7 +6,7 @@ import 'package:jobdun/core/design/widgets/j_chip.dart';
 import '_harness.dart';
 
 void main() {
-  group('JChip goldens (dark)', () {
+  group('JChip goldens (light)', () {
     testWidgets('default — orange/white identity chip', (tester) async {
       await pumpGolden(tester, const JChip(label: 'URGENT'));
       await expectLater(

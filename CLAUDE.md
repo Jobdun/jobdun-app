@@ -45,19 +45,31 @@ Available page-specific overrides:
 - `design-system/jobdun/pages/admin-web.md`
 - `design-system/jobdun/pages/applications.md`
 
-**Jobdun design tokens (from MASTER):**
-- Background: `#0F172A` (dark slate — NOT white, never `#F8FAFC`)
-- Surface: `#1E293B` (cards, inputs, bottom sheets)
-- Surface Raised: `#334155` (elevated cards, secondary buttons)
-- CTA / Accent: `#F97316` (safety orange — primary action color)
-- Primary Text: `#F1F5F9` (on dark backgrounds)
-- Secondary Text: `#94A3B8` (labels, hints, metadata)
-- Border: `#334155`
-- Error: `#EF4444` | Success: `#22C55E`
-- Style: Aggressive Flat — dark, heavy weight, no shadows, icon-heavy, all-caps buttons
+**Jobdun design tokens (from MASTER).** The palette comes from the Figma
+foundation (`JobDun-Screens` → Foundation, node 14:1962). **Light is canonical**
+and is what new installs start on; dark is a designed peer, not an inversion.
+**Never write these hexes in feature code — read `context.c.*`,** because a
+screen that hardcodes one theme's ground is broken in the other.
+
+| Token | Light | Dark |
+|-------|-------|------|
+| `c.background` | `#F8F8F8` | `#181818` |
+| `c.surface` (cards, inputs, sheets) | `#FFFFFF` | `#2F2F2F` |
+| `c.surfaceRaised` | `#F2F2F2` | `#474747` |
+| `c.action` (safety orange CTA) | `#FC5101` | `#FC5101` |
+| `c.onAction` (label ON the orange) | `#181818` | `#181818` |
+| `c.actionInk` (orange AS text/icon) | `#CA4101` | `#FD7434` |
+| `c.text1` / `c.text2` / `c.text3` | `#111118` / `#474747` / `#5E5E5E` | `#F8F8F8` / `#C8C8C8` / `#ADADAD` |
+| `c.border` / `c.borderStrong` | `#E4E4E4` / `#8C8C8C` | `#474747` / `#919191` |
+| `c.urgent` / `c.verified` / `c.warning` | `#EB1414` / `#178740` / `#8E7201` | `#EF4343` / `#459F66` / `#BBAA67` |
+
+- Neutrals are **pure achromatic grey** — no blue bias (the old slate ramp is gone).
+- Warning is **olive-gold, not amber**; dark steps up to `warning/400` because the olive `600` is only 2.06:1 on the dark surface.
+- Style: Aggressive Flat — heavy weight, no shadows, icon-heavy, all-caps buttons
 - Typography: Archivo (display, headings, buttons) + Inter (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_typography.dart`. (Admin web console keeps its own Oswald/Open Sans `AdminText` scale until the admin-typography branch lands.)
 - Transitions: 150–200ms ease, no bounce/spring
-- Anti-patterns: white backgrounds, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
+- Anti-patterns: hardcoded hexes in feature code, ghost buttons, soft welcome copy, large SSO buttons, gradients, thin fonts
+- Every pair in **both** themes is enforced by `test/colors_contrast_test.dart` — change a hex and the guard re-checks it.
 
 To regenerate design system for a new page:
 ```bash

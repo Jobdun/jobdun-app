@@ -17,7 +17,7 @@ The auth screen is the first impression. It should feel like stepping onto a job
 ## Layout
 
 **Login Screen:**
-1. Full-screen dark background (`#0F172A`)
+1. Full-screen dark background (`c.background`)
 2. Top 40% — Logo + bold identity statement
 3. Middle — Input fields (email + password), stacked
 4. Bottom — Primary CTA button, then account creation link below it
@@ -40,15 +40,15 @@ The auth screen is the first impression. It should feel like stepping onto a job
 ## Color Overrides
 
 No color overrides — the dark palette from MASTER applies exactly here.
-Background `#0F172A`, surface `#1E293B` for input fills.
+Background `c.background`, surface `c.surface` for input fills.
 
 ---
 
 ## Typography Overrides
 
 **Logo/Brand treatment:**
-- "JOBDUN" in Archivo ExtraBold (800), letter-spacing 0.5, all caps, white `#F1F5F9`
-- Tagline (if used): Inter Medium (500), `#94A3B8`, smaller — secondary, not competing
+- "JOBDUN" in Archivo ExtraBold (800), letter-spacing 0.5, all caps, white `c.text1`
+- Tagline (if used): Inter Medium (500), `c.text2`, smaller — secondary, not competing
 
 **Auth screen headline:**
 - Do NOT use soft welcome copy like "Welcome back" or "Sign in."
@@ -66,42 +66,42 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 
 ### Primary CTA Button
 - Full-width, 56dp height, 6dp border radius
-- Background: `#F97316` (orange)
+- Background: `c.action` (orange)
 - Text: "LOG IN" — all caps, Inter Bold (700), letter-spacing 1.0
 - No icon in the button — text only
 
 ### Secondary Action (create account)
 - Full-width, 56dp height, 6dp border radius
-- Background: `#334155` (slate surface raised)
+- Background: `c.border` (slate surface raised)
 - Text: "CREATE ACCOUNT" — all caps, Inter Bold (700)
 - Placed below primary CTA with Gap(12) between them
 - NOT a ghost button. NOT a text link.
 
 ### SSO (Google / Apple)
 - Demoted to tertiary — small text links only, below both main buttons
-- Format: "Or continue with  Google  ·  Apple" — `#94A3B8` text, 12sp
+- Format: "Or continue with  Google  ·  Apple" — `c.text2` text, 12sp
 - No large SSO brand buttons. They import another brand's visual language.
 - No divider with "or" between — just small text below.
 
 ### Input Fields
 - Follow Master input spec exactly (dark fill, orange focus border)
-- Labels: uppercase, Inter SemiBold (600), 11sp, `#94A3B8`, letter-spacing 0.5
-- Placeholder: all lowercase, `#64748B`
+- Labels: uppercase, Inter SemiBold (600), 11sp, `c.text2`, letter-spacing 0.5
+- Placeholder: all lowercase, `c.text3`
 - No floating labels — fixed labels above the field
 - Password field: show/hide toggle with `AppIcons.eyeOpen`/`AppIcons.eyeClosed` in `c.text2` (handled inside `JTextField` when `obscureText: true`).
 
 ### Error States
-- Inline below the field — red `#EF4444`, 12sp, no icon
+- Inline below the field — red `c.urgent`, 12sp, no icon
 - Border turns red on error
 - No modal/snackbar for validation errors — inline only
 
 ### Role Selection Cards (Register)
 - Two cards side by side, full available width, equal size
-- Background: `#1E293B`, border `#334155`
-- Selected: border `#F97316` (2dp), background `#1E293B`
+- Background: `c.surface`, border `c.border`
+- Selected: border `c.action` (2dp), background `c.surface`
 - Icon (`AppIcons.*`): 32dp, `c.action` when selected, `c.text3` unselected
 - Label: "BUILDER" / "TRADES" — Inter Bold (700), 14sp, all caps
-- Sub-label: one-line role description — `#94A3B8`, 12sp
+- Sub-label: one-line role description — `c.text2`, 12sp
 
 ---
 
@@ -128,8 +128,8 @@ Background `#0F172A`, surface `#1E293B` for input fills.
 | 2 | "YOUR CREW, YOUR TERMS." | Set your availability. Work when you want. |
 | 3 | "VERIFIED. TRUSTED." | Upload your certs. Builders hire who they trust. |
 
-Page dots: `smooth_page_indicator`, `ExpandingDotsEffect`, active `#F97316`, inactive `#334155`.
-Skip button: top-right, `#94A3B8`, Inter SemiBold, "SKIP" — not a ghost button, just text.
+Page dots: `smooth_page_indicator`, `ExpandingDotsEffect`, active `c.action`, inactive `c.border`.
+Skip button: top-right, `c.text2`, Inter SemiBold, "SKIP" — not a ghost button, just text.
 
 ---
 

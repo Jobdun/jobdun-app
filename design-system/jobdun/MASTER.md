@@ -33,29 +33,47 @@ This is a platform for people who work with their hands. The UI should feel like
 
 ## Color Palette
 
-| Role | Hex | Flutter | Usage |
-|------|-----|---------|-------|
-| Background | `#0F172A` | `Color(0xFF0F172A)` | App background — dark slate, NOT white |
-| Surface | `#1E293B` | `Color(0xFF1E293B)` | Cards, bottom sheets, input fills |
-| Surface Raised | `#334155` | `Color(0xFF334155)` | Elevated cards, selected states |
-| CTA / Accent | `#F97316` | `Color(0xFFF97316)` | Primary actions, safety orange — dominant |
-| CTA Pressed | `#EA6C0A` | `Color(0xFFEA6C0A)` | Pressed state for CTA |
-| Primary Text | `#F1F5F9` | `Color(0xFFF1F5F9)` | Body text on dark |
-| Secondary Text | `#94A3B8` | `Color(0xFF94A3B8)` | Labels, hints, metadata |
-| Border | `#334155` | `Color(0xFF334155)` | Input borders, dividers |
-| Error | `#EF4444` | `Color(0xFFEF4444)` | Errors / destructive only — never decorative |
-| Success | `#22C55E` | `Color(0xFF22C55E)` | Confirmations only |
-| Warning | `#F59E0B` | `Color(0xFFF59E0B)` | Caution / pending / in-review / expiring — `c.warning` |
+**Light is canonical.** The palette comes from the Figma foundation
+(`JobDun-Screens` → Foundation, node 14:1962): six ramps of eleven steps, pure
+achromatic neutrals, brand orange at `brand/600`. Dark is a designed peer, not
+an inversion — each token is picked independently off the same ramps so it
+clears WCAG on its own ground.
 
-> The table is the summary. The verified source of truth (with tinted bg/text pairs, `onAction`, `borderStrong`, `available`, `star`) is `lib/app/theme/app_colors.dart`; every dark pair is enforced by `test/colors_contrast_test.dart`.
+| Role | Light | Dark | Usage |
+|------|-------|------|-------|
+| Background | `#F8F8F8` | `#181818` | App background — the Scaffold ground |
+| Surface | `#FFFFFF` | `#2F2F2F` | Cards, bottom sheets, input fills |
+| Surface Raised | `#F2F2F2` | `#474747` | Elevated cards, selected states |
+| CTA / Accent | `c.action` | `c.action` | Primary actions, safety orange — dominant |
+| CTA Pressed | `#ED4C01` | `#ED4C01` | Pressed state for CTA |
+| On CTA | `#181818` | `#181818` | Label/icon carried ON the orange fill |
+| Orange ink | `#CA4101` | `#FD7434` | Orange as *text/icon on the page* |
+| Primary Text | `#111118` | `#F8F8F8` | Headlines, body copy |
+| Secondary Text | `#474747` | `#C8C8C8` | Labels, hints, metadata |
+| Tertiary Text | `#5E5E5E` | `#ADADAD` | Eyebrows, captions, placeholders |
+| Border | `#E4E4E4` | `#474747` | Decorative dividers, card edges |
+| Border Strong | `#8C8C8C` | `#919191` | Interactive control edges (3:1 floor) |
+| Error | `#EB1414` | `#EF4343` | Errors / destructive only — never decorative |
+| Success | `#178740` | `#459F66` | Confirmations only |
+| Warning | `#8E7201` | `#BBAA67` | Caution / pending / in-review / expiring |
+| Info | `#1A6EF4` | `#488BF6` | Availability / informational status only |
+
+> The table is the summary. The verified source of truth (with tinted bg/text
+> pairs, `onAction`, `borderStrong`, `available`, `star`) is
+> `lib/app/theme/app_colors.dart`; **every pair in BOTH themes** is enforced by
+> `test/colors_contrast_test.dart`.
 
 **Color Rules:**
-- Background is ALWAYS `#0F172A`. Never use white (`#FFFFFF`) or light gray (`#F8FAFC`) as a screen background.
-- Orange `#F97316` is reserved for CTAs and critical status indicators only — do not use it decoratively, and do not use it for a *status* (a status is not an action).
-- **Caution ≠ error.** Pending / awaiting / in-review / expiring states use **Warning amber `#F59E0B`** (`c.warning` + `c.warningBg`/`c.warningTx`), NOT Error red (`c.urgent`) and NOT the brand orange (`c.action`).
-- **`surfaceRaised` (`#334155`) carries primary text (`text1`) only.** Secondary/tertiary text (`text2`/`text3`) and interactive borders (`borderStrong`) fall below WCAG AA on it (4.04 / 3.54 / 2.57). Put muted text and input controls on `background` or `surface`.
-- Foreground on the orange CTA is **dark** (`onAction` `#0F172A`, 6.37:1) — white-on-orange is 2.80:1 and fails. Likewise dark-on-orange for any filled orange tile/icon.
-- **`action` is the FILL; `actionInk` is the orange INK.** For orange used as *text/icon on the page* (`background`/`surface`) — inline links, eyebrows, bare glyphs — use `c.actionInk`, never `c.action`. On dark it's the bright orange (6.37:1); on light it darkens to orange-700 `#C2410C` (~4.95:1 on white) because the bright orange is only 2.80:1 there. `c.action` stays for button/CTA *backgrounds* (carried by `onAction`).
+- **Never write a literal hex in feature code.** Read `context.c.background` /
+  `context.c.surface` and the screen follows the active theme. A screen that
+  hardcodes either theme's ground is broken in the other one. (Enforced by
+  `validate.sh`.)
+- Orange `c.action` is reserved for CTAs and critical status indicators only — do not use it decoratively, and do not use it for a *status* (a status is not an action).
+- **Caution ≠ error.** Pending / awaiting / in-review / expiring states use **Warning** (`c.warning` + `c.warningBg`/`c.warningTx`), NOT Error red (`c.urgent`) and NOT the brand orange (`c.action`).
+- **`surfaceRaised` carries primary text (`text1`) only.** Secondary/tertiary text (`text2`/`text3`) and interactive borders (`borderStrong`) are not guaranteed on it. Put muted text and input controls on `background` or `surface`.
+- Foreground on the orange CTA is **dark** (`onAction` `#181818`, 5.34:1) — white-on-orange is 3.33:1, which clears the 3:1 non-text floor but fails the 4.5 text bar. Likewise dark-on-orange for any filled orange tile/icon.
+- **`action` is the FILL; `actionInk` is the orange INK.** For orange used as *text/icon on the page* (`background`/`surface`) — inline links, eyebrows, bare glyphs — use `c.actionInk`, never `c.action`. Light darkens it to `#CA4101` (4.92 on white); dark lightens it to `#FD7434` (4.92 on surface). `c.action` stays for button/CTA *backgrounds* (carried by `onAction`).
+- **Warning is olive-gold, not amber.** On the dark ground `warning/600` manages only 2.06 on surface, which is why dark steps up to `warning/400`.
 - **Status chips / tags use the semantic `*Bg`/`*Tx` pairs** (`warningBg`/`warningTx`, etc.; neutral terminal states = `surfaceRaised` + `text1`). NEVER `colour.withValues(alpha: …)` + same-colour text — it lands below AA (grey chips ≈ 2:1).
 - **Feature/admin widgets read colour via `context.c`** (the JColors tokens), never `Theme.of(context).colorScheme` directly. The `ColorScheme` themes stock Material widgets; your code uses the tokens. (Enforced by `validate.sh`.)
 - The Material `ColorScheme` is **single-accent**: `secondary`/`tertiary` map to the brand orange. Don't repurpose them for a distinct colour — add a token instead.
@@ -120,7 +138,7 @@ Wordmark only (NOT a scale role): Archivo 800 · 40 · tracking **0.5** · `AppT
 > `AppTypography.textTheme` is now the source of truth, wired into `app_theme.dart`. Body roles
 > meet Google's **16px mobile floor** (bodyLarge 16 / bodyMedium 14), titleLarge 18, headline 26/22,
 > with explicit line-heights on every role. Legibility floors unchanged (bodySmall 12, labelSmall 11);
-> dark `onAction` (#0F172A) on the orange CTA unchanged. This **supersedes** the 2026-05-31
+> dark `onAction` (#181818) on the orange CTA unchanged. This **supersedes** the 2026-05-31
 > 40/32/24/20/16/15/13 decision (which had explicitly rejected this ramp) — the trade-off, slightly
 > looser density for legibility, was taken deliberately after a "text too small" review against
 > Material/Google guidance. Full prior rationale: `docs/DESIGN_SYSTEM_TYPOGRAPHY_AUDIT.md`.
@@ -174,8 +192,8 @@ Use `flutter_screenutil` extensions (`.w`, `.h`, `.sp`, `.r`) — never raw pixe
 // Primary CTA — filled orange, heavy
 ElevatedButton(
   style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFFF97316),
-    foregroundColor: Color(0xFF0F172A), // onAction — dark-on-orange (6.37:1), never white
+    backgroundColor: Color(0xFFFC5101),
+    foregroundColor: context.c.onAction, // dark-on-orange (5.34:1), never white
     minimumSize: Size(double.infinity, 56.h),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.r)),
     elevation: 0,
@@ -190,8 +208,8 @@ ElevatedButton(
 // Secondary action — filled slate, NOT ghost
 ElevatedButton(
   style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFF334155),
-    foregroundColor: Color(0xFFF1F5F9),
+    backgroundColor: context.c.border,
+    foregroundColor: context.c.text1,
     minimumSize: Size(double.infinity, 56.h),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.r)),
     elevation: 0,
@@ -212,9 +230,9 @@ ElevatedButton(
 ```dart
 Container(
   decoration: BoxDecoration(
-    color: Color(0xFF1E293B),   // Surface, not white
+    color: context.c.surface,
     borderRadius: BorderRadius.circular(8.r),
-    border: Border.all(color: Color(0xFF334155), width: 1),
+    border: Border.all(color: context.c.border, width: 1),
   ),
   padding: EdgeInsets.all(16.w),
 )
@@ -226,19 +244,19 @@ No card shadows. Border instead of shadow for edge definition.
 
 ```dart
 TextFormField(
-  style: TextStyle(color: Color(0xFFF1F5F9), fontSize: 14.sp),
+  style: TextStyle(color: context.c.text1, fontSize: 14.sp),
   decoration: InputDecoration(
     filled: true,
-    fillColor: Color(0xFF1E293B),
+    fillColor: context.c.surface,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(6.r),
-      borderSide: BorderSide(color: Color(0xFF334155)),
+      borderSide: BorderSide(color: context.c.border),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(6.r),
-      borderSide: BorderSide(color: Color(0xFFF97316), width: 2),
+      borderSide: BorderSide(color: Color(0xFFFC5101), width: 2),
     ),
-    hintStyle: TextStyle(color: Color(0xFF94A3B8)),
+    hintStyle: TextStyle(color: context.c.text2),
     contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
   ),
 )
@@ -252,7 +270,7 @@ No light-colored input backgrounds. Inputs are dark surface fills with bright fo
 Container(
   padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
   decoration: BoxDecoration(
-    color: Color(0xFF334155),
+    color: context.c.border,
     borderRadius: BorderRadius.circular(4.r),
   ),
   child: Text('OPEN', style: TextStyle(
@@ -268,7 +286,7 @@ Status chips use all-caps labels. Colors: Open=green, In Progress=orange, Closed
 
 ### Bottom Sheets
 
-Use `modal_bottom_sheet` (not Flutter's built-in). Background is `#1E293B`, handle bar in `#334155`.
+Use `modal_bottom_sheet` (not Flutter's built-in). Background is `c.surface`, handle bar in `c.border`.
 
 ---
 
@@ -317,14 +335,14 @@ Icon colour: `c.text2` default, `c.action` active/selected, `c.text1` for primar
 
 ## Navigation Bar
 
-Bottom nav background: `#0F172A` (same as background — no separation line needed).
-Selected icon: `#F97316`. Unselected: `#64748B`. No labels on nav items.
+Bottom nav background: `c.background` (same as background — no separation line needed).
+Selected icon: `c.action`. Unselected: `c.text3`. No labels on nav items.
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ White or light gray (`#F8FAFC`) as screen background — signals "safe SaaS"
+- ❌ White or light gray (`c.background`) as screen background — signals "safe SaaS"
 - ❌ Ghost/outline-only buttons — signals hedging
 - ❌ Title case or sentence case button text — use ALL CAPS
 - ❌ Soft/rounded border radius above 12 — keep it sharp (4–8)
@@ -342,7 +360,7 @@ Selected icon: `#F97316`. Unselected: `#64748B`. No labels on nav items.
 
 Before delivering any UI code, verify:
 
-- [ ] Background is `#0F172A`, never white
+- [ ] Background comes from `c.background`, never a literal hex
 - [ ] All buttons are filled (no ghost buttons); orange foregrounds are dark `onAction`, never white
 - [ ] Button text is uppercase + bold (FontWeight.w700+)
 - [ ] All text uses Archivo / Inter via AppTypography/AppTheme (no per-widget GoogleFonts calls)

@@ -12,8 +12,9 @@
 // Bars: normal text 4.5:1 · large text / UI components (borders, icons, dots) 3:1.
 //
 // `action`/`primary` as a standalone UI mark on `surface` is NOT asserted: the
-// brand orange is 2.80:1 on white by design (filled buttons are label-carried).
-// So that one pair is dark-only.
+// brand orange is 3.33:1 on white — it clears the 3:1 non-text floor but not
+// the 4.5 text bar (filled buttons are label-carried). The `action/background`
+// UI pair stays dark-only because the light ground is the tighter case.
 //
 // Color API: Flutter 3.27+ exposes .r/.g/.b as 0.0–1.0 doubles (sRGB-encoded).
 // We use those directly — no /255, no deprecated .red/.green/.blue.
@@ -122,48 +123,51 @@ void main() {
     });
   }
 
-  // The pinned ColorScheme drives every STOCK Material widget. Guard its
-  // on-pairs on the dark scheme that ships.
-  group('WCAG ColorScheme on-pairs (stock M3 widgets, dark)', () {
-    final s = AppTheme.colorScheme(Brightness.dark);
-    final pairs = <(String, Color, Color, double)>[
-      ('onPrimary / primary', s.onPrimary, s.primary, 4.5),
-      (
-        'onPrimaryContainer / primaryContainer',
-        s.onPrimaryContainer,
-        s.primaryContainer,
-        4.5,
-      ),
-      ('onSecondary / secondary', s.onSecondary, s.secondary, 4.5),
-      ('onTertiary / tertiary', s.onTertiary, s.tertiary, 4.5),
-      ('onError / error', s.onError, s.error, 4.5),
-      (
-        'onErrorContainer / errorContainer',
-        s.onErrorContainer,
-        s.errorContainer,
-        4.5,
-      ),
-      ('onSurface / surface', s.onSurface, s.surface, 4.5),
-      ('onSurfaceVariant / surface', s.onSurfaceVariant, s.surface, 4.5),
-      (
-        'onInverseSurface / inverseSurface',
-        s.onInverseSurface,
-        s.inverseSurface,
-        4.5,
-      ),
-      ('outline / surface', s.outline, s.surface, 3.0),
-    ];
-    for (final (label, fg, bg, min) in pairs) {
-      test(label, () {
-        final r = _contrast(fg, bg);
-        expect(
-          r,
-          greaterThanOrEqualTo(min),
-          reason: '$label = ${r.toStringAsFixed(2)}:1, needs $min:1',
-        );
-      });
-    }
-  });
+  // The pinned ColorScheme drives every STOCK Material widget. Both schemes
+  // ship now (light is canonical, dark is its peer), so both are guarded.
+  for (final b in [Brightness.light, Brightness.dark]) {
+    group('WCAG ColorScheme on-pairs (stock M3 widgets, ${b.name})', () {
+      final s = AppTheme.colorScheme(b);
+      final pairs = <(String, Color, Color, double)>[
+        ('onPrimary / primary', s.onPrimary, s.primary, 4.5),
+        (
+          'onPrimaryContainer / primaryContainer',
+          s.onPrimaryContainer,
+          s.primaryContainer,
+          4.5,
+        ),
+        ('onSecondary / secondary', s.onSecondary, s.secondary, 4.5),
+        ('onTertiary / tertiary', s.onTertiary, s.tertiary, 4.5),
+        ('onError / error', s.onError, s.error, 4.5),
+        (
+          'onErrorContainer / errorContainer',
+          s.onErrorContainer,
+          s.errorContainer,
+          4.5,
+        ),
+        ('onSurface / surface', s.onSurface, s.surface, 4.5),
+        ('onSurfaceVariant / surface', s.onSurfaceVariant, s.surface, 4.5),
+        (
+          'onInverseSurface / inverseSurface',
+          s.onInverseSurface,
+          s.inverseSurface,
+          4.5,
+        ),
+        ('outline / surface', s.outline, s.surface, 3.0),
+      ];
+      for (final (label, fg, bg, min) in pairs) {
+        test(label, () {
+          final r = _contrast(fg, bg);
+          expect(
+            r,
+            greaterThanOrEqualTo(min),
+            reason:
+                '${b.name} · $label = ${r.toStringAsFixed(2)}:1, needs $min:1',
+          );
+        });
+      }
+    });
+  }
 
   // Coverage: every JColors token must be guarded above or explicitly exempt,
   // so a newly-added token can't slip through unverified.
