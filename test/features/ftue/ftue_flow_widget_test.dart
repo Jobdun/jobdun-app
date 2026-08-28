@@ -17,6 +17,14 @@ import 'package:jobdun/features/ftue/data/models/geo_result.dart';
 import 'package:jobdun/features/ftue/presentation/pages/ftue_page.dart';
 import 'package:jobdun/features/ftue/presentation/providers/ftue_geo_provider.dart';
 
+/// FTUE contract after the Figma "Onboard" rebuild (node 17:5084).
+///
+/// The shape changed: the two role CTAs, the log-in link and guest browsing
+/// now live in a sheet pinned *below* the carousel, so they're reachable from
+/// slide 1 instead of only slide 3. That's what retired the SKIP affordance —
+/// there is nothing left for it to shortcut. Everything else (routing, the
+/// completion flag, geo personalisation, the S4 back escapes) is unchanged and
+/// still asserted here.
 void main() {
   setUpAll(() async {
     await dotenv.load(
@@ -32,24 +40,9 @@ void main() {
     final binding = TestWidgetsFlutterBinding.instance;
     binding.platformDispatcher.views.first.physicalSize = const Size(390, 1800);
     binding.platformDispatcher.views.first.devicePixelRatio = 1.0;
-    // FtueService reads from SharedPreferences directly; tests need a clean
-    // mock backend each run so completion state doesn't bleed across cases.
+    // FtueService reads SharedPreferences directly; each case needs a clean
+    // mock backend so completion state doesn't bleed across tests.
     SharedPreferences.setMockInitialValues({});
-
-    // The FTUE precaches its hero photos in didChangeDependencies. Until
-    // Ken's image files land in assets/images/ftue/ the precache + the
-    // Image.asset render both throw an "Unable to load asset" assertion —
-    // the production errorBuilder + provider .catchError both swallow it
-    // cleanly, but Flutter still surfaces the error via FlutterError.
-    // Filter that one known message at the binding level so it never
-    // poisons takeException(); anything else still flows through.
-    final defaultOnError = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (details.exception.toString().contains('Unable to load asset')) {
-        return;
-      }
-      defaultOnError?.call(details);
-    };
   });
 
   tearDown(() {
@@ -58,19 +51,11 @@ void main() {
     binding.platformDispatcher.views.first.resetDevicePixelRatio();
   });
 
-  // Real fonts (Archivo, Inter, Iconsax) don't load in widget tests so the Ahem
-  // fallback renders glyphs wider than production — that triggers harmless
-  // RenderFlex overflows in dense rows.
-  //
-  // The FTUE wow-pass also precaches the slide-1 + slide-3 hero photos.
-  // Until Ken's image files land in assets/images/ftue/, both the precache
-  // and the Image.asset render throw "Unable to load asset" — that's the
-  // documented graceful-degradation path (FtueHeroPhoto.errorBuilder
-  // renders a navy placeholder). Drain both classes of known-harmless
-  // errors after each pump; rethrow anything else.
-  //
-  // The binding wraps multi-error rounds into a "Multiple exceptions (N)"
-  // umbrella, so we loop until takeException returns null.
+  // Real fonts (Archivo, Inter, Phosphor) don't load in widget tests, so the
+  // Ahem fallback renders glyphs wider than production — that triggers
+  // harmless RenderFlex overflows in the dense role rows. The binding wraps
+  // multi-error rounds into a "Multiple exceptions (N)" umbrella, so loop
+  // until takeException returns null and rethrow anything unexpected.
   bool knownHarmless(Object exc) {
     final msg = exc.toString();
     return msg.contains('overflow') ||
@@ -97,6 +82,7 @@ void main() {
               FtuePage(fromLogin: state.uri.queryParameters['from'] == 'login'),
         ),
         GoRoute(path: '/login', builder: (_, _) => const LoginPage()),
+        GoRoute(path: '/browse', builder: (_, _) => const Scaffold()),
         GoRoute(
           path: '/register',
           builder: (context, state) {
@@ -116,8 +102,8 @@ void main() {
   }
 
   // Widget tests must not hit ipapi.co. Defaults to the [_StubGeoService.none]
-  // stub (generic copy path); tests that need a specific outcome supply
-  // their own [GeoService] via [geoService].
+  // stub (generic copy path); tests that need a specific outcome supply their
+  // own [GeoService] via [geoService].
   Widget wrap(GoRouter router, {GeoService? geoService}) {
     return ProviderScope(
       overrides: [
@@ -128,7 +114,7 @@ void main() {
       child: ScreenUtilInit(
         designSize: const Size(390, 844),
         builder: (_, _) => MaterialApp.router(
-          theme: AppTheme.dark(),
+          theme: AppTheme.light(),
           routerConfig: router,
           debugShowCheckedModeBanner: false,
         ),
@@ -136,88 +122,67 @@ void main() {
     );
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Slide 1 — renders trust copy + SKIP affordance
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('slide 1 renders trust headline + SKIP visible', (tester) async {
-    final router = buildRouter();
+  Future<void> pumpFtue(WidgetTester tester, GoRouter router) async {
     await tester.pumpWidget(wrap(router));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
+  }
+
+  Future<void> jumpToSlide(WidgetTester tester, int index) async {
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    pageView.controller!.jumpToPage(index);
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Slide 1 — trust headline + the always-present role sheet
+  // ───────────────────────────────────────────────────────────────────────────
+  testWidgets('slide 1 renders the trust headline', (tester) async {
+    await pumpFtue(tester, buildRouter());
 
     expect(find.text('ONLY VERIFIED.'), findsOneWidget);
-    expect(find.text('NO TIMEWASTERS.'), findsOneWidget);
-    expect(find.text('SKIP'), findsOneWidget);
+    expect(find.text('NO\nTIMEWASTERS.'), findsOneWidget);
+    // Trust seals floating on the hero.
+    expect(find.text('Licensed & Verified'), findsOneWidget);
+    expect(find.text('ID Checked'), findsOneWidget);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // SKIP — slide 1 → /login, flag is set
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('SKIP from slide 1 routes to /login and marks FTUE complete', (
+  testWidgets('role sheet, login and browse are reachable from slide 1', (
     tester,
   ) async {
-    final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+    await pumpFtue(tester, buildRouter());
 
-    expect(await FtueService.hasCompletedFtue(), isFalse);
-
-    await tester.tap(find.text('SKIP'));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-
-    expect(router.state.uri.toString(), '/login');
-    expect(await FtueService.hasCompletedFtue(), isTrue);
+    expect(find.byKey(const Key('ftue.role.trade')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.role.builder')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.login')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.browse')), findsOneWidget);
+    expect(find.text('Find Work'), findsOneWidget);
+    expect(find.text('Hire Workers'), findsOneWidget);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Slide 3 — swipe to last slide hides SKIP and shows CTAs + login link
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('slide 3 hides SKIP and shows both role CTAs + login link', (
-    tester,
-  ) async {
-    final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-
-    // Swipe to slide 2 then slide 3.
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+  // The sheet lives outside the PageView, so it must survive a page change.
+  testWidgets('role sheet stays put while the hero swipes', (tester) async {
+    await pumpFtue(tester, buildRouter());
+    await jumpToSlide(tester, 2);
 
     expect(find.text('BUILT FOR'), findsOneWidget);
-    expect(find.text('AUSSIE SITES.'), findsOneWidget);
-    expect(find.text("I'M HIRING"), findsOneWidget);
-    expect(find.text("I'M LOOKING FOR WORK"), findsOneWidget);
-    expect(find.text('LOG IN'), findsOneWidget);
-    // No SKIP on the final slide — the CTAs are the exit.
-    expect(find.text('SKIP'), findsNothing);
+    expect(find.byKey(const Key('ftue.role.trade')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.role.builder')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.login')), findsOneWidget);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Builder CTA → /register?role=builder, flag is set
+  // Exits — each one routes and sets has_completed_ftue
   // ───────────────────────────────────────────────────────────────────────────
-  testWidgets("I'M HIRING deep-links to /register?role=builder", (
+  testWidgets('Hire Workers deep-links to /register?role=builder', (
     tester,
   ) async {
     final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+    await pumpFtue(tester, router);
+    expect(await FtueService.hasCompletedFtue(), isFalse);
 
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-
-    await tester.tap(find.text("I'M HIRING"));
+    await tester.tap(find.byKey(const Key('ftue.role.builder')));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
@@ -225,25 +190,11 @@ void main() {
     expect(await FtueService.hasCompletedFtue(), isTrue);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Trade CTA → /register?role=trade, flag is set
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets("I'M LOOKING FOR WORK deep-links to /register?role=trade", (
-    tester,
-  ) async {
+  testWidgets('Find Work deep-links to /register?role=trade', (tester) async {
     final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+    await pumpFtue(tester, router);
 
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-
-    await tester.tap(find.text("I'M LOOKING FOR WORK"));
+    await tester.tap(find.byKey(const Key('ftue.role.trade')));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
@@ -251,25 +202,13 @@ void main() {
     expect(await FtueService.hasCompletedFtue(), isTrue);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Login link on slide 3 → /login, flag is set
-  // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('login link on slide 3 routes to /login and marks complete', (
+  testWidgets('login link routes to /login and marks FTUE complete', (
     tester,
   ) async {
     final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+    await pumpFtue(tester, router);
 
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-
-    await tester.tap(find.text('LOG IN'));
+    await tester.tap(find.byKey(const Key('ftue.login')));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
@@ -277,21 +216,24 @@ void main() {
     expect(await FtueService.hasCompletedFtue(), isTrue);
   });
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Wow-pass — slide 2 personalised copy + suburb chips
-  // ───────────────────────────────────────────────────────────────────────────
-  // Page-snap via the PageController directly — flings can overshoot by
-  // a page when slide content is tall (the new wow-pass layout uses a
-  // SingleChildScrollView), so targeting the controller keeps tests on
-  // the slide they actually mean to assert against.
-  Future<void> swipeToSlideTwo(WidgetTester tester) async {
-    final pageView = tester.widget<PageView>(find.byType(PageView));
-    final controller = pageView.controller!;
-    controller.jumpToPage(1);
+  // App Review 5.1.1(v) — nobody has to register just to look.
+  testWidgets('browse link routes to /browse and marks FTUE complete', (
+    tester,
+  ) async {
+    final router = buildRouter();
+    await pumpFtue(tester, router);
+
+    await tester.tap(find.byKey(const Key('ftue.browse')));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
-  }
 
+    expect(router.state.uri.toString(), '/browse');
+    expect(await FtueService.hasCompletedFtue(), isTrue);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Wow-pass — slide 2 personalised copy + suburb pins
+  // ───────────────────────────────────────────────────────────────────────────
   testWidgets('slide 2 renders personalised copy + cluster when geo succeeds', (
     tester,
   ) async {
@@ -311,13 +253,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
-    await swipeToSlideTwo(tester);
+    await jumpToSlide(tester, 1);
 
     expect(find.text('JOBS IN'), findsOneWidget);
     expect(find.text('SYDNEY.'), findsOneWidget);
-    expect(find.text('100+ active jobs'), findsOneWidget);
-    expect(find.text('within 15km of you.'), findsOneWidget);
-    // Suburb chips render.
+    // Suburb pins render on the map hero.
     expect(find.text('Parramatta'), findsOneWidget);
     expect(find.text('Penrith'), findsOneWidget);
     expect(find.text('Liverpool'), findsOneWidget);
@@ -326,17 +266,12 @@ void main() {
   testWidgets('slide 2 falls back to generic copy when geo returns null', (
     tester,
   ) async {
-    final router = buildRouter();
     // wrap() already installs the none-returning stub by default.
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await swipeToSlideTwo(tester);
+    await pumpFtue(tester, buildRouter());
+    await jumpToSlide(tester, 1);
 
     expect(find.text('JOBS NEAR YOU.'), findsOneWidget);
     expect(find.text('APPLY IN THREE TAPS.'), findsOneWidget);
-    expect(find.text('Sorted by your suburb.'), findsOneWidget);
-    expect(find.text('No scrolling through dud jobs.'), findsOneWidget);
   });
 
   testWidgets('slide 2 falls back to generic when geo lookup throws', (
@@ -348,41 +283,29 @@ void main() {
     );
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
-    await swipeToSlideTwo(tester);
+    await jumpToSlide(tester, 1);
 
     expect(find.text('JOBS NEAR YOU.'), findsOneWidget);
     expect(find.text('APPLY IN THREE TAPS.'), findsOneWidget);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // S4 regression — the role slide must never be a trap
+  // S4 regression — the carousel must never be a trap
   // ───────────────────────────────────────────────────────────────────────────
-  Future<void> jumpToSlideThree(WidgetTester tester) async {
-    final pageView = tester.widget<PageView>(find.byType(PageView));
-    pageView.controller!.jumpToPage(2);
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-  }
-
-  testWidgets('fromLogin: slide 3 keeps the LOG IN link and a back caret', (
+  testWidgets('fromLogin: slide 3 keeps the login link and a back caret', (
     tester,
   ) async {
-    final router = buildRouter(initial: '/ftue?from=login');
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await jumpToSlideThree(tester);
+    await pumpFtue(tester, buildRouter(initial: '/ftue?from=login'));
+    await jumpToSlide(tester, 2);
 
-    expect(find.text('LOG IN'), findsOneWidget);
+    expect(find.byKey(const Key('ftue.login')), findsOneWidget);
     expect(find.byIcon(AppIcons.arrowLeft), findsOneWidget);
   });
 
   testWidgets('back caret on slide 3 steps back to slide 2', (tester) async {
     final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await jumpToSlideThree(tester);
+    await pumpFtue(tester, router);
+    await jumpToSlide(tester, 2);
 
     expect(find.text('BUILT FOR'), findsOneWidget);
     await tester.tap(find.byIcon(AppIcons.arrowLeft));
@@ -393,14 +316,20 @@ void main() {
     expect(router.state.uri.path, '/ftue');
   });
 
+  testWidgets('no back caret on slide 1 for a first-launch user', (
+    tester,
+  ) async {
+    await pumpFtue(tester, buildRouter());
+
+    expect(find.byIcon(AppIcons.arrowLeft), findsNothing);
+  });
+
   testWidgets('system back on slide 3 steps back a slide, not out of the app', (
     tester,
   ) async {
     final router = buildRouter();
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
-    await jumpToSlideThree(tester);
+    await pumpFtue(tester, router);
+    await jumpToSlide(tester, 2);
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -414,9 +343,7 @@ void main() {
     tester,
   ) async {
     final router = buildRouter(initial: '/ftue?from=login');
-    await tester.pumpWidget(wrap(router));
-    await tester.pumpAndSettle();
-    drainKnownOverflow(tester);
+    await pumpFtue(tester, router);
 
     await tester.tap(find.byIcon(AppIcons.arrowLeft));
     await tester.pumpAndSettle();

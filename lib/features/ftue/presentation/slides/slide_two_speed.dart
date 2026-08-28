@@ -1,44 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gap/gap.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
-import '../../../../core/design/colors.dart';
 import '../../../../core/services/ftue_analytics.dart';
 import '../../data/geo_service.dart';
 import '../providers/ftue_geo_provider.dart';
-import '../widgets/ftue_map_hero.dart';
+import '../widgets/ftue_overlay_card.dart';
 import '../widgets/ftue_slide.dart';
 
-// Slide 2 — the wow moment. Reads ftueGeoProvider, swaps in the user's city
-// when the IP lookup hits an AU result, and renders the matched suburb
-// cluster as chips below the body. Every failure path (timeout, non-AU,
-// network, parse, missing city) drops to a generic copy so the user never
-// notices.
+/// Slide 2 — the wow moment. Reads [ftueGeoProvider], swaps in the user's city
+/// when the IP lookup lands on an AU result, and drops the matched suburb
+/// cluster onto the map as pins. Every failure path (timeout, non-AU, network,
+/// parse, missing city) falls back to generic copy, so the user never sees the
+/// seam.
 class SlideTwoSpeed extends ConsumerWidget {
-  const SlideTwoSpeed({super.key});
+  const SlideTwoSpeed({
+    super.key,
+    required this.controller,
+    required this.slideCount,
+  });
+
+  static const heroAsset = 'assets/images/ftue/slide_2_nearby.webp';
+
+  final PageController controller;
+  final int slideCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final geoAsync = ref.watch(ftueGeoProvider);
 
     return geoAsync.when(
-      // Loading + error fall through to the same generic content — we never
-      // hold the carousel waiting on the network, and we never surface an
-      // error toast for a personalisation nicety.
-      loading: () => const _SlideTwoContent.generic(),
-      error: (_, _) => const _SlideTwoContent.generic(),
+      // Loading and error land on the same generic content — we never hold the
+      // carousel waiting on the network, and never surface an error for what
+      // is only a personalisation nicety.
+      loading: () =>
+          _SlideTwoContent.generic(controller: controller, count: slideCount),
+      error: (_, _) =>
+          _SlideTwoContent.generic(controller: controller, count: slideCount),
       data: (geo) {
         if (geo == null || geo.city == null) {
-          // AU but city missing, or non-AU — render generic but still use
-          // the geo-derived suburb cluster when present so AU-without-city
-          // users at least see real local-area names.
+          // AU but city missing, or non-AU — generic copy, but still use the
+          // geo-derived cluster when there is one so AU-without-city users at
+          // least see real local names on the pins.
           return _SlideTwoContent.generic(
+            controller: controller,
+            count: slideCount,
             suburbs: geo?.suburbs ?? GeoService.nearbySuburbsFor(null),
           );
         }
         return _SlideTwoContent.personalised(
+          controller: controller,
+          count: slideCount,
           city: geo.displayCity,
           rawCity: geo.city,
           suburbs: geo.suburbs,
@@ -49,13 +61,18 @@ class SlideTwoSpeed extends ConsumerWidget {
 }
 
 class _SlideTwoContent extends StatefulWidget {
-  const _SlideTwoContent.generic({List<String>? suburbs})
-    : isPersonalised = false,
-      city = null,
-      rawCity = null,
-      suburbs = suburbs ?? _genericSuburbs;
+  const _SlideTwoContent.generic({
+    required this.controller,
+    required this.count,
+    List<String>? suburbs,
+  }) : isPersonalised = false,
+       city = null,
+       rawCity = null,
+       suburbs = suburbs ?? _genericSuburbs;
 
   const _SlideTwoContent.personalised({
+    required this.controller,
+    required this.count,
     required this.city,
     required this.rawCity,
     required this.suburbs,
@@ -63,6 +80,21 @@ class _SlideTwoContent extends StatefulWidget {
 
   static const _genericSuburbs = ['Parramatta', 'Liverpool', 'Penrith'];
 
+  /// Where each pin sits on the hero, as a fraction of the Figma 393x567 frame
+  /// (nodes 60:168, 60:157, 60:174). Scattered, not stacked, so the cluster
+  /// reads as "a map" rather than "a list".
+  ///
+  /// The two right-hand pins are anchored from the right edge (the mock's left
+  /// 249 / 220 with a 109-wide card lands 35 / 64 in from the right). These
+  /// carry live suburb names of unknown length, so they have to grow inwards.
+  static const _pinSpots = [
+    (left: null, right: 35 / 393, top: 69 / 567),
+    (left: 36 / 393, right: null, top: 199 / 567),
+    (left: null, right: 64 / 393, top: 312 / 567),
+  ];
+
+  final PageController controller;
+  final int count;
   final bool isPersonalised;
   final String? city;
   final String? rawCity;
@@ -76,7 +108,7 @@ class _SlideTwoContentState extends State<_SlideTwoContent> {
   @override
   void initState() {
     super.initState();
-    // Boss-facing event — % of users on the personalised branch.
+    // Boss-facing event — % of users who get the personalised branch.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FtueAnalytics.slideTwoRendered(
         variant: widget.isPersonalised ? 'personalised' : 'generic',
@@ -87,72 +119,28 @@ class _SlideTwoContentState extends State<_SlideTwoContent> {
 
   @override
   Widget build(BuildContext context) {
-    final headlineLine1 = widget.isPersonalised ? 'JOBS IN' : 'JOBS NEAR YOU.';
-    final headlineLine2 = widget.isPersonalised
-        ? '${widget.city}.'
-        : 'APPLY IN THREE TAPS.';
-    final bodyLine1 = widget.isPersonalised
-        ? '100+ active jobs'
-        : 'Sorted by your suburb.';
-    final bodyLine2 = widget.isPersonalised
-        ? 'within 15km of you.'
-        : 'No scrolling through dud jobs.';
+    // Cap at three so the layout stays predictable if the cluster map grows.
+    final visible = widget.suburbs.take(_SlideTwoContent._pinSpots.length);
 
     return FtueSlide(
-      visual: const FtueMapHero(),
-      headlineLine1: headlineLine1,
-      headlineLine2: headlineLine2,
-      bodyLine1: bodyLine1,
-      bodyLine2: bodyLine2,
-      footer: _SuburbChips(suburbs: widget.suburbs),
-    );
-  }
-}
-
-// ── Suburb chip row — the visual half of slide 2 ────────────────────────────
-// "Map pins" rendered as labelled chips. Three is the sweet spot — fits a
-// 360px viewport without wrapping and reads as "a cluster, not a list".
-class _SuburbChips extends StatelessWidget {
-  const _SuburbChips({required this.suburbs});
-
-  final List<String> suburbs;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    // Cap at 3 so layouts stay predictable even if the cluster map grows.
-    final visible = suburbs.take(3).toList();
-
-    return Wrap(
-      spacing: AppSpacing.sm.w,
-      runSpacing: AppSpacing.sm.h,
-      children: [
-        for (final s in visible)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.chip.r),
-              border: Border.all(color: c.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppIcons.locationFilled,
-                  size: AppIconSize.micro.r,
-                  color: c.action,
-                ),
-                Gap(6.w),
-                Text(
-                  s,
-                  style: tt.labelMedium!.copyWith(
-                    color: c.text1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+      assetPath: SlideTwoSpeed.heroAsset,
+      slideIndex: 1,
+      semanticLabel: 'A Jobdun user browsing nearby jobs on her phone',
+      lead: widget.isPersonalised ? 'JOBS IN' : 'JOBS NEAR YOU.',
+      accent: widget.isPersonalised
+          ? '${widget.city}.'
+          : 'APPLY IN THREE TAPS.',
+      controller: widget.controller,
+      slideCount: widget.count,
+      overlays: [
+        for (final (i, suburb) in visible.indexed)
+          FtueOverlay(
+            left: _SlideTwoContent._pinSpots[i].left,
+            right: _SlideTwoContent._pinSpots[i].right,
+            top: _SlideTwoContent._pinSpots[i].top,
+            child: FtueOverlayCard.pin(
+              label: suburb,
+              icon: AppIcons.locationFilled,
             ),
           ),
       ],

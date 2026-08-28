@@ -1,34 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:jobdun/core/theme/app_icons.dart';
 
-import '../widgets/ftue_hero_photo.dart';
+import '../widgets/ftue_overlay_card.dart';
 import '../widgets/ftue_slide.dart';
 
-// Slide 1 — "Only verified. No timewasters." Establishes the trust premise
-// before any other claim. Hero photo: a tradie at a real worksite (sourced
-// from Unsplash for v1; see assets/images/ftue/README.md).
-//
-// No NEXT button on slides 1 + 2: the bottom indicator dots already signal
-// "this is a carousel", swipe is the universal mobile carousel gesture,
-// and dropping the chrome lets the photo + stencil headline carry the
-// slide. The orange c.action accent stays reserved for slide 3's role
-// CTAs — the only real decision in the whole flow.
+/// Slide 1 — "Only verified. No timewasters." Establishes the trust premise
+/// before any other claim, because it's the objection every tradie brings to a
+/// jobs app.
+///
+/// The two seals floating over the photo (Figma nodes 60:141 and 60:150) are
+/// the proof: licence checks and ID checks are the things Jobdun actually
+/// does, stated as badges rather than body copy.
 class SlideOneTrust extends StatelessWidget {
-  const SlideOneTrust({super.key});
+  const SlideOneTrust({
+    super.key,
+    required this.controller,
+    required this.slideCount,
+  });
 
-  static const heroAsset = 'assets/images/ftue/slide_1_verified.jpg';
+  static const heroAsset = 'assets/images/ftue/slide_1_verified.webp';
+
+  final PageController controller;
+  final int slideCount;
 
   @override
   Widget build(BuildContext context) {
-    return const FtueSlide(
-      visual: FtueHeroPhoto(
-        assetPath: heroAsset,
-        slideIndex: 0,
-        semanticLabel: 'Verified tradie working on a construction site',
-      ),
-      headlineLine1: 'ONLY VERIFIED.',
-      headlineLine2: 'NO TIMEWASTERS.',
-      bodyLine1: 'Every trade licence-checked.',
-      bodyLine2: 'Every builder verified.',
+    return FtueSlide(
+      assetPath: heroAsset,
+      slideIndex: 0,
+      semanticLabel: 'A licence-checked tradie in Jobdun hi-vis on site',
+      lead: 'ONLY VERIFIED.',
+      // Hard break, not a wrap. The mock (node 50:9944) sets this as three
+      // separate lines — "NO" alone is what gives the stack its punch, and at
+      // 32/1.2 the phrase would otherwise sit on one line.
+      accent: 'NO\nTIMEWASTERS.',
+      controller: controller,
+      slideCount: slideCount,
+      overlays: const [
+        FtueOverlay(
+          // Mock puts this at left 272 with a 91-wide card, i.e. 30 in from
+          // the right edge — anchored that way so it can never clip.
+          right: 30 / 393,
+          top: 87 / 567,
+          child: FtueOverlayCard.stacked(
+            label: 'Licensed & Verified',
+            icon: AppIcons.shieldCheckFilled,
+          ),
+        ),
+        FtueOverlay(
+          left: 37 / 393,
+          top: 235 / 567,
+          child: FtueOverlayCard.stacked(
+            label: 'ID Checked',
+            icon: AppIcons.idCardFilled,
+          ),
+        ),
+      ],
     );
   }
 }

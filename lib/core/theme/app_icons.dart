@@ -285,6 +285,20 @@ abstract final class AppIcons {
   /// Generic shield (no checkmark). [policy] is the verified-shield variant.
   static const IconData shield = PhosphorIconsBold.shield;
 
+  /// Verified shield, Fill weight — the onboarding "Licensed & Verified"
+  /// trust badge. Fill because it reads as a seal, not a control.
+  static const IconData shieldCheckFilled = PhosphorIconsFill.shieldCheck;
+
+  /// ID card, Fill weight — the onboarding "ID Checked" trust badge.
+  static const IconData idCardFilled = PhosphorIconsFill.identificationCard;
+
+  /// Group of people, Fill weight — the "Hire Workers" role tile and the
+  /// "For Builders and Crews" onboarding badge.
+  static const IconData peopleGroupFilled = PhosphorIconsFill.usersThree;
+
+  /// Buildings, Fill weight — the onboarding "Built for sites" badge.
+  static const IconData buildingFilled = PhosphorIconsFill.buildings;
+
   /// Email-with-notification badge. Phosphor has no badge variant — we
   /// reuse the base envelope; callers stack a dot overlay when they need
   /// the unread cue.

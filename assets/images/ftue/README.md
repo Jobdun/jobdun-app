@@ -1,99 +1,72 @@
-# FTUE Photography Brief
+# FTUE hero assets
 
-Two hero photos sit at the top of FTUE slides 1 and 3. They render inside
-`FtueHeroPhoto` (`lib/features/ftue/presentation/widgets/ftue_hero_photo.dart`)
-— 16:11 rounded card, navy bottom gradient applied in-app, hi-vis corner
-accent. Do NOT pre-bake any filters or colour grading; the app handles all
-treatment.
+One full-bleed hero per onboarding slide. They render inside `FtueHero`
+(`lib/features/ftue/presentation/widgets/ftue_hero.dart`) — `BoxFit.cover`,
+top-aligned, with a `c.background` scrim fading the bottom 41% into the page.
 
-If an image is missing or fails to load, the widget falls back to a navy
-placeholder and fires `ftue.image_load_failed` — the FTUE keeps working
-either way, so it's safe to ship without these in place.
+| File | Slide | Headline |
+|------|-------|----------|
+| `slide_1_verified.webp` | 1 | ONLY VERIFIED. / NO TIMEWASTERS. |
+| `slide_2_nearby.webp` | 2 | JOBS NEAR YOU. / APPLY IN THREE TAPS. |
+| `slide_3_aussie_site.webp` | 3 | BUILT FOR / AUSSIE SITES. |
 
----
-
-## slide_1_verified.jpg
-
-**Subject** Close-up of a tradie's hand holding an Australian trade
-licence card or hi-vis ID badge.
-
-**Composition** Hand fills the lower-left third. Licence card angled,
-slightly out of focus on the edges.
-
-**Lighting** Natural daylight, slightly overcast or golden hour. NOT studio
-lighting.
-
-**Mood** Honest, grounded, real. Calloused hand preferred — looks lived-in.
-
-**Colour** Will display full-colour, so warm earth tones + cool blue licence
-card contrast well with the hi-vis orange brand accent.
-
-**Avoid** Pristine studio hands, model-perfect skin, fake-looking licence
-props, anything that screams "stock photo".
-
-**Specs** 1600×1100px minimum (16:11), JPG, 85% quality, target <250KB.
+If a file is missing or fails to decode, the widget falls back to the page
+background and fires `ftue.image_load_failed`. The FTUE keeps working either
+way, so it is safe to ship without these in place.
 
 ---
 
-## slide_3_aussie_site.jpg
+## Where they come from
 
-**Subject** Group shot of 2–3 Australian tradies on a real construction
-site, mid-conversation or working.
+Source of truth is Figma — `JobDun-Screens` → **Onboard**, node `17:5084`
+(file key `9JQxSZQEqo06TGKI8t717q`).
 
-**Composition** Wide framing — environment visible (scaffolding, residential
-build, ute in background).
+Each slide's visual is **two layers** in Figma:
 
-**Lighting** Bright Australian daylight. Harsh shadows are fine — they read
-as "real."
+1. `image 2` — a peach line-illustration (suburban street / street map /
+   scaffolding + Australia outline), drawn at **70% opacity**.
+2. `image 1` (slide 3: `image 3`) — a cut-out photo of a tradie in Jobdun
+   uniform, full opacity, on top.
 
-**Mood** Engaged, not posed. Tradies looking at each other or at work, NOT
-at camera.
+Both sit inside the 393×567 `Image Content` frame, each positioned by a
+clipping box plus an inner transform on the `<img>`. Reproducing that nested
+transform in Dart would be verbose and easy to get wrong, so the two layers are
+**flattened at authoring time** into one transparent WebP per slide.
 
-**Colour** Hi-vis vests (orange/yellow) are a bonus — they tie to the brand
-palette.
+The compositor script and the exact per-layer geometry (taken verbatim from
+`get_design_context` on nodes `50:9938`, `50:9973`, `36:8721`) live alongside
+this note in the design-handoff bundle. To regenerate: re-export the six source
+PNGs from the Figma nodes above, re-run the script, then convert:
 
-**Avoid** US-style hard-hat colours (white = American site lead), corporate
-site visits, suits, anyone in office attire, palm trees (reads as
-Florida/Queensland sub-tropical specifically).
-
-**Specs** 1600×1100px minimum (16:11), JPG, 85% quality, target <300KB.
-
----
-
-## Sourcing options (in priority order)
-
-1. **Commission shoot** — $1500–3000, ~2 weeks, best quality
-2. **Stocksy United** — premium stock, $50–200/image. Search
-   "australian tradesman" + "construction worker"
-3. **EyeEm** — genuinely AU-shot photos, $100–300/image
-4. **Unsplash** — free, last resort; heavy curation required to avoid the
-   stock-photo feel
+```bash
+magick <slide>.png -quality 88 -define webp:alpha-quality=90 <slide>.webp
+```
 
 ---
 
-## Treatment
+## Specs
 
-Both images receive a subtle navy bottom-gradient overlay IN THE APP (not
-pre-baked). Keep the source files clean — no filtering, grading, or
-sharpening passes.
+- **393×567 logical, exported at 3× → 1179×1701px.** That is the exact frame
+  proportion; `BoxFit.cover` handles taller/shorter devices.
+- **WebP with alpha, quality 88.** Visually identical to the source PNG at ~12%
+  of the size (5.0 MB PNG → 616 KB for all three). Flutter decodes WebP with
+  alpha natively on Android, iOS and web.
+- **Transparent background — do not flatten onto white.** The transparency is
+  load-bearing: it is what lets the hero sit on `c.background` and follow the
+  active theme instead of punching a white rectangle into dark mode.
+- **No pre-baked gradient.** The bottom fade is drawn in-app from
+  `c.background` so it stays seamless against the page in both themes.
 
 ---
 
-## Currently shipped (v1)
+## Floating cards
 
-Both files were sourced from the Unsplash free library
-(https://unsplash.com/license — commercial use, no attribution required;
-crediting anyway out of courtesy):
+The badges over each hero (`Licensed & Verified`, suburb pins, `Made in
+Australia`, …) are **not** part of the image — they are Flutter widgets
+(`FtueOverlayCard`) positioned as fractions of the hero box. That is what lets
+slide 2 swap in the user's real suburbs from the IP-geo lookup. Keep them out
+of the exported artwork.
 
-- `slide_1_verified.jpg` — Unsplash photo ID `VLPUm5wP5Z0`
-  (https://unsplash.com/photos/VLPUm5wP5Z0) — close-up of a tradie in
-  orange hi-vis + helmet drilling timber on-site. Stands in for the
-  hand-and-licence brief until a commissioned shoot lands.
-- `slide_3_aussie_site.jpg` — Unsplash photo ID `x-ghf9LjrVg`
-  (https://unsplash.com/photos/x-ghf9LjrVg) — group of six hi-vis workers
-  on an elevated slab/rebar site. Matches the "real Aussie site" energy
-  the brief calls for.
-
-Both fetched at `?w=1600&q=85&auto=format&fm=jpg&fit=crop&crop=entropy`
-to hit the 16:11 target. Replace these whenever a commissioned shoot is
-ready — file names are stable so the slide widgets need no edit.
+Their glyphs come from Phosphor via `AppIcons`, except the Australia outline,
+which has no Phosphor equivalent and ships as the exported Figma vector at
+`lib/core/assets/icon-australia.svg`.

@@ -162,7 +162,7 @@ void main() {
     expect(router.state.uri.toString(), '/login');
   });
 
-  testWidgets('FTUE from /login: slide 3 keeps the LOG IN link (S4 escape)', (
+  testWidgets('FTUE from /login: slide 3 keeps the LOGIN link (S4 escape)', (
     tester,
   ) async {
     final router = buildRouter(initial: '/ftue?from=login');
@@ -170,21 +170,20 @@ void main() {
     await tester.pumpAndSettle();
     drainAssetErrors(tester);
 
-    // jumpToPage(2) is more deterministic than flinging through pages —
-    // the new wow-pass slide layout uses SingleChildScrollView and a
-    // single -400px fling can overshoot to slide 3 when content is tall.
+    // jumpToPage(2) is more deterministic than flinging through pages.
     final pageView = tester.widget<PageView>(find.byType(PageView));
     pageView.controller!.jumpToPage(2);
     await tester.pumpAndSettle();
     drainAssetErrors(tester);
 
-    // Both CTAs render.
-    expect(find.text("I'M HIRING"), findsOneWidget);
-    expect(find.text("I'M LOOKING FOR WORK"), findsOneWidget);
+    // Both role CTAs render. Since the Figma rebuild they live in a sheet
+    // pinned below the carousel, so they're present on every slide.
+    expect(find.byKey(const Key('ftue.role.builder')), findsOneWidget);
+    expect(find.byKey(const Key('ftue.role.trade')), findsOneWidget);
     // Live bug S4 (2026-08-18): hiding this link for from=login users made
     // the role slide a trap (back + SKIP were gone too). The escape now
     // always renders — a redundant hop back to /login beats a dead end.
-    expect(find.text('LOG IN'), findsOneWidget);
+    expect(find.byKey(const Key('ftue.login')), findsOneWidget);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
