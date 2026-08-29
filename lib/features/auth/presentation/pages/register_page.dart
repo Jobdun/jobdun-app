@@ -19,6 +19,8 @@ import '../../../../core/widgets/status_banner.dart';
 import '../../../legal/presentation/widgets/legal_acceptance_checkbox.dart';
 import '../providers/auth_provider.dart';
 import '../validators/password_rules.dart';
+import '../widgets/auth_header.dart';
+import '../widgets/auth_sso_row.dart';
 
 part 'register_page_role_step.dart';
 part 'register_page_form_step.dart';
@@ -132,39 +134,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           duration: const Duration(milliseconds: 150),
           child: Column(
             children: [
-              // ── Top bar — back arrow only when we have somewhere to go ────
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg.w,
-                  vertical: 10.h,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        if (_step == 2 && widget.initialRole == null) {
-                          // User picked role inline — back returns to picker.
-                          _goBackToPicker();
-                        } else {
-                          // Pre-picked from /login or already on step 1 —
-                          // back exits the whole flow.
-                          context.go('/login');
-                        }
-                      },
-                      icon: Icon(
-                        AppIcons.back,
-                        color: c.text1,
-                        size: AppIconSize.md.r,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(
-                        minWidth: 40.r,
-                        minHeight: 40.r,
-                      ),
-                    ),
-                    const Spacer(),
-                  ],
-                ),
+              // ── Header — the title carries the chosen role ────────────────
+              // Figma node 100:2029 titles the signup frame "Create Account -
+              // Hiring". Once the picker is behind you it is the only thing on
+              // screen that still says which side of the marketplace you
+              // chose, so it is worth the width.
+              AuthHeader(
+                title: _step == 1
+                    ? 'Create Account'
+                    : 'Create Account - ${_selectedRole == UserRole.builder ? 'Hiring' : 'Working'}',
+                onBack: () {
+                  if (_step == 2 && widget.initialRole == null) {
+                    // User picked role inline — back returns to the picker.
+                    _goBackToPicker();
+                  } else {
+                    // Pre-picked from /login or already on step 1 — back exits
+                    // the whole flow.
+                    context.go('/login');
+                  }
+                },
               ),
 
               // ── Step content ──────────────────────────────────────────────
@@ -208,6 +196,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               setState(() => _passwordValue = v ?? ''),
                           onSubmit: authState.isLoading ? null : _submit,
                           onGoToLogin: () => context.go('/login'),
+                          onGoogle: _onGoogle,
+                          onApple: _onApple,
+                          onPhone: _onPhone,
                           c: c,
                           tt: tt,
                         ),

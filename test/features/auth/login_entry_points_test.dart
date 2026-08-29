@@ -20,7 +20,7 @@ import 'package:jobdun/features/ftue/presentation/providers/ftue_geo_provider.da
 // - Apple SSO (auth provider — out of scope for routing assertions)
 // - Continue with phone → /phone-auth
 // - Create account → /ftue?from=login (the missing-link fix)
-// - Forgot password? → /forgot-password
+// - Forgot Password ? → /forgot-password
 //
 // Pre-Supabase init is not required here; nothing in these tests touches
 // the auth controller's network path.
@@ -207,16 +207,16 @@ void main() {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Forgot password? → /forgot-password
+  // Forgot Password ? → /forgot-password
   // ───────────────────────────────────────────────────────────────────────────
-  testWidgets('Forgot password? link routes to /forgot-password', (
+  testWidgets('Forgot Password ? link routes to /forgot-password', (
     tester,
   ) async {
     final router = buildRouter();
     await tester.pumpWidget(wrap(router));
     await tester.pumpAndSettle();
 
-    final forgot = find.text('Forgot password?');
+    final forgot = find.text('Forgot Password ?');
     expect(forgot, findsOneWidget);
 
     await tester.tap(forgot, warnIfMissed: false);

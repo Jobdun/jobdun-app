@@ -222,15 +222,24 @@ class AppTheme {
           letterSpacing: 0.5,
           color: c.action,
         ),
+        // 16 to match the value text, so the field doesn't resize its own
+        // content the moment the user types. Figma `Typography/Label/M`.
         hintStyle: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: 16,
           fontWeight: FontWeight.w400,
           color: c.text3,
         ),
         errorStyle: GoogleFonts.inter(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.2,
           color: c.urgentTx,
+        ),
+        helperStyle: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          height: 1.2,
+          color: c.text3,
         ),
         prefixIconColor: c.text3,
         suffixIconColor: c.text3,

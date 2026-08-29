@@ -46,6 +46,46 @@ ThemeData _goldenTheme() {
       onError: const Color(0xFFFFFFFF),
     ),
     extensions: const [c],
+    // Mirrors production's InputDecorationTheme *structurally* — fill,
+    // borders, radius, padding. The text styles are left off because
+    // production builds them with google_fonts, which fetches over the
+    // network and throws in a sandboxed test.
+    //
+    // Without this the goldens rendered Flutter's default underline field and
+    // silently guarded nothing: `filled` defaults to false, so JTextField's
+    // per-state fill was never painted. Anything that can regress the field's
+    // chrome has to be visible here.
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: c.surface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.borderStrong),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.borderStrong),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.action, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.urgent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.urgent, width: 1.5),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderSide: BorderSide(color: c.border.withValues(alpha: 0.4)),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      prefixIconColor: c.text3,
+      suffixIconColor: c.text3,
+    ),
   );
 }
 

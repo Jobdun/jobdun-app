@@ -123,9 +123,10 @@ void main() {
     drainKnownOverflow(tester);
 
     expect(find.text('WHICH SIDE ARE YOU ON?'), findsNothing);
-    expect(find.text('CREATE ACCOUNT'), findsNWidgets(2));
-    expect(find.text('HIRING'), findsOneWidget);
-    expect(find.text('CHANGE'), findsOneWidget);
+    // The Figma header states screen and role in one line, so the old
+    // heading + role-chip pair collapsed into it (node 100:2029).
+    expect(find.text('Create Account - Hiring'), findsOneWidget);
+    expect(find.text('Confirm Password'), findsOneWidget);
   });
 
   // Path 2 (formerly RoleSelectionSheet) — deleted with the role-only sheet.

@@ -22,6 +22,9 @@ class _FormStep extends StatelessWidget {
     required this.onPasswordChanged,
     required this.onSubmit,
     required this.onGoToLogin,
+    required this.onGoogle,
+    required this.onApple,
+    required this.onPhone,
     required this.c,
     required this.tt,
   });
@@ -38,6 +41,9 @@ class _FormStep extends StatelessWidget {
   final ValueChanged<String?> onPasswordChanged;
   final VoidCallback? onSubmit;
   final VoidCallback onGoToLogin;
+  final VoidCallback onGoogle;
+  final VoidCallback onApple;
+  final VoidCallback onPhone;
   final JColors c;
   final TextTheme tt;
 
@@ -50,27 +56,21 @@ class _FormStep extends StatelessWidget {
         : "Let's get you on the tools.";
 
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg.w),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Role chip with CHANGE affordance ──────────────────────────────
-          _RoleChip(role: role, onChange: onChangeRole, c: c, tt: tt),
+          Gap(AppSpacing.sm.h),
+
+          // The header names the screen and the role; this line is the only
+          // remaining copy, so it says something the title cannot.
+          Text(headline, style: tt.bodyMedium!.copyWith(color: c.text2)),
 
           Gap(AppSpacing.md.h),
 
-          Text(
-            'CREATE ACCOUNT',
-            style: tt.headlineMedium!.copyWith(
-              color: c.text1,
-              letterSpacing: 0.5,
-            ),
-          ),
-          Gap(6.h),
-          Text(headline, style: tt.bodyMedium!.copyWith(color: c.text2)),
-
-          Gap(AppSpacing.lg.h),
-
+          // Role changed its affordance: the CHANGE chip is gone because the
+          // header now states the role, so the escape hatch is the back caret
+          // that is already there. One route back, not two.
           FormBuilder(
             key: formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -79,9 +79,8 @@ class _FormStep extends StatelessWidget {
               children: [
                 JTextField(
                   name: 'full_name',
-                  label: 'Full name',
-                  hint: 'Your full name',
-                  prefixIcon: AppIcons.user,
+                  label: 'Full Name',
+                  hint: 'Enter your full name',
                   keyboardType: TextInputType.name,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
@@ -97,11 +96,11 @@ class _FormStep extends StatelessWidget {
                     ),
                   ]),
                 ),
+                Gap(AppSpacing.sm.h),
                 JTextField(
                   name: 'email',
                   label: 'Email',
                   hint: 'your@email.com',
-                  prefixIcon: AppIcons.email,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
@@ -117,13 +116,13 @@ class _FormStep extends StatelessWidget {
                 ),
                 // Phone deferred to first job-apply (Trade) or first job-post
                 // (Builder) — see _submit() for rationale.
+                Gap(AppSpacing.sm.h),
                 JTextField(
                   name: 'password',
                   label: 'Password',
-                  hint: 'Min. 8 chars',
-                  prefixIcon: AppIcons.lock,
+                  hint: 'Enter a password',
                   obscureText: true,
-                  textInputAction: TextInputAction.done,
+                  textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.newPassword],
                   onChanged: onPasswordChanged,
                   validator: FormBuilderValidators.compose([
@@ -137,7 +136,33 @@ class _FormStep extends StatelessWidget {
                     PasswordRules.strong,
                   ]),
                 ),
-                _PasswordStrengthBar(strength: strength, c: c, tt: tt),
+                // Nothing typed yet is not "Weak" — an empty field has not
+                // been judged, and opening the form on a red bar reads as a
+                // failure the user has not had a chance to cause.
+                if (passwordValue.isNotEmpty)
+                  _PasswordStrengthBar(strength: strength, c: c, tt: tt),
+                Gap(AppSpacing.sm.h),
+                // Added by the mock (node 83:4771). A mistyped password on a
+                // signup form is invisible until the user is locked out of the
+                // account they just made, which is the worst possible moment
+                // to find out.
+                JTextField(
+                  name: 'confirm_password',
+                  label: 'Confirm Password',
+                  hint: 'Confirm password',
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  helperText: 'Must be minimum of 8 characters*',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Confirm your password.';
+                    }
+                    if (value != passwordValue) {
+                      return 'Passwords do not match.';
+                    }
+                    return null;
+                  },
+                ),
               ],
             ),
           ),
@@ -167,112 +192,61 @@ class _FormStep extends StatelessWidget {
 
           Gap(AppSpacing.md.h),
 
+          // Disabled until the terms are ticked, as drawn (node 36:8844). The
+          // grey state is doing real work here: it says "one thing left"
+          // rather than failing after the tap, which is what the old
+          // always-enabled button did.
           JButton(
             label: authState.isLoading
-                ? 'CREATING ACCOUNT...'
-                : 'CREATE ACCOUNT',
+                ? 'Creating account...'
+                : 'Create Account',
             isLoading: authState.isLoading,
-            onPressed: onSubmit,
+            onPressed: termsAccepted ? onSubmit : null,
+          ),
+
+          Gap(AppSpacing.lg.h),
+
+          AuthSsoRow(
+            keyPrefix: 'register',
+            onGoogle: onGoogle,
+            onApple: onApple,
+            onPhone: onPhone,
+            isBusy: authState.isLoading,
           ),
 
           Gap(AppSpacing.lg.h),
 
           Center(
-            child: GestureDetector(
-              onTap: onGoToLogin,
-              child: RichText(
-                text: TextSpan(
-                  style: tt.bodySmall!.copyWith(color: c.text3),
-                  children: [
-                    const TextSpan(text: 'Already have an account? '),
+            child: Semantics(
+              button: true,
+              label: 'Already have an account. Log in.',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onGoToLogin,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm.h),
+                  child: Text.rich(
                     TextSpan(
-                      text: 'LOG IN',
-                      style: tt.bodySmall!.copyWith(
-                        color: c.actionInk,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
+                      style: tt.bodyMedium!.copyWith(color: c.text2),
+                      children: [
+                        const TextSpan(text: 'Already have an account? '),
+                        TextSpan(
+                          text: 'Log in',
+                          style: tt.bodyMedium!.copyWith(
+                            color: c.actionInk,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          Gap(AppSpacing.xl.h),
+          Gap(AppSpacing.lg.h),
         ],
-      ),
-    );
-  }
-}
-
-// ── Role chip ─────────────────────────────────────────────────────────────────
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({
-    required this.role,
-    required this.onChange,
-    required this.c,
-    required this.tt,
-  });
-
-  final UserRole role;
-  final VoidCallback onChange;
-  final JColors c;
-  final TextTheme tt;
-
-  @override
-  Widget build(BuildContext context) {
-    final isBuilder = role == UserRole.builder;
-    final label = isBuilder ? 'HIRING' : 'LOOKING FOR WORK';
-    final icon = isBuilder ? AppIcons.builder : AppIcons.briefcase;
-
-    return Semantics(
-      button: true,
-      label: 'Currently signing up as $label. Tap to change.',
-      child: GestureDetector(
-        onTap: onChange,
-        behavior: HitTestBehavior.opaque,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md.w,
-              vertical: 8.h,
-            ),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.btn.r),
-              border: Border.all(color: c.border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: AppIconSize.micro.r, color: c.actionInk),
-                Gap(8.w),
-                Text(
-                  label,
-                  style: tt.labelSmall!.copyWith(
-                    color: c.text1,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                Gap(8.w),
-                Container(width: 1, height: 12.h, color: c.border),
-                Gap(8.w),
-                Text(
-                  'CHANGE',
-                  style: tt.labelSmall!.copyWith(
-                    color: c.actionInk,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -15,7 +15,15 @@ import '../../../app/theme/app_colors.dart';
 /// - [danger]    filled urgent-red, dark fg. Use for the dominant destructive
 ///               action (REJECT a verification, REVOKE, DELETE) — pairs beside
 ///               a [primary] / [secondary] cancel.
-enum JButtonVariant { primary, secondary, text, danger }
+/// - [outline]   transparent fill, orange hairline, orange-ink label. The
+///               Figma Homepage section's secondary CTA ("Explore map" on the
+///               map promo). Reads as an affordance without competing with the
+///               filled [primary] beneath it.
+/// - [dangerOutline] tinted red fill + red hairline and label. The destructive
+///               half of a paired footer ("Delete job" beside "View
+///               applicants") — quieter than [danger], which is for when
+///               destruction is the screen's *dominant* action.
+enum JButtonVariant { primary, secondary, text, danger, outline, dangerOutline }
 
 /// Size of [JButton] — picks the minimum height.
 ///
@@ -56,7 +64,7 @@ class JButton extends StatelessWidget {
   final IconData? icon;
 
   double get _minHeight => switch (size) {
-    JButtonSize.standard => 56.h,
+    JButtonSize.standard => 48.h,
     JButtonSize.compact => 40.h,
   };
 
@@ -65,12 +73,22 @@ class JButton extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
-    final labelStyle = tt.labelLarge!.copyWith(color: _labelColor(c));
-
+    // Figma `Typography/Label/L-BOLD` — Inter Bold 18 on a standard button,
+    // stepping down for the compact in-row variant. Reads off titleMedium
+    // (Inter) rather than labelLarge (Archivo): the mock sets button text in
+    // the body family, and Archivo at 18 is too wide for a two-word label on
+    // a 360dp screen.
     // A spinning button is never tappable: call sites that passed isLoading
     // but forgot to null onPressed shipped double-submits (double quotes,
     // double job posts — races audit, 2026-08-18).
     final effectiveOnPressed = isLoading ? null : onPressed;
+
+    final labelStyle = tt.titleMedium!.copyWith(
+      fontSize: size == JButtonSize.standard ? 18 : 15,
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+      color: _labelColor(c, enabled: effectiveOnPressed != null),
+    );
 
     final Widget content = isLoading
         ? SizedBox.square(
@@ -109,8 +127,13 @@ class JButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: c.action,
           foregroundColor: c.onAction,
-          disabledBackgroundColor: c.action.withValues(alpha: 0.35),
-          disabledForegroundColor: c.onAction.withValues(alpha: 0.5),
+          // A flat grey, not a faded orange. Figma `bg/disabled` #E4E4E4 +
+          // `text/tertiary` — which land exactly on c.border and c.text3.
+          // The old translucent-orange read as "still the CTA, just dimmer";
+          // this reads as "not yet available", which is the actual state when
+          // the terms box is unticked.
+          disabledBackgroundColor: c.border,
+          disabledForegroundColor: c.text3,
           minimumSize: Size.fromHeight(_minHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
@@ -151,8 +174,8 @@ class JButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: c.urgent,
           foregroundColor: c.onAction,
-          disabledBackgroundColor: c.urgent.withValues(alpha: 0.35),
-          disabledForegroundColor: c.onAction.withValues(alpha: 0.5),
+          disabledBackgroundColor: c.border,
+          disabledForegroundColor: c.text3,
           minimumSize: Size.fromHeight(_minHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
@@ -160,6 +183,37 @@ class JButton extends StatelessWidget {
           elevation: 0,
           shadowColor: Colors.transparent,
         ).copyWith(overlayColor: _overlay(_primaryOverlayBase)),
+        child: content,
+      ),
+      // The mock draws both outline variants with a 1px hairline. `c.action`
+      // and `c.urgentTx` are the border colours because the label sits ON the
+      // page ground, not on a fill — so the ink token applies, not the fill
+      // token (MASTER → "action is the FILL; actionInk is the orange INK").
+      JButtonVariant.outline => OutlinedButton(
+        onPressed: effectiveOnPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c.actionInk,
+          disabledForegroundColor: c.text3,
+          side: BorderSide(color: c.action),
+          minimumSize: Size.fromHeight(_minHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+        ).copyWith(overlayColor: _overlay(c.action)),
+        child: content,
+      ),
+      JButtonVariant.dangerOutline => OutlinedButton(
+        onPressed: effectiveOnPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: c.urgentBg,
+          foregroundColor: c.urgentTx,
+          disabledForegroundColor: c.text3,
+          side: BorderSide(color: c.urgentTx),
+          minimumSize: Size.fromHeight(_minHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+        ).copyWith(overlayColor: _overlay(c.urgent)),
         child: content,
       ),
     };
@@ -178,17 +232,30 @@ class JButton extends StatelessWidget {
         return null;
       });
 
-  Color _labelColor(JColors c) => switch (variant) {
-    JButtonVariant.primary => c.onAction,
-    JButtonVariant.secondary => c.text1,
-    JButtonVariant.text => c.action,
-    JButtonVariant.danger => c.onAction,
-  };
+  /// Label colour. [enabled] is threaded through because [labelStyle] sets the
+  /// `Text` colour directly, which wins over the button style's
+  /// `disabledForegroundColor` — without this a disabled button rendered its
+  /// label at full strength on the grey fill, so the only disabled signal was
+  /// the background. Surfaced by the Figma job-posting flow, whose step-1
+  /// "Next" sits disabled until the form validates.
+  Color _labelColor(JColors c, {bool enabled = true}) {
+    if (!enabled) return c.text3;
+    return switch (variant) {
+      JButtonVariant.primary => c.onAction,
+      JButtonVariant.secondary => c.text1,
+      JButtonVariant.text => c.action,
+      JButtonVariant.danger => c.onAction,
+      JButtonVariant.outline => c.actionInk,
+      JButtonVariant.dangerOutline => c.urgentTx,
+    };
+  }
 
   Color _loaderColor(JColors c) => switch (variant) {
     JButtonVariant.primary => c.onAction,
     JButtonVariant.secondary => c.text1,
     JButtonVariant.text => c.action,
     JButtonVariant.danger => c.onAction,
+    JButtonVariant.outline => c.actionInk,
+    JButtonVariant.dangerOutline => c.urgentTx,
   };
 }

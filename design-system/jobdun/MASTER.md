@@ -340,12 +340,38 @@ Selected icon: `c.action`. Unselected: `c.text3`. No labels on nav items.
 
 ---
 
+## Radius
+
+Split by role, not one value for everything. **2026-08-29** — the Figma
+foundation draws containers and controls differently, and the tokens in
+`lib/app/theme/app_radii.dart` follow it.
+
+| Role | Token | Value |
+|------|-------|-------|
+| Badges, status dots | `AppRadius.badge` | 4 |
+| Filter pills, identity chips | `AppRadius.chip` | 6 |
+| Cards, sheets, dialogs | `AppRadius.card` | 8 |
+| Input fields | `AppRadius.input` | **12** |
+| Buttons | `AppRadius.btn` | **pill** |
+| Cards floating over a photo | `AppRadius.overlay*` | 12 / 16 |
+
+The reasoning: a container's corner is structural and should read as built,
+so it stays tight. A control's corner is an affordance — the rounder it is,
+the more it reads as pressable — so inputs and buttons round. Sharp buttons
+and sharp cards at the same radius made the two indistinguishable at a
+glance, which is what the Figma auth screens (node 60:267) corrected.
+
+Superseded: the old blanket "keep it sharp (4–8)" rule.
+
+---
+
 ## Anti-Patterns (Do NOT Use)
 
 - ❌ White or light gray (`c.background`) as screen background — signals "safe SaaS"
 - ❌ Ghost/outline-only buttons — signals hedging
 - ❌ Title case or sentence case button text — use ALL CAPS
-- ❌ Soft/rounded border radius above 12 — keep it sharp (4–8)
+- ❌ Soft/rounded corners on **containers** — cards, sheets, chips and badges
+  stay sharp (4–8). This does *not* apply to controls; see Radius below.
 - ❌ Friendly microcopy ("You're all set!", "Yay!", "Almost there!")
 - ❌ Gradients — flat only
 - ❌ Heavy drop shadows — use borders for card definition
