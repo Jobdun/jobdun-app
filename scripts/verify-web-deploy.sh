@@ -44,9 +44,14 @@ if echo "$HDRS" | grep -qi 'vercel.com/sso-api'; then
 fi
 
 # 1. The release actually shipped.
-echo "$VERSION" | grep -q '"build_number":"7"' \
-  && pass "version.json is build 7  ($VERSION)" \
-  || fail "version.json is NOT build 7 — got: $VERSION"
+# Expected build comes from pubspec.yaml, not a literal — hardcoding it meant
+# the check failed on the very deploy that shipped a new version, which is the
+# one time you most want it to pass.
+EXPECTED_BUILD="$(sed -n 's/^version: .*+\([0-9][0-9]*\)$/\1/p' pubspec.yaml)"
+: "${EXPECTED_BUILD:?could not read the build number out of pubspec.yaml}"
+echo "$VERSION" | grep -q "\"build_number\":\"$EXPECTED_BUILD\"" \
+  && pass "version.json is build $EXPECTED_BUILD  ($VERSION)" \
+  || fail "version.json is NOT build $EXPECTED_BUILD — got: $VERSION"
 
 # 2. Camera + geolocation are usable. Empty () blocks every origin including
 #    self, which is what shipped and what broke uploads and 'jobs near me'.
