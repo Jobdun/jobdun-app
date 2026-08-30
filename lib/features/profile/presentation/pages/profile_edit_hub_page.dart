@@ -9,11 +9,13 @@ import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/apprenticeship_stage.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/edit_sheets/business_details_sheet.dart';
 import '../widgets/edit_sheets/identity_sheet.dart';
 import '../widgets/edit_sheets/location_sheet.dart';
 import '../widgets/edit_sheets/rates_sheet.dart';
+import '../widgets/edit_sheets/tickets_sheet.dart';
 import '../widgets/edit_sheets/trade_details_sheet.dart';
 
 /// Edit-profile hub (setup B, 2026-06-11): section rows with current values
@@ -23,7 +25,32 @@ import '../widgets/edit_sheets/trade_details_sheet.dart';
 /// be null-wiped); About opens a full-screen editor at /profile/edit/about.
 
 /// Which quick-edit surface a hub row opens.
-enum ProfileSection { identity, tradeDetails, rates, business, location, about }
+enum ProfileSection {
+  identity,
+  tradeDetails,
+  rates,
+  tickets,
+  business,
+  location,
+  about,
+}
+
+/// Which hub rows a TRADE sees, in order.
+///
+/// Tickets shows for EVERY trade, not just apprentices: a qualified sparky
+/// holds a White Card and an EWP licence too, and scoping it to apprentices
+/// would be an arbitrary limit.
+///
+/// Rates is the one row apprentices lose. They are on award rates and have
+/// nothing to quote, so the field is not just empty for them, it is wrong.
+List<ProfileSection> hubSectionsForTrade({required bool isApprentice}) => [
+  ProfileSection.identity,
+  ProfileSection.tradeDetails,
+  if (!isApprentice) ProfileSection.rates,
+  ProfileSection.tickets,
+  ProfileSection.location,
+  ProfileSection.about,
+];
 
 class ProfileEditHubPage extends ConsumerWidget {
   const ProfileEditHubPage({super.key});
@@ -54,48 +81,74 @@ class ProfileEditHubPage extends ConsumerWidget {
     }
     final trade = orMissing(tp?.primaryTrade);
     final business = orMissing(bp?.companyName);
+    // An apprentice's row reads "Carpenter · 2nd year"; a qualified
+    // tradie's stays the bare trade.
+    final stage = tp?.apprenticeshipStage;
+    final tradeLine = (tp?.isApprentice ?? false) && stage != null
+        ? '${tp!.displayTrade} · ${stage.label}'
+        : trade;
+    final ticketCount = tp?.ticketCount ?? 0;
+    final ticketLine = ticketCount == 0
+        ? ''
+        : '$ticketCount ${ticketCount == 1 ? 'ticket' : 'tickets'}';
 
-    final rows = <_HubRowSpec>[
-      _HubRowSpec(
+    _HubRowSpec specFor(ProfileSection section) => switch (section) {
+      ProfileSection.identity => _HubRowSpec(
         icon: AppIcons.user,
         label: 'Identity & photo',
         value: name,
-        section: ProfileSection.identity,
+        section: section,
       ),
-      if (isBuilder)
-        _HubRowSpec(
-          icon: AppIcons.building,
-          label: 'Business details',
-          value: business,
-          section: ProfileSection.business,
-        )
-      else ...[
-        _HubRowSpec(
-          icon: AppIcons.trade,
-          label: 'Trade & experience',
-          value: trade,
-          section: ProfileSection.tradeDetails,
-        ),
-        _HubRowSpec(
-          icon: AppIcons.budget,
-          label: 'Rates',
-          value: rates,
-          section: ProfileSection.rates,
-        ),
-      ],
-      _HubRowSpec(
+      ProfileSection.tradeDetails => _HubRowSpec(
+        icon: AppIcons.trade,
+        label: 'Trade & experience',
+        value: tradeLine,
+        section: section,
+      ),
+      ProfileSection.rates => _HubRowSpec(
+        icon: AppIcons.budget,
+        label: 'Rates',
+        value: rates,
+        section: section,
+      ),
+      ProfileSection.tickets => _HubRowSpec(
+        icon: AppIcons.verified,
+        label: 'Tickets & licences',
+        value: ticketLine,
+        section: section,
+        optional: true,
+      ),
+      ProfileSection.business => _HubRowSpec(
+        icon: AppIcons.building,
+        label: 'Business details',
+        value: business,
+        section: section,
+      ),
+      ProfileSection.location => _HubRowSpec(
         icon: AppIcons.location,
         label: isBuilder ? 'Service location' : 'Base location',
         value: area,
-        section: ProfileSection.location,
+        section: section,
       ),
-      _HubRowSpec(
+      ProfileSection.about => _HubRowSpec(
         icon: AppIcons.document,
         label: 'About',
         value: about,
-        section: ProfileSection.about,
+        section: section,
       ),
-    ];
+    };
+
+    // The section list IS the row order. Exhaustive switch above, so adding a
+    // ProfileSection value fails to compile until it has a row.
+    final sections = isBuilder
+        ? const [
+            ProfileSection.identity,
+            ProfileSection.business,
+            ProfileSection.location,
+            ProfileSection.about,
+          ]
+        : hubSectionsForTrade(isApprentice: tp?.isApprentice ?? false);
+    final rows = sections.map(specFor).toList();
 
     return Scaffold(
       backgroundColor: c.background,
@@ -148,6 +201,7 @@ class _HubRowSpec {
     required this.label,
     required this.value,
     required this.section,
+    this.optional = false,
   });
 
   final IconData icon;
@@ -158,6 +212,11 @@ class _HubRowSpec {
 
   /// Which quick-edit sheet/page the row opens.
   final ProfileSection section;
+
+  /// True for rows where blank is a legitimate end state, not an omission.
+  /// Holding no tickets is a real answer a first-year cannot 'fix', so an
+  /// amber MISSING flag there would be permanent and unearned.
+  final bool optional;
 }
 
 class _HubRow extends StatelessWidget {
@@ -169,7 +228,7 @@ class _HubRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final missing = spec.value.isEmpty;
+    final missing = spec.value.isEmpty && !spec.optional;
     return Semantics(
       button: true,
       label:
@@ -198,6 +257,7 @@ class _HubRow extends StatelessWidget {
             context: context,
             builder: (_) => const RatesSheet(),
           ),
+          ProfileSection.tickets => showTicketsSheet(context),
           ProfileSection.about => context.push('/profile/edit/about'),
         },
         child: Container(
@@ -240,7 +300,7 @@ class _HubRow extends StatelessWidget {
                       )
                     else
                       Text(
-                        spec.value,
+                        spec.value.isEmpty ? 'None yet' : spec.value,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: tt.bodySmall!.copyWith(color: c.text3),
