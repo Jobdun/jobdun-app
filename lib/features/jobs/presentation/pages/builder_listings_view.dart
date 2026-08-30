@@ -10,12 +10,14 @@ import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
+import '../../../../core/design/widgets/status_badge.dart';
 import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../domain/entities/job.dart';
 import '../providers/jobs_provider.dart';
 import 'job_detail_page.dart';
 
+part 'builder_listings_card.dart';
 part 'builder_listings_view_widgets.dart';
 
 enum _Tab { all, open, filled, closed }
@@ -56,37 +58,52 @@ class _BuilderListingsState extends ConsumerState<BuilderListingsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 12.w, 12.h),
+            // ── Header — Figma `JobDun-Screens` → Manage Listings (node
+            // 84:5306): mark, "Listings" in Inter Bold 24, and a compact
+            // orange "Post a job" pill. The old MANAGE eyebrow is gone — the
+            // bottom dock already says which tab this is.
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+              ),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: PageHeader(
-                      eyebrow: 'MANAGE',
-                      title: 'Your listings',
-                      size: PageHeaderSize.sub,
+                  JobdunLogo(variant: LogoVariant.mark, height: 32.h),
+                  Gap(AppSpacing.sm.w),
+                  Expanded(
+                    child: Text(
+                      'Listings',
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        color: c.text1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => context.push('/jobs/create'),
-                    icon: Icon(
-                      AppIcons.addSquare,
-                      size: AppIconSize.feature.r,
-                      color: c.action,
-                    ),
-                  ),
+                  Gap(AppSpacing.sm.w),
+                  _PostJobButton(onTap: () => context.push('/jobs/create')),
                 ],
               ),
             ),
-            // ── Status tabs
+            // ── Status tabs (node 87:5635): one bordered pill holding four
+            // equal segments; the active one is the orange thumb.
             Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+                AppSpacing.md.w,
+                AppSpacing.xs.h,
+              ),
               child: Container(
-                padding: EdgeInsets.all(4.r),
+                padding: EdgeInsets.all(6.r),
                 decoration: BoxDecoration(
-                  color: c.surface,
+                  color: c.card,
                   borderRadius: BorderRadius.circular(AppRadius.btn.r),
                   border: Border.all(color: c.border),
                 ),
@@ -94,24 +111,34 @@ class _BuilderListingsState extends ConsumerState<BuilderListingsView> {
                   children: [
                     for (final t in _Tab.values)
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _tab = t),
-                          child: Container(
-                            height: 34.h,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _tab == t ? c.action : Colors.transparent,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.chip.r,
+                        child: Semantics(
+                          button: true,
+                          selected: _tab == t,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => _tab = t),
+                            child: Container(
+                              height: 40.h,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _tab == t
+                                    ? c.action
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.btn.r,
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              _tabLabel(t),
-                              style: Theme.of(context).textTheme.labelMedium!
-                                  .copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: _tab == t ? c.onAction : c.text3,
-                                  ),
+                              child: Text(
+                                _tabLabel(t),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.0,
+                                      color: _tab == t ? c.onAction : c.text2,
+                                    ),
+                              ),
                             ),
                           ),
                         ),
@@ -162,13 +189,13 @@ class _ListingsBody extends ConsumerWidget {
       onRefresh: () => ref.refresh(builderListingsProvider.future),
       child: JStaggeredList(
         padding: EdgeInsets.fromLTRB(
-          20.w,
+          AppSpacing.md.w,
           AppSpacing.sm.h,
-          20.w,
+          AppSpacing.md.w,
           AppSpacing.lg.h,
         ),
         itemCount: jobs.length,
-        separatorBuilder: (_, _) => Gap(10.h),
+        separatorBuilder: (_, _) => Gap(AppSpacing.md.h),
         itemBuilder: (_, i) => _ListingCard(job: jobs[i]),
       ),
     );

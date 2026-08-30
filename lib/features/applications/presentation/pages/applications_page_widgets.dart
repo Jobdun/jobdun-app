@@ -23,7 +23,7 @@ class _EmptyTab extends StatelessWidget {
 
     // CTA only on the "All" tab — secondary tab empties shouldn't push the
     // user to take an unrelated action.
-    final ctaLabel = isAll ? (isBuilder ? 'POST A JOB' : 'BROWSE JOBS') : null;
+    final ctaLabel = isAll ? (isBuilder ? 'Post a job' : 'Browse jobs') : null;
 
     return Center(
       child: Padding(
@@ -95,7 +95,7 @@ class _ErrorState extends StatelessWidget {
             SizedBox(
               width: 160.w,
               child: JButton(
-                label: 'RETRY',
+                label: 'Retry',
                 variant: JButtonVariant.secondary,
                 onPressed: onRetry,
               ),
@@ -193,6 +193,11 @@ final _placeholderApp = JobApplication(
   quoteAmount: 110,
 );
 
+/// The "verified workers only" gate above the applicant list.
+///
+/// Figma `JobDun-Screens` → Applicants (node 122:5084) promotes it from a bare
+/// row to a bordered 16dp card — it changes what the whole list contains, so
+/// it reads as a control, not as a caption.
 class _VerifiedOnlyToggle extends StatelessWidget {
   const _VerifiedOnlyToggle({required this.value, required this.onChanged});
 
@@ -201,17 +206,32 @@ class _VerifiedOnlyToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final tt = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Verified workers only',
-            style: tt.bodyMedium!.copyWith(fontWeight: FontWeight.w600),
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md.r),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.verified, size: AppIconSize.md.r, color: c.actionInk),
+          Gap(AppSpacing.sm.w),
+          Expanded(
+            child: Text(
+              'Verified workers only',
+              style: tt.titleSmall!.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+                color: c.text1,
+              ),
+            ),
           ),
-        ),
-        JSwitch(value: value, onChanged: onChanged),
-      ],
+          JSwitch(value: value, onChanged: onChanged),
+        ],
+      ),
     );
   }
 }

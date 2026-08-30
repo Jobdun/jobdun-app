@@ -54,6 +54,7 @@ class FtueSlide extends StatelessWidget {
     required this.controller,
     required this.slideCount,
     this.overlays = const [],
+    this.scrimStart = FtueHero.slidesOneTwoScrimStart,
   });
 
   final String assetPath;
@@ -69,6 +70,10 @@ class FtueSlide extends StatelessWidget {
   final PageController controller;
   final int slideCount;
   final List<FtueOverlay> overlays;
+
+  /// Where this slide's hero scrim begins — the mock scrims slide 3 lower than
+  /// the other two. See [FtueHero].
+  final double scrimStart;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +91,7 @@ class FtueSlide extends StatelessWidget {
               assetPath: assetPath,
               slideIndex: slideIndex,
               semanticLabel: semanticLabel,
+              scrimStart: scrimStart,
             ),
             for (final (i, o) in overlays.indexed)
               Positioned(

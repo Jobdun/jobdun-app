@@ -84,6 +84,18 @@ grep_check "No AppColors.* in lib/features/" \
 grep_check "No Theme.colorScheme in lib/features/ (use context.c)" \
   "$(grep -rn --include="*.dart" "colorScheme\." lib/features/ || true)"
 
+# No CARTO basemap tiles anywhere. CARTO stamps every unauthenticated tile with
+# a diagonal "API KEY REQUIRED - carto.com/basemaps/apikey" watermark, which
+# shipped on the builder home's tradie map (2026-08-30). All basemaps go through
+# JBasemap (lib/core/design/widgets/map/j_basemap.dart) — MapTiler when the key
+# is present, OpenStreetMap when it isn't.
+# j_basemap.dart is excluded: it is the file that DEFINES the replacement, and
+# its header documents the CARTO watermark it exists to escape. The guard was
+# matching that explanation and failing on its own rationale.
+grep_check "No CARTO tile URLs (watermarked - use JBasemap)" \
+  "$(grep -rn --include="*.dart" "cartocdn" lib/ \
+      | grep -v 'core/design/widgets/map/j_basemap.dart' || true)"
+
 # No server secrets in the bundled .env — pubspec ships .env as a flutter asset,
 # so anything here is extractable from every APK/IPA. Server secrets belong in
 # .env.server (gitignored, never bundled). Absent .env (CI stub) => zero hits.

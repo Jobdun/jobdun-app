@@ -11,11 +11,22 @@ import '../../../../core/services/ftue_analytics.dart';
 /// `assets/images/ftue/README.md`), so this widget only has to place the image
 /// and fade its bottom edge into the page.
 ///
-/// The scrim runs `c.background` transparent → opaque across the bottom 41% of
-/// the box, matching the Figma gradient stop for stop. Reading the token rather
-/// than a literal white is what keeps the headline that sits on top of it
-/// legible in dark mode too — and lets the hero meet the role sheet below
-/// without a seam.
+/// The scrim runs `c.background` transparent → opaque across the bottom of the
+/// box. Reading the token rather than a literal white is what keeps the
+/// headline that sits on top of it legible in dark mode too — and lets the
+/// hero meet the role sheet below without a seam.
+///
+/// **Where it starts is per-slide.** Slides 1 and 2 scrim from y=333 of the
+/// 567-tall frame (41% of the box); slide 3 starts lower, at y=392 (31%),
+/// because its headline is two lines instead of three and needs less cover.
+/// Sharing one constant faded slide 3's subject about 10% of the frame earlier
+/// than drawn.
+///
+/// The mock's slide-3 gradient runs to y=599 — past the 567 frame — so it never
+/// reaches full opacity on screen. Carrying that over literally would leave
+/// image residue where the hero meets the role sheet, so the *shape* of the
+/// Figma ramp is kept (inner stops at 20.673% and 42.308% of the band) while
+/// the final stop is pinned opaque at the bottom edge.
 ///
 /// A missing asset never collapses the slide: [Image.errorBuilder] falls back
 /// to the page background and reports `ftue.image_load_failed`.
@@ -25,6 +36,7 @@ class FtueHero extends StatefulWidget {
     required this.assetPath,
     required this.slideIndex,
     this.semanticLabel,
+    this.scrimStart = slidesOneTwoScrimStart,
   });
 
   final String assetPath;
@@ -35,9 +47,14 @@ class FtueHero extends StatefulWidget {
 
   final String? semanticLabel;
 
-  /// Fraction of the hero's height the bottom scrim covers (234 / 567 in the
-  /// Figma frame).
-  static const _scrimStart = 1 - 234 / 567;
+  /// Where the scrim begins, as a fraction down the hero.
+  final double scrimStart;
+
+  /// Slides 1 and 2 — Figma scrim `Rectangle 1` at y=333 of 567.
+  static const slidesOneTwoScrimStart = 333 / 567;
+
+  /// Slide 3 — its own `Rectangle 1` sits lower, at y=392 of 567.
+  static const slideThreeScrimStart = 392 / 567;
 
   @override
   State<FtueHero> createState() => _FtueHeroState();
@@ -103,6 +120,8 @@ class _FtueHeroState extends State<FtueHero>
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final scrimStart = widget.scrimStart;
+    final scrimBand = 1.0 - scrimStart;
 
     return ClipRect(
       child: Stack(
@@ -137,7 +156,15 @@ class _FtueHeroState extends State<FtueHero>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, FtueHero._scrimStart, 0.673, 0.762, 1.0],
+                  stops: [
+                    0.0,
+                    scrimStart,
+                    // The Figma ramp's own inner stops, re-expressed against
+                    // whatever band this slide's scrim covers.
+                    scrimStart + 0.20673 * scrimBand,
+                    scrimStart + 0.42308 * scrimBand,
+                    1.0,
+                  ],
                   colors: [
                     c.background.withValues(alpha: 0),
                     c.background.withValues(alpha: 0),

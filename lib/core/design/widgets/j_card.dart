@@ -17,14 +17,41 @@ import 'field_label.dart';
 /// you're probably looking for a [PageHeader] one layer up, not a brighter
 /// [JCard].
 class JCard extends StatelessWidget {
-  const JCard({super.key, required this.title, required this.children});
+  const JCard({super.key, required this.title, required this.children})
+    : _section = false;
+
+  /// The Figma-refresh card: r16, a 16dp bold sentence-case title, 24dp of
+  /// air beneath it and between rows, and no divider (profile node 134:8754,
+  /// settings node 134:9189). Pass "What's been checked", not
+  /// "WHAT'S BEEN CHECKED".
+  const JCard.section({super.key, required this.title, required this.children})
+    : _section = true;
 
   final String title;
   final List<Widget> children;
+  final bool _section;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    if (_section) {
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(16.r),
+        decoration: BoxDecoration(
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+          border: Border.all(color: c.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FieldLabel.section(title),
+            for (final child in children) ...[Gap(24.h), child],
+          ],
+        ),
+      );
+    }
     return Container(
       decoration: BoxDecoration(
         color: c.card,

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,9 +8,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../app/theme/theme_provider.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/j_button.dart';
-import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_switch.dart';
-import '../../../../core/design/widgets/page_header.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/logout_confirm_sheet.dart';
 import '../../../auth/presentation/widgets/delete_account_sheet.dart';
@@ -53,10 +50,11 @@ class SettingsPage extends ConsumerWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // ── App bar
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(4.w, AppSpacing.sm.h, 20.w, 12.h),
+            // ── App bar (Figma node 134:9567). The mock's title reads
+            // "Setting"; the app has always said "Settings" and that is the
+            // correct plural, so the typo is not carried over.
+            Padding(
+              padding: EdgeInsets.fromLTRB(4.w, 8.h, 16.w, 8.h),
               child: Row(
                 children: [
                   IconButton(
@@ -67,24 +65,25 @@ class SettingsPage extends ConsumerWidget {
                       color: c.text1,
                     ),
                   ),
-                  const Expanded(
-                    child: PageHeader(
-                      title: 'Settings',
-                      size: PageHeaderSize.sub,
+                  Expanded(
+                    child: Text(
+                      'Settings',
+                      style: Theme.of(context).textTheme.headlineSmall!
+                          .copyWith(fontSize: 24, height: 1.2, color: c.text1),
                     ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: c.border),
 
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, AppSpacing.xl.h),
+                // Figma node 134:9155 — 16dp page padding, 16dp between cards.
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, AppSpacing.xl.h),
                 child: Column(
                   children: [
-                    JCard(
-                      title: 'APPEARANCE',
+                    _SettingsCard(
+                      title: 'Appearance',
                       children: [
                         _ToggleRow(
                           icon: isDark ? AppIcons.moon : AppIcons.sun,
@@ -95,14 +94,17 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    Gap(12.h),
-                    JCard(
-                      title: 'ACCOUNT',
+                    Gap(16.h),
+                    _SettingsCard(
+                      title: 'Account',
                       children: [
                         // (K11, 2026-08-18 audit) 'Change email' and 'Privacy
                         // settings' rows are gone — they drew chevrons with
                         // no handler. Change password reuses the shipped
                         // reset-email flow.
+                        //
+                        // The mock draws a phone glyph on this row; a padlock
+                        // is what the row actually does, so the icon stays.
                         _ActionRow(
                           icon: AppIcons.lock,
                           label: 'Change password',
@@ -121,6 +123,9 @@ class SettingsPage extends ConsumerWidget {
                           // shell route shadowed the real bookings page.
                           onTap: () => context.push('/schedule'),
                         ),
+                        // Not in the mock, which shows a builder — these only
+                        // render for a trade profile, so the builder's card
+                        // matches the drawn three rows exactly.
                         if (ref.watch(
                           profileControllerProvider.select(
                             (s) => s.tradeProfile != null,
@@ -139,9 +144,9 @@ class SettingsPage extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    Gap(12.h),
-                    JCard(
-                      title: 'LEGAL',
+                    Gap(16.h),
+                    _SettingsCard(
+                      title: 'Legal',
                       children: [
                         _ActionRow(
                           icon: AppIcons.document,
@@ -155,64 +160,27 @@ class SettingsPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    // Dev-only quick-links to the preview/showcase screens.
-                    // Stripped from release builds by the kDebugMode gate.
-                    if (kDebugMode) ...[
-                      Gap(12.h),
-                      JCard(
-                        title: 'DEVELOPER TOOLS',
-                        children: [
-                          _ActionRow(
-                            icon: AppIcons.eyeOpen,
-                            label: 'Home preview (fixed tokens)',
-                            onTap: () => context.push('/home-preview'),
-                          ),
-                          _ActionRow(
-                            icon: AppIcons.gridView,
-                            label: 'Design tokens',
-                            onTap: () => context.push('/design-preview'),
-                          ),
-                          _ActionRow(
-                            icon: AppIcons.image,
-                            label: 'Logo animation',
-                            onTap: () => context.push('/logo-animation'),
-                          ),
-                        ],
-                      ),
-                    ],
-                    Gap(AppSpacing.lg.h),
+                    Gap(16.h),
                     JButton(
-                      label: 'SIGN OUT',
-                      variant: JButtonVariant.secondary,
+                      label: 'Log out',
+                      variant: JButtonVariant.outline,
                       onPressed: () => showLogoutSheet(context, ref),
                     ),
-                    // Play/Apple-required account deletion: findable but
-                    // deliberately quiet and FAR from SIGN OUT — a prominent
-                    // danger button adjacent to a routine action invites
-                    // accidental taps (user nearly deleted their account).
-                    Gap(AppSpacing.xl.h),
-                    Center(
-                      child: InkWell(
-                        onTap: () => showDeleteAccountSheet(context, ref),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: 44.h),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: 12.h,
-                              horizontal: 16.w,
-                            ),
-                            child: Text(
-                              'Delete my account',
-                              style: Theme.of(context).textTheme.bodySmall!
-                                  .copyWith(
-                                    color: context.c.text3,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: context.c.text3,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    Gap(16.h),
+                    // Play/Apple-required account deletion.
+                    //
+                    // ⚠️ This sat far from Log out on purpose — a prominent
+                    // danger button beside a routine one invites accidental
+                    // taps, and that nearly cost this account. The Figma frame
+                    // (node 134:9547) puts them 16dp apart, and that placement
+                    // was signed off on 2026-08-29 on the condition that
+                    // `showDeleteAccountSheet` keeps gating it: a mis-tap
+                    // opens a confirm sheet, never a deletion. Do not make
+                    // this button destructive-on-tap.
+                    JButton(
+                      label: 'Delete my account',
+                      variant: JButtonVariant.dangerOutline,
+                      onPressed: () => showDeleteAccountSheet(context, ref),
                     ),
                   ],
                 ),
@@ -225,6 +193,48 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
+/// Grouped settings card from the Figma Setting frame (node 134:9189): a 16dp
+/// bold title over its rows, 24dp beneath the title and between rows.
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: tt.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              color: c.text1,
+            ),
+          ),
+          for (final child in children) ...[Gap(24.h), child],
+        ],
+      ),
+    );
+  }
+}
+
+/// Tappable settings row — 18dp glyph, label, trailing chevron
+/// (Figma node 134:9304). The card supplies the vertical rhythm, so the row
+/// pads only enough to clear the 44dp touch floor.
 class _ActionRow extends StatelessWidget {
   // onTap is required: the old `onTap ?? () {}` default let rows ship with a
   // chevron and no behavior (K11, 2026-08-18 audit).
@@ -243,39 +253,35 @@ class _ActionRow extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.md.w,
-          vertical: 14.h,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: AppIconSize.md.r, color: c.text2),
-            Gap(12.w),
-            Expanded(
-              child: Text(
-                label,
-                style: tt.bodyLarge!.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: c.text1,
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: 26.h),
+          child: Row(
+            children: [
+              Icon(icon, size: 18.r, color: c.text1),
+              Gap(8.w),
+              Expanded(
+                child: Text(
+                  label,
+                  style: tt.bodyLarge!.copyWith(height: 1.0, color: c.text1),
                 ),
               ),
-            ),
-            Icon(
-              AppIcons.chevronRight,
-              size: AppIconSize.inline.r,
-              color: c.text3,
-            ),
-          ],
+              Icon(AppIcons.chevronRight, size: 18.r, color: c.text2),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// Settings row carrying a switch instead of a chevron (Figma node 134:9192).
 class _ToggleRow extends StatelessWidget {
   const _ToggleRow({
     required this.icon,
@@ -294,27 +300,18 @@ class _ToggleRow extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md.w,
-        vertical: 10.h,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: AppIconSize.md.r, color: c.text2),
-          Gap(12.w),
-          Expanded(
-            child: Text(
-              label,
-              style: tt.bodyLarge!.copyWith(
-                fontWeight: FontWeight.w500,
-                color: c.text1,
-              ),
-            ),
+    return Row(
+      children: [
+        Icon(icon, size: 18.r, color: c.text1),
+        Gap(8.w),
+        Expanded(
+          child: Text(
+            label,
+            style: tt.bodyLarge!.copyWith(height: 1.0, color: c.text1),
           ),
-          JSwitch(value: value, onChanged: onChanged),
-        ],
-      ),
+        ),
+        JSwitch(value: value, onChanged: onChanged),
+      ],
     );
   }
 }

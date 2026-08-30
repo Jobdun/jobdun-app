@@ -7,8 +7,14 @@ import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 
 /// One inbox conversation row: avatar, name (+ pin/mute glyphs), job line,
-/// preview (or BLOCKED), relative time, unread badge. Extracted from
-/// messages_page.dart for the file-size budget (Phase D).
+/// preview (or BLOCKED), relative time, unread badge.
+///
+/// Drawn on the Figma refresh (`JobDun-Screens` → Messages, node 125:6888):
+/// a 40dp circular avatar, a 12dp gutter, then a three-line stack — name in
+/// Inter Bold 16, the **job** in orange, the preview in tertiary ink — with
+/// the relative time pinned right and vertically centred. Rows carry their
+/// own 12dp vertical padding and no divider; the avatar column is the only
+/// rhythm the list needs.
 class ConversationRow extends StatelessWidget {
   const ConversationRow({
     super.key,
@@ -50,15 +56,17 @@ class ConversationRow extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md.w,
+          vertical: 12.h,
+        ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Avatar (photo with initials fallback)
             AvatarBlock(
               initials: initials,
               imageUrl: avatarUrl,
-              size: 46,
+              size: 40,
               circle: true,
             ),
             Gap(12.w),
@@ -68,13 +76,12 @@ class ConversationRow extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: Text(
                           name,
                           style: tt.titleMedium!.copyWith(
-                            fontWeight: hasUnread
-                                ? FontWeight.w700
-                                : FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
                             color: c.text1,
                           ),
                           // 2026-08-18 audit: overflow without maxLines wraps
@@ -85,73 +92,80 @@ class ConversationRow extends StatelessWidget {
                       ),
                       if (isPinned) ...[
                         Gap(6.w),
-                        Icon(AppIcons.pinFilled, size: 12.r, color: c.action),
+                        Icon(
+                          AppIcons.pinFilled,
+                          size: 12.r,
+                          color: c.actionInk,
+                        ),
                       ],
                       if (isMuted) ...[
                         Gap(6.w),
                         Icon(AppIcons.muteFilled, size: 12.r, color: c.text3),
                       ],
-                      Gap(8.w),
-                      Text(
-                        time,
-                        style: tt.bodySmall!.copyWith(
-                          fontWeight: FontWeight.w400,
-                          color: hasUnread ? c.action : c.text3,
-                        ),
-                      ),
                     ],
                   ),
                   if (jobTitle != null) ...[
-                    Gap(2.h),
+                    Gap(AppSpacing.xs.h),
                     Text(
+                      // The job is what the thread is *about* — Figma gives it
+                      // the orange ink, so it reads before the preview does.
                       jobTitle!,
-                      style: tt.bodySmall!.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: c.text2,
+                      style: tt.bodyLarge!.copyWith(
+                        height: 1.4,
+                        color: c.actionInk,
                       ),
                       maxLines: 1, // 2026-08-18 audit
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                  Gap(3.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          isBlocked ? 'BLOCKED' : preview,
-                          style: tt.bodyMedium!.copyWith(
-                            fontWeight: hasUnread
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: hasUnread ? c.text1 : c.text3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (hasUnread) ...[
-                        Gap(8.w),
-                        Container(
-                          width: 20.r,
-                          height: 20.r,
-                          decoration: BoxDecoration(
-                            color: c.action,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            unreadCount > 9 ? '9+' : '$unreadCount',
-                            style: tt.labelSmall!.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: c.onAction, // dark-on-orange — 6.37:1
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Gap(AppSpacing.xs.h),
+                  Text(
+                    isBlocked ? 'BLOCKED' : preview,
+                    style: tt.bodyLarge!.copyWith(
+                      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+                      height: 1.4,
+                      color: hasUnread ? c.text1 : c.text3,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
+            ),
+            Gap(AppSpacing.sm.w),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  time,
+                  style: tt.bodySmall!.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                    height: 1.0,
+                    color: hasUnread ? c.actionInk : c.text3,
+                  ),
+                ),
+                if (hasUnread) ...[
+                  Gap(6.h),
+                  Container(
+                    width: 20.r,
+                    height: 20.r,
+                    decoration: BoxDecoration(
+                      color: c.action,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      unreadCount > 9 ? '9+' : '$unreadCount',
+                      style: tt.labelSmall!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: c.onAction, // dark-on-orange — 6.37:1
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

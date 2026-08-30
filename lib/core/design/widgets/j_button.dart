@@ -15,15 +15,29 @@ import '../../../app/theme/app_colors.dart';
 /// - [danger]    filled urgent-red, dark fg. Use for the dominant destructive
 ///               action (REJECT a verification, REVOKE, DELETE) — pairs beside
 ///               a [primary] / [secondary] cancel.
-/// - [outline]   transparent fill, orange hairline, orange-ink label. The
-///               Figma Homepage section's secondary CTA ("Explore map" on the
-///               map promo). Reads as an affordance without competing with the
-///               filled [primary] beneath it.
+/// - [outline]   tinted brand fill, orange hairline, orange-ink label — the
+///               Figma `bg/action-secondary` button ("Log out" on Settings,
+///               node 134:9557). Reads as an affordance without competing with
+///               a filled [primary].
 /// - [dangerOutline] tinted red fill + red hairline and label. The destructive
 ///               half of a paired footer ("Delete job" beside "View
 ///               applicants") — quieter than [danger], which is for when
 ///               destruction is the screen's *dominant* action.
-enum JButtonVariant { primary, secondary, text, danger, outline, dangerOutline }
+/// - [successOutline] tinted green fill + green hairline and label. The
+///               *confirming* half of a triage pair ("Hire this tradie" on the
+///               applicant card, Figma `JobDun-Screens` → Applicants, node
+///               122:5136). Green because the action is a commitment, not the
+///               screen's default next step — a filled orange CTA there would
+///               out-shout the reject it sits above.
+enum JButtonVariant {
+  primary,
+  secondary,
+  text,
+  danger,
+  outline,
+  dangerOutline,
+  successOutline,
+}
 
 /// Size of [JButton] — picks the minimum height.
 ///
@@ -192,6 +206,9 @@ class JButton extends StatelessWidget {
       JButtonVariant.outline => OutlinedButton(
         onPressed: effectiveOnPressed,
         style: OutlinedButton.styleFrom(
+          // Figma `bg/action-secondary` — the tinted wash that makes the
+          // hairline read as a button rather than a bare label.
+          backgroundColor: c.actionBg,
           foregroundColor: c.actionInk,
           disabledForegroundColor: c.text3,
           side: BorderSide(color: c.action),
@@ -214,6 +231,20 @@ class JButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.btn.r),
           ),
         ).copyWith(overlayColor: _overlay(c.urgent)),
+        child: content,
+      ),
+      JButtonVariant.successOutline => OutlinedButton(
+        onPressed: effectiveOnPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: c.verifiedBg,
+          foregroundColor: c.verifiedTx,
+          disabledForegroundColor: c.text3,
+          side: BorderSide(color: c.verifiedTx),
+          minimumSize: Size.fromHeight(_minHeight),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+        ).copyWith(overlayColor: _overlay(c.verified)),
         child: content,
       ),
     };
@@ -247,6 +278,7 @@ class JButton extends StatelessWidget {
       JButtonVariant.danger => c.onAction,
       JButtonVariant.outline => c.actionInk,
       JButtonVariant.dangerOutline => c.urgentTx,
+      JButtonVariant.successOutline => c.verifiedTx,
     };
   }
 
@@ -257,5 +289,6 @@ class JButton extends StatelessWidget {
     JButtonVariant.danger => c.onAction,
     JButtonVariant.outline => c.actionInk,
     JButtonVariant.dangerOutline => c.urgentTx,
+    JButtonVariant.successOutline => c.verifiedTx,
   };
 }

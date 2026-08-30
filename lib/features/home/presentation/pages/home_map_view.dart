@@ -4,64 +4,10 @@ part of 'home_page.dart';
 
 // ── Map View ──────────────────────────────────────────────────────────────────
 
-// Selectable basemap. All four sources are free + key-less and properly
-// attributed by RichAttributionWidget below. Add a new style by extending this
-// enum — the picker sheet, persistence, and tile layer pick it up automatically.
-enum _MapStyle {
-  dark(
-    label: 'DARK',
-    description: 'Brand-aligned night view',
-    urlTemplate:
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    subdomains: ['a', 'b', 'c', 'd'],
-    source: _TileSource.carto,
-  ),
-  light(
-    label: 'LIGHT',
-    description: 'Clean daytime view',
-    urlTemplate:
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    subdomains: ['a', 'b', 'c', 'd'],
-    source: _TileSource.carto,
-  ),
-  voyager(
-    label: 'VOYAGER',
-    description: 'Colourful — pins pop',
-    urlTemplate:
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    subdomains: ['a', 'b', 'c', 'd'],
-    source: _TileSource.carto,
-  ),
-  standard(
-    label: 'STANDARD',
-    description: 'Classic OpenStreetMap',
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    subdomains: <String>[],
-    source: _TileSource.osm,
-  );
-
-  const _MapStyle({
-    required this.label,
-    required this.description,
-    required this.urlTemplate,
-    required this.subdomains,
-    required this.source,
-  });
-
-  final String label;
-  final String description;
-  final String urlTemplate;
-  final List<String> subdomains;
-  final _TileSource source;
-
-  // Pin colour suggestion — keep the brand orange on dark/voyager (high
-  // contrast); on the light style use a slightly darker fill so the pin still
-  // reads against a near-white background without changing the action token.
-  bool get prefersDarkText => this == _MapStyle.light;
-}
-
-enum _TileSource { carto, osm }
-
+// The basemap itself lives in JBasemap (core/design/widgets/map/j_basemap.dart)
+// so this map, the builder's tradie map and the home promo card all render the
+// same tiles. It replaced a local four-style Carto enum on 2026-08-30, after
+// CARTO started watermarking unauthenticated tiles with "API KEY REQUIRED".
 const String _kMapStylePrefsKey = 'home.map_style';
 
 class _MapView extends StatefulWidget {
@@ -111,7 +57,7 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
   static const _sydney = LatLng(-33.8688, 151.2093);
 
   final MapController _controller = MapController();
-  _MapStyle _style = _MapStyle.voyager;
+  JBasemap _style = JBasemap.fallback;
   LatLng? _userLocation;
   _LocationStatus _locationStatus = _LocationStatus.idle;
 
@@ -130,15 +76,15 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
   Future<void> _loadStyle() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kMapStylePrefsKey);
-    if (raw == null || !mounted) return;
-    final found = _MapStyle.values.firstWhere(
-      (s) => s.name == raw,
-      orElse: () => _MapStyle.voyager,
-    );
+    if (!mounted) return;
+    // `resolve` also rescues the users who had 'voyager' / 'dark' / 'light'
+    // saved from the retired Carto enum — those names no longer exist, so they
+    // land on the house default instead of a dead style.
+    final found = JBasemap.resolve(raw);
     if (found != _style) setState(() => _style = found);
   }
 
-  Future<void> _setStyle(_MapStyle next) async {
+  Future<void> _setStyle(JBasemap next) async {
     setState(() => _style = next);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kMapStylePrefsKey, next.name);
@@ -286,21 +232,6 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
     ];
   }
 
-  List<TextSourceAttribution> _attributionsFor(_MapStyle style) {
-    return [
-      TextSourceAttribution(
-        'OpenStreetMap contributors',
-        onTap: () =>
-            launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
-      ),
-      if (style.source == _TileSource.carto)
-        TextSourceAttribution(
-          'CARTO',
-          onTap: () => launchUrl(Uri.parse('https://carto.com/attribution')),
-        ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -324,16 +255,7 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
             ),
           ),
           children: [
-            TileLayer(
-              // Keyed so flutter_map drops the old tile cache when the
-              // template changes — otherwise mixed-style tiles flash during
-              // the swap.
-              key: ValueKey<_MapStyle>(_style),
-              urlTemplate: _style.urlTemplate,
-              subdomains: _style.subdomains,
-              retinaMode: RetinaMode.isHighDensity(context),
-              userAgentPackageName: 'au.com.jobdun.app',
-            ),
+            JBasemapLayer(basemap: _style),
             // Search-radius circle drawn under the markers so pins sit on top.
             // Uses meters for the radius so it scales with the zoom level —
             // that's the visual cue the user actually reads as "your area".
@@ -356,14 +278,11 @@ class _MapViewState extends State<_MapView> with _MapPinSync {
               ],
             ),
             // Attribution lifts above the card carousel when it's showing —
-            // otherwise the expanded credits panel (Voyager/CARTO) renders
-            // underneath the cards.
-            Padding(
-              padding: EdgeInsets.only(bottom: _plottable.isEmpty ? 0 : 112.h),
-              child: RichAttributionWidget(
-                alignment: AttributionAlignment.bottomLeft,
-                attributions: _attributionsFor(_style),
-              ),
+            // otherwise the expanded credits panel renders underneath the
+            // cards and can't be read or tapped.
+            JBasemapAttribution(
+              basemap: _style,
+              bottomPadding: _plottable.isEmpty ? 0 : 112.h,
             ),
           ],
         ),

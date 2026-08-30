@@ -59,8 +59,8 @@ class VerificationReceipts extends ConsumerWidget {
     return async.when(
       loading: () => JSkeletonList(
         enabled: true,
-        child: JCard(
-          title: 'WHAT\'S BEEN CHECKED',
+        child: JCard.section(
+          title: "What's been checked",
           children: const [
             ReceiptRow(
               icon: AppIcons.clock,
@@ -77,8 +77,8 @@ class VerificationReceipts extends ConsumerWidget {
           ],
         ),
       ),
-      error: (e, _) => JCard(
-        title: 'WHAT\'S BEEN CHECKED',
+      error: (e, _) => JCard.section(
+        title: "What's been checked",
         children: [
           const ReceiptRow(
             icon: AppIcons.closeCircle,
@@ -121,8 +121,8 @@ class VerificationReceipts extends ConsumerWidget {
               const <TradePublicCredential>[])
         : const <TradePublicCredential>[];
 
-    return JCard(
-      title: 'WHAT\'S BEEN CHECKED',
+    return JCard.section(
+      title: "What's been checked",
       children: [
         if (showAbnRow)
           _buildRow(

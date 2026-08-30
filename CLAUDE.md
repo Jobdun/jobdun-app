@@ -53,17 +53,17 @@ screen that hardcodes one theme's ground is broken in the other.
 
 | Token | Light | Dark |
 |-------|-------|------|
-| `c.background` | `#F8F8F8` | `#181818` |
-| `c.surface` (cards, inputs, sheets) | `#FFFFFF` | `#2F2F2F` |
-| `c.surfaceRaised` | `#F2F2F2` | `#474747` |
+| `c.background` | `#F8F8F8` | `#0F172A` |
+| `c.surface` (cards, inputs, sheets) | `#FFFFFF` | `#1E293B` |
+| `c.surfaceRaised` | `#F2F2F2` | `#334155` |
 | `c.action` (safety orange CTA) | `#FC5101` | `#FC5101` |
-| `c.onAction` (label ON the orange) | `#181818` | `#181818` |
+| `c.onAction` (label ON the orange) | `#181818` | `#0F172A` |
 | `c.actionInk` (orange AS text/icon) | `#CA4101` | `#FD7434` |
-| `c.text1` / `c.text2` / `c.text3` | `#111118` / `#474747` / `#5E5E5E` | `#F8F8F8` / `#C8C8C8` / `#ADADAD` |
-| `c.border` / `c.borderStrong` | `#E4E4E4` / `#8C8C8C` | `#474747` / `#919191` |
+| `c.text1` / `c.text2` / `c.text3` | `#111118` / `#474747` / `#5E5E5E` | `#F1F5F9` / `#94A3B8` / `#8B98AB` |
+| `c.border` / `c.borderStrong` | `#E4E4E4` / `#8C8C8C` | `#334155` / `#708096` |
 | `c.urgent` / `c.verified` / `c.warning` | `#EB1414` / `#178740` / `#8E7201` | `#EF4343` / `#459F66` / `#BBAA67` |
 
-- Neutrals are **pure achromatic grey** — no blue bias (the old slate ramp is gone).
+- **Light** runs on pure achromatic grey; **dark** keeps the navy-tinted slate ramp. The two themes are designed peers, so they sit on different ramps by choice — never invert one to get the other.
 - Warning is **olive-gold, not amber**; dark steps up to `warning/400` because the olive `600` is only 2.06:1 on the dark surface.
 - Style: Aggressive Flat — heavy weight, no shadows, icon-heavy, all-caps buttons
 - Typography: Archivo (display, headings, buttons) + Inter (body, captions) via `google_fonts`. Reference: `lib/app/theme/app_typography.dart`. (Admin web console keeps its own Oswald/Open Sans `AdminText` scale until the admin-typography branch lands.)

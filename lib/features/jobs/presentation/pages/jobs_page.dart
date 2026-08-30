@@ -15,7 +15,7 @@ import '../../../../core/design/widgets/gv_chip.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/utils/string_utils.dart';
 import 'builder_listings_view.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -135,15 +135,21 @@ class _JobsPageState extends ConsumerState<JobsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
+            // ── Header — Figma `JobDun-Screens` → Find (node 140:13875) puts
+            // the mark on the 16dp margin and the screen name in Inter Bold
+            // 24, on the page ground: no card, no rule. The mark replaces the
+            // old 'JOBDUN' eyebrow the guest view used to carry.
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+                AppSpacing.md.w,
+                0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PageHeader(
-                    eyebrow: isAuthed ? null : 'JOBDUN',
+                  _FeedHeader(
                     title: isBuilder ? 'Your listings' : 'Open near you',
                     trailing: isBuilder
                         ? SizedBox(
@@ -166,7 +172,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           )
                         : null,
                   ),
-                  Gap(12.h),
+                  Gap(AppSpacing.md.h),
                   // Search bar — uses the theme's InputDecorationTheme directly
                   // so the focus border picks up c.action like every other input.
                   // design-system-ok: no FieldLabel above — search bars don't need one.
@@ -247,8 +253,10 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       },
                     ),
                   ),
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
+                  // No rule under the pills — Figma lets the cards' own
+                  // hairlines carry the separation, and a full-bleed divider
+                  // above a bordered card reads as a double edge.
+                  Gap(AppSpacing.sm.h),
                 ],
               ),
             ),
@@ -257,7 +265,10 @@ class _JobsPageState extends ConsumerState<JobsPage> {
               Container(
                 width: double.infinity,
                 color: c.urgentBg,
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md.w,
+                  vertical: 10.h,
+                ),
                 child: Row(
                   children: [
                     Icon(
@@ -303,7 +314,12 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             // ── Results count. "X+ jobs found" while more pages remain so
             // the number never looks misleadingly small during scroll-load.
             Padding(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 4.h),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                12.h,
+                AppSpacing.md.w,
+                4.h,
+              ),
               child: Text(
                 _viewingSaved
                     ? '${jobsState.savedJobs.length} saved'
@@ -333,12 +349,12 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                       child: PagedListView<int, Job>.separated(
                         pagingController: pagingController,
                         padding: EdgeInsets.fromLTRB(
-                          20.w,
+                          AppSpacing.md.w,
                           AppSpacing.sm.h,
-                          20.w,
+                          AppSpacing.md.w,
                           AppSpacing.lg.h,
                         ),
-                        separatorBuilder: (_, _) => Gap(9.h),
+                        separatorBuilder: (_, _) => Gap(AppSpacing.md.h),
                         builderDelegate: PagedChildBuilderDelegate<Job>(
                           itemBuilder: (context, j, i) {
                             final card = JobCard(

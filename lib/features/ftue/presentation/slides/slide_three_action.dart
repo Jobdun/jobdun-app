@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../widgets/ftue_hero.dart';
 import '../widgets/ftue_overlay_card.dart';
 import '../widgets/ftue_slide.dart';
 
@@ -38,6 +39,10 @@ class SlideThreeAction extends StatelessWidget {
       accent: 'AUSSIE SITES.',
       controller: controller,
       slideCount: slideCount,
+      // This slide's own `Rectangle 1` (node 36:8724) starts at y=392, not the
+      // 333 the other two use — its headline is two lines, so it needs less
+      // cover and the subject stays solid further down.
+      scrimStart: FtueHero.slideThreeScrimStart,
       overlays: [
         FtueOverlay(
           left: 27 / 393,

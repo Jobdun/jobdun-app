@@ -50,42 +50,43 @@ class _TradieAvailabilityBarState
     final open = _optimistic ?? fromProfile ?? true;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, AppSpacing.lg.h),
+      padding: EdgeInsets.fromLTRB(AppSpacing.md.w, 0, AppSpacing.md.w, 0),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        padding: EdgeInsets.all(AppSpacing.md.r),
         decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: open ? c.verified : c.border),
+          color: c.card,
+          borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+          border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
-            Container(
-              width: 10.r,
-              height: 10.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: open ? c.verified : c.text3,
-              ),
-            ),
-            Gap(AppSpacing.sm.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // The title stays put and the switch carries the state —
+                  // Figma node 140:13675. The subtitle still swaps, because
+                  // "hidden from builders" is the consequence a tradie needs
+                  // spelled out, not inferred from a toggle position.
                   Text(
-                    open ? 'OPEN FOR WORK' : 'OFF THE CLOCK',
+                    'Open for work',
                     style: tt.titleMedium!.copyWith(
-                      color: open ? c.verifiedTx : c.text2,
                       fontWeight: FontWeight.w700,
+                      height: 1.0,
+                      color: c.text1,
                     ),
                   ),
-                  Gap(2.h),
+                  Gap(AppSpacing.xs.h),
                   Text(
                     open
-                        ? 'Builders can find you in searches.'
-                        : "Hidden from builders until you go on.",
-                    style: tt.bodySmall!.copyWith(color: c.text3),
+                        ? 'Builders can find you in searches'
+                        : 'Hidden from builders until you go on',
+                    style: tt.bodySmall!.copyWith(
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0,
+                      height: 1.4,
+                      color: c.text2,
+                    ),
                   ),
                 ],
               ),

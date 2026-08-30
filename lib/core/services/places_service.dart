@@ -73,7 +73,15 @@ class JPlaceResult extends Equatable {
 /// trigger the "Edit manually" fallback toggle on [JPlaceField].
 sealed class PlacesException implements Exception {
   const PlacesException(this.message);
+
+  /// Technical detail — logs, Sentry, `toString()`. **Never render this.**
+  /// It carries provider names, env-var names and raw HTTP bodies.
   final String message;
+
+  /// What a tradie or builder is allowed to see. Address lookup is a
+  /// convenience; when it fails the user needs to know they can keep going,
+  /// not which environment variable is unset.
+  String get userMessage => "Address lookup isn't available right now.";
 
   @override
   String toString() => '$runtimeType: $message';
@@ -87,12 +95,20 @@ class PlacesNotConfigured extends PlacesException {
         'MapTiler API key is not configured. '
         'Set MAPTILER_API_KEY in .env or via --dart-define.',
       );
+
+  @override
+  String get userMessage => 'Type your suburb and postcode instead.';
 }
 
 /// HTTP error: timeout, DNS fail, 5xx, etc. Caller should show the fallback
 /// toggle but may auto-retry on the next debounced keystroke.
 class PlacesNetworkError extends PlacesException {
   const PlacesNetworkError(super.message);
+
+  @override
+  String get userMessage =>
+      "Couldn't reach address lookup. Check your connection, or type your "
+      'suburb and postcode.';
 }
 
 /// HTTP 4xx with a body MapTiler returned — quota exhausted, key revoked,
@@ -100,12 +116,23 @@ class PlacesNetworkError extends PlacesException {
 class PlacesRequestRejected extends PlacesException {
   const PlacesRequestRejected(super.message, {required this.statusCode});
   final int statusCode;
+
+  // 401/403 = the key is missing, revoked, or restricted to a platform this
+  // build isn't (a key locked to the Android package + iOS bundle is rejected
+  // on web). 429 = quota. None of that is the user's problem, and none of it
+  // should ever reach their screen — so they get the same "type it instead"
+  // instruction as an unconfigured key.
+  @override
+  String get userMessage => 'Type your suburb and postcode instead.';
 }
 
 /// Response parsed but contained no usable suggestions for the query. Not
 /// strictly an error — the dropdown renders "No matches" copy.
 class PlacesNoResults extends PlacesException {
   const PlacesNoResults() : super('No matching places.');
+
+  @override
+  String get userMessage => 'No matching places.';
 }
 
 /// Response did not match the expected GeoJSON shape. Indicates a vendor

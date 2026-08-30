@@ -10,6 +10,7 @@ import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/services/image_upload_service.dart';
+import '../../../legal/presentation/widgets/legal_link_text.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/auth_provider.dart';
 import 'onboarding_avatar_step.dart';
@@ -322,6 +323,16 @@ class _OnboardingCompletionSheetState
                   textAlign: TextAlign.center,
                 ),
               ],
+
+              // Terms disclosure for every account finished here. The
+              // create-account FORM carries an explicit checkbox, but Google /
+              // Apple / phone signups never touch that form — and the login
+              // footer that used to cover them only caught the SSO tiles that
+              // happened to sit on that one screen (the register role step's
+              // tiles were never covered at all). This sheet is the single
+              // surface every signup passes through, so consent lives here.
+              Gap(AppSpacing.md.h),
+              const LegalLinkText(minimal: true),
 
               // Escape hatch (P1 #2, 2026-08-18 audit): the sheet is
               // deliberately undismissable — role is required — but an

@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/preview_theme.dart';
 import '../../../../core/design/colors.dart';
@@ -24,13 +23,17 @@ import '../../../applications/presentation/providers/applications_provider.dart'
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../../../auth/presentation/widgets/onboarding_gate.dart';
+import '../../../../core/design/widgets/map/j_basemap.dart';
+import '../../../../core/design/widgets/map/j_basemap_attribution.dart';
 import '../../../../core/design/widgets/map/j_map_carousel.dart';
 import '../../../../core/design/widgets/map/j_map_cluster_bubble.dart';
 import '../../../../core/design/widgets/map/j_map_price_pin.dart';
 import '../../../../core/utils/map_clustering.dart';
-import '../widgets/deck_strip.dart';
+import '../../../../core/design/widgets/j_button.dart';
 import '../widgets/home_action_deck.dart';
-import '../widgets/home_status_bar.dart';
+import '../widgets/home_brand_header.dart';
+import '../widgets/home_quick_action_card.dart';
+import '../../../../core/design/widgets/j_stats_row.dart';
 import '../widgets/profile_completeness_banner.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../jobs/domain/entities/job.dart';
@@ -301,12 +304,12 @@ class _HomePageState extends ConsumerState<HomePage> {
               scrolledUnderElevation: 0,
               titleSpacing: 0,
               toolbarHeight: 64.h,
-              title: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 8.h),
-                child: HomeStatusBar(
-                  onNotificationsTap: () => context.push('/notifications'),
-                ),
-              ),
+              // Both roles now run the Figma header — brand lockup, bell,
+              // gear (builder node 64:2971, tradie node 134:9625). The
+              // tradie's availability-led status bar is retired: the mock
+              // gives the open-for-work toggle its own card in the body, so
+              // the bar's read-only pill was saying it a second time.
+              title: const HomeBrandHeader(),
             ),
             const SliverToBoxAdapter(child: ProfileCompletenessBanner()),
             SliverToBoxAdapter(child: Gap(20.h)),
@@ -321,7 +324,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               // Action Deck (#1, 2026-06-11): hero "where do I stand" card +
               // one-row micro-strip — replaces the three big stat tiles that
               // pushed the first job below the fold.
-              SliverToBoxAdapter(child: Gap(12.h)),
+              SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
               SliverToBoxAdapter(
                 child: HomeActionDeck(
                   applications: appsState.myApplications,
@@ -331,17 +334,26 @@ class _HomePageState extends ConsumerState<HomePage> {
               SliverToBoxAdapter(child: Gap(24.h)),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.md.w,
+                    0,
+                    AppSpacing.md.w,
+                    AppSpacing.md.h,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(
-                          'JOBS NEAR YOU',
-                          style: tt.titleLarge!.copyWith(color: c.text1),
+                          'Jobs near you',
+                          style: tt.titleMedium!.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.0,
+                            color: c.text1,
+                          ),
                         ),
                       ),
                       _HomeFeedLink(
-                        label: 'MAP →',
+                        label: 'Map',
                         onTap: () => context.push('/jobs/map'),
                       ),
                     ],
@@ -350,7 +362,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               if (hasRealJobs)
                 SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
                   sliver: JStaggeredSliverList(
                     itemCount: feedJobs.length,
                     itemBuilder: (_, i) {
@@ -377,9 +389,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               if (hasRealJobs)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
                     child: _HomeFeedLink(
-                      label: 'SEE ALL JOBS →',
+                      label: 'See all jobs',
                       onTap: () => context.go('/jobs'),
                     ),
                   ),
@@ -438,13 +450,26 @@ class _HomeFeedLink extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 10.h),
-            child: Text(
-              label,
-              style: tt.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-                color: c.actionInk,
-              ),
+            // Figma node 140:13694 sets these as a plain 16px orange word
+            // with a chevron — the arrow does the "there's more" work, so the
+            // label drops the bold + tracking it used to shout with.
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: tt.bodyLarge!.copyWith(
+                    height: 1.0,
+                    color: c.actionInk,
+                  ),
+                ),
+                Gap(AppSpacing.xs.w),
+                Icon(
+                  AppIcons.chevronRight,
+                  size: AppIconSize.inline.r,
+                  color: c.actionInk,
+                ),
+              ],
             ),
           ),
         ),

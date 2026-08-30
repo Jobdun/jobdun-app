@@ -30,14 +30,36 @@ void main() {
     ),
   );
 
-  testWidgets('renders the settings groups + sign out', (tester) async {
+  // Sentence case since 2026-08-29 — rebuilt on the Figma Setting frame
+  // (node 134:8995), which sets every group title and button in sentence case.
+  testWidgets('renders the settings groups + both account actions', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
-    expect(find.text('SETTINGS'), findsOneWidget);
-    expect(find.text('APPEARANCE'), findsOneWidget);
-    expect(find.text('ACCOUNT'), findsOneWidget);
-    expect(find.text('LEGAL'), findsOneWidget);
-    expect(find.text('SIGN OUT'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Account'), findsOneWidget);
+    expect(find.text('Legal'), findsOneWidget);
+    expect(find.text('Log out'), findsOneWidget);
+    expect(find.text('Delete my account'), findsOneWidget);
+  });
+
+  // The delete button sits 16dp under Log out per the mock, so the confirm
+  // sheet is the only thing standing between a mis-tap and an irreversible
+  // deletion. If this ever fails, do not "fix" it by loosening the assertion.
+  testWidgets('delete opens a confirm sheet rather than deleting', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Delete my account'));
+    await tester.pumpAndSettle();
+
+    // A confirmation is surfaced; nothing is deleted on the tap itself.
+    expect(find.text('Delete your account?'), findsOneWidget);
+    expect(find.textContaining('There is no undo.'), findsOneWidget);
   });
 }

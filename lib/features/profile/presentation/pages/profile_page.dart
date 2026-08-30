@@ -14,7 +14,7 @@ import '../../../../core/design/widgets/j_card.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/j_offline_banner.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/j_stats_row.dart';
 import '../../../../core/network/connectivity_provider.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -28,6 +28,7 @@ import '../providers/profile_provider.dart';
 import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_about_section.dart';
 import '../widgets/profile_availability_banner.dart';
+import '../../../home/presentation/widgets/profile_completeness_banner.dart';
 import '../widgets/profile_incomplete_banner.dart';
 import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
@@ -115,9 +116,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             // House header-bar pattern (same chrome as the edit hub, About
             // editor and builder public profile): back arrow anchored in a
             // card-coloured bar with the page title — not a floating arrow.
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(4.w, 8.h, 20.w, 12.h),
+            // Figma node 131:8021 — title left, settings gear right, no rule
+            // beneath. The mock leads with the JOBDUN mark instead of a back
+            // caret because Profile is a dock destination there; here it is
+            // still pushed, so the caret stays or the user is stranded.
+            Padding(
+              padding: EdgeInsets.fromLTRB(4.w, 8.h, 16.w, 8.h),
               child: Row(
                 children: [
                   IconButton(
@@ -129,16 +133,33 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       color: c.text1,
                     ),
                   ),
-                  const Expanded(
-                    child: PageHeader(
-                      title: 'Profile',
-                      size: PageHeaderSize.sub,
+                  Expanded(
+                    child: Text(
+                      'Profile',
+                      style: Theme.of(context).textTheme.headlineSmall!
+                          .copyWith(fontSize: 24, height: 1.2, color: c.text1),
+                    ),
+                  ),
+                  Semantics(
+                    button: true,
+                    label: 'Settings',
+                    child: InkResponse(
+                      onTap: () => context.push('/settings'),
+                      radius: 24.r,
+                      child: SizedBox(
+                        width: 48.w,
+                        height: 48.h,
+                        child: Icon(
+                          AppIcons.settings,
+                          size: 32.r,
+                          color: c.text1,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: c.border),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -155,16 +176,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       isVerified: isVerified,
                     ),
                   ),
-                  if (gap != null) ...[
-                    SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+                  // Same card as the home screen (Figma node 134:13036 mirrors
+                  // 80:4251), but fed the single highest-impact gap rather than
+                  // generic copy — "Add your ABN" tells the builder what to do;
+                  // "Add few details" does not.
+                  if (gap != null)
                     SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
-                        child: ProfileIncompleteBanner(gap: gap),
+                      child: ProfileCompletenessBanner(
+                        messageOverride: gap.message,
                       ),
                     ),
-                  ],
-                  SliverToBoxAdapter(child: Gap(AppSpacing.md.h)),
+                  SliverToBoxAdapter(child: Gap(16.h)),
                   SliverToBoxAdapter(
                     child: JSkeletonList(
                       enabled: profileState.isLoading,

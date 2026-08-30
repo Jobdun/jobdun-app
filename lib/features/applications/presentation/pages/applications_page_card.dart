@@ -23,10 +23,9 @@ class _AppCard extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     final status = app.status;
-    final statusColor = _statusColor(status, c);
-    final statusLabel = status.label.toUpperCase();
+    final statusLabel = status.label;
 
-    final card = _buildCard(context, c, tt, status, statusColor, statusLabel);
+    final card = _buildCard(context, c, tt, status, statusLabel);
 
     // Swipe affordances on pending rows only. Builders get reject/shortlist;
     // tradies get withdraw. The inline buttons remain — slidable is additive
@@ -92,289 +91,237 @@ class _AppCard extends StatelessWidget {
     JColors c,
     TextTheme tt,
     ApplicationStatus status,
-    Color statusColor,
     String statusLabel,
   ) {
     final (chipBg, chipTx) = _statusChip(status, c);
+    final actions = _actions(context, c, tt, status);
+    // Figma `JobDun-Screens` → Applicants (node 122:5094): a 16dp-radius card
+    // on a hairline, 16dp padding, and a 16dp rhythm between every block
+    // inside it. The old 3dp status strip is gone — the pill now carries its
+    // own dot, so state is still never colour alone.
     return Container(
       clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: c.card,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(
-          color: status == ApplicationStatus.shortlisted ? c.action : c.border,
-          width: status == ApplicationStatus.shortlisted ? 1.5 : 1.0,
-        ),
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        // One hairline for every state — Figma leans on the status pill and
+        // the footer action to tell the states apart, so the old orange
+        // shortlisted edge is gone (it competed with the CTA beneath it).
+        border: Border.all(color: c.border),
       ),
+      padding: EdgeInsets.all(AppSpacing.md.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Status bar
-          Container(
-            height: 3.h,
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppRadius.card.r),
-                topRight: Radius.circular(AppRadius.card.r),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.md.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Status chip + date
-                Row(
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 3.h,
-                        ),
+          // ── Status pill + age
+          Row(
+            children: [
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 11.w,
+                    vertical: 4.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: chipBg,
+                    borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8.r,
+                        height: 8.r,
                         decoration: BoxDecoration(
-                          color: chipBg,
-                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
+                          color: chipTx,
+                          shape: BoxShape.circle,
                         ),
+                      ),
+                      Gap(AppSpacing.xs.w),
+                      Flexible(
                         child: Text(
                           statusLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: tt.labelSmall!.copyWith(
-                            letterSpacing: 0.5,
+                          style: tt.bodySmall!.copyWith(
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0,
+                            height: 1.0,
                             color: chipTx,
                           ),
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    Gap(8.w),
-                    Text(
-                      _relDate(app.createdAt),
-                      style: tt.bodySmall!.copyWith(color: c.text3),
-                    ),
-                  ],
-                ),
-                Gap(10.h),
-                // ── Job title
-                Text(
-                  app.jobTitle ?? '—',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleLarge!.copyWith(color: c.text1, height: 1.1),
-                ),
-                Gap(4.h),
-                // ── Company / trade name
-                Row(
-                  children: [
-                    Icon(
-                      isBuilder ? AppIcons.licence : AppIcons.building,
-                      size: AppIconSize.micro.r,
-                      color: c.text3,
-                    ),
-                    Gap(6.w),
-                    Flexible(
-                      child: Text(
-                        isBuilder
-                            ? (app.tradeFullName ?? '—')
-                            : (app.builderCompanyName ?? '—'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: c.text2,
-                        ),
-                      ),
-                    ),
-                    if (isBuilder && app.tradeIsVerified == true) ...[
-                      Gap(6.w),
-                      Icon(
-                        AppIcons.verified,
-                        size: AppIconSize.micro.r,
-                        color: c.verified,
-                      ),
-                    ],
-                  ],
-                ),
-                // Counterparty trust signal: a trade viewing a builder sees the
-                // builder's "Verified business" badge (minimized public
-                // projection). Renders nothing when the builder isn't verified.
-                if (!isBuilder) ...[
-                  Gap(4.h),
-                  BuilderVerifiedBadge(userId: app.builderId),
-                ],
-                Gap(4.h),
-                // ── Location
-                Row(
-                  children: [
-                    Icon(
-                      AppIcons.location,
-                      size: AppIconSize.micro.r,
-                      color: c.text3,
-                    ),
-                    Gap(6.w),
-                    Expanded(
-                      child: Text(
-                        [
-                          app.jobSuburb,
-                          app.jobState,
-                        ].whereType<String>().join(', '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.labelMedium!.copyWith(color: c.text3),
-                      ),
-                    ),
-                  ],
-                ),
-                // ── Pricing: builder budget vs the applicant's quote.
-                // Display only — never ranked, sorted, or compared.
-                Gap(8.h),
-                Row(
-                  children: [
-                    Icon(
-                      AppIcons.wallet,
-                      size: AppIconSize.micro.r,
-                      color: c.text3,
-                    ),
-                    Gap(6.w),
-                    Expanded(
-                      child: Text(
-                        _pricingLine(app, isBuilder),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.numeric(
-                          tt.bodyMedium!,
-                        ).copyWith(fontWeight: FontWeight.w600, color: c.text2),
-                      ),
-                    ),
-                  ],
-                ),
-                // ── Builder actions (shortlist → hire / reject)
-                if (isBuilder && status == ApplicationStatus.pending) ...[
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
-                  Gap(10.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: JButton(
-                          label: 'REJECT',
-                          variant: JButtonVariant.secondary,
-                          size: JButtonSize.compact,
-                          onPressed: () =>
-                              onUpdateStatus?.call(ApplicationStatus.rejected),
-                        ),
-                      ),
-                      Gap(AppSpacing.sm.w),
-                      Expanded(
-                        child: JButton(
-                          label: 'SHORTLIST',
-                          size: JButtonSize.compact,
-                          onPressed: () => onUpdateStatus?.call(
-                            ApplicationStatus.shortlisted,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                ],
-                if (isBuilder && status == ApplicationStatus.shortlisted) ...[
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
-                  Gap(10.h),
-                  Semantics(
-                    button: true,
-                    label: 'Hire this tradie',
-                    child: Material(
-                      color: c.verified,
-                      borderRadius: BorderRadius.circular(AppRadius.btn.r),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () =>
-                            onUpdateStatus?.call(ApplicationStatus.hired),
-                        child: Container(
-                          width: double.infinity,
-                          constraints: BoxConstraints(minHeight: 48.h),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'HIRE THIS TRADIE',
-                            style: tt.labelLarge!.copyWith(
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                              color: c
-                                  .onAction, // dark-on-fill: white-on-green is 2.28:1 (fails); onAction = 7.83:1
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                // ── Builder: open (or start) a chat with the applicant.
-                // Available while deciding (pending) and after shortlisting.
-                if (isBuilder &&
-                    (status == ApplicationStatus.pending ||
-                        status == ApplicationStatus.shortlisted)) ...[
-                  Gap(AppSpacing.sm.h),
-                  JButton(
-                    label: 'MESSAGE',
-                    variant: JButtonVariant.secondary,
-                    size: JButtonSize.compact,
-                    onPressed: onMessage,
-                  ),
-                ],
-                // ── Trade: withdraw pending
-                if (!isBuilder && status == ApplicationStatus.pending) ...[
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
-                  Gap(10.h),
-                  Semantics(
-                    button: true,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: onWithdraw,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          child: Text(
-                            AppStrings.withdrawFromJob,
-                            style: tt.bodyMedium!.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: c.text3,
-                              decoration: TextDecoration.underline,
-                              decorationColor: c.text3,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-                // ── Post-hire: rate the other party (builder ⇄ tradie).
-                // One review per reviewer per job — DB unique constraint;
-                // ReviewCta swaps to a read-only row once submitted.
-                if (status == ApplicationStatus.hired) ...[
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
-                  Gap(10.h),
-                  ReviewCta(
-                    jobId: app.jobId,
-                    revieweeId: isBuilder ? app.tradeId : app.builderId,
-                    revieweeName: isBuilder
-                        ? (app.tradeFullName ?? 'this tradie')
-                        : (app.builderCompanyName ?? 'this builder'),
-                    label: isBuilder ? 'REVIEW TRADIE' : 'REVIEW BUILDER',
-                  ),
-                ],
-              ],
+                ),
+              ),
+              const Spacer(),
+              Gap(AppSpacing.sm.w),
+              Text(
+                _relDate(app.createdAt),
+                style: tt.bodyMedium!.copyWith(height: 1.0, color: c.text1),
+              ),
+            ],
+          ),
+          Gap(AppSpacing.md.h),
+          // ── Job title
+          Text(
+            app.jobTitle ?? '—',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: tt.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              height: 1.2,
+              color: c.text1,
             ),
           ),
+          Gap(AppSpacing.md.h),
+          // ── Who / where / what it pays — one 18dp glyph per line, 12dp apart
+          _CardLine(
+            icon: isBuilder ? AppIcons.licence : AppIcons.building,
+            text: isBuilder
+                ? (app.tradeFullName ?? '—')
+                : (app.builderCompanyName ?? '—'),
+            trailing: isBuilder && app.tradeIsVerified == true
+                ? Icon(
+                    AppIcons.verified,
+                    size: AppIconSize.inline.r,
+                    color: c.verified,
+                  )
+                : null,
+          ),
+          // Counterparty trust signal: a trade viewing a builder sees the
+          // builder's "Verified business" badge (minimized public projection).
+          // Renders nothing when the builder isn't verified.
+          if (!isBuilder) ...[
+            Gap(AppSpacing.sm.h),
+            BuilderVerifiedBadge(userId: app.builderId),
+          ],
+          Gap(12.h),
+          _CardLine(
+            icon: AppIcons.location,
+            text: [app.jobSuburb, app.jobState].whereType<String>().join(', '),
+          ),
+          Gap(12.h),
+          // Pricing: builder budget vs the applicant's quote. Display only —
+          // never ranked, sorted, or compared.
+          _CardLine(
+            icon: AppIcons.wallet,
+            text: _pricingLine(app, isBuilder),
+            numeric: true,
+          ),
+          if (actions.isNotEmpty) ...[
+            Gap(AppSpacing.md.h),
+            Divider(height: 1, color: c.border),
+            Gap(AppSpacing.md.h),
+            ...actions,
+          ],
         ],
       ),
     );
   }
+
+  /// The card's footer actions for [status], already interleaved with their
+  /// 16dp gaps. Empty when this state has nothing to act on — the card then
+  /// drops its divider too.
+  List<Widget> _actions(
+    BuildContext context,
+    JColors c,
+    TextTheme tt,
+    ApplicationStatus status,
+  ) {
+    // ── Builder: triage (shortlist → hire / reject), then message.
+    if (isBuilder && status == ApplicationStatus.pending) {
+      return [
+        Row(
+          children: [
+            Expanded(
+              child: JButton(
+                label: 'Shortlist',
+                size: JButtonSize.compact,
+                onPressed: () =>
+                    onUpdateStatus?.call(ApplicationStatus.shortlisted),
+              ),
+            ),
+            Gap(AppSpacing.sm.w),
+            Expanded(
+              child: JButton(
+                label: 'Reject',
+                variant: JButtonVariant.dangerOutline,
+                size: JButtonSize.compact,
+                onPressed: () =>
+                    onUpdateStatus?.call(ApplicationStatus.rejected),
+              ),
+            ),
+          ],
+        ),
+        Gap(AppSpacing.md.h),
+        _messageButton,
+      ];
+    }
+    if (isBuilder && status == ApplicationStatus.shortlisted) {
+      return [
+        JButton(
+          label: 'Hire this tradie',
+          variant: JButtonVariant.successOutline,
+          size: JButtonSize.compact,
+          onPressed: () => onUpdateStatus?.call(ApplicationStatus.hired),
+        ),
+        Gap(AppSpacing.md.h),
+        _messageButton,
+      ];
+    }
+    // ── Trade: withdraw a pending application.
+    if (!isBuilder && status == ApplicationStatus.pending) {
+      return [
+        Semantics(
+          button: true,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onWithdraw,
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                child: Text(
+                  AppStrings.withdrawFromJob,
+                  style: tt.bodyMedium!.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: c.text3,
+                    decoration: TextDecoration.underline,
+                    decorationColor: c.text3,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    // ── Post-hire: rate the other party (builder ⇄ tradie). One review per
+    // reviewer per job — DB unique constraint; ReviewCta swaps to a read-only
+    // row once submitted.
+    if (status == ApplicationStatus.hired) {
+      return [
+        ReviewCta(
+          jobId: app.jobId,
+          revieweeId: isBuilder ? app.tradeId : app.builderId,
+          revieweeName: isBuilder
+              ? (app.tradeFullName ?? 'this tradie')
+              : (app.builderCompanyName ?? 'this builder'),
+          label: isBuilder ? 'Review tradie' : 'Review builder',
+        ),
+      ];
+    }
+    return const [];
+  }
+
+  Widget get _messageButton => JButton(
+    label: 'Message',
+    icon: AppIcons.send,
+    variant: JButtonVariant.outline,
+    size: JButtonSize.compact,
+    onPressed: onMessage,
+  );
 
   SlidableAction _slideAction({
     required BuildContext context,
@@ -397,15 +344,6 @@ class _AppCard extends StatelessWidget {
       autoClose: true,
     );
   }
-
-  static Color _statusColor(ApplicationStatus s, JColors c) => switch (s) {
-    ApplicationStatus.pending => c.warning,
-    ApplicationStatus.shortlisted => c.available,
-    ApplicationStatus.hired => c.verified,
-    ApplicationStatus.rejected => c.urgent,
-    ApplicationStatus.withdrawn => c.text3,
-    ApplicationStatus.declinedByTrade => c.text3,
-  };
 
   // Chip (bg, text) pairs — high-contrast tinted pairs, never the
   // `colour@15% + same-colour text` pattern (lands below AA, grey chips ~2:1).
@@ -453,5 +391,47 @@ class _AppCard extends StatelessWidget {
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${d.day}/${d.month}/${d.year}';
+  }
+}
+
+/// One metadata line inside [_AppCard]: an 18dp glyph, an 8dp gutter, then the
+/// value — Figma `JobDun-Screens` → Applicants, node 122:5102. [trailing] is
+/// the verified seal that rides after the trade's name on that first line.
+class _CardLine extends StatelessWidget {
+  const _CardLine({
+    required this.icon,
+    required this.text,
+    this.trailing,
+    this.numeric = false,
+  });
+
+  final IconData icon;
+  final String text;
+  final Widget? trailing;
+
+  /// Renders the value on the tabular-figure style so budget/quote columns
+  /// don't jitter between cards.
+  final bool numeric;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    final base = tt.bodyLarge!.copyWith(height: 1.0, color: c.text1);
+    return Row(
+      children: [
+        Icon(icon, size: AppIconSize.inline.r, color: c.text2),
+        Gap(AppSpacing.sm.w),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: numeric ? AppTypography.numeric(base) : base,
+          ),
+        ),
+        if (trailing != null) ...[Gap(AppSpacing.sm.w), trailing!],
+      ],
+    );
   }
 }

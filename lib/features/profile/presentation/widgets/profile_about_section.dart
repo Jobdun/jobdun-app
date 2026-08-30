@@ -40,7 +40,7 @@ class ProfileAboutSection extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FieldLabel(label),
+          FieldLabel.section(label),
           Gap(AppSpacing.sm.h),
           Text(
             copy,
@@ -56,8 +56,10 @@ class ProfileAboutSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FieldLabel(label),
-        Gap(AppSpacing.sm.h),
+        FieldLabel.section(label),
+        // 12dp beneath a section heading — the Figma refresh's rhythm
+        // (node 134:8709).
+        Gap(12.h),
         InkWell(
           onTap: () => context.push('/profile/edit'),
           borderRadius: BorderRadius.circular(AppRadius.card.r),

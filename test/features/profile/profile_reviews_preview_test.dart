@@ -82,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ReviewCard), findsNothing);
-    expect(find.text('REVIEWS'), findsNothing);
+    expect(find.text('Reviews'), findsNothing);
   });
 
   // P6, 2026-08-18 audit: a failed load must render the couldn't-load line
@@ -150,7 +150,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ReviewCard), findsNothing);
-    expect(find.text('REVIEWS'), findsOneWidget);
+    expect(find.text('Reviews'), findsOneWidget);
     expect(
       find.text('No reviews yet — complete a job to earn one.'),
       findsOneWidget,

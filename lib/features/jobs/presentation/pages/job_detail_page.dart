@@ -8,11 +8,10 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/bottom_action_bar.dart';
-import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../../../core/design/widgets/j_button.dart';
+import '../../../../core/design/widgets/j_select_chip.dart';
 import '../../../../core/design/widgets/j_chip.dart';
-import '../../../../core/design/widgets/page_header.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../applications/presentation/pages/job_applicants_args.dart';
 import '../../../applications/presentation/providers/applications_provider.dart';
@@ -109,10 +108,13 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     ),
                   ),
                   Expanded(
-                    child: PageHeader(
-                      eyebrow: 'JOB DETAILS',
-                      title: args.title,
-                      size: PageHeaderSize.sub,
+                    child: Text(
+                      'Job Details',
+                      style: tt.headlineSmall!.copyWith(
+                        fontSize: 24,
+                        height: 1.2,
+                        color: c.text1,
+                      ),
                     ),
                   ),
                   if (args.isUrgent) ...[
@@ -127,14 +129,26 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
             // ── Body
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, AppSpacing.lg.h),
+                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, AppSpacing.lg.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Figma node 134:13360 — the job title carries the page as
+                    // a 32dp headline, which is why the app bar above it says
+                    // only "Job Details".
+                    Text(
+                      args.title,
+                      style: tt.headlineLarge!.copyWith(
+                        height: 1.2,
+                        color: c.text1,
+                      ),
+                    ),
+                    Gap(24.h),
+
                     // ── Key stats chips
                     Wrap(
-                      spacing: AppSpacing.sm.w,
-                      runSpacing: AppSpacing.sm.h,
+                      spacing: 8.w,
+                      runSpacing: 8.h,
                       children: [
                         _InfoChip(icon: AppIcons.wallet, label: args.rate),
                         _InfoChip(
@@ -149,12 +163,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                           ),
                       ],
                     ),
-                    Gap(20.h),
+                    Gap(24.h),
 
                     // ── Location
                     if (args.suburb != null || args.state != null) ...[
-                      FieldLabel('LOCATION'),
-                      Gap(AppSpacing.sm.h),
+                      const _SectionLabel('Location'),
+                      Gap(12.h),
                       Row(
                         children: [
                           Icon(
@@ -175,55 +189,39 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                           ),
                         ],
                       ),
-                      Gap(20.h),
+                      Gap(24.h),
                     ],
 
                     // ── Trade type
-                    FieldLabel('TRADE REQUIRED'),
-                    Gap(AppSpacing.sm.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 6.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: c.action.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                        border: Border.all(
-                          color: c.action.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        args.tradeType,
-                        style: tt.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: c.action,
-                        ),
-                      ),
-                    ),
-                    Gap(20.h),
+                    const _SectionLabel('Trade Required'),
+                    Gap(12.h),
+                    // Was a hand-rolled alpha-tinted container with same-colour
+                    // text — the exact pattern MASTER bans for landing under
+                    // AA. JSelectChip's tint + ink pair clears 4.92:1.
+                    JSelectChip(label: args.tradeType, selected: true),
+                    Gap(24.h),
 
                     // ── Description
-                    FieldLabel('JOB DESCRIPTION'),
-                    Gap(AppSpacing.sm.h),
+                    const _SectionLabel('Job Description'),
+                    Gap(12.h),
                     Text(
                       args.description,
                       style: tt.bodyLarge!.copyWith(
-                        color: c.text2,
-                        height: 1.6,
+                        color: c.text1,
+                        height: 1.4,
                       ),
                     ),
-                    Gap(20.h),
+                    Gap(24.h),
 
                     // ── Posted by
-                    FieldLabel('POSTED BY'),
-                    Gap(AppSpacing.sm.h),
+                    const _SectionLabel('Posted by'),
+                    Gap(12.h),
                     _PostedByCard(args: args, isAuthed: isAuthed),
-                    Gap(20.h),
+                    Gap(24.h),
 
                     // ── Requirements
-                    FieldLabel('REQUIREMENTS'),
-                    Gap(10.h),
+                    const _SectionLabel('Requirements'),
+                    Gap(12.h),
                     _ReqRow(
                       icon: AppIcons.licence,
                       label: 'Current trade licence required',
@@ -257,14 +255,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                   color: c.card,
                   border: Border(top: BorderSide(color: c.border)),
                 ),
-                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
+                padding: EdgeInsets.all(16.r),
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 2,
                       child: JButton(
-                        label: 'VIEW APPLICANTS',
-                        icon: AppIcons.applicantsOutline,
+                        label: 'View applicants',
                         onPressed: () {
                           final jobId = args.id;
                           if (jobId == null) return;
@@ -288,9 +284,8 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     Gap(10.w),
                     Expanded(
                       child: JButton(
-                        label: 'DELETE',
-                        icon: AppIcons.trash,
-                        variant: JButtonVariant.danger,
+                        label: 'Delete job',
+                        variant: JButtonVariant.dangerOutline,
                         onPressed: () => _confirmDelete(context, c, args),
                       ),
                     ),

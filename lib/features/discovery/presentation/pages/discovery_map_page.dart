@@ -6,12 +6,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:jobdun/core/theme/app_icons.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
+import '../../../../core/design/widgets/map/j_basemap.dart';
+import '../../../../core/design/widgets/map/j_basemap_attribution.dart';
 import '../../../../core/design/widgets/map/j_map_carousel.dart';
 import '../../../../core/design/widgets/map/j_map_cluster_bubble.dart';
 import '../../../../core/design/widgets/map/j_map_price_pin.dart';
@@ -168,12 +169,7 @@ class _DiscoveryMapPageState extends ConsumerState<DiscoveryMapPage> {
               ),
             ),
             children: [
-              TileLayer(
-                urlTemplate: DiscoveryMapData.cartoVoyagerUrl,
-                subdomains: DiscoveryMapData.cartoSubdomains,
-                retinaMode: RetinaMode.isHighDensity(context),
-                userAgentPackageName: 'au.com.jobdun.app',
-              ),
+              const JBasemapLayer(),
               CircleLayer(
                 circles: [
                   CircleMarker(
@@ -188,24 +184,9 @@ class _DiscoveryMapPageState extends ConsumerState<DiscoveryMapPage> {
               ),
               MarkerLayer(markers: _markers(pins, center, c)),
               // Lifts above the carousel when cards are showing.
-              Padding(
-                padding: EdgeInsets.only(bottom: pins.isEmpty ? 0 : 112.h),
-                child: RichAttributionWidget(
-                  alignment: AttributionAlignment.bottomLeft,
-                  attributions: [
-                    TextSourceAttribution(
-                      'OpenStreetMap contributors',
-                      onTap: () => launchUrl(
-                        Uri.parse('https://www.openstreetmap.org/copyright'),
-                      ),
-                    ),
-                    TextSourceAttribution(
-                      'CARTO',
-                      onTap: () =>
-                          launchUrl(Uri.parse('https://carto.com/attribution')),
-                    ),
-                  ],
-                ),
+              JBasemapAttribution(
+                basemap: JBasemap.fallback,
+                bottomPadding: pins.isEmpty ? 0 : 112.h,
               ),
             ],
           ),

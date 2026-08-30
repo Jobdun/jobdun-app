@@ -37,18 +37,18 @@ class HomeActionDeck extends StatelessWidget {
         .length;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (next != null) ...[_NextUpCard(app: next), Gap(10.h)],
+          if (next != null) ...[_NextUpCard(app: next), Gap(AppSpacing.md.h)],
           DeckStrip(
             cells: [
-              (value: '$applied', label: 'APPLIED'),
-              (value: '$shortlisted', label: 'SHORTLIST'),
+              (value: '$applied', label: 'Applied'),
+              (value: '$shortlisted', label: 'Shortlist'),
               (
                 value: rating != null ? rating!.toStringAsFixed(1) : '—',
-                label: 'RATING',
+                label: 'Rating',
               ),
             ],
           ),

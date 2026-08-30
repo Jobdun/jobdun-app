@@ -17,7 +17,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
 import '../../../../core/design/widgets/j_switch.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../messaging/presentation/pages/message_thread_page.dart';
 import '../../../messaging/presentation/providers/messaging_provider.dart';
@@ -134,6 +134,7 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final tt = Theme.of(context).textTheme;
     final authState = ref.watch(authControllerProvider);
     final appsState = ref.watch(applicationsControllerProvider);
     final isBuilder = authState.role == UserRole.builder;
@@ -150,16 +151,43 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
+            // ── Header — Figma `JobDun-Screens` → Applicants (node 113:4090)
+            // puts the mark on the 16dp margin and the screen name in Inter
+            // Bold 24, on the page ground: no card, no rule underneath.
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+              ),
+              child: Row(
+                children: [
+                  JobdunLogo(variant: LogoVariant.mark, height: 32.h),
+                  Gap(AppSpacing.sm.w),
+                  Expanded(
+                    child: Text(
+                      isBuilder ? 'Applicants' : 'Track status',
+                      style: tt.titleMedium!.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        color: c.text1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.md.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  PageHeader(title: isBuilder ? 'Applicants' : 'Track status'),
                   if (isBuilder) ...[
-                    Gap(8.h),
+                    Gap(AppSpacing.md.h),
                     _VerifiedOnlyToggle(
                       value: appsState.verifiedOnlyFilter,
                       onChanged: (next) async {
@@ -190,10 +218,11 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                       },
                     ),
                   ],
-                  Gap(12.h),
+                  // Figma stacks the body sections on a 24dp rhythm.
+                  Gap(AppSpacing.lg.h),
                   // ── Tab chips
                   SizedBox(
-                    height: 30.h,
+                    height: 44.h,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: tabs.length,
@@ -209,8 +238,6 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                       },
                     ),
                   ),
-                  Gap(12.h),
-                  Divider(height: 1, color: c.border),
                 ],
               ),
             ),
@@ -244,13 +271,14 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                               child: ListView.separated(
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 padding: EdgeInsets.fromLTRB(
-                                  20.w,
+                                  AppSpacing.md.w,
                                   AppSpacing.md.h,
-                                  20.w,
+                                  AppSpacing.md.w,
                                   AppSpacing.xl.h,
                                 ),
                                 itemCount: 4,
-                                separatorBuilder: (_, _) => Gap(10.h),
+                                separatorBuilder: (_, _) =>
+                                    Gap(AppSpacing.md.h),
                                 itemBuilder: (_, _) => _AppCard(
                                   app: _placeholderApp,
                                   isBuilder: isBuilder,
@@ -272,14 +300,14 @@ class _ApplicationsPageState extends ConsumerState<ApplicationsPage> {
                               animationKey: ValueKey(_tab),
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: EdgeInsets.fromLTRB(
-                                20.w,
+                                AppSpacing.md.w,
                                 AppSpacing.md.h,
-                                20.w,
+                                AppSpacing.md.w,
                                 AppSpacing.xl.h +
                                     MediaQuery.of(context).padding.bottom,
                               ),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, _) => Gap(10.h),
+                              separatorBuilder: (_, _) => Gap(AppSpacing.md.h),
                               itemBuilder: (ctx, i) => _AppCard(
                                 app: filtered[i],
                                 isBuilder: isBuilder,

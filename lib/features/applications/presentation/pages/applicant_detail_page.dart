@@ -8,9 +8,8 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
-import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/section_label.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../messaging/presentation/pages/message_thread_page.dart';
 import '../../../messaging/presentation/providers/messaging_provider.dart';
@@ -30,6 +29,7 @@ import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
 import 'job_applicants_args.dart';
 
+part 'applicant_detail_action_bar.dart';
 part 'applicant_detail_widgets.dart';
 
 /// Fetches a tradie's trade profile for the applicant detail screen. autoDispose
@@ -129,36 +129,61 @@ class ApplicantDetailPage extends ConsumerWidget {
     // the header hides the verification chips entirely until data lands.
     final verificationsKnown = ver.hasValue;
 
+    // Figma `JobDun-Screens` → Applicant (node 124:5916) draws the screen on
+    // the plain base surface; every block on it is a bordered card, so the
+    // ground has to be the surface those borders sit on.
     return Scaffold(
-      backgroundColor: c.background,
+      backgroundColor: c.card,
       body: SafeArea(
         child: Column(
           children: [
-            // ── App bar
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(4.w, AppSpacing.sm.h, 20.w, 12.h),
+            // ── App bar (node 124:5960): caret, then the screen name in Inter
+            // Bold 24. The applicant's own name leads the identity card below,
+            // so the bar names the screen, not the person.
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.md.w,
+                vertical: AppSpacing.sm.h,
+              ),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
+                  Semantics(
+                    button: true,
+                    label: 'Back',
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => context.pop(),
+                      // The caret is ~10dp of ink; the padding is the target.
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm.w,
+                          vertical: 12.h,
+                        ),
+                        child: Icon(
+                          AppIcons.back,
+                          size: AppIconSize.md.r,
+                          color: c.text1,
+                        ),
+                      ),
                     ),
                   ),
+                  Gap(AppSpacing.md.w),
                   Expanded(
-                    child: PageHeader(
-                      eyebrow: 'APPLICANT',
-                      title: app.tradeFullName ?? 'Tradesperson',
-                      size: PageHeaderSize.sub,
+                    child: Text(
+                      'Applicant',
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        color: c.text1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: c.border),
 
             // ── Body
             Expanded(
@@ -172,9 +197,9 @@ class ApplicantDetailPage extends ConsumerWidget {
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(
-                    20.w,
-                    20.h,
-                    20.w,
+                    AppSpacing.md.w,
+                    AppSpacing.md.h,
+                    AppSpacing.md.w,
                     AppSpacing.xl.h,
                   ),
                   child: Column(
@@ -207,22 +232,22 @@ class ApplicantDetailPage extends ConsumerWidget {
                       ],
                       if ((profile?.about ?? '').trim().isNotEmpty) ...[
                         Gap(AppSpacing.lg.h),
-                        const FieldLabel('ABOUT'),
-                        Gap(AppSpacing.sm.h),
+                        const SectionLabel('About'),
+                        Gap(12.h),
                         Text(
                           profile!.about!.trim(),
                           style: Theme.of(context).textTheme.bodyLarge!
-                              .copyWith(color: c.text2, height: 1.55),
+                              .copyWith(color: c.text1, height: 1.4),
                         ),
                       ],
                       if ((app.coverNote ?? '').trim().isNotEmpty) ...[
                         Gap(AppSpacing.lg.h),
-                        const FieldLabel('COVER NOTE'),
-                        Gap(AppSpacing.sm.h),
+                        const SectionLabel('Cover note'),
+                        Gap(12.h),
                         Text(
                           app.coverNote!.trim(),
                           style: Theme.of(context).textTheme.bodyLarge!
-                              .copyWith(color: c.text2, height: 1.55),
+                              .copyWith(color: c.text1, height: 1.4),
                         ),
                       ],
                       // ── Availability — the deferred availability-calendar plugs
@@ -231,25 +256,24 @@ class ApplicantDetailPage extends ConsumerWidget {
                       // TODO(availability-calendar): embed the tradie's
                       // TableCalendar of available days in this section.
                       Gap(AppSpacing.lg.h),
-                      const FieldLabel('AVAILABILITY'),
-                      Gap(AppSpacing.sm.h),
+                      const SectionLabel('Availability'),
+                      Gap(12.h),
                       Row(
                         children: [
                           Icon(
                             AppIcons.calendar,
                             size: AppIconSize.inline.r,
-                            color: c.text3,
+                            color: c.text2,
                           ),
-                          Gap(8.w),
-                          Text(
-                            app.availableFrom != null
-                                ? 'Available from ${StringUtils.fmtDate(app.availableFrom!)}'
-                                : 'Availability not specified',
-                            style: Theme.of(context).textTheme.bodyLarge!
-                                .copyWith(
-                                  color: c.text1,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          Gap(AppSpacing.sm.w),
+                          Expanded(
+                            child: Text(
+                              app.availableFrom != null
+                                  ? 'Available from ${StringUtils.fmtDate(app.availableFrom!)}'
+                                  : 'Availability not specified',
+                              style: Theme.of(context).textTheme.bodyLarge!
+                                  .copyWith(height: 1.0, color: c.text1),
+                            ),
                           ),
                         ],
                       ),
@@ -258,8 +282,8 @@ class ApplicantDetailPage extends ConsumerWidget {
                       if (profile != null &&
                           profile.portfolioUrls.isNotEmpty) ...[
                         Gap(AppSpacing.lg.h),
-                        const FieldLabel('PORTFOLIO'),
-                        Gap(AppSpacing.sm.h),
+                        const SectionLabel('Portfolio'),
+                        Gap(12.h),
                         PortfolioStrip(
                           urls: profile.portfolioUrls,
                           readOnly: true,

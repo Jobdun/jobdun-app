@@ -291,8 +291,12 @@ class _JPlaceFieldState extends ConsumerState<JPlaceField> {
             ] else if (_error != null && _error is! PlacesNoResults) ...[
               Gap(6.h),
               Text(
-                _error!.message,
-                style: tt.bodySmall!.copyWith(color: c.urgent),
+                // `userMessage`, never `message` — the latter carries the
+                // provider name, env-var names and raw HTTP bodies, and a
+                // builder was shown "Set MAPTILER_API_KEY in .env or via
+                // --dart-define" on the location picker.
+                _error!.userMessage,
+                style: tt.bodySmall!.copyWith(color: c.text2),
               ),
             ],
           ],

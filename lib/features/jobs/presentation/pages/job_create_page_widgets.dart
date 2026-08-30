@@ -30,45 +30,23 @@ class _TradePicker extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const FieldLabel('TRADE REQUIRED'),
-            Gap(10.h),
+            Text(
+              'Trade Required',
+              style: tt.bodyMedium!.copyWith(height: 1.0, color: c.text1),
+            ),
+            Gap(12.h),
             Wrap(
-              spacing: AppSpacing.sm.w,
-              runSpacing: AppSpacing.sm.h,
+              spacing: 8.w,
               children: trades.map((t) {
                 final active = field.value == t;
-                return GestureDetector(
+                return JSelectChip(
+                  label: t,
+                  selected: active,
                   onTap: () {
-                    HapticFeedback.selectionClick();
                     final next = active ? null : t;
                     field.didChange(next);
                     onChanged(next);
                   },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 7.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: active ? c.action : c.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                      border: Border.all(
-                        color: active ? c.action : c.border,
-                        width: active ? 1.5 : 1.0,
-                      ),
-                    ),
-                    child: Text(
-                      t,
-                      style: tt.bodyMedium!.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: active
-                            ? Colors
-                                  .white // intentional: white-on-action
-                            : c.text2,
-                      ),
-                    ),
-                  ),
                 );
               }).toList(),
             ),
@@ -100,51 +78,87 @@ class _PricingModePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     return FormBuilderField<PricingType>(
       name: 'pricingMode',
       builder: (field) {
         final selected = field.value ?? PricingType.builderSet;
-        return Row(
-          children: PricingType.values.map((mode) {
-            final active = selected == mode;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  field.didChange(mode);
-                  onChanged(mode);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  margin: EdgeInsets.only(
-                    right: mode != PricingType.values.last
-                        ? AppSpacing.sm.w
-                        : 0,
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 10.h),
-                  decoration: BoxDecoration(
-                    color: active ? c.action : c.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                    border: Border.all(color: active ? c.action : c.border),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    mode.label,
-                    style: tt.bodyMedium!.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: active
-                          ? Colors
-                                .white // intentional: white-on-action
-                          : c.text2,
-                    ),
-                  ),
+        // Figma node 134:13316 — one rounded track, 6dp inset, the active
+        // segment filled orange. Replaces the old pair of separate chips.
+        return Container(
+          padding: EdgeInsets.all(6.r),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+            border: Border.all(color: c.border),
+          ),
+          child: Row(
+            children: PricingType.values.map((mode) {
+              return Expanded(
+                child: _PricingModeSegment(
+                  label: mode.label,
+                  active: selected == mode,
+                  onTap: () {
+                    field.didChange(mode);
+                    onChanged(mode);
+                  },
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         );
       },
+    );
+  }
+}
+
+/// One segment of [_PricingModePicker]. Single caller, directly above.
+class _PricingModeSegment extends StatelessWidget {
+  const _PricingModeSegment({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      selected: active,
+      label: '$label, ${active ? "selected" : "not selected"}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.ease,
+          height: 40.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? c.action : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.btn.r),
+          ),
+          child: Text(
+            label,
+            style: tt.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              // The mock sets the active label white; `onAction` carries it at
+              // 5.26:1 instead (white is 3.34:1 on the orange).
+              color: active ? c.onAction : c.text2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -162,45 +176,20 @@ class _PricingUnitPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
     return FormBuilderField<PricingUnit>(
       name: 'pricingUnit',
       builder: (field) {
         final selected = field.value ?? PricingUnit.hourly;
         return Wrap(
-          spacing: AppSpacing.sm.w,
-          runSpacing: AppSpacing.sm.h,
+          spacing: 8.w,
           children: PricingUnit.values.map((unit) {
-            final active = selected == unit;
-            return GestureDetector(
+            return JSelectChip(
+              label: unit.label,
+              selected: selected == unit,
               onTap: () {
-                HapticFeedback.selectionClick();
                 field.didChange(unit);
                 onChanged(unit);
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
-                decoration: BoxDecoration(
-                  color: active ? c.action : c.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                  border: Border.all(
-                    color: active ? c.action : c.border,
-                    width: active ? 1.5 : 1.0,
-                  ),
-                ),
-                child: Text(
-                  unit.label,
-                  style: tt.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: active
-                        ? Colors
-                              .white // intentional: white-on-action
-                        : c.text2,
-                  ),
-                ),
-              ),
             );
           }).toList(),
         );
@@ -226,43 +215,48 @@ class _UrgentToggle extends StatelessWidget {
       name: 'urgent',
       builder: (field) {
         final isUrgent = field.value ?? false;
+        // Figma node 134:13415 — a plain bordered card, not a tinted one. The
+        // switch carries the state; tinting the card as well double-signalled
+        // it and made the unselected state read as disabled.
         return Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.md.w,
-            vertical: 14.h,
-          ),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            color: isUrgent ? c.actionBg : c.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card.r),
+            color: c.card,
+            borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
             border: Border.all(color: isUrgent ? c.action : c.border),
           ),
           child: Row(
             children: [
               Icon(
                 AppIcons.lightning,
-                size: AppIconSize.md.r,
-                color: isUrgent ? c.action : c.text3,
+                size: 24.r,
+                color: isUrgent ? c.actionInk : c.text2,
               ),
-              Gap(12.w),
+              Gap(8.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mark as urgent',
-                      style: tt.bodyLarge!.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isUrgent ? c.action : c.text1,
+                      'Mark as Urgent',
+                      style: tt.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.0,
+                        color: c.text1,
                       ),
                     ),
-                    Gap(2.h),
+                    Gap(4.h),
                     Text(
-                      'Shown to more tradies, listed at the top',
-                      style: tt.labelMedium!.copyWith(color: c.text3),
+                      'Shown to more tradies, listed at the top.',
+                      style: tt.bodyMedium!.copyWith(
+                        height: 1.4,
+                        color: c.text2,
+                      ),
                     ),
                   ],
                 ),
               ),
+              Gap(8.w),
               JSwitch(
                 value: isUrgent,
                 onChanged: (v) {

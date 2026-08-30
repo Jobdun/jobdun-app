@@ -41,18 +41,18 @@ clears WCAG on its own ground.
 
 | Role | Light | Dark | Usage |
 |------|-------|------|-------|
-| Background | `#F8F8F8` | `#181818` | App background — the Scaffold ground |
-| Surface | `#FFFFFF` | `#2F2F2F` | Cards, bottom sheets, input fills |
-| Surface Raised | `#F2F2F2` | `#474747` | Elevated cards, selected states |
+| Background | `#F8F8F8` | `#0F172A` | App background — the Scaffold ground |
+| Surface | `#FFFFFF` | `#1E293B` | Cards, bottom sheets, input fills |
+| Surface Raised | `#F2F2F2` | `#334155` | Elevated cards, selected states |
 | CTA / Accent | `c.action` | `c.action` | Primary actions, safety orange — dominant |
 | CTA Pressed | `#ED4C01` | `#ED4C01` | Pressed state for CTA |
-| On CTA | `#181818` | `#181818` | Label/icon carried ON the orange fill |
+| On CTA | `#181818` | `#0F172A` | Label/icon carried ON the orange fill |
 | Orange ink | `#CA4101` | `#FD7434` | Orange as *text/icon on the page* |
-| Primary Text | `#111118` | `#F8F8F8` | Headlines, body copy |
-| Secondary Text | `#474747` | `#C8C8C8` | Labels, hints, metadata |
-| Tertiary Text | `#5E5E5E` | `#ADADAD` | Eyebrows, captions, placeholders |
-| Border | `#E4E4E4` | `#474747` | Decorative dividers, card edges |
-| Border Strong | `#8C8C8C` | `#919191` | Interactive control edges (3:1 floor) |
+| Primary Text | `#111118` | `#F1F5F9` | Headlines, body copy |
+| Secondary Text | `#474747` | `#94A3B8` | Labels, hints, metadata |
+| Tertiary Text | `#5E5E5E` | `#8B98AB` | Eyebrows, captions, placeholders |
+| Border | `#E4E4E4` | `#334155` | Decorative dividers, card edges |
+| Border Strong | `#8C8C8C` | `#708096` | Interactive control edges (3:1 floor) |
 | Error | `#EB1414` | `#EF4343` | Errors / destructive only — never decorative |
 | Success | `#178740` | `#459F66` | Confirmations only |
 | Warning | `#8E7201` | `#BBAA67` | Caution / pending / in-review / expiring |

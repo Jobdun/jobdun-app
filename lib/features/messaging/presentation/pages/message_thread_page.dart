@@ -24,6 +24,7 @@ import '../providers/messaging_provider.dart';
 import '../providers/messaging_realtime_provider.dart';
 import '../state/thread_messages.dart';
 
+part 'message_thread_header.dart';
 part 'message_thread_widgets.dart';
 part 'message_thread_status.dart';
 part 'message_thread_actions.dart';
@@ -245,7 +246,6 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final args = widget.args;
     final me = ref.watch(currentUserIdSyncProvider);
     final mState = ref.watch(messagingControllerProvider);
@@ -281,81 +281,23 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
       (_, _) => _scrollToBottom(),
     );
 
+    // Figma `JobDun-Screens` → Messages (node 125:7061) draws the thread on
+    // the plain base surface — that is what gives the incoming bubbles their
+    // `surfaceRaised` step, so the ground is `card`, not `background`.
     return Scaffold(
-      backgroundColor: c.background,
+      backgroundColor: c.card,
       body: SafeArea(
         child: Column(
           children: [
-            // ── Thread header
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(4.w, 8.h, 16.w, 12.h),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
-                    ),
-                  ),
-                  _HeaderAvatar(
-                    initials: initials,
-                    online: otherOnline,
-                    imageUrl: args.otherAvatarUrl,
-                  ),
-                  Gap(10.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          args.otherName,
-                          style: tt.titleMedium!.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // Subtitle priority: typing → online → job title.
-                        if (_otherTyping) ...[
-                          Gap(2.h),
-                          Text(
-                            'typing…',
-                            style: tt.bodySmall!.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: c.action,
-                            ),
-                          ),
-                        ] else if (otherOnline) ...[
-                          Gap(2.h),
-                          Text(
-                            'Active now',
-                            style: tt.bodySmall!.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: c.verified,
-                            ),
-                          ),
-                        ] else if (args.jobTitle != null) ...[
-                          Gap(2.h),
-                          Text(
-                            args.jobTitle!,
-                            style: tt.bodySmall!.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: c.action,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Icon(AppIcons.more, size: AppIconSize.md.r, color: c.text3),
-                ],
-              ),
+            _ThreadHeader(
+              name: args.otherName,
+              jobTitle: args.jobTitle,
+              initials: initials,
+              avatarUrl: args.otherAvatarUrl,
+              online: otherOnline,
+              typing: _otherTyping,
+              onBack: () => context.pop(),
             ),
-            Divider(height: 1, color: c.border),
 
             // ── Messages
             Expanded(
@@ -393,12 +335,6 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                                     prev.createdAt,
                                     entry.createdAt,
                                   );
-                              final groupedWithPrev =
-                                  prev != null &&
-                                  !newDay &&
-                                  prev.senderId == entry.senderId &&
-                                  entry.createdAt.difference(prev.createdAt) <
-                                      groupGap;
                               final lastInGroup =
                                   next == null ||
                                   next.senderId != entry.senderId ||
@@ -414,7 +350,6 @@ class _MessageThreadPageState extends ConsumerState<MessageThreadPage> {
                                 initials: initials,
                                 imageUrl: args.otherAvatarUrl,
                                 showAvatar: !isMine && lastInGroup,
-                                groupedWithPrev: groupedWithPrev,
                                 lastInGroup: lastInGroup,
                                 showSeenAvatar: entry.key == lastSeenKey,
                                 onRetry: entry.clientTag == null

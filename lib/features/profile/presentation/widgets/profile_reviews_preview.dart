@@ -58,7 +58,7 @@ class ProfileReviewsPreview extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const FieldLabel('REVIEWS'),
+          const FieldLabel.section('Reviews'),
           Gap(AppSpacing.sm.h),
           Text(note, style: tt.bodyMedium!.copyWith(color: c.text3)),
         ],
@@ -71,7 +71,7 @@ class ProfileReviewsPreview extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const FieldLabel('REVIEWS'),
+        const FieldLabel.section('Reviews'),
         Gap(AppSpacing.sm.h),
         for (final r in preview) ReviewCard(review: r),
         if (hasMore) _SeeAllRow(count: reviews.length),
@@ -95,7 +95,7 @@ class _PreviewLoadError extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const FieldLabel('REVIEWS'),
+        const FieldLabel.section('Reviews'),
         Row(
           children: [
             Expanded(

@@ -11,7 +11,7 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_staggered_list.dart';
-import '../../../../core/design/widgets/page_header.dart';
+import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/design/widgets/j_bottom_sheet.dart';
 import '../../domain/entities/conversation.dart';
@@ -65,13 +65,33 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header
-            Container(
-              color: c.card,
-              padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 16.h),
+            // ── Header — Figma `JobDun-Screens` → Messages (node 125:6588)
+            // puts the mark on the 16dp margin and the screen name in Inter
+            // Bold 24, sitting on the page ground: no card, no rule under it.
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md.w,
+                AppSpacing.sm.h,
+                AppSpacing.sm.w,
+                AppSpacing.sm.h,
+              ),
               child: Row(
                 children: [
-                  const Expanded(child: PageHeader(title: 'Messages')),
+                  JobdunLogo(variant: LogoVariant.mark, height: 32.h),
+                  Gap(AppSpacing.sm.w),
+                  Expanded(
+                    child: Text(
+                      'Messages',
+                      style: tt.titleMedium!.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                        color: c.text1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Search messages',
                     onPressed: () {
@@ -126,16 +146,13 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                     )
                   : const SizedBox.shrink(),
             ),
-            Divider(height: 1, color: c.border),
             // ── Conversation list
             Expanded(
               child: msgState.isLoading && msgState.conversations.isEmpty
                   ? JSkeletonList(
                       enabled: true,
-                      child: ListView.separated(
+                      child: ListView.builder(
                         itemCount: 6,
-                        separatorBuilder: (_, _) =>
-                            Divider(height: 1, color: c.border),
                         itemBuilder: (_, _) => ConversationRow(
                           initials: 'AB',
                           name: 'Loading conversation placeholder',
@@ -183,8 +200,10 @@ class _MessagesPageState extends ConsumerState<MessagesPage> {
                           : JStaggeredList(
                               physics: const AlwaysScrollableScrollPhysics(),
                               itemCount: msgState.filteredConversations.length,
+                              // Figma draws the inbox without rules — each row
+                              // carries its own 12dp padding instead.
                               separatorBuilder: (_, _) =>
-                                  Divider(height: 1, color: c.border),
+                                  const SizedBox.shrink(),
                               itemBuilder: (ctx, i) {
                                 final conv = msgState.filteredConversations[i];
                                 final unread = conv.unreadCountFor(userId);

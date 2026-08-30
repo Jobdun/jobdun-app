@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../app/theme/app_gradients.dart';
 import '../../../../core/services/auth_analytics.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';

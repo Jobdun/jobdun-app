@@ -174,7 +174,9 @@ void main() {
     expect(find.text('USE MY CURRENT LOCATION'), findsOneWidget);
   });
 
-  testWidgets('surfaces error banner when service throws', (tester) async {
+  testWidgets('surfaces a user-facing banner when the service throws', (
+    tester,
+  ) async {
     final svc = _FakePlacesService(
       autocompleteError: const PlacesNetworkError('Offline.'),
     );
@@ -190,6 +192,46 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Offline.'), findsOneWidget);
+    expect(find.textContaining('type your suburb'), findsOneWidget);
+    // The raw technical detail stays in logs, not on screen.
+    expect(find.textContaining('Offline.'), findsNothing);
+  });
+
+  // A builder was shown "Set MAPTILER_API_KEY in .env or via --dart-define"
+  // on the location picker. Provider names, env-var names and raw HTTP bodies
+  // must never reach a tradie or a builder — render `userMessage`, never
+  // `message`.
+  testWidgets('never leaks provider or env detail to the user', (tester) async {
+    for (final error in const <PlacesException>[
+      PlacesNotConfigured(),
+      PlacesRequestRejected('403 key restricted to bundle', statusCode: 403),
+      PlacesNetworkError('SocketException: failed host lookup'),
+    ]) {
+      await tester.pumpWidget(
+        _wrap(
+          const JPlaceField(name: 'place', label: 'LOC'),
+          service: _FakePlacesService(autocompleteError: error),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'parra');
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      for (final leak in const [
+        'MAPTILER',
+        'dart-define',
+        '.env',
+        'API key',
+        'SocketException',
+        '403',
+      ]) {
+        expect(
+          find.textContaining(leak, skipOffstage: false),
+          findsNothing,
+          reason: '$error leaked "$leak" to the UI',
+        );
+      }
+    }
   });
 }

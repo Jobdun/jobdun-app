@@ -6,7 +6,7 @@
 ///
 /// **Naming rule — read before adding a constant.** Names describe the ACTION
 /// they trigger or the STATE they describe, never the word currently shown.
-/// The label "QUOTE THIS JOB" lives behind [respondToJob], not `quoteButton`,
+/// The label "Quote this job" lives behind [respondToJob], not `quoteButton`,
 /// so the name stays true if the copy changes again (quote → bid → interest).
 ///
 /// **Casing.** Values are stored already-cased for their slot: ALL-CAPS for
@@ -26,7 +26,12 @@ class AppStrings {
   // promise the job before the builder has chosen).
 
   /// Primary CTA on the job-detail screen — opens the quote sheet.
-  static const String respondToJob = 'QUOTE THIS JOB';
+  ///
+  /// Sentence case since 2026-08-29: Job Details was rebuilt on the Figma
+  /// Homepage section, which sets every button in sentence case. The mock only
+  /// draws the builder-owned footer, but leaving the tradie CTA shouting on an
+  /// otherwise sentence-case screen read as an oversight. Single call site.
+  static const String respondToJob = 'Quote this job';
 
   /// Eyebrow above the quote sheet (`PageHeader`).
   static const String respondSheetTitle = 'SEND A QUOTE';

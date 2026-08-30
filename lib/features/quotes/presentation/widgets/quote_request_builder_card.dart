@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../core/design/colors.dart';
-import '../../../../core/design/widgets/field_label.dart';
+import '../../../../core/design/widgets/section_label.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../domain/entities/quote_request.dart';
 import '../providers/quote_requests_provider.dart';
@@ -67,8 +67,7 @@ class _QuoteRequestBuilderCardState
         null => SizedBox(
           width: double.infinity,
           child: JButton(
-            label: 'REQUEST A QUOTE',
-            size: JButtonSize.compact,
+            label: 'Request a quote',
             isLoading: _busy,
             onPressed: _busy ? null : _request,
           ),
@@ -116,21 +115,26 @@ class _QuoteRequestBuilderCardState
       },
     );
 
+    final isCta = async.asData?.value == null && async.hasValue;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const FieldLabel('FORMAL QUOTE'),
-        Gap(AppSpacing.sm.h),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(AppSpacing.md.w),
-          decoration: BoxDecoration(
-            color: c.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card.r),
-            border: Border.all(color: c.border),
+        const SectionLabel('Formal quote'),
+        Gap(12.h),
+        if (isCta)
+          body
+        else
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(AppSpacing.md.w),
+            decoration: BoxDecoration(
+              color: c.card,
+              borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+              border: Border.all(color: c.border),
+            ),
+            child: body,
           ),
-          child: body,
-        ),
       ],
     );
   }

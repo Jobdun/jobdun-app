@@ -4,19 +4,36 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // Credentials are loaded from the .env asset at runtime (dotenv.load in main).
 // --dart-define-from-file=.env still works as a fallback for CI/CD pipelines.
 class AppEnv {
+  /// `dotenv.env` THROWS `NotInitializedError` until `dotenv.load()` has run.
+  /// Production loads it during bootstrap, but a widget test that pumps a
+  /// widget reading any key crashes on a stack trace that says nothing about
+  /// the real cause — which is how the tradie map preview started failing once
+  /// its basemap began asking whether a MapTiler key exists.
+  ///
+  /// Reading through here degrades to the compile-time `--dart-define` value
+  /// (and then to empty), which is exactly what an absent key already means
+  /// everywhere downstream: SSO hides, Sentry no-ops, the basemap falls back to
+  /// OpenStreetMap.
+  static String? _env(String key) {
+    try {
+      return dotenv.env[key];
+    } on Object {
+      return null;
+    }
+  }
+
   const AppEnv._();
 
   static String get supabaseUrl {
     final raw =
-        dotenv.env['SUPABASE_URL'] ??
-        const String.fromEnvironment('SUPABASE_URL');
+        _env('SUPABASE_URL') ?? const String.fromEnvironment('SUPABASE_URL');
     return raw.trim().replaceAll(RegExp(r'/$'), '');
   }
 
   static String get supabaseAnonKey {
     final raw =
-        dotenv.env['SUPABASE_ANON_KEY'] ??
-        dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ??
+        _env('SUPABASE_ANON_KEY') ??
+        _env('SUPABASE_PUBLISHABLE_KEY') ??
         const String.fromEnvironment('SUPABASE_ANON_KEY');
     return raw.trim();
   }
@@ -35,12 +52,12 @@ class AppEnv {
   // Google Sign-In — both values required for the native flow.
   // Get them from console.cloud.google.com → APIs & Credentials → OAuth 2.0 Client IDs.
   static String get googleWebClientId =>
-      (dotenv.env['GOOGLE_WEB_CLIENT_ID'] ??
+      (_env('GOOGLE_WEB_CLIENT_ID') ??
               const String.fromEnvironment('GOOGLE_WEB_CLIENT_ID'))
           .trim();
 
   static String get googleIosClientId =>
-      (dotenv.env['GOOGLE_IOS_CLIENT_ID'] ??
+      (_env('GOOGLE_IOS_CLIENT_ID') ??
               const String.fromEnvironment('GOOGLE_IOS_CLIENT_ID'))
           .trim();
 
@@ -55,7 +72,7 @@ class AppEnv {
   // Absent / empty key is non-fatal: PlacesService surfaces a typed error and
   // JPlaceField falls back to its "Edit manually" legacy 3-field path.
   static String get maptilerApiKey =>
-      (dotenv.env['MAPTILER_API_KEY'] ??
+      (_env('MAPTILER_API_KEY') ??
               const String.fromEnvironment('MAPTILER_API_KEY'))
           .trim();
 
@@ -64,8 +81,7 @@ class AppEnv {
   // Sentry crash reporting. Empty DSN = Sentry no-ops cleanly — dev builds
   // and CI runs without the key still launch normally.
   static String get sentryDsn =>
-      (dotenv.env['SENTRY_DSN'] ?? const String.fromEnvironment('SENTRY_DSN'))
-          .trim();
+      (_env('SENTRY_DSN') ?? const String.fromEnvironment('SENTRY_DSN')).trim();
 
   /// Sentry environment tag, derived from the build mode.
   ///

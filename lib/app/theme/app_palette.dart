@@ -15,14 +15,13 @@ class _Palette {
   _Palette._();
 
   // ── Neutral — pure achromatic grey, no hue bias at any step ───────────────
-  // Replaced the blue-leaning slate ramp when the system went light-first.
+  // The LIGHT theme's ramp. Dark keeps the slate ramp below; only the steps a
+  // theme actually consumes are declared, so the grey steps that used to dress
+  // dark are gone rather than sitting here unread.
   static const white = Color(0xFFFFFFFF); // light surface / card
   static const neutral50 = Color(0xFFF8F8F8); // light background / dark text1
   static const neutral100 = Color(0xFFF2F2F2); // light surfaceRaised
   static const neutral200 = Color(0xFFE4E4E4); // light border
-  static const neutral300 = Color(0xFFC8C8C8); // dark text2
-  static const neutral400 = Color(0xFFADADAD); // dark text3
-  static const neutral500 = Color(0xFF919191); // dark borderStrong (4.25)
   static const neutral550 = Color(
     0xFF8C8C8C,
   ); // CUSTOM — light borderStrong. neutral500 is 2.97 on the light ground,
@@ -31,9 +30,22 @@ class _Palette {
   static const neutral800 = Color(
     0xFF474747,
   ); // light text2 / dark raised + dark border
-  static const neutral900 = Color(0xFF2F2F2F); // dark surface / card
   static const neutral950 = Color(0xFF181818); // dark background / onAction
   static const ink = Color(0xFF111118); // light text1 (Figma text/primary)
+
+  // ── Slate — the blue-leaning dark ground, kept on purpose ─────────────────
+  // The light theme runs on the pure-grey `neutral` ramp above; DARK stays on
+  // this navy-tinted slate. It is not legacy debt — it is the look the app is
+  // known by after hours, and the two themes are designed peers rather than
+  // inversions of one another, so they are free to sit on different ramps.
+  // Every pair below is re-verified by `test/colors_contrast_test.dart`.
+  static const slate100 = Color(0xFFF1F5F9); // dark text1
+  static const slate400 = Color(0xFF94A3B8); // dark text2
+  static const slate450 = Color(0xFF8B98AB); // CUSTOM — dark text3
+  static const slate550 = Color(0xFF708096); // CUSTOM — dark borderStrong
+  static const slate700 = Color(0xFF334155); // dark surfaceRaised + border
+  static const slate800 = Color(0xFF1E293B); // dark surface / card
+  static const slate900 = Color(0xFF0F172A); // dark background / onAction
 
   // ── Brand — the ONE brand colour ──────────────────────────────────────────
   static const brand50 = Color(0xFFFFF6F2); // light actionBg

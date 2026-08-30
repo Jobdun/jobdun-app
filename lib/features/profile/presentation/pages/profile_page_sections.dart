@@ -7,6 +7,12 @@ part of 'profile_page.dart';
 
 // ── Profile Header ─────────────────────────────────────────────────────────────
 
+/// Identity card at the top of the profile (Figma node 134:8681): a 40dp
+/// avatar, the name, the account email, the role chip, and an edit affordance.
+///
+/// Replaces the old full-bleed header — a 96dp avatar with EDIT and SETTINGS
+/// chips stacked beside it — which spent most of the fold on chrome. Settings
+/// moved to the gear in the app bar, where the mock puts it.
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
     required this.initials,
@@ -22,6 +28,10 @@ class _ProfileHeader extends StatelessWidget {
   final String displayName;
   final String email;
   final UserRole? role;
+
+  /// Ring colour on the avatar — the one signal the compact card keeps from
+  /// the old header, because "am I verified" is the question this page exists
+  /// to answer.
   final bool isVerified;
   final String? avatarUrl;
   final bool isUploadingAvatar;
@@ -31,140 +41,138 @@ class _ProfileHeader extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
 
-    return Container(
-      color: c.card,
-      padding: EdgeInsets.fromLTRB(
-        20.w,
-        AppSpacing.lg.h,
-        20.w,
-        AppSpacing.lg.h,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isVerified ? c.action : c.border,
-                width: 2,
-              ),
-            ),
-            child: Stack(
-              children: [
-                avatarUrl != null
-                    ? ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: avatarUrl!,
-                          width: 96.r,
-                          height: 96.r,
-                          fit: BoxFit.cover,
-                          placeholder: (_, _) => AvatarBlock(
-                            initials: initials,
-                            size: 96,
-                            circle: true,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: Semantics(
+        button: true,
+        label: 'Edit profile. $displayName, $email',
+        excludeSemantics: true,
+        child: Material(
+          color: c.card,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+            side: BorderSide(color: c.border),
+          ),
+          child: InkWell(
+            onTap: () => context.push('/profile/edit'),
+            child: Padding(
+              padding: EdgeInsets.all(16.r),
+              child: Row(
+                children: [
+                  _ProfileAvatar(
+                    initials: initials,
+                    avatarUrl: avatarUrl,
+                    isVerified: isVerified,
+                    isUploading: isUploadingAvatar,
+                  ),
+                  Gap(12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          style: tt.titleSmall!.copyWith(
+                            fontWeight: FontWeight.w700,
+                            height: 1.0,
+                            color: c.text1,
                           ),
-                          errorWidget: (_, _, _) => AvatarBlock(
-                            initials: initials,
-                            size: 96,
-                            circle: true,
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )
-                    : AvatarBlock(initials: initials, size: 96, circle: true),
-                if (isUploadingAvatar)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.black45,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(
-                        color:
-                            Colors.white, // intentional: white-on-dark-overlay
-                        strokeWidth: 2,
-                      ),
+                        Gap(4.h),
+                        Text(
+                          email,
+                          style: tt.labelMedium!.copyWith(
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0,
+                            height: 1.4,
+                            color: c.text2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (role != null) ...[
+                          Gap(4.h),
+                          // JChip already carries onAction on the orange fill —
+                          // the mock's white label is 3.34:1 and would fail.
+                          JChip(label: role!.label),
+                        ],
+                      ],
                     ),
                   ),
-              ],
-            ),
-          ),
-          Gap(AppSpacing.md.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: tt.titleLarge!.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: c.text1,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.push('/profile/edit'),
-                      child: Container(
-                        height: 36.h,
-                        padding: EdgeInsets.symmetric(horizontal: 12.w),
-                        decoration: BoxDecoration(
-                          color: c.surfaceRaised,
-                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              AppIcons.edit,
-                              size: AppIconSize.inline.r,
-                              color: c.text1,
-                            ),
-                            Gap(6.w),
-                            Text(
-                              'EDIT',
-                              style: tt.labelSmall!.copyWith(
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                                color: c.text1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Gap(8.w),
-                    GestureDetector(
-                      onTap: () => context.push('/settings'),
-                      child: Container(
-                        height: 36.h,
-                        width: 36.h,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: c.surfaceRaised,
-                          borderRadius: BorderRadius.circular(AppRadius.chip.r),
-                        ),
-                        child: Icon(
-                          AppIcons.settings,
-                          size: AppIconSize.inline.r,
-                          color: c.text1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Gap(4.h),
-                Text(email, style: tt.bodyMedium!.copyWith(color: c.text3)),
-                if (role != null) ...[
-                  Gap(AppSpacing.sm.h),
-                  JChip(label: role!.label),
+                  Gap(8.w),
+                  Icon(AppIcons.edit, size: 24.r, color: c.text1),
                 ],
-              ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 40dp avatar with the verification ring. Single caller, directly above.
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.initials,
+    required this.avatarUrl,
+    required this.isVerified,
+    required this.isUploading,
+  });
+
+  final String initials;
+  final String? avatarUrl;
+  final bool isVerified;
+  final bool isUploading;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final url = avatarUrl;
+    final fallback = AvatarBlock(initials: initials, size: 40, circle: true);
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: isVerified ? c.action : c.border, width: 2),
+      ),
+      child: Stack(
+        children: [
+          if (url != null)
+            ClipOval(
+              child: CachedNetworkImage(
+                imageUrl: url,
+                width: 40.r,
+                height: 40.r,
+                fit: BoxFit.cover,
+                placeholder: (_, _) => fallback,
+                errorWidget: (_, _, _) => fallback,
+              ),
+            )
+          else
+            fallback,
+          if (isUploading)
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  color: Colors.black45,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: SizedBox.square(
+                    dimension: 16.r,
+                    child: CircularProgressIndicator(
+                      color: c.background,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -240,31 +248,28 @@ class _BuilderProfile extends ConsumerWidget {
     void editProfile() => context.push('/profile/edit');
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              JStatBadge(
-                value: jobsPosted ?? '—',
-                label: 'Jobs posted',
-                icon: AppIcons.briefcase,
-                iconColor: c.action,
-              ),
-              Gap(AppSpacing.sm.w),
-              JStatBadge(
+          // Figma node 134:8697 — one bordered card, three columns split by
+          // hairlines, each figure in its own semantic colour. Replaces the
+          // three separate icon badges.
+          JStatsRow(
+            stats: [
+              JStat(value: jobsPosted ?? '—', label: 'Jobs Posted'),
+              JStat(
                 value: (p?.hireCount ?? 0).toString(),
                 label: 'Hires',
-                icon: AppIcons.user,
-                iconColor: c.verified,
+                valueColor: c.verified,
               ),
-              Gap(AppSpacing.sm.w),
-              JStatBadge(
+              // The mock reads "0"; an unverified builder has no ABR
+              // registration date, so this stays an em dash. A real-looking 0
+              // would claim the business is brand new (P6, 2026-08-18 audit).
+              JStat(
                 value: sinceYear,
-                label: 'In business',
-                icon: AppIcons.calendar,
-                iconColor: c.star,
+                label: 'In-business',
+                valueColor: c.warning,
               ),
             ],
           ),
@@ -300,12 +305,12 @@ class _BuilderProfile extends ConsumerWidget {
           // builder discovers the field. (addPrompt = owner mode.)
           ProfileAboutSection(
             about: p?.about,
-            label: 'ABOUT THE COMPANY',
+            label: 'About the company',
             addPrompt: 'Add a company description so tradies trust you',
           ),
           Gap(AppSpacing.md.h),
-          JCard(
-            title: 'COMPANY DETAILS',
+          _ProfileDetailsCard(
+            title: 'Company Details',
             children: [
               _InfoRow(
                 icon: AppIcons.building,

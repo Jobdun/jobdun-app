@@ -37,25 +37,13 @@ class _RoleStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Brand lockup (compact horizontal) ──────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              JobdunLogo(variant: LogoVariant.mark, height: 32.r),
-              Gap(10.w),
-              ShaderMask(
-                shaderCallback: (bounds) =>
-                    AppGradients.brandFlame.createShader(bounds),
-                child: Text(
-                  'JOBDUN',
-                  style: tt.displaySmall!.copyWith(
-                    color:
-                        Colors.white, // intentional: ShaderMask requires white
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
+          // ── Brand lockup ──────────────────────────────────────────────────
+          // The real lockup asset, the same one the splash settles on — not a
+          // hand-set 'JOBDUN' under a gradient ShaderMask. Type-as-logo drifts
+          // from the mark the moment either changes, and MASTER bans gradients
+          // outright, so the wordmark ships as artwork here like everywhere.
+          Center(
+            child: JobdunLogo(variant: LogoVariant.full, height: 40.r),
           ),
 
           Gap(AppSpacing.xl.h),

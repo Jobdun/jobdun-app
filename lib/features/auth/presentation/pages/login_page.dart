@@ -12,7 +12,6 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/jobdun_logo.dart';
 import '../../../../core/widgets/inputs/j_text_field.dart';
 import '../../../../core/widgets/status_banner.dart';
-import '../../../legal/presentation/widgets/legal_link_text.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/auth_header.dart';
 import '../widgets/auth_sso_row.dart';
@@ -144,11 +143,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             duration: AppMotion.fast,
             child: Column(
               children: [
+                // No title. The mark, the Email/Password labels and the "Log
+                // in" CTA all already say what this screen is; a fourth
+                // "Login" in the corner is only noise. The bar stays for the
+                // caret and to hold the top margin.
                 AuthHeader(
-                  title: 'Login',
-                  // Only when there is something to pop. Reached from the FTUE
-                  // via context.go the stack is empty, and a caret that pops
-                  // nothing is worse than no caret.
+                  // Caret only when there is something to pop. Reached from
+                  // the FTUE via context.go the stack is empty, and a caret
+                  // that pops nothing is worse than no caret.
                   onBack: context.canPop() ? context.pop : null,
                 ),
                 Expanded(
@@ -172,9 +174,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               children: [
                                 Gap(AppSpacing.md.h),
 
-                                // The mark alone, not the full lockup — the
-                                // header already names the screen, so a
-                                // wordmark here would say it twice.
+                                // The mark alone, not the full lockup — this
+                                // is the brand stamp on the auth wall, not a
+                                // masthead, and the wordmark at this size
+                                // would out-shout the fields it sits above.
                                 Center(
                                   child: JobdunLogo(
                                     variant: LogoVariant.mark,
@@ -299,10 +302,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 ),
 
                                 const Spacer(),
-                                Gap(AppSpacing.lg.h),
-
-                                const LegalLinkText(minimal: true),
-
                                 Gap(AppSpacing.md.h),
                               ],
                             ),

@@ -18,41 +18,42 @@ class _ThreadComposer extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
+    // Figma `JobDun-Screens` → Messages (node 129:7331): a 16dp bar on the
+    // base surface — a bare 32dp attach glyph, the pill field, a bare 32dp
+    // send glyph. No rule above it; the field's own edge does the separating.
     return Container(
-      decoration: BoxDecoration(
-        color: c.card,
-        border: Border(top: BorderSide(color: c.border)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.md.w,
-        10.h,
-        AppSpacing.md.w,
-        10.h,
-      ),
+      color: c.card,
+      padding: EdgeInsets.all(AppSpacing.md.r),
       child: Row(
         children: [
           // Attach a photo.
-          GestureDetector(
-            key: const Key('thread-attach'),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onAttach();
-            },
-            child: Padding(
-              padding: EdgeInsets.only(right: AppSpacing.sm.w),
+          Semantics(
+            button: true,
+            label: 'Attach a photo',
+            child: GestureDetector(
+              key: const Key('thread-attach'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onAttach();
+              },
               child: Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 28.r,
+                AppIcons.image,
+                size: AppIconSize.feature.r,
                 color: c.text2,
               ),
             ),
           ),
+          Gap(AppSpacing.sm.w),
           Expanded(
             child: Container(
+              constraints: BoxConstraints(minHeight: 48.h),
               decoration: BoxDecoration(
-                color: c.surface,
-                borderRadius: BorderRadius.circular(24.r),
-                border: Border.all(color: c.border),
+                color: c.card,
+                borderRadius: BorderRadius.circular(AppRadius.btn.r),
+                // borderStrong, not border: this is an interactive control
+                // edge and owes the 3:1 floor (MASTER → Accessibility).
+                border: Border.all(color: c.borderStrong),
               ),
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.md.w,
@@ -74,7 +75,11 @@ class _ThreadComposer extends StatelessWidget {
                 textCapitalization: TextCapitalization.sentences,
                 onSubmitted: (_) => onSend(),
                 decoration: InputDecoration(
-                  hintText: 'Message…',
+                  // Figma tints the placeholder at `text/subtle`; that lands
+                  // at 2.85:1, and a placeholder is content — so it reads at
+                  // `text3` instead.
+                  hintText: 'Message',
+                  hintStyle: tt.bodyLarge!.copyWith(color: c.text3),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -85,27 +90,25 @@ class _ThreadComposer extends StatelessWidget {
               ),
             ),
           ),
-          Gap(10.w),
+          Gap(AppSpacing.sm.w),
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
             builder: (context, value, _) {
               final canSend = value.text.trim().isNotEmpty;
-              return GestureDetector(
-                key: const Key('thread-send'),
-                onTap: canSend ? onSend : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 42.r,
-                  height: 42.r,
-                  decoration: BoxDecoration(
-                    color: canSend ? c.action : c.surfaceRaised,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
+              return Semantics(
+                button: true,
+                enabled: canSend,
+                label: 'Send message',
+                child: GestureDetector(
+                  key: const Key('thread-send'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: canSend ? onSend : null,
+                  // A bare plane, per Figma — the orange is the ink here, so
+                  // it reads through `actionInk`, not the fill token.
                   child: Icon(
                     AppIcons.send,
-                    size: AppIconSize.md.r,
-                    color: canSend ? c.onAction : c.text3,
+                    size: AppIconSize.feature.r,
+                    color: canSend ? c.actionInk : c.text3,
                   ),
                 ),
               );

@@ -32,12 +32,9 @@ class DiscoveryMapData {
   /// Sydney CBD — last-resort centre when no search origin is set.
   static const LatLng sydney = LatLng(-33.8688, 151.2093);
 
-  // Carto "voyager" raster basemap — free, key-less, colourful so the orange
-  // pins pop. Shared by the bento preview and the full-screen map. Attribution
-  // is mandatory (rendered via RichAttributionWidget on the full map).
-  static const String cartoVoyagerUrl =
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-  static const List<String> cartoSubdomains = ['a', 'b', 'c', 'd'];
+  // Basemap tiles live in JBasemap (core/design/widgets/map/j_basemap.dart) —
+  // shared with the trades-side jobs map. The Carto constants that used to sit
+  // here served watermarked "API KEY REQUIRED" tiles; see JBasemap's header.
 
   /// Plottable pins — only results whose trade has BOTH coordinates.
   static List<TradiePin> pins(List<TradeSearchResult> results) => [

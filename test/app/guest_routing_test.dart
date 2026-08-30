@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 
+import 'package:jobdun/app/constants/app_strings.dart';
 import 'package:jobdun/app/router/app_router.dart';
 import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/core/errors/failures.dart';
@@ -232,8 +233,10 @@ void main() {
 
     expect(pathOf(container), '/jobs/test-job-1');
     // Loader fetched via the (fake) repo and rendered the real detail page.
-    expect(find.text('3-PHASE SWITCHBOARD INSTALL'), findsOneWidget);
-    expect(find.text('QUOTE THIS JOB'), findsOneWidget);
+    // Job Details renders the title verbatim now (Figma node 134:13360 sets it
+    // as a 32dp headline). The old PageHeader uppercased it.
+    expect(find.text('3-phase switchboard install'), findsOneWidget);
+    expect(find.text(AppStrings.respondToJob), findsOneWidget);
   });
 
   testWidgets('account-based routes still bounce guests to /login', (

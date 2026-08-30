@@ -10,7 +10,6 @@ class _MessageBubble extends StatelessWidget {
     required this.isMine,
     required this.initials,
     required this.showAvatar,
-    required this.groupedWithPrev,
     required this.lastInGroup,
     required this.showSeenAvatar,
     this.imageUrl,
@@ -25,10 +24,8 @@ class _MessageBubble extends StatelessWidget {
   // Incoming avatar renders only on the last bubble of a run; a spacer keeps
   // earlier bubbles in the group aligned with it.
   final bool showAvatar;
-  // Continuation of the same sender within the group window → tighter corner
-  // on the top of the spine side; bigger gap + timestamp only when the group
-  // ends (lastInGroup).
-  final bool groupedWithPrev;
+  // Last bubble of a same-sender run: closes the group with a 16dp gap and
+  // the centred clock. Continuations stack tight (2dp) beneath it.
   final bool lastInGroup;
   // True only on the last of my messages the counterparty has read → render
   // their mini-avatar beneath it ("Seen").
@@ -42,162 +39,170 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
-    final round = Radius.circular(16.r);
-    final tight = Radius.circular(5.r);
+    // Figma `JobDun-Screens` → Messages (node 129:7423) draws every bubble on
+    // one 16dp radius — no tightened corner on the spine side.
+    final radius = BorderRadius.circular(AppRadius.cardLg.r);
     final isFailed = entry.status == MessageStatus.failed;
     final isDeleted = entry.isDeleted;
     // Dim my own bubble while the insert is still in flight.
     final mineColor = entry.status == MessageStatus.sending
         ? c.action.withValues(alpha: 0.6)
         : c.action;
-    final bubbleColor = isDeleted ? c.surface : (isMine ? mineColor : c.card);
+    final bubbleColor = isDeleted
+        ? c.surface
+        : (isMine ? mineColor : c.surfaceRaised);
+    // Figma fixes the bubble at 294 of a 393dp frame — a ceiling, not a fill,
+    // so a two-word reply stays short and a long one wraps well before the
+    // opposite margin.
+    final maxBubbleWidth = MediaQuery.of(context).size.width * 0.75;
+    // The clock only earns its line when the group actually closes; a failed
+    // outbound message shows the retry affordance there instead.
+    final showClock = !isDeleted && lastInGroup && !(isMine && isFailed);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: lastInGroup ? 10.h : 2.h),
-      child: Row(
-        mainAxisAlignment: isMine
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      padding: EdgeInsets.only(bottom: lastInGroup ? AppSpacing.md.h : 2.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!isMine)
-            showAvatar
-                ? Padding(
-                    padding: EdgeInsets.only(right: AppSpacing.sm.w),
-                    child: AvatarBlock(
-                      initials: initials,
-                      imageUrl: imageUrl,
-                      size: 28,
-                      circle: true,
-                    ),
-                  )
-                : Gap(28.r + AppSpacing.sm.w),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isMine
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onLongPress: onLongPress,
-                  child: entry.hasLocalImage && !isDeleted
-                      ? _PendingChatImage(
-                          localPath: entry.localImagePath!,
-                          failed: entry.status == MessageStatus.failed,
-                          onRetry: onRetry,
-                        )
-                      : entry.hasImage && !isDeleted
-                      ? _ChatImage(
-                          path: entry.attachmentPath!,
-                          width: entry.attachmentW,
-                          height: entry.attachmentH,
-                        )
-                      : Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 10.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bubbleColor,
-                            borderRadius: BorderRadius.only(
-                              topLeft: isMine || !groupedWithPrev
-                                  ? round
-                                  : tight,
-                              topRight: !isMine || !groupedWithPrev
-                                  ? round
-                                  : tight,
-                              bottomLeft: isMine || lastInGroup ? round : tight,
-                              bottomRight: !isMine || lastInGroup
-                                  ? round
-                                  : tight,
-                            ),
-                            border: (isMine && !isDeleted)
-                                ? null
-                                : Border.all(color: c.border),
-                          ),
-                          child: isDeleted
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      AppIcons.trash,
-                                      size: 14.r,
-                                      color: c.text3,
-                                    ),
-                                    Gap(6.w),
-                                    Text(
-                                      'Message deleted',
-                                      style: tt.bodyMedium!.copyWith(
-                                        color: c.text3,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Text(
-                                  entry.body,
-                                  style: tt.bodyLarge!.copyWith(
-                                    fontWeight: FontWeight.w400,
-                                    color: isMine
-                                        ? Colors
-                                              .white // intentional
-                                        : c.text1,
-                                    height: 1.45,
-                                  ),
+          Row(
+            mainAxisAlignment: isMine
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isMine)
+                showAvatar
+                    ? Padding(
+                        padding: EdgeInsets.only(right: 10.w),
+                        child: AvatarBlock(
+                          initials: initials,
+                          imageUrl: imageUrl,
+                          size: 32,
+                          circle: true,
+                        ),
+                      )
+                    : Gap(32.r + 10.w),
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+                  child: Column(
+                    crossAxisAlignment: isMine
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        onLongPress: onLongPress,
+                        child: entry.hasLocalImage && !isDeleted
+                            ? _PendingChatImage(
+                                localPath: entry.localImagePath!,
+                                failed: entry.status == MessageStatus.failed,
+                                onRetry: onRetry,
+                              )
+                            : entry.hasImage && !isDeleted
+                            ? _ChatImage(
+                                path: entry.attachmentPath!,
+                                width: entry.attachmentW,
+                                height: entry.attachmentH,
+                              )
+                            : Container(
+                                padding: EdgeInsets.all(AppSpacing.md.r),
+                                decoration: BoxDecoration(
+                                  color: bubbleColor,
+                                  borderRadius: radius,
+                                  // Only the tombstone needs an edge — the
+                                  // incoming bubble is defined by its own
+                                  // `surfaceRaised` step off the ground.
+                                  border: isDeleted
+                                      ? Border.all(color: c.border)
+                                      : null,
                                 ),
-                        ),
-                ),
-                if (!isDeleted) ...[
-                  // Failed (mine) → retry line; otherwise timestamp (+ "edited"
-                  // marker) plus a status tick on my last-in-group message.
-                  // Image uploads carry their own retry overlay, so skip the
-                  // text retry line for them.
-                  if (isMine && isFailed && !entry.hasLocalImage)
-                    _RetryLine(onRetry: onRetry)
-                  else if (lastInGroup) ...[
-                    Gap(4.h),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _fmtTime(entry.createdAt),
-                          style: tt.labelSmall!.copyWith(color: c.text3),
-                        ),
-                        if (entry.isEdited) ...[
-                          Gap(4.w),
-                          Text(
-                            'edited',
-                            style: tt.labelSmall!.copyWith(
-                              color: c.text3,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
+                                child: isDeleted
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            AppIcons.trash,
+                                            size: 14.r,
+                                            color: c.text3,
+                                          ),
+                                          Gap(6.w),
+                                          Text(
+                                            'Message deleted',
+                                            style: tt.bodyMedium!.copyWith(
+                                              color: c.text3,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Text(
+                                        entry.body,
+                                        style: tt.bodyLarge!.copyWith(
+                                          fontWeight: FontWeight.w400,
+                                          color: isMine
+                                              ? Colors
+                                                    .white // intentional
+                                              : c.text2,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                              ),
+                      ),
+                      if (!isDeleted) ...[
+                        // Failed (mine) → retry line. Image uploads carry
+                        // their own retry overlay, so skip it for them.
+                        if (isMine && isFailed && !entry.hasLocalImage)
+                          _RetryLine(onRetry: onRetry),
+                        if (entry.reactions.isNotEmpty) ...[
+                          Gap(3.h),
+                          _ReactionChips(reactions: entry.reactions),
                         ],
-                        if (isMine) ...[
-                          Gap(4.w),
-                          _StatusTick(status: entry.status),
+                        if (isMine && showSeenAvatar) ...[
+                          Gap(3.h),
+                          AvatarBlock(
+                            initials: initials,
+                            imageUrl: imageUrl,
+                            size: 14,
+                            circle: true,
+                          ),
                         ],
                       ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Figma node 129:7515: the clock is a centred marker between groups,
+          // not a caption tucked under one bubble.
+          if (showClock) ...[
+            Gap(AppSpacing.md.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _fmtTime(entry.createdAt),
+                  style: tt.bodySmall!.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                    height: 1.0,
+                    color: c.text3,
+                  ),
+                ),
+                if (entry.isEdited) ...[
+                  Gap(4.w),
+                  Text(
+                    'edited',
+                    style: tt.labelSmall!.copyWith(
+                      color: c.text3,
+                      fontStyle: FontStyle.italic,
                     ),
-                  ],
-                  if (entry.reactions.isNotEmpty) ...[
-                    Gap(3.h),
-                    _ReactionChips(reactions: entry.reactions),
-                  ],
-                  if (isMine && showSeenAvatar) ...[
-                    Gap(3.h),
-                    AvatarBlock(
-                      initials: initials,
-                      imageUrl: imageUrl,
-                      size: 14,
-                      circle: true,
-                    ),
-                  ],
+                  ),
                 ],
+                if (isMine) ...[Gap(4.w), _StatusTick(status: entry.status)],
               ],
             ),
-          ),
-          if (isMine) Gap(AppSpacing.sm.w),
+          ],
         ],
       ),
     );
@@ -355,53 +360,10 @@ class _SkeletonBubble extends StatelessWidget {
       child: Container(
         height: 40.h,
         decoration: BoxDecoration(
-          color: c.card,
-          borderRadius: BorderRadius.circular(16.r),
+          color: c.surfaceRaised,
+          borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
         ),
       ),
-    );
-  }
-}
-
-// Header avatar with a green presence dot when the counterparty is online.
-class _HeaderAvatar extends StatelessWidget {
-  const _HeaderAvatar({
-    required this.initials,
-    required this.online,
-    this.imageUrl,
-  });
-
-  final String initials;
-  final bool online;
-  final String? imageUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        AvatarBlock(
-          initials: initials,
-          imageUrl: imageUrl,
-          size: 38,
-          circle: true,
-        ),
-        if (online)
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 11.r,
-              height: 11.r,
-              decoration: BoxDecoration(
-                color: c.verified,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.card, width: 2),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
@@ -433,14 +395,8 @@ class _TypingBubbleState extends State<_TypingBubble>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: c.card,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(16.r),
-          topRight: Radius.circular(16.r),
-          bottomLeft: Radius.circular(4.r),
-          bottomRight: Radius.circular(16.r),
-        ),
-        border: Border.all(color: c.border),
+        color: c.surfaceRaised,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
       ),
       child: AnimatedBuilder(
         animation: _ctrl,

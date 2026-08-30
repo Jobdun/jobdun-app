@@ -200,4 +200,44 @@ void main() {
     expect(find.text('CONTINUE'), findsOneWidget);
     expect(find.text('Add a profile photo?'), findsNothing);
   });
+
+  // The terms disclosure lives HERE, not on /login: this sheet is the one
+  // surface every signup passes through, and SSO users (Google / Apple /
+  // phone) never see the create-account form's explicit checkbox. If this
+  // fails, an SSO-created account has no consent surface anywhere.
+  testWidgets('shows the terms + privacy disclosure on every step', (
+    tester,
+  ) async {
+    await pumpSheet(
+      tester,
+      auth: const AuthState(
+        isAuthenticated: true,
+        isRoleLoaded: true,
+        ssoNameProvider: true,
+      ),
+      profile: const ProfileState(profile: UserProfile(id: 'u1')),
+    );
+
+    Finder disclosure() => find.textContaining(
+      'By continuing, you agree to our',
+      findRichText: true,
+    );
+
+    // Visible on the first step…
+    expect(disclosure(), findsOneWidget);
+    expect(
+      find.textContaining('Terms of Service', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Privacy Policy', findRichText: true),
+      findsOneWidget,
+    );
+
+    // …and still there once the user advances.
+    await tester.tap(find.text("I'M LOOKING FOR WORK"));
+    await tester.pumpAndSettle();
+    drainKnownOverflow(tester);
+    expect(disclosure(), findsOneWidget);
+  });
 }

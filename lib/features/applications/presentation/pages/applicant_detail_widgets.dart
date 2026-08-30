@@ -39,104 +39,112 @@ class _DetailHeader extends StatelessWidget {
     final rating = profile?.averageRating;
     final ratingCount = profile?.ratingCount ?? 0;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Hero(
-          tag: 'applicant-avatar:${app.id}',
-          child: AvatarBlock(
-            initials: _initials(app.tradeFullName),
-            imageUrl: app.tradeAvatarUrl,
-            size: 56,
-            circle: true,
+    // 2026-08-18 audit (#6): render the verification chips only once the load
+    // has produced data — loading/error is UNKNOWN, never "not verified".
+    final chips = <Widget>[
+      if (verificationsKnown) ...[
+        if (licenceVerif != null)
+          TrustChip(
+            label: 'Licence',
+            state: TrustChipState.verified,
+            onTap: () => _openLicenceDetail(context, licenceVerif!),
           ),
+        if (abnVerif != null)
+          TrustChip(
+            label: 'ABN',
+            state: TrustChipState.verified,
+            onTap: () => _openAbnDetail(context, abnVerif!),
+          ),
+        if (licenceVerif == null &&
+            abnVerif == null &&
+            app.tradeIsVerified == true)
+          // Legacy flag only — no row to show provenance from.
+          const TrustChip(label: 'Verified', state: TrustChipState.verified),
+      ],
+      // Approved White Card / public liability — counterparty trust signals
+      // from the supplementary-credentials projection.
+      TradeCredentialBadges(userId: app.tradeId),
+      if (rating != null && ratingCount > 0)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(AppIcons.starFilled, size: AppIconSize.micro.r, color: c.star),
+            Gap(3.w),
+            Text(
+              '${rating.toStringAsFixed(1)} ($ratingCount)',
+              style: AppTypography.numeric(
+                tt.bodySmall!,
+              ).copyWith(fontWeight: FontWeight.w700, color: c.text1),
+            ),
+          ],
         ),
-        Gap(14.w),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    ];
+
+    // Figma `JobDun-Screens` → Applicant (node 124:5938) opens on a bordered
+    // identity card: 40dp avatar, name, trade. The trust chips are ours — they
+    // hang under that row rather than displacing it.
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.md.r),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              // Name — the primary identity, prominent. (The app bar shows it
-              // too, but the header body must lead with WHO this is.)
-              Text(
-                app.tradeFullName ?? 'Tradesperson',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: tt.titleLarge!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: c.text1,
-                  height: 1.1,
+              Hero(
+                tag: 'applicant-avatar:${app.id}',
+                child: AvatarBlock(
+                  initials: _initials(app.tradeFullName),
+                  imageUrl: app.tradeAvatarUrl,
+                  size: 40,
+                  circle: true,
                 ),
               ),
-              Gap(2.h),
-              Text(
-                loc.isEmpty ? trade : '$trade · $loc',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.bodyMedium!.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: c.text2,
-                ),
-              ),
-              Gap(8.h),
-              Wrap(
-                spacing: 6.w,
-                runSpacing: 6.h,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  // 2026-08-18 audit (#6): render the verification chips only
-                  // once the load has produced data — loading/error is
-                  // UNKNOWN, never "not verified".
-                  if (verificationsKnown) ...[
-                    if (licenceVerif != null)
-                      TrustChip(
-                        label: 'Licence',
-                        state: TrustChipState.verified,
-                        onTap: () => _openLicenceDetail(context, licenceVerif!),
+              Gap(AppSpacing.sm.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      app.tradeFullName ?? 'Tradesperson',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.0,
+                        color: c.text1,
                       ),
-                    if (abnVerif != null)
-                      TrustChip(
-                        label: 'ABN',
-                        state: TrustChipState.verified,
-                        onTap: () => _openAbnDetail(context, abnVerif!),
-                      ),
-                    if (licenceVerif == null &&
-                        abnVerif == null &&
-                        app.tradeIsVerified == true)
-                      // Legacy flag only — no row to show provenance from.
-                      const TrustChip(
-                        label: 'Verified',
-                        state: TrustChipState.verified,
-                      ),
-                  ],
-                  // Approved White Card / public liability — counterparty trust
-                  // signals from the supplementary-credentials projection.
-                  TradeCredentialBadges(userId: app.tradeId),
-                  if (rating != null && ratingCount > 0)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          AppIcons.starFilled,
-                          size: AppIconSize.micro.r,
-                          color: c.star,
-                        ),
-                        Gap(3.w),
-                        Text(
-                          '${rating.toStringAsFixed(1)} ($ratingCount)',
-                          style: AppTypography.numeric(tt.bodySmall!).copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: c.text1,
-                          ),
-                        ),
-                      ],
                     ),
-                ],
+                    Gap(AppSpacing.xs.h),
+                    Text(
+                      loc.isEmpty ? trade : '$trade · $loc',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.bodySmall!.copyWith(
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0,
+                        height: 1.4,
+                        color: c.text3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+          Gap(12.h),
+          Wrap(
+            spacing: 6.w,
+            runSpacing: 6.h,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: chips,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -195,7 +203,11 @@ void _openAbnDetail(BuildContext context, Verification v) {
   );
 }
 
-// "Their quote · this job" vs the builder's budget.
+// Their quote for THIS job, beside the budget the builder set for it.
+//
+// Figma `JobDun-Screens` → Applicant (node 124:6143) puts the two figures
+// side by side in a tinted orange card, split by a hairline: the comparison IS
+// the content, so neither number gets to be a caption on the other.
 class _QuoteBlock extends StatelessWidget {
   const _QuoteBlock({required this.app});
 
@@ -204,53 +216,97 @@ class _QuoteBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final suffix = _unitSuffix(app.jobPricingUnit);
     final quote = app.quoteAmount != null
         ? '\$${app.quoteAmount!.toStringAsFixed(0)}$suffix'
         : '—';
     final String budgetLabel;
+    final String budgetValue;
     if (app.jobPricingType == 'request_quote') {
-      budgetLabel = "You asked\nfor quotes";
+      budgetLabel = 'Your budget';
+      budgetValue = 'Quotes asked';
     } else if (app.jobBudgetAmount != null) {
-      budgetLabel =
-          'vs your\n\$${app.jobBudgetAmount!.toStringAsFixed(0)}$suffix budget';
+      budgetLabel = 'Your budget';
+      budgetValue = '\$${app.jobBudgetAmount!.toStringAsFixed(0)}$suffix';
     } else {
-      budgetLabel = '';
+      budgetLabel = 'Your budget';
+      budgetValue = '—';
     }
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.lg.r),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm.w,
+        vertical: AppSpacing.md.h,
+      ),
       decoration: BoxDecoration(
-        color: c.action.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
-        border: Border.all(color: c.action.withValues(alpha: 0.25)),
+        color: c.actionBg,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        border: Border.all(color: c.action),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const FieldLabel('THEIR QUOTE · THIS JOB'),
-          Gap(AppSpacing.sm.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                quote,
-                style: AppTypography.numeric(
-                  tt.headlineLarge!,
-                ).copyWith(color: c.action, fontWeight: FontWeight.w700),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _Figure(
+                label: 'Their quote · this job',
+                value: quote,
+                // Orange as ink on a tinted ground → actionInk, not action.
+                valueColor: c.actionInk,
               ),
-              const Spacer(),
-              if (budgetLabel.isNotEmpty)
-                Text(
-                  budgetLabel,
-                  textAlign: TextAlign.right,
-                  style: tt.bodySmall!.copyWith(color: c.text3, height: 1.3),
-                ),
-            ],
-          ),
-        ],
+            ),
+            Container(width: 1, height: 35.h, color: c.action),
+            Expanded(
+              child: _Figure(label: budgetLabel, value: budgetValue),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// One label-over-number cell. Used by [_QuoteBlock]; [_Stat] is its
+/// number-over-label twin in the stats card.
+class _Figure extends StatelessWidget {
+  const _Figure({required this.label, required this.value, this.valueColor});
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: tt.bodySmall!.copyWith(
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0,
+            height: 1.0,
+            color: c.text1,
+          ),
+        ),
+        Gap(AppSpacing.xs.h),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.numeric(tt.titleMedium!).copyWith(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+            color: valueColor ?? c.text1,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -271,21 +327,30 @@ class _StatsStrip extends StatelessWidget {
       ('Service radius', '${profile.serviceRadiusKm} km'),
     ];
     return Container(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.md.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm.w,
+        vertical: AppSpacing.md.h,
+      ),
       decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card.r),
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
         border: Border.all(color: c.border),
       ),
-      child: Row(
-        children: [
-          for (var i = 0; i < stats.length; i++) ...[
-            if (i > 0) Container(width: 1, height: 30.h, color: c.border),
-            Expanded(
-              child: _Stat(label: stats[i].$1, value: stats[i].$2),
-            ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < stats.length; i++) ...[
+              if (i > 0)
+                Center(
+                  child: Container(width: 1, height: 35.h, color: c.border),
+                ),
+              Expanded(
+                child: _Stat(label: stats[i].$1, value: stats[i].$2),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -302,161 +367,33 @@ class _Stat extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Text(
           value,
-          style: AppTypography.numeric(
-            tt.titleLarge!,
-          ).copyWith(fontWeight: FontWeight.w700, color: c.text1),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.numeric(tt.titleMedium!).copyWith(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+            color: c.text1,
+          ),
         ),
-        Gap(2.h),
+        Gap(AppSpacing.xs.h),
         Text(
-          label.toUpperCase(),
-          style: tt.labelSmall!.copyWith(letterSpacing: 0.5, color: c.text3),
+          label,
+          textAlign: TextAlign.center,
+          style: tt.bodySmall!.copyWith(
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0,
+            height: 1.0,
+            color: c.text1,
+          ),
         ),
       ],
-    );
-  }
-}
-
-// Which bottom-bar action is currently in flight (null = idle).
-enum _BarAction { message, shortlist, reject, hire }
-
-// Bottom action bar — MESSAGE is always primary; the state-specific action
-// (shortlist / hire) leads when it matters; reject stays available.
-//
-// 2026-08-18 audit (#5, #9): stateful with a single in-flight guard — two
-// fast taps on HIRE used to double-pop the navigator (dismissing the
-// applicants list too), and double-tapping MESSAGE pushed the thread twice.
-// While any action runs, all buttons disable and the tapped one shows its
-// loading spinner.
-class _ActionBar extends StatefulWidget {
-  const _ActionBar({
-    required this.status,
-    required this.onMessage,
-    required this.onShortlist,
-    required this.onReject,
-    required this.onHire,
-  });
-
-  final ApplicationStatus status;
-  final Future<void> Function() onMessage;
-  final Future<void> Function() onShortlist;
-  final Future<void> Function() onReject;
-  final Future<void> Function() onHire;
-
-  @override
-  State<_ActionBar> createState() => _ActionBarState();
-}
-
-class _ActionBarState extends State<_ActionBar> {
-  _BarAction? _busy;
-
-  Future<void> _run(_BarAction action, Future<void> Function() task) async {
-    if (_busy != null) return;
-    setState(() => _busy = action);
-    try {
-      await task();
-    } finally {
-      if (mounted) setState(() => _busy = null);
-    }
-  }
-
-  VoidCallback? _guarded(_BarAction action, Future<void> Function() task) =>
-      _busy != null ? null : () => _run(action, task);
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-
-    // MESSAGE supports the decision — secondary, on its own full-width row so
-    // the label is never squeezed. REJECT is the destructive secondary.
-    final messageSecondary = JButton(
-      label: 'MESSAGE',
-      icon: AppIcons.chat,
-      variant: JButtonVariant.secondary,
-      size: JButtonSize.compact,
-      isLoading: _busy == _BarAction.message,
-      onPressed: _guarded(_BarAction.message, widget.onMessage),
-    );
-    final reject = JButton(
-      label: 'REJECT',
-      variant: JButtonVariant.secondary,
-      size: JButtonSize.compact,
-      isLoading: _busy == _BarAction.reject,
-      onPressed: _guarded(_BarAction.reject, widget.onReject),
-    );
-
-    final Widget body;
-    if (widget.status == ApplicationStatus.pending) {
-      body = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: JButton(
-                  label: 'SHORTLIST',
-                  size: JButtonSize.compact,
-                  isLoading: _busy == _BarAction.shortlist,
-                  onPressed: _guarded(_BarAction.shortlist, widget.onShortlist),
-                ),
-              ),
-              Gap(8.w),
-              Expanded(child: reject),
-            ],
-          ),
-          Gap(8.h),
-          Row(children: [Expanded(child: messageSecondary)]),
-        ],
-      );
-    } else if (widget.status == ApplicationStatus.shortlisted) {
-      body = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: JButton(
-                  label: 'HIRE',
-                  size: JButtonSize.compact,
-                  isLoading: _busy == _BarAction.hire,
-                  onPressed: _guarded(_BarAction.hire, widget.onHire),
-                ),
-              ),
-              Gap(8.w),
-              Expanded(child: reject),
-            ],
-          ),
-          Gap(8.h),
-          Row(children: [Expanded(child: messageSecondary)]),
-        ],
-      );
-    } else {
-      // hired / rejected / withdrawn / declined — terminal: MESSAGE is now the
-      // sole action, so it leads as the primary CTA.
-      body = Row(
-        children: [
-          Expanded(
-            child: JButton(
-              label: 'MESSAGE',
-              icon: AppIcons.chat,
-              size: JButtonSize.compact,
-              isLoading: _busy == _BarAction.message,
-              onPressed: _guarded(_BarAction.message, widget.onMessage),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: c.card,
-        border: Border(top: BorderSide(color: c.border)),
-      ),
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 12.h),
-      child: body,
     );
   }
 }

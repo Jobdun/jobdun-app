@@ -70,7 +70,7 @@ class _RadiusChip extends StatelessWidget {
 class _MapStyleButton extends StatelessWidget {
   const _MapStyleButton({required this.current, required this.onTap});
 
-  final _MapStyle current;
+  final JBasemap current;
   final VoidCallback onTap;
 
   @override
@@ -108,8 +108,8 @@ class _MapStyleButton extends StatelessWidget {
   }
 }
 
-Future<_MapStyle?> _showStyleSheet(BuildContext context, _MapStyle current) {
-  return showJSheet<_MapStyle>(
+Future<JBasemap?> _showStyleSheet(BuildContext context, JBasemap current) {
+  return showJSheet<JBasemap>(
     context: context,
     builder: (_) => _MapStyleSheet(current: current),
   );
@@ -118,7 +118,7 @@ Future<_MapStyle?> _showStyleSheet(BuildContext context, _MapStyle current) {
 class _MapStyleSheet extends StatelessWidget {
   const _MapStyleSheet({required this.current});
 
-  final _MapStyle current;
+  final JBasemap current;
 
   @override
   Widget build(BuildContext context) {
@@ -150,13 +150,16 @@ class _MapStyleSheet extends StatelessWidget {
               style: tt.bodySmall!.copyWith(color: c.text2),
             ),
             Gap(16.h),
-            for (final style in _MapStyle.values) ...[
+            // `available`, not `values` — a build with no MapTiler key can
+            // only honestly serve the OpenStreetMap style, so it lists one row
+            // rather than three that would all render identical tiles.
+            for (final style in JBasemap.available) ...[
               _MapStyleRow(
                 style: style,
                 selected: style == current,
                 onTap: () => Navigator.of(context).pop(style),
               ),
-              if (style != _MapStyle.values.last) Gap(8.h),
+              if (style != JBasemap.available.last) Gap(8.h),
             ],
           ],
         ),
@@ -172,7 +175,7 @@ class _MapStyleRow extends StatelessWidget {
     required this.onTap,
   });
 
-  final _MapStyle style;
+  final JBasemap style;
   final bool selected;
   final VoidCallback onTap;
 

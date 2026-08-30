@@ -11,10 +11,11 @@ import '../../../../core/design/colors.dart';
 /// /register.
 ///
 /// Figma `JobDun-Screens` → Login (nodes 63:1815 / 63:1892) draws these as
-/// 48dp circles rather than the rounded squares the app shipped: Google
-/// outlined, Apple solid black, phone outlined. Outlining the phone tile is
-/// the substantive change — it used to be a filled orange block, which read
-/// as a second primary CTA competing with the real one directly above it.
+/// 48dp circles rather than the rounded squares the app shipped. All three now
+/// share ONE tile — same fill, same edge, same size — so the row reads as a
+/// set of equals; the mock's solid-black Apple disc made it look like a
+/// different kind of control. Only the marks differ, and only where a brand
+/// requires it (Google's is multicolour by its own guidelines).
 ///
 /// Apple only renders where it can actually work. It has no Android
 /// configuration (no `webAuthenticationOptions`), so the tile failed on 100%
@@ -109,21 +110,16 @@ class AuthSsoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
 
-    // Apple's mark must stay monochrome on a solid ground (Apple HIG), so the
-    // black tile is fixed rather than themed — but it needs an outline or it
-    // disappears into the dark background.
-    final (Color bg, Color border, String label) = switch (provider) {
-      SsoProvider.google => (c.surface, c.borderStrong, 'Sign in with Google'),
-      SsoProvider.apple => (
-        Colors.black, // intentional: Apple HIG fixes the tile, not the theme
-        c.borderStrong,
-        'Sign in with Apple',
-      ),
-      SsoProvider.phone => (
-        c.surface,
-        c.borderStrong,
-        'Continue with phone number',
-      ),
+    // One tile for all three providers: same 48dp circle, same surface fill,
+    // same `borderStrong` edge. Apple used to sit on a solid black disc, which
+    // made it read as a different KIND of control next to the two outlined
+    // ones. Apple's HIG governs the MARK, not the button ground — a black mark
+    // on a light button is one of its approved styles — so the tile unifies
+    // and the glyph goes theme-aware instead (see [_Glyph]).
+    final label = switch (provider) {
+      SsoProvider.google => 'Sign in with Google',
+      SsoProvider.apple => 'Sign in with Apple',
+      SsoProvider.phone => 'Continue with phone number',
     };
 
     return Semantics(
@@ -131,8 +127,8 @@ class AuthSsoTile extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: Material(
-        color: bg,
-        shape: CircleBorder(side: BorderSide(color: border)),
+        color: c.surface,
+        shape: CircleBorder(side: BorderSide(color: c.borderStrong)),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: isLoading ? null : onTap,
@@ -173,21 +169,19 @@ class _Glyph extends StatelessWidget {
         width: size.r,
         height: size.r,
       ),
+      // Apple HIG: the mark is black on a light button, white on a dark one.
+      // `text1` resolves to exactly that in each theme, so the tile can stay
+      // neutral and the mark stays compliant.
       SsoProvider.apple => SvgPicture.asset(
         'lib/core/assets/icon-apple.svg',
         width: size.r,
         height: size.r,
-        // Apple HIG requires a white mark on the black tile.
-        colorFilter: const ColorFilter.mode(
-          Colors.white, // intentional: Apple brand mark, never themed
-          BlendMode.srcIn,
-        ),
+        colorFilter: ColorFilter.mode(c.text1, BlendMode.srcIn),
       ),
-      SsoProvider.phone => Icon(
-        AppIcons.phone,
-        size: size.r,
-        color: c.actionInk,
-      ),
+      // Ours, so it matches Apple's neutral rather than shouting in orange —
+      // MASTER reserves the brand orange for CTAs and critical status, and a
+      // provider glyph is neither.
+      SsoProvider.phone => Icon(AppIcons.phone, size: size.r, color: c.text1),
     };
   }
 }

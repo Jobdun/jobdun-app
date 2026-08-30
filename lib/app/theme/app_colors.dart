@@ -227,27 +227,28 @@ class JColors extends ThemeExtension<JColors> {
     star: _Palette.warning600,
   );
 
-  // ── Dark — a peer of light, not an inversion of it. Each token is chosen
-  //    independently off the same ramps so it clears WCAG on its own ground:
-  //    text steps UP the neutral ramp, `actionInk` lightens to brand500, and
-  //    `warning` lightens to warning400 because the olive 600 is 2.06 on
-  //    surface. Tightest: onAction/actionPressed 4.76.
+  // ── Dark — a peer of light, not an inversion of it, and deliberately on a
+  //    DIFFERENT ramp: light runs on pure grey, dark keeps the navy-tinted
+  //    slate the app has always worn after hours. Each token is still chosen
+  //    independently so it clears WCAG on its own ground: `actionInk` lightens
+  //    to brand500 and `warning` lightens to warning400 because the olive 600
+  //    is 2.06 on surface. Tightest: onAction/actionPressed 4.79.
   static const dark = JColors(
-    background: _Palette.neutral950,
-    surface: _Palette.neutral900,
-    card: _Palette.neutral900,
-    surfaceRaised: _Palette.neutral800,
-    border: _Palette.neutral800,
-    borderStrong: _Palette.neutral500,
-    text1: _Palette.neutral50,
-    text2: _Palette.neutral300,
-    text3: _Palette.neutral400,
+    background: _Palette.slate900,
+    surface: _Palette.slate800,
+    card: _Palette.slate800,
+    surfaceRaised: _Palette.slate700,
+    border: _Palette.slate700,
+    borderStrong: _Palette.slate550,
+    text1: _Palette.slate100,
+    text2: _Palette.slate400,
+    text3: _Palette.slate450,
     action: _Palette.brand600,
     actionPressed: _Palette.brand650,
     actionBg: _Palette.brand950,
     actionTx: _Palette.brand200,
     actionInk: _Palette.brand500,
-    onAction: _Palette.neutral950,
+    onAction: _Palette.slate900,
     verified: _Palette.success500,
     verifiedBg: _Palette.success950,
     verifiedTx: _Palette.success300,

@@ -141,8 +141,11 @@ void main() {
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    expect(find.text('COMPLETE YOUR PROFILE'), findsOneWidget);
-    expect(find.text('50%'), findsOneWidget);
+    expect(find.text('Complete your profile'), findsOneWidget);
+    // The Figma card (node 80:4251) drops the visible "50%" — the progress bar
+    // carries the figure, and the number stays available to screen readers on
+    // the bar's semantics node.
+    expect(find.bySemanticsLabel('50 percent complete'), findsOneWidget);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -154,7 +157,7 @@ void main() {
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    expect(find.text('COMPLETE YOUR PROFILE'), findsNothing);
+    expect(find.text('Complete your profile'), findsNothing);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -166,7 +169,7 @@ void main() {
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    expect(find.text('COMPLETE YOUR PROFILE'), findsNothing);
+    expect(find.text('Complete your profile'), findsNothing);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -209,13 +212,13 @@ void main() {
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    expect(find.text('COMPLETE YOUR PROFILE'), findsOneWidget);
+    expect(find.text('Complete your profile'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.tap(find.bySemanticsLabel('Dismiss'));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    expect(find.text('COMPLETE YOUR PROFILE'), findsNothing);
+    expect(find.text('Complete your profile'), findsNothing);
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -229,7 +232,7 @@ void main() {
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 
-    await tester.tap(find.text('COMPLETE YOUR PROFILE'));
+    await tester.tap(find.text('Complete your profile'));
     await tester.pumpAndSettle();
     drainKnownOverflow(tester);
 

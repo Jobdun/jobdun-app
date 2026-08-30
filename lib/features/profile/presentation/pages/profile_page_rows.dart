@@ -5,6 +5,49 @@ part of 'profile_page.dart';
 // builder/trade sections in profile_page_sections.dart — same library, so the
 // cross-part references resolve. (Settings UI moved to settings_page.dart, S6.)
 
+/// Grouped details card on the profile (Figma node 134:8714): a 16dp bold
+/// sentence-case title over its rows, 24dp beneath the title and between rows.
+///
+/// Mirrors the Settings screen's card, which is drawn from the same component
+/// in the Figma refresh. Replaces [JCard]'s all-caps micro-title, which
+/// belongs to the older vocabulary.
+class _ProfileDetailsCard extends StatelessWidget {
+  const _ProfileDetailsCard({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: c.card,
+        borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: tt.titleMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              height: 1.0,
+              color: c.text1,
+            ),
+          ),
+          for (final child in children) ...[Gap(24.h), child],
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
@@ -44,58 +87,57 @@ class _InfoRow extends StatelessWidget {
     final isAddCta = !hasValue && tappable;
     final showTick = verified && hasValue;
 
+    // Orange as INK, never the fill token — at 16dp `c.action` is 3.34:1 and
+    // fails AA, which is what MASTER's action-vs-actionInk split is for.
     final valueColor = isAddCta
-        ? c.action
+        ? c.actionInk
         : hasValue
-        ? (tappable ? c.action : c.text1)
+        ? (tappable ? c.actionInk : c.text1)
         : c.text3;
 
+    // Figma node 134:8717 — 18dp glyph, 8dp gap, 16dp label, value pushed to
+    // the right. The card owns the vertical rhythm, so the row adds none.
     final row = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.md.w,
-        vertical: 12.h,
-      ),
+      padding: EdgeInsets.symmetric(vertical: 2.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: AppIconSize.inline.r, color: c.text3),
-          Gap(12.w),
-          Text(label, style: tt.bodyMedium!.copyWith(color: c.text2)),
-          Gap(12.w),
+          Icon(icon, size: 18.r, color: c.text1),
+          Gap(8.w),
           Expanded(
             child: Text(
-              hasValue ? value! : (isAddCta ? 'Add' : 'Not set'),
+              label,
+              style: tt.bodyLarge!.copyWith(height: 1.0, color: c.text1),
+            ),
+          ),
+          Gap(8.w),
+          Flexible(
+            child: Text(
+              hasValue ? value! : (isAddCta ? 'Add' : 'Not Set'),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
-              style: tt.bodyMedium!.copyWith(
-                fontWeight: hasValue
-                    ? FontWeight.w600
-                    : (isAddCta ? FontWeight.w600 : FontWeight.w400),
+              style: tt.bodyLarge!.copyWith(
+                height: 1.0,
+                fontWeight: hasValue && !tappable
+                    ? FontWeight.w700
+                    : FontWeight.w400,
                 color: valueColor,
               ),
             ),
           ),
           if (showTick) ...[
-            Gap(8.w),
+            Gap(6.w),
             Tooltip(
               message: verified && label == 'Phone'
                   ? 'Phone number verified via SMS'
                   : 'Checked against the Australian Business Register',
-              child: Icon(
-                AppIcons.verified,
-                size: AppIconSize.inline.r,
-                color: c.verified,
-              ),
+              child: Icon(AppIcons.verified, size: 18.r, color: c.verified),
             ),
           ],
           if (isAddCta) ...[
-            Gap(6.w),
-            Icon(
-              AppIcons.chevronRight,
-              size: AppIconSize.inline.r,
-              color: c.action,
-            ),
+            Gap(4.w),
+            Icon(AppIcons.chevronRight, size: 18.r, color: c.actionInk),
           ],
         ],
       ),

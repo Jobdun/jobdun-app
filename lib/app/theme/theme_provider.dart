@@ -2,12 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _kThemeKey = 'theme_mode';
+const _kThemeKey = 'theme_mode_v2';
+
+/// Pre-light-first key. Any value under it was chosen against the OLD palette,
+/// so it is retired rather than honoured — see [loadSavedTheme].
+const _kLegacyThemeKey = 'theme_mode';
 
 /// Reads the persisted theme before the app starts so there is no
 /// dark→light flash on first load for users who chose light mode.
+///
+/// **One-time reset.** Installs predating the light-first switch carry a
+/// `theme_mode` value picked when dark was the app's default face. Honouring
+/// it means an upgrade opens dark and the user never sees the canonical light
+/// design at all. So the legacy key is dropped on first read: every existing
+/// install lands on light exactly once, and the new key persists their choice
+/// normally from there — dark stays a real, sticky option, not a per-session
+/// preview.
 Future<ThemeMode> loadSavedTheme() async {
   final prefs = await SharedPreferences.getInstance();
+  if (prefs.containsKey(_kLegacyThemeKey)) {
+    await prefs.remove(_kLegacyThemeKey);
+  }
   final saved = prefs.getString(_kThemeKey);
   if (saved == 'dark') return ThemeMode.dark;
   if (saved == 'light') return ThemeMode.light;

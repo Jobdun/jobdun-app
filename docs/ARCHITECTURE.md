@@ -33,7 +33,7 @@
 | Routing | `go_router ^17.2.3` |
 | Auth | Supabase Auth — email/password, phone OTP, Google SSO, Apple SSO |
 | Push | FCM via `firebase_core ^4.10.0` + `firebase_messaging ^16.3.0` |
-| Maps | `flutter_map` + Carto raster tiles (no Google Maps key required) |
+| Maps | `flutter_map` + MapTiler raster tiles via `JBasemap` (`lib/core/design/widgets/map/j_basemap.dart`); reuses `MAPTILER_API_KEY`, falls back to key-less OpenStreetMap. **Not Carto** — it watermarks unauthenticated tiles "API KEY REQUIRED" (swapped 2026-08-30) |
 | Geocoding | MapTiler REST (`JPlaceField`) |
 | Cache | `hive_ce` + `flutter_secure_storage` (AES key in Keychain) |
 | Observability | `sentry_flutter` (inert when `SENTRY_DSN` empty) |

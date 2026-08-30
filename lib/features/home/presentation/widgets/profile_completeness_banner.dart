@@ -48,7 +48,12 @@ final _bannerShownPctProvider = NotifierProvider<_ShownPctNotifier, int?>(
 );
 
 class ProfileCompletenessBanner extends ConsumerWidget {
-  const ProfileCompletenessBanner({super.key});
+  const ProfileCompletenessBanner({super.key, this.messageOverride});
+
+  /// Replaces the generic body line. The profile page passes the single
+  /// highest-impact gap ("Add your ABN so builders trust you") because it can
+  /// compute one; home cannot, so it keeps the generic copy.
+  final String? messageOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,107 +93,130 @@ class ProfileCompletenessBanner extends ConsumerWidget {
       });
     }
 
+    // Figma "Quote" card (Homepage section, node 80:4251): tinted brand fill,
+    // orange hairline, title row with a close affordance, body line, then a
+    // full-width 8dp progress bar. The old banner was an icon-tile + inline
+    // bar at 4dp; the mock gives the bar the full width and drops the tile.
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
+      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
       child: Container(
-        padding: EdgeInsets.fromLTRB(14.w, 12.h, 8.w, 12.h),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
-          border: Border.all(color: c.action, width: 1),
+          color: c.actionBg,
+          borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
+          border: Border.all(color: c.action),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: BoxDecoration(
-                color: c.action,
-                borderRadius: BorderRadius.circular(AppRadius.avatar.r),
-              ),
-              child: Icon(
-                AppIcons.userEdit,
-                size: AppIconSize.md.r,
-                color:
-                    c.background, // dark-on-orange — 6.37:1 (was white, 2.80:1)
-              ),
-            ),
-            Gap(12.w),
-            Expanded(
-              // Tap target on the body of the banner — opens /profile/edit and
-              // counts as the primary CTA in analytics. Dismiss is the only
-              // alternative path and is handled separately on the right.
-              child: Semantics(
-                button: true,
-                label: 'Complete your profile. $pct percent done.',
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    ProfileAnalytics.bannerCtaTapped();
-                    // go() (not push) so GoRouter switches the StatefulShell
-                    // to the Profile branch — otherwise currentIndex stays on
-                    // Home and the bottom-nav Profile icon never activates
-                    // while a profile screen is on screen.
-                    context.go('/profile/edit');
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'COMPLETE YOUR PROFILE',
-                        style: tt.labelSmall!.copyWith(
-                          letterSpacing: 0.12 * 11,
-                          color: c.text1,
-                        ),
-                      ),
-                      Gap(4.h),
-                      Row(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  // Tap target on the copy — opens /profile/edit and counts as
+                  // the primary CTA in analytics. Dismiss is a SIBLING, not a
+                  // descendant: nesting it inside this `excludeSemantics`
+                  // subtree hid the close affordance from screen readers.
+                  child: Semantics(
+                    button: true,
+                    label: 'Complete your profile. $pct percent done.',
+                    excludeSemantics: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        ProfileAnalytics.bannerCtaTapped();
+                        // go() (not push) so GoRouter switches the
+                        // StatefulShell to the Profile branch — otherwise
+                        // currentIndex stays on Home and the bottom-nav
+                        // Profile icon never activates while a profile screen
+                        // is on screen.
+                        context.go('/profile/edit');
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: LinearPercentIndicator(
-                              percent: (pct / 100).clamp(0.0, 1.0),
-                              lineHeight: 4.h,
-                              backgroundColor: c.border,
-                              progressColor: c.action,
-                              barRadius: Radius.circular(2.r),
-                              padding: EdgeInsets.zero,
-                              animation: true,
-                              animateFromLastPercent: true,
-                              animationDuration: 600,
+                          Text(
+                            'Complete your profile',
+                            style: tt.titleMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                              height: 1.0,
+                              color: c.text1,
                             ),
                           ),
-                          Gap(8.w),
+                          Gap(4.h),
                           Text(
-                            '$pct%',
-                            style: tt.labelSmall!.copyWith(
-                              color: c.action,
-                              fontWeight: FontWeight.w700,
+                            messageOverride ??
+                                'Add a few details to build trust and get '
+                                    'applicants',
+                            style: tt.bodyMedium!.copyWith(
+                              height: 1.4,
+                              color: c.text1,
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                Gap(4.w),
+                _DismissButton(
+                  onDismiss: () {
+                    ProfileAnalytics.bannerDismissed();
+                    ref
+                        .read(_completenessBannerDismissedProvider.notifier)
+                        .dismiss();
+                  },
+                ),
+              ],
             ),
-            IconButton(
-              onPressed: () {
-                ProfileAnalytics.bannerDismissed();
-                ref
-                    .read(_completenessBannerDismissedProvider.notifier)
-                    .dismiss();
-              },
-              icon: Icon(
-                AppIcons.closeBox,
-                size: AppIconSize.md.r,
-                color: c.text3,
+            Gap(12.h),
+            Semantics(
+              label: '$pct percent complete',
+              child: LinearPercentIndicator(
+                percent: (pct / 100).clamp(0.0, 1.0),
+                lineHeight: 8.h,
+                // The mock's brand/200 track. `actionBg` is the card's own
+                // fill, so the bar would vanish into it — this is the one
+                // place the tint has to sit a step darker than the ground.
+                backgroundColor: c.actionTx.withValues(alpha: 0.24),
+                progressColor: c.action,
+                barRadius: Radius.circular(4.r),
+                padding: EdgeInsets.zero,
+                animation: true,
+                animateFromLastPercent: true,
+                animationDuration: 600,
               ),
-              padding: EdgeInsets.zero,
-              constraints: BoxConstraints(minWidth: 32.r, minHeight: 32.r),
-              tooltip: 'Dismiss',
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Close glyph on the completion card. Paints at the mock's 16dp but claims a
+/// 44dp hit box, so dismiss stays reachable without inflating the card.
+class _DismissButton extends StatelessWidget {
+  const _DismissButton({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Semantics(
+      button: true,
+      label: 'Dismiss',
+      child: InkResponse(
+        onTap: onDismiss,
+        radius: 22.r,
+        child: SizedBox(
+          width: 44.r,
+          height: 24.r,
+          child: Align(
+            alignment: Alignment.topRight,
+            child: Icon(AppIcons.close, size: 16.r, color: c.text1),
+          ),
         ),
       ),
     );

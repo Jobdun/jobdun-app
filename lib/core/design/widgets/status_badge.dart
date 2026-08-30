@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 
 import '../../../app/theme/app_colors.dart';
 
-enum BadgeVariant { verified, available, urgent, pending, pro }
+enum BadgeVariant { verified, available, urgent, warning, pending, pro }
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.variant, this.label});
@@ -18,30 +18,41 @@ class StatusBadge extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final s = _spec(c, variant);
 
+    // Figma draws every status as a fully-rounded pill with an 8dp dot and a
+    // 12px regular label (e.g. Find → node 140:13794). The old 4dp-radius
+    // 28dp-tall chip predates that vocabulary.
     return Container(
-      height: 28.h,
-      padding: EdgeInsets.symmetric(horizontal: 11.w),
+      padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: s.bg,
-        borderRadius: BorderRadius.circular(AppRadius.badge.r),
+        borderRadius: BorderRadius.circular(AppRadius.btn.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (s.dotColor != null) ...[
             Container(
-              width: 6.r,
-              height: 6.r,
+              width: 8.r,
+              height: 8.r,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: s.dotColor,
+                color: s.textColor,
               ),
             ),
-            Gap(5.w),
+            Gap(AppSpacing.xs.w),
           ],
-          Text(
-            label ?? s.defaultLabel,
-            style: tt.labelMedium!.copyWith(color: s.textColor),
+          Flexible(
+            child: Text(
+              label ?? s.defaultLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tt.bodySmall!.copyWith(
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0,
+                height: 1.0,
+                color: s.textColor,
+              ),
+            ),
           ),
         ],
       ),
@@ -66,6 +77,12 @@ class StatusBadge extends StatelessWidget {
       textColor: c.urgentTx,
       dotColor: c.urgent,
       defaultLabel: 'Urgent',
+    ),
+    BadgeVariant.warning => _BadgeSpec(
+      bg: c.warningBg,
+      textColor: c.warningTx,
+      dotColor: c.warning,
+      defaultLabel: 'Filled',
     ),
     BadgeVariant.pending => _BadgeSpec(
       bg: c.actionBg,

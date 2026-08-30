@@ -326,3 +326,42 @@ class _EmptyState extends ConsumerWidget {
     );
   }
 }
+
+/// The feed's title bar: the mark, the screen name, and an optional trailing
+/// action.
+///
+/// Figma `JobDun-Screens` → Find (node 140:13875). Sits on the page ground
+/// with no card and no rule — the search field directly beneath is what gives
+/// the header its edge.
+class _FeedHeader extends StatelessWidget {
+  const _FeedHeader({required this.title, this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        JobdunLogo(variant: LogoVariant.mark, height: 32.h),
+        Gap(AppSpacing.sm.w),
+        Expanded(
+          child: Text(
+            title,
+            style: tt.titleMedium!.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              height: 1.2,
+              color: c.text1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (trailing != null) ...[Gap(AppSpacing.sm.w), trailing!],
+      ],
+    );
+  }
+}

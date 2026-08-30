@@ -11,11 +11,15 @@ import '../../../../core/design/colors.dart';
 /// 67dp bar at the top of both frames: a chevron at the 16dp margin, then the
 /// title in Inter Bold 24. The title carries the role on signup
 /// ("Create Account - Hiring"), which is the only cue that a role was chosen
-/// upstream — so it is a required parameter rather than a default.
+/// upstream — so it is passed at every call site rather than defaulted.
 class AuthHeader extends StatelessWidget {
-  const AuthHeader({super.key, required this.title, this.onBack});
+  const AuthHeader({super.key, this.title, this.onBack});
 
-  final String title;
+  /// null renders the bar with no label, for a screen whose own content
+  /// already says which screen it is and would otherwise say it twice. The
+  /// 67dp bar stays either way, so the caret and everything below it sit at
+  /// the same height across auth screens.
+  final String? title;
 
   /// null hides the caret and left-aligns the title on the same margin. Pass
   /// null only when the screen is genuinely the root of its stack; a caret
@@ -57,19 +61,22 @@ class AuthHeader extends StatelessWidget {
               ),
               Gap(AppSpacing.sm.w),
             ],
-            Expanded(
-              child: Text(
-                title,
-                style: tt.titleMedium!.copyWith(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                  color: c.text1,
+            if (title != null)
+              Expanded(
+                child: Text(
+                  title!,
+                  style: tt.titleMedium!.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                    color: c.text1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+              )
+            else
+              const Spacer(),
           ],
         ),
       ),

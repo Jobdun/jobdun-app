@@ -118,7 +118,7 @@ class TabSpec {
         const TabSpec(
           outlineIcon: AppIcons.myJobsOutline,
           filledIcon: AppIcons.myJobsFilled,
-          shortLabel: 'My Jobs',
+          shortLabel: 'Listings',
           semanticsLabel: 'My posted jobs',
         )
       else
@@ -232,7 +232,7 @@ class _BottomNav extends ConsumerWidget {
                             style: tt.labelSmall!.copyWith(
                               fontWeight: FontWeight.w600,
                               letterSpacing: 0.2,
-                              color: c.text3,
+                              color: c.text2,
                             ),
                             maxLines: 1,
                           ),
@@ -252,7 +252,12 @@ class _BottomNav extends ConsumerWidget {
   Widget _dockTab(BuildContext context, TextTheme tt, JColors c, int i) {
     final tab = tabs[i];
     final isActive = i == currentIndex;
-    final tintColor = isActive ? c.action : c.text3;
+    // Figma "Pills" (Homepage section, node 99:419) tints the active tab
+    // `text/action` #FC5101. At the 11dp label size that is 3.34:1 — under the
+    // 4.5:1 bar — so the ink token carries it instead (4.92:1). The glyph
+    // could take the literal orange under the 3:1 non-text floor, but matching
+    // the label keeps icon and text reading as one unit.
+    final tintColor = isActive ? c.actionInk : c.text2;
     return Semantics(
       label: tab.semanticsLabel,
       selected: isActive,
@@ -263,8 +268,15 @@ class _BottomNav extends ConsumerWidget {
           HapticFeedback.selectionClick();
           onTap(i);
         },
-        child: Padding(
+        child: AnimatedContainer(
+          duration: AppIconTheme.fillDuration,
+          curve: AppIconTheme.fillCurve,
           padding: EdgeInsets.only(top: 7.h, bottom: 8.h),
+          decoration: BoxDecoration(
+            // The mock's neutral/200 pill behind the selected tab.
+            color: isActive ? c.surfaceRaised : Colors.transparent,
+            borderRadius: BorderRadius.circular(24.r),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,

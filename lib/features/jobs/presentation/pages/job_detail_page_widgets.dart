@@ -29,17 +29,17 @@ class _PostedByCard extends StatelessWidget {
             )
           : () => context.push('/builders/${args.builderId}'),
       child: Container(
-        padding: EdgeInsets.all(14.r),
+        padding: EdgeInsets.all(16.r),
         decoration: BoxDecoration(
           color: c.card,
-          borderRadius: BorderRadius.circular(AppRadius.card.r),
+          borderRadius: BorderRadius.circular(AppRadius.cardLg.r),
           border: Border.all(color: c.border),
         ),
         child: Row(
           children: [
             Container(
-              width: 44.r,
-              height: 44.r,
+              width: 40.r,
+              height: 40.r,
               decoration: BoxDecoration(
                 color: c.surfaceRaised,
                 shape: BoxShape.circle,
@@ -54,25 +54,30 @@ class _PostedByCard extends StatelessWidget {
                 ),
               ),
             ),
-            Gap(12.w),
+            Gap(8.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     args.companyName ?? 'Builder',
-                    style: tt.titleMedium!.copyWith(
+                    style: tt.titleSmall!.copyWith(
                       fontWeight: FontWeight.w700,
+                      height: 1.0,
                       color: c.text1,
                     ),
                   ),
                   if (args.builderId != null) ...[
-                    Gap(2.h),
+                    Gap(4.h),
                     Text(
-                      'View profile & reviews',
-                      style: tt.bodySmall!.copyWith(
-                        color: c.action,
-                        fontWeight: FontWeight.w600,
+                      'View profile and Reviews',
+                      style: tt.labelMedium!.copyWith(
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0,
+                        height: 1.4,
+                        // The mock uses the fill orange; at 12dp that is
+                        // 3.34:1, so the ink token carries it.
+                        color: c.actionInk,
                       ),
                     ),
                   ],
@@ -92,6 +97,31 @@ class _PostedByCard extends StatelessWidget {
   }
 }
 
+/// Section heading on Job Details — 16dp Bold, sentence case (Figma node
+/// 134:13365). Replaces `FieldLabel`, whose all-caps micro-label belongs to
+/// the older form vocabulary.
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final tt = Theme.of(context).textTheme;
+    return Text(
+      text,
+      style: tt.titleMedium!.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.0,
+        color: c.text1,
+      ),
+    );
+  }
+}
+
+/// Outlined key-fact pill under the job title — rate, start date, distance
+/// (Figma node 134:13361). Read-only, so it carries no button semantics.
 class _InfoChip extends StatelessWidget {
   const _InfoChip({required this.icon, required this.label});
   final IconData icon;
@@ -102,24 +132,37 @@ class _InfoChip extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      height: 32.h,
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      // See JSelectChip — `alignment:` would stretch the pill full-width.
       decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.chip.r),
-        border: Border.all(color: c.border),
+        borderRadius: BorderRadius.circular(AppRadius.btn.r),
+        border: Border.all(color: c.action),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: AppIconSize.micro.r, color: c.text3),
-          Gap(6.w),
-          Text(label, style: tt.labelMedium!.copyWith(color: c.text2)),
+          Icon(icon, size: 12.r, color: c.actionInk),
+          Gap(4.w),
+          Text(
+            label,
+            style: tt.labelMedium!.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+              color: c.actionInk,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
+/// One requirement line on Job Details (Figma node 134:13388).
+///
+/// [met] keeps the "supplied by the builder" vs "you must bring this" split
+/// the page already made — the mock draws every row identically, but flattening
+/// them would drop information the tradie needs before applying.
 class _ReqRow extends StatelessWidget {
   const _ReqRow({required this.icon, required this.label, required this.met});
   final IconData icon;
@@ -131,19 +174,18 @@ class _ReqRow extends StatelessWidget {
     final c = context.c;
     final tt = Theme.of(context).textTheme;
     return Padding(
-      padding: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: AppIconSize.inline.r,
-            color: met ? c.text2 : c.text3,
-          ),
-          Gap(10.w),
+          Icon(icon, size: 18.r, color: met ? c.text1 : c.text3),
+          Gap(8.w),
           Expanded(
             child: Text(
               label,
-              style: tt.bodyMedium!.copyWith(color: met ? c.text2 : c.text3),
+              style: tt.bodyLarge!.copyWith(
+                height: 1.0,
+                color: met ? c.text1 : c.text3,
+              ),
             ),
           ),
         ],
