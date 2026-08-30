@@ -10,6 +10,7 @@ class TradeSearchFilter extends Equatable {
     this.minRating,
     this.availableOnly = false,
     this.query,
+    this.apprenticesOnly = false,
   });
 
   final double? originLat;
@@ -18,6 +19,13 @@ class TradeSearchFilter extends Equatable {
   final double? minRating;
   final bool availableOnly;
   final String? query;
+
+  /// TRADES vs APPRENTICES. Maps to `p_apprentice` on search_trades, which
+  /// defaults to false and filters to `is_apprentice = false` — so the
+  /// existing Discovery result set is unchanged unless this is flipped.
+  /// The two modes are mutually exclusive by design: a mixed list would
+  /// make a builder compare a first-year against a licensed contractor.
+  final bool apprenticesOnly;
 
   bool get hasOrigin => originLat != null && originLng != null;
 
@@ -30,6 +38,7 @@ class TradeSearchFilter extends Equatable {
     bool? availableOnly,
     String? query,
     bool clearQuery = false,
+    bool? apprenticesOnly,
   }) => TradeSearchFilter(
     originLat: originLat ?? this.originLat,
     originLng: originLng ?? this.originLng,
@@ -37,6 +46,7 @@ class TradeSearchFilter extends Equatable {
     minRating: clearMinRating ? null : (minRating ?? this.minRating),
     availableOnly: availableOnly ?? this.availableOnly,
     query: clearQuery ? null : (query ?? this.query),
+    apprenticesOnly: apprenticesOnly ?? this.apprenticesOnly,
   );
 
   @override
@@ -47,5 +57,6 @@ class TradeSearchFilter extends Equatable {
     minRating,
     availableOnly,
     query,
+    apprenticesOnly,
   ];
 }

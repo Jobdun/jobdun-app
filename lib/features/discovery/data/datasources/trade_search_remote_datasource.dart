@@ -37,6 +37,7 @@ class TradeSearchRemoteDataSourceImpl implements TradeSearchRemoteDataSource {
                   'p_query': (q == null || q.isEmpty) ? null : q,
                   'p_limit': limit ?? 1000,
                   'p_offset': offset ?? 0,
+                  'p_apprentice': filter.apprenticesOnly,
                 },
               )
               as List<dynamic>;

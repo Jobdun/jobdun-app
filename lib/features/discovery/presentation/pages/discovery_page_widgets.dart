@@ -61,9 +61,10 @@ class _TradiePlaceholder extends StatelessWidget {
 }
 
 class _DiscoveryEmpty extends StatelessWidget {
-  const _DiscoveryEmpty({required this.onClear});
+  const _DiscoveryEmpty({required this.onClear, this.apprenticesOnly = false});
 
   final VoidCallback onClear;
+  final bool apprenticesOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +79,7 @@ class _DiscoveryEmpty extends StatelessWidget {
             Icon(AppIcons.search, size: AppIconSize.hero.r, color: c.text3),
             Gap(AppSpacing.md.h),
             Text(
-              'NO TRADIES MATCH',
+              apprenticesOnly ? 'NO APPRENTICES MATCH' : 'NO TRADIES MATCH',
               style: tt.headlineSmall!.copyWith(color: c.text1),
               textAlign: TextAlign.center,
             ),

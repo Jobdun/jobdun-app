@@ -20,6 +20,7 @@ class TradieCard extends StatelessWidget {
     required this.initials,
     this.onTap,
     this.avatarColor,
+    this.countNoun = 'job',
   });
 
   final String name;
@@ -36,6 +37,12 @@ class TradieCard extends StatelessWidget {
   final String initials;
   final VoidCallback? onTap;
   final Color? avatarColor;
+
+  /// What [jobCount] counts. Defaults to completed jobs. An apprentice
+  /// card passes 'ticket' — showing their ticket count under a "jobs
+  /// completed" label would be a plain lie, and showing their real 0 in a
+  /// scan list reads as a rejection before anyone has read the profile.
+  final String countNoun;
 
   @override
   Widget build(BuildContext context) {
@@ -119,9 +126,13 @@ class TradieCard extends StatelessWidget {
                         Gap(2.h),
                         Text(
                           // 2026-08-18 audit: pluralise — "1 jobs completed".
-                          jobCount == 1
-                              ? '1 job completed'
-                              : '$jobCount jobs completed',
+                          countNoun == 'job'
+                              ? (jobCount == 1
+                                    ? '1 job completed'
+                                    : '$jobCount jobs completed')
+                              : (jobCount == 1
+                                    ? '1 $countNoun'
+                                    : '$jobCount ${countNoun}s'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodySmall!.copyWith(color: c.text3),

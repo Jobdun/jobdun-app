@@ -17,6 +17,7 @@ import '../../domain/entities/trade_search_filter.dart';
 import '../../domain/entities/trade_search_result.dart';
 import '../providers/discovery_provider.dart';
 import '../widgets/discovery_tradie_tile.dart';
+import '../widgets/discovery_mode_toggle.dart';
 import '../widgets/trade_filter_sheet.dart';
 
 part 'discovery_page_widgets.dart';
@@ -103,7 +104,14 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
     ref
         .read(tradeSearchControllerProvider.notifier)
         .updateFilter(
-          TradeSearchFilter(originLat: f.originLat, originLng: f.originLng),
+          // apprenticesOnly is a MODE, not a filter. Clearing filters from the
+          // empty state must not silently kick the user back to TRADES while
+          // the toggle still reads APPRENTICES.
+          TradeSearchFilter(
+            originLat: f.originLat,
+            originLng: f.originLng,
+            apprenticesOnly: f.apprenticesOnly,
+          ),
         );
   }
 
@@ -114,6 +122,9 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
     final pagingController = ref
         .read(tradeSearchControllerProvider.notifier)
         .pagingController;
+    final apprenticesOnly = ref.watch(
+      tradeSearchControllerProvider.select((s) => s.filter.apprenticesOnly),
+    );
 
     return Scaffold(
       backgroundColor: c.background,
@@ -122,7 +133,7 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'FIND A TRADIE',
+          apprenticesOnly ? 'FIND AN APPRENTICE' : 'FIND A TRADIE',
           style: tt.titleLarge!.copyWith(color: c.text1),
         ),
         actions: [
@@ -138,62 +149,85 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
         ],
       ),
       body: SafeArea(
-        child: !_ready
-            ? const _DiscoverySkeleton()
-            : RefreshIndicator(
-                color: c.action,
-                backgroundColor: c.surface,
-                onRefresh: () async => pagingController.refresh(),
-                child: PagedListView<int, TradeSearchResult>.separated(
-                  pagingController: pagingController,
-                  padding: EdgeInsets.fromLTRB(
-                    20.w,
-                    AppSpacing.sm.h,
-                    20.w,
-                    AppSpacing.lg.h,
+        child: Column(
+          children: [
+            DiscoveryModeToggle(
+              apprenticesOnly: apprenticesOnly,
+              onChanged: (v) => ref
+                  .read(tradeSearchControllerProvider.notifier)
+                  .updateFilter(
+                    ref
+                        .read(tradeSearchControllerProvider)
+                        .filter
+                        .copyWith(apprenticesOnly: v),
                   ),
-                  separatorBuilder: (_, _) => Gap(9.h),
-                  builderDelegate: PagedChildBuilderDelegate<TradeSearchResult>(
-                    // 2026-08-18 audit: `onTap: () {}` swallowed taps on
-                    // every row while looking tappable, so the tile was left
-                    // deliberately inert until a trade public-profile route
-                    // existed. /trades/:id is that route.
-                    itemBuilder: (context, result, i) => DiscoveryTradieTile(
-                      result: result,
-                      onTap: () => context.push('/trades/${result.trade.id}'),
-                    ),
-                    firstPageProgressIndicatorBuilder: (_) =>
-                        const _DiscoverySkeleton(),
-                    newPageProgressIndicatorBuilder: (_) => Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      child: Center(
-                        child: SizedBox(
-                          width: 22.r,
-                          height: 22.r,
-                          child: CircularProgressIndicator(
-                            color: c.action,
-                            strokeWidth: 2,
+            ),
+            Expanded(
+              child: !_ready
+                  ? const _DiscoverySkeleton()
+                  : RefreshIndicator(
+                      color: c.action,
+                      backgroundColor: c.surface,
+                      onRefresh: () async => pagingController.refresh(),
+                      child: PagedListView<int, TradeSearchResult>.separated(
+                        pagingController: pagingController,
+                        padding: EdgeInsets.fromLTRB(
+                          20.w,
+                          AppSpacing.sm.h,
+                          20.w,
+                          AppSpacing.lg.h,
+                        ),
+                        separatorBuilder: (_, _) => Gap(9.h),
+                        builderDelegate: PagedChildBuilderDelegate<TradeSearchResult>(
+                          // 2026-08-18 audit: `onTap: () {}` swallowed taps on
+                          // every row while looking tappable, so the tile was left
+                          // deliberately inert until a trade public-profile route
+                          // existed. /trades/:id is that route.
+                          itemBuilder: (context, result, i) =>
+                              DiscoveryTradieTile(
+                                result: result,
+                                onTap: () =>
+                                    context.push('/trades/${result.trade.id}'),
+                              ),
+                          firstPageProgressIndicatorBuilder: (_) =>
+                              const _DiscoverySkeleton(),
+                          newPageProgressIndicatorBuilder: (_) => Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            child: Center(
+                              child: SizedBox(
+                                width: 22.r,
+                                height: 22.r,
+                                child: CircularProgressIndicator(
+                                  color: c.action,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          noItemsFoundIndicatorBuilder: (_) => _DiscoveryEmpty(
+                            onClear: _clearFilters,
+                            apprenticesOnly: apprenticesOnly,
+                          ),
+                          firstPageErrorIndicatorBuilder: (_) =>
+                              _DiscoveryError(
+                                message:
+                                    pagingController.error?.toString() ??
+                                    "Couldn't load tradies. Tap to try again.",
+                                onRetry: () => pagingController.refresh(),
+                              ),
+                          newPageErrorIndicatorBuilder: (_) => _DiscoveryError(
+                            message:
+                                pagingController.error?.toString() ??
+                                "Couldn't load tradies. Tap to try again.",
+                            onRetry: () =>
+                                pagingController.retryLastFailedRequest(),
                           ),
                         ),
                       ),
                     ),
-                    noItemsFoundIndicatorBuilder: (_) =>
-                        _DiscoveryEmpty(onClear: _clearFilters),
-                    firstPageErrorIndicatorBuilder: (_) => _DiscoveryError(
-                      message:
-                          pagingController.error?.toString() ??
-                          "Couldn't load tradies. Tap to try again.",
-                      onRetry: () => pagingController.refresh(),
-                    ),
-                    newPageErrorIndicatorBuilder: (_) => _DiscoveryError(
-                      message:
-                          pagingController.error?.toString() ??
-                          "Couldn't load tradies. Tap to try again.",
-                      onRetry: () => pagingController.retryLastFailedRequest(),
-                    ),
-                  ),
-                ),
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
