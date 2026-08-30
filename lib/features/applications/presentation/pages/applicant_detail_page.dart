@@ -27,6 +27,7 @@ import '../../../verification/presentation/widgets/trade_credential_badges.dart'
 import '../../../verification/presentation/widgets/trust_chip.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
+import '../widgets/applicant_resume_block.dart';
 import 'job_applicants_args.dart';
 
 part 'applicant_detail_action_bar.dart';
@@ -288,6 +289,13 @@ class ApplicantDetailPage extends ConsumerWidget {
                           urls: profile.portfolioUrls,
                           readOnly: true,
                         ),
+                      ],
+                      // The builder has earned this: the applicant applied to
+                      // their job, which is the exact relationship the storage
+                      // policy checks.
+                      if (profile != null && profile.hasResume) ...[
+                        Gap(AppSpacing.lg.h),
+                        ApplicantResumeBlock(profile: profile),
                       ],
                       if (profile != null && profile.ratingCount > 0) ...[
                         Gap(AppSpacing.lg.h),

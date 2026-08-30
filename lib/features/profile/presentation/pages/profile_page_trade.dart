@@ -147,6 +147,22 @@ class _TradeProfile extends ConsumerWidget {
               onAdd: () => showTicketsSheet(context),
             ),
           ],
+          // Resume is an apprentice concern: a qualified tradie quotes rather
+          // than sending a CV, so the section would sit permanently blank.
+          if (isApprentice) ...[
+            Gap(AppSpacing.md.h),
+            const FieldLabel.section('Resume'),
+            Gap(AppSpacing.sm.h),
+            if (p?.hasResume ?? false)
+              ResumeRow.owner(
+                fileName: p!.resumeFileName,
+                uploadedAt: p.resumeUploadedAt,
+                onReplace: () => showResumeSheet(context),
+                onRemove: () => showResumeSheet(context),
+              )
+            else
+              ResumeRow.empty(onUpload: () => showResumeSheet(context)),
+          ],
           Gap(AppSpacing.md.h),
           const FieldLabel.section('Portfolio'),
           Gap(AppSpacing.sm.h),

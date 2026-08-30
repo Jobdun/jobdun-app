@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fpdart/fpdart.dart';
 
@@ -241,6 +242,38 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       await _datasource.removePortfolioImage(userId, publicUrl);
       return right(null);
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadResume(
+    String userId,
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    try {
+      return right(await _datasource.uploadResume(userId, bytes, fileName));
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteResume(String userId) async {
+    try {
+      await _datasource.deleteResume(userId);
+      return right(null);
+    } on StorageException catch (e) {
+      return left(StorageFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> getResumeSignedUrl(String storagePath) async {
+    try {
+      return right(await _datasource.getResumeSignedUrl(storagePath));
     } on StorageException catch (e) {
       return left(StorageFailure(e.message));
     }

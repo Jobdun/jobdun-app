@@ -53,12 +53,25 @@ void main() {
       }
     });
 
-    test('apprentice list is exactly the tradie list minus rates', () {
+    test('an apprentice gets a Resume row, a qualified tradie does not', () {
+      // A qualified tradie quotes; they don't send a CV. Showing the row to
+      // everyone would put a permanently-blank section on their profile.
+      expect(
+        hubSectionsForTrade(isApprentice: true),
+        contains(ProfileSection.resume),
+      );
+      expect(
+        hubSectionsForTrade(isApprentice: false),
+        isNot(contains(ProfileSection.resume)),
+      );
+    });
+
+    test('apprentice swaps Rates for Resume, keeping everything else', () {
       final tradie = hubSectionsForTrade(isApprentice: false);
       final apprentice = hubSectionsForTrade(isApprentice: true);
       expect(
-        apprentice,
-        tradie.where((s) => s != ProfileSection.rates).toList(),
+        apprentice.where((s) => s != ProfileSection.resume),
+        tradie.where((s) => s != ProfileSection.rates),
       );
     });
   });

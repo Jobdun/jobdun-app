@@ -7,6 +7,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/avatar_block.dart';
+import '../../../../core/design/widgets/field_label.dart';
 import '../../../../core/design/widgets/j_chip.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/j_stats_row.dart';
@@ -23,6 +24,7 @@ import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_about_section.dart';
 import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
+import '../widgets/resume_row.dart';
 import '../widgets/profile_tickets_section.dart';
 
 /// Fetches a tradie's profile for the public (builder-facing) view.
@@ -216,6 +218,15 @@ class _TradePublicBody extends StatelessWidget {
           if (p.siteTickets.isNotEmpty) ...[
             Gap(AppSpacing.md.h),
             ProfileTicketsSection(userId: p.id, selectedSlugs: p.siteTickets),
+          ],
+          // Pre-relationship surface: this is a stranger browsing. The RLS
+          // policy would reject a signed-URL request from here anyway, so show
+          // the locked state rather than a button that fails.
+          if (p.isApprentice && p.hasResume) ...[
+            Gap(AppSpacing.md.h),
+            const FieldLabel.section('Resume'),
+            Gap(AppSpacing.sm.h),
+            const ResumeRow.locked(),
           ],
           Gap(AppSpacing.md.h),
           // Explicit urls, not the signed-in owner's strip — this is someone

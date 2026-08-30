@@ -15,6 +15,7 @@ import '../widgets/edit_sheets/business_details_sheet.dart';
 import '../widgets/edit_sheets/identity_sheet.dart';
 import '../widgets/edit_sheets/location_sheet.dart';
 import '../widgets/edit_sheets/rates_sheet.dart';
+import '../widgets/edit_sheets/resume_sheet.dart';
 import '../widgets/edit_sheets/tickets_sheet.dart';
 import '../widgets/edit_sheets/trade_details_sheet.dart';
 
@@ -30,6 +31,7 @@ enum ProfileSection {
   tradeDetails,
   rates,
   tickets,
+  resume,
   business,
   location,
   about,
@@ -48,6 +50,8 @@ List<ProfileSection> hubSectionsForTrade({required bool isApprentice}) => [
   ProfileSection.tradeDetails,
   if (!isApprentice) ProfileSection.rates,
   ProfileSection.tickets,
+  // Apprentices only: a qualified tradie quotes, they don't send a CV.
+  if (isApprentice) ProfileSection.resume,
   ProfileSection.location,
   ProfileSection.about,
 ];
@@ -115,6 +119,13 @@ class ProfileEditHubPage extends ConsumerWidget {
         icon: AppIcons.verified,
         label: 'Tickets & licences',
         value: ticketLine,
+        section: section,
+        optional: true,
+      ),
+      ProfileSection.resume => _HubRowSpec(
+        icon: AppIcons.document,
+        label: 'Resume',
+        value: tp?.resumeFileName ?? '',
         section: section,
         optional: true,
       ),
@@ -258,6 +269,7 @@ class _HubRow extends StatelessWidget {
             builder: (_) => const RatesSheet(),
           ),
           ProfileSection.tickets => showTicketsSheet(context),
+          ProfileSection.resume => showResumeSheet(context),
           ProfileSection.about => context.push('/profile/edit/about'),
         },
         child: Container(

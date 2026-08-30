@@ -27,6 +27,7 @@ import '../../domain/entities/builder_profile.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/apprentice_header_chip.dart';
+import '../widgets/edit_sheets/resume_sheet.dart';
 import '../widgets/edit_sheets/tickets_sheet.dart';
 import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_about_section.dart';
@@ -35,6 +36,7 @@ import '../../../home/presentation/widgets/profile_completeness_banner.dart';
 import '../widgets/profile_incomplete_banner.dart';
 import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
+import '../widgets/resume_row.dart';
 import '../widgets/profile_tickets_section.dart';
 
 part 'profile_page_sections.dart';

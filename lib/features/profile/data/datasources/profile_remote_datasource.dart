@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 // hide supabase's StorageException so ours from core/errors/exceptions.dart is unambiguous
 import 'package:supabase_flutter/supabase_flutter.dart' hide StorageException;
 
 import '../../../../core/errors/exceptions.dart';
 import '../../domain/entities/profile_patches.dart';
+import '../../domain/entities/resume_rules.dart';
 import '../models/builder_profile_model.dart';
 import '../models/profile_patch_mappers.dart';
 import '../models/trade_profile_model.dart';
@@ -26,6 +28,9 @@ abstract interface class ProfileRemoteDataSource {
   Future<String> uploadTradeLicence(String userId, File file);
   Future<String> addPortfolioImage(String userId, File file);
   Future<void> removePortfolioImage(String userId, String publicUrl);
+  Future<String> uploadResume(String userId, Uint8List bytes, String name);
+  Future<void> deleteResume(String userId);
+  Future<String> getResumeSignedUrl(String storagePath);
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
@@ -355,6 +360,94 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         params: {'user_id': userId, 'target_url': publicUrl},
       );
     } catch (e) {
+      throw StorageException(e.toString());
+    }
+  }
+
+  @override
+  Future<String> uploadResume(
+    String userId,
+    Uint8List bytes,
+    String name,
+  ) async {
+    try {
+      final path = resumeStoragePath(
+        userId,
+        name,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+
+      // Remove the previous object first. The path is timestamped, so upsert
+      // would leave the old file orphaned in the bucket forever — and an
+      // orphaned resume is an orphaned home address.
+      await _deleteExistingResumeObject(userId);
+
+      await _client.storage
+          .from(_privateBucket)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: resumeContentType(name),
+              upsert: true,
+            ),
+          );
+
+      await _client
+          .from('trade_profiles')
+          .update({
+            'resume_path': path,
+            'resume_uploaded_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', userId);
+
+      return path;
+    } catch (e) {
+      throw StorageException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> deleteResume(String userId) async {
+    try {
+      await _deleteExistingResumeObject(userId);
+      await _client
+          .from('trade_profiles')
+          .update({'resume_path': null, 'resume_uploaded_at': null})
+          .eq('id', userId);
+    } catch (e) {
+      throw StorageException(e.toString());
+    }
+  }
+
+  /// Best-effort: a resume that is already gone from storage is not an error,
+  /// and must not block clearing the column — otherwise a half-deleted resume
+  /// would leave the profile pointing at nothing with no way to fix it.
+  Future<void> _deleteExistingResumeObject(String userId) async {
+    final row = await _client
+        .from('trade_profiles')
+        .select('resume_path')
+        .eq('id', userId)
+        .maybeSingle();
+    final old = row?['resume_path'] as String?;
+    if (old == null || old.isEmpty) return;
+    try {
+      await _client.storage.from(_privateBucket).remove([old]);
+    } catch (_) {
+      // Already gone. Nothing to clean up.
+    }
+  }
+
+  @override
+  Future<String> getResumeSignedUrl(String storagePath) async {
+    try {
+      return await _client.storage
+          .from(_privateBucket)
+          .createSignedUrl(storagePath, 3600);
+    } catch (e) {
+      // A caller with no relationship to the apprentice fails RLS here. That
+      // is the policy doing its job, not a bug — surface it as a storage
+      // failure and let the UI show the locked state.
       throw StorageException(e.toString());
     }
   }

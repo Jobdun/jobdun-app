@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fpdart/fpdart.dart';
 
@@ -68,4 +69,25 @@ abstract interface class ProfileRepository {
     String userId,
     String publicUrl,
   );
+
+  // Uploads an apprentice resume to private-docs at
+  // {uid}/resume/{epoch}.{ext} and stamps resume_path + resume_uploaded_at.
+  // Replaces any existing resume, deleting the old object so the bucket
+  // doesn't accumulate orphans. Returns the new storage path.
+  //
+  // Takes bytes, not a File: file_picker returns a null `path` on web and
+  // only ever guarantees `bytes`, so bytes keeps one code path.
+  Future<Either<Failure, String>> uploadResume(
+    String userId,
+    Uint8List bytes,
+    String fileName,
+  );
+
+  // Deletes the resume object and clears both resume columns.
+  Future<Either<Failure, void>> deleteResume(String userId);
+
+  // 60-minute signed URL. Storage RLS decides whether the caller is
+  // allowed: the owner always, a builder only once the apprentice has
+  // applied to one of their jobs.
+  Future<Either<Failure, String>> getResumeSignedUrl(String storagePath);
 }

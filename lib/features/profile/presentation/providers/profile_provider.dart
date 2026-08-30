@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:async';
 import 'dart:io';
 
@@ -16,6 +17,9 @@ import '../../domain/repositories/profile_repository.dart';
 import '../../domain/entities/profile_patches.dart';
 import '../../domain/usecases/get_profile.dart';
 import '../../domain/usecases/patch_profile_section.dart';
+import '../../domain/usecases/delete_resume.dart';
+import '../../domain/usecases/get_resume_url.dart';
+import '../../domain/usecases/upload_resume.dart';
 import '../../domain/usecases/upload_avatar.dart';
 
 // ── Data layer providers (public so tests can override) ───────────────────────
@@ -48,6 +52,18 @@ final patchTradeProfileUseCaseProvider = Provider(
 
 final patchBuilderProfileUseCaseProvider = Provider(
   (ref) => PatchBuilderProfile(ref.read(profileRepositoryProvider)),
+);
+
+final uploadResumeUseCaseProvider = Provider(
+  (ref) => UploadResume(ref.read(profileRepositoryProvider)),
+);
+
+final deleteResumeUseCaseProvider = Provider(
+  (ref) => DeleteResume(ref.read(profileRepositoryProvider)),
+);
+
+final getResumeUrlUseCaseProvider = Provider(
+  (ref) => GetResumeUrl(ref.read(profileRepositoryProvider)),
 );
 
 final uploadAvatarUseCaseProvider = Provider(
@@ -129,6 +145,44 @@ class ProfileController extends Notifier<ProfileState>
   /// the supplied patches, then refreshes just the touched tables (house
   /// pattern from setTradeAvailability). Sheets own their button spinner;
   /// failures land in state.error like every other mutation here.
+  /// Uploads a resume and reloads so the profile picks up the new path.
+  ///
+  /// Bytes, not a File: file_picker returns a null `path` on web and only ever
+  /// guarantees `bytes` (see manual_upload_sheet.dart:127).
+  Future<bool> uploadResume(Uint8List bytes, String fileName) async {
+    final userId = readCurrentUserId(ref);
+    if (userId == null) return false;
+    state = state.copyWith(isUploadingResume: true, error: null);
+    final r = await ref
+        .read(uploadResumeUseCaseProvider)
+        .call(userId, bytes, fileName);
+    // Explicit branch rather than fold: the success arm awaits a reload, and
+    // fold is synchronous.
+    if (r.isLeft()) {
+      state = state.copyWith(
+        isUploadingResume: false,
+        error: r.fold((f) => f.message, (_) => null),
+      );
+      return false;
+    }
+    await loadProfile();
+    state = state.copyWith(isUploadingResume: false);
+    return true;
+  }
+
+  Future<bool> deleteResume() async {
+    final userId = readCurrentUserId(ref);
+    if (userId == null) return false;
+    state = state.copyWith(error: null);
+    final r = await ref.read(deleteResumeUseCaseProvider).call(userId);
+    if (r.isLeft()) {
+      state = state.copyWith(error: r.fold((f) => f.message, (_) => null));
+      return false;
+    }
+    await loadProfile();
+    return true;
+  }
+
   Future<bool> savePatches({
     UserProfilePatch? user,
     TradeProfilePatch? trade,
@@ -318,6 +372,7 @@ class ProfileState {
     this.isUploadingAvatar = false,
     this.isUploadingLicence = false,
     this.isUploadingPortfolio = false,
+    this.isUploadingResume = false,
     this.error,
   });
 
@@ -328,6 +383,7 @@ class ProfileState {
   final bool isUploadingAvatar;
   final bool isUploadingLicence;
   final bool isUploadingPortfolio;
+  final bool isUploadingResume;
   final String? error;
 
   bool get isProfileComplete {
@@ -391,6 +447,7 @@ class ProfileState {
     bool? isUploadingAvatar,
     bool? isUploadingLicence,
     bool? isUploadingPortfolio,
+    bool? isUploadingResume,
     String? error,
   }) => ProfileState(
     profile: profile ?? this.profile,
@@ -400,6 +457,7 @@ class ProfileState {
     isUploadingAvatar: isUploadingAvatar ?? this.isUploadingAvatar,
     isUploadingLicence: isUploadingLicence ?? this.isUploadingLicence,
     isUploadingPortfolio: isUploadingPortfolio ?? this.isUploadingPortfolio,
+    isUploadingResume: isUploadingResume ?? this.isUploadingResume,
     error: error,
   );
 }
