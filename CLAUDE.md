@@ -244,7 +244,19 @@ A `handle_new_user()` DB trigger auto-inserts a row into `profiles` on every `au
 
 ### Key database tables
 
-`profiles` → `builder_profiles` / `trade_profiles` (role split via FK), `jobs`, `job_applications`, `messages`, `verification_documents`, `reviews`, `notifications`.
+`profiles` → `builder_profiles` / `trade_profiles` (role split via FK), `jobs`, `applications`, `messages`, `verification_documents`, `reviews`, `notifications`.
+
+> **Corrected 2026-08-31:** this line said `job_applications`. The table is
+> **`applications`** on both prod and staging — verified against
+> `information_schema` on each. It denormalises `builder_id` (NOT NULL, indexed
+> by `applications_builder_id_idx`) alongside `job_id` and `trade_id`, so a
+> "did this trade apply to my job" check needs no join to `jobs`. Writing a
+> policy or query against the phantom name fails at apply time, not at review
+> time.
+
+Apprentice reference data: `site_tickets` (nine AU site tickets; `doc_type`
+non-null means the ticket has a `verification_documents` review path and can
+reach the VERIFIED tier — only `white_card` does today).
 
 Row Level Security is required on all tables. Users may only read/write their own data; admins are gated by role checks.
 

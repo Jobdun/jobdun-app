@@ -111,3 +111,73 @@ Kept in prod: `ken@jobdun.com.au` (admin), `appreview@jobdun.com.au` (Apple demo
 `kenpatrickgarcia123@gmail.com` (trade, verified), `kenpatrickag21@gmail.com`
 (builder, demo-job owner), `sam.s@goldenviewcleaning.com.au` (**confirmed real user**
 2026-08-18 — never touch in cleanups).
+
+## Apprentice profiles (applied 2026-08-31)
+
+Six migrations from `feat: apprentice profiles` are LIVE on staging, applied by
+hand via the Management API `POST /v1/projects/{ref}/database/query` (staging has
+no migration history, so `supabase db push` would try to replay from 2026-05-11):
+
+| Migration | What it added |
+|---|---|
+| `20260831000001_apprentice_columns` | `trade_profiles`: `is_apprentice`, `apprenticeship_stage` (CHECK), `site_tickets`, `resume_path`, `resume_uploaded_at` + partial index |
+| `20260831000002_site_tickets` | `site_tickets` reference table + RLS + 9-row seed |
+| `20260831000003_resume_storage_access` | Additive `storage.objects` SELECT policy for applied-to builders |
+| `20260831000004_search_trades_apprentices` | `search_trades` gains `p_apprentice` + 3 projected columns |
+| `20260831000005_jobs_open_to_apprentices` | `jobs.open_to_apprentices` |
+
+**Not yet on production.** Apply all five there before any build that points at
+prod, or the app reads columns that do not exist.
+
+### Verified post-apply on staging
+
+- 5 columns present, 9 tickets seeded, 1 verifiable (`white_card`)
+- Resume storage policy present
+- `search_trades` is the 9-arg signature; the old 8-arg version is gone
+- **`anon` holds no EXECUTE on `search_trades`** — a fresh `CREATE FUNCTION`
+  grants EXECUTE to PUBLIC by default, which would have silently undone
+  `20260703000002` (audit finding F3, directory closed to logged-out users).
+  The migration revokes explicitly. Re-check this after any future recreate.
+- The stage CHECK rejects an invalid value
+- Apprentice search returns the fixture; TRADES mode excludes it; a default
+  (8-arg-style) call matches TRADES mode exactly
+
+### New permanent QA fixture
+
+`qa.trade.test@jobdun.com.au` (`7dcc3cf9-…`) is now a **2nd-year carpentry
+apprentice** in Blacktown NSW with White Card + First Aid + Working at Heights
+declared, so the APPRENTICES toggle, the ticket tiers and the apprentice profile
+layout all have something real to render.
+
+`appreview@jobdun.com.au` is deliberately untouched — Apple holds that account.
+It was briefly mutated during a smoke test on 2026-08-31 and restored to its
+exact prior values (including `base_latitude -22.1646778929031`,
+`base_longitude 144.584490023553`).
+
+### Run the app against staging
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://kqpsceobwtavcxhatxww.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=<staging anon key above>
+```
+
+⚠️ `scripts/ship-to-boss.sh` builds with `--dart-define-from-file=.env`, which
+points at **production**. A Firebase test build will therefore hit prod, not
+staging — apply the migrations to prod first, or override the defines.
+
+### Staging pauses itself
+
+Supabase free-tier projects pause after inactivity and the subdomain stops
+resolving (`NXDOMAIN`, `curl` returns `000`). Resume with:
+
+```bash
+curl -X POST "https://api.supabase.com/v1/projects/kqpsceobwtavcxhatxww/restore" \
+  -H "Authorization: Bearer <management token>" -H "Content-Type: application/json" -d '{}'
+```
+
+Status goes `INACTIVE` → `COMING_UP` → `ACTIVE_HEALTHY`. **DNS lags the status by
+several minutes** — `ACTIVE_HEALTHY` with `NXDOMAIN` is normal, keep polling.
+The management token is the keychain "Supabase CLI" item (strip
+`go-keyring-base64:`, base64-decode). Note the API rejects a default urllib
+User-Agent with Cloudflare error 1010; send a normal one.
