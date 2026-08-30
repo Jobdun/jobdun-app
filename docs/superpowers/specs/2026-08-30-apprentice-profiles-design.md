@@ -159,6 +159,12 @@ ALTER TABLE public.jobs
   change.
 - Formats: PDF, DOC, DOCX. Cap 5 MB.
 
+**Correction (2026-08-31, verified against prod and staging):** the applications
+table is `public.applications`, not `job_applications` — CLAUDE.md's *Key database
+tables* list is wrong. It denormalises `builder_id` (NOT NULL, indexed), so the
+policy needs no join to `jobs`. That also matters for cost: a storage policy is
+evaluated per object.
+
 Builder read access is an **additive SELECT policy** on `storage.objects`. Postgres OR-s
 policies, so this widens read without touching the owner-only rule:
 
@@ -170,10 +176,9 @@ CREATE POLICY "private_docs_resume_applied_builder_select"
     AND (storage.foldername(name))[2] = 'resume'
     AND EXISTS (
       SELECT 1
-      FROM public.job_applications ja
-      JOIN public.jobs j ON j.id = ja.job_id
-      WHERE ja.trade_id::text = (storage.foldername(name))[1]
-        AND j.builder_id = auth.uid()
+      FROM public.applications a
+      WHERE a.trade_id::text = (storage.foldername(name))[1]
+        AND a.builder_id = auth.uid()
     )
   );
 ```

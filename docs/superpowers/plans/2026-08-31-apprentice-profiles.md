@@ -224,10 +224,9 @@ DO $$ BEGIN
       AND (storage.foldername(name))[2] = 'resume'
       AND EXISTS (
         SELECT 1
-        FROM public.job_applications ja
-        JOIN public.jobs j ON j.id = ja.job_id
-        WHERE ja.trade_id::text = (storage.foldername(name))[1]
-          AND j.builder_id = auth.uid()
+        FROM public.applications a
+        WHERE a.trade_id::text = (storage.foldername(name))[1]
+          AND a.builder_id = auth.uid()
       )
     );
 EXCEPTION WHEN duplicate_object THEN NULL;
