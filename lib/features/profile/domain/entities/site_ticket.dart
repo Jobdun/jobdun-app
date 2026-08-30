@@ -63,6 +63,22 @@ class SiteTicket extends Equatable {
 
   bool get isVerifiable => docType != null && docType!.isNotEmpty;
 
+  /// The qualifying detail from [displayName] — the unit code or the scope
+  /// limit — rendered as the row's second line so the ticket is unambiguous.
+  /// "White Card (Construction Induction, CPCCWHS1001)" yields
+  /// "Construction Induction, CPCCWHS1001".
+  ///
+  /// Null when [displayName] adds nothing over [shortName], so the row renders
+  /// a single line rather than an empty second one.
+  String? get detail {
+    final open = displayName.indexOf('(');
+    if (open != -1 && displayName.endsWith(')')) {
+      final inner = displayName.substring(open + 1, displayName.length - 1);
+      return inner.trim().isEmpty ? null : inner.trim();
+    }
+    return displayName.trim() == shortName.trim() ? null : displayName.trim();
+  }
+
   @override
   List<Object?> get props => [
     slug,

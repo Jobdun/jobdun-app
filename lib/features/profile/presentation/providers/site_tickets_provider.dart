@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
+import '../../../verification/domain/entities/verification_document.dart';
+import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../data/models/site_ticket_model.dart';
 import '../../domain/entities/site_ticket.dart';
 
@@ -43,3 +45,32 @@ Map<SiteTicketCategory, List<SiteTicket>> groupTicketsByCategory(
   }
   return out;
 }
+
+/// Which of a user's tickets have actually been verified by a human reviewer.
+///
+/// Derived from `tradePublicCredentialsProvider` (the minimized counterparty
+/// projection of APPROVED verification_documents) joined to `site_tickets` on
+/// `doc_type`. Today only White Card can land here, because it is the only
+/// ticket with a review path — see the doc_type column in
+/// 20260831000002_site_tickets.sql.
+///
+/// An EXPIRED credential does not count as verified. `isExpired` is derived
+/// server-side so client clock skew cannot flip a lapsed card back to green.
+final verifiedTicketSlugsProvider = FutureProvider.family<Set<String>, String>((
+  ref,
+  userId,
+) async {
+  final tickets = await ref.watch(siteTicketsProvider.future);
+  final creds = await ref.watch(tradePublicCredentialsProvider(userId).future);
+
+  final byDocType = <String, String>{
+    for (final t in tickets)
+      if (t.isVerifiable) t.docType!: t.slug,
+  };
+
+  return {
+    for (final cred in creds)
+      if (!cred.isExpired && byDocType.containsKey(cred.docType.dbValue))
+        byDocType[cred.docType.dbValue]!,
+  };
+});
