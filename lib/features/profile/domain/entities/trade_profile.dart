@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'apprenticeship_stage.dart';
+
 // Matches public.trade_profiles table
 class TradeProfile extends Equatable {
   const TradeProfile({
@@ -33,6 +35,11 @@ class TradeProfile extends Equatable {
     this.isAvailable = true,
     this.availableFrom,
     this.unavailableDates = const [],
+    this.isApprentice = false,
+    this.apprenticeshipStage,
+    this.siteTickets = const [],
+    this.resumePath,
+    this.resumeUploadedAt,
     this.deletedAt,
   });
 
@@ -79,12 +86,43 @@ class TradeProfile extends Equatable {
   // Specific dates the trade has blocked off (booked / on leave), set via the
   // availability calendar (#13). Date-only; builders see these on the profile.
   final List<DateTime> unavailableDates;
+
+  // Apprentice mode. When true the profile renders the apprentice layout: no
+  // hourly rate, no public liability, no jobs-completed stat. The
+  // apprenticeship they WANT is primary_trade — same picker, same slug — so
+  // search, displayTrade and job matching need no new code path.
+  final bool isApprentice;
+  final ApprenticeshipStage? apprenticeshipStage;
+
+  // SELF-DECLARED ticket slugs (site_tickets.slug). A tick is a claim, never
+  // proof. Verified credentials come from get_trade_public_credentials and are
+  // a separate, stronger tier — never merge the two lists on a display surface.
+  final List<String> siteTickets;
+
+  // private-docs path, `{uid}/resume/{epoch}.{ext}` — never a public URL.
+  // Reading it needs a signed URL, gated by the applied-to-builder policy.
+  final String? resumePath;
+  final DateTime? resumeUploadedAt;
   // Soft-delete timestamp. Repository default reads filter on
   // `deletedAt == null`; deleted rows stay around so references in
   // job_applications and reviews still resolve.
   final DateTime? deletedAt;
 
   bool get hasLicence => licenceUrl != null && licenceUrl!.isNotEmpty;
+  bool get hasResume => resumePath != null && resumePath!.isNotEmpty;
+  int get ticketCount => siteTickets.length;
+
+  /// Last path segment, for display. Null when there is no resume.
+  String? get resumeFileName => hasResume ? resumePath!.split('/').last : null;
+
+  /// Profile chip text, e.g. "2ND-YEAR CARPENTER APPRENTICE". Null unless this
+  /// is an apprentice who has picked a stage.
+  String? get apprenticeHeadline {
+    final stage = apprenticeshipStage;
+    if (!isApprentice || stage == null) return null;
+    return stage.headline(displayTrade);
+  }
+
   int get portfolioCount => portfolioUrls.length;
 
   String get displayLocation => (baseSuburb != null && baseState != null)
@@ -151,6 +189,11 @@ class TradeProfile extends Equatable {
     isAvailable,
     availableFrom,
     unavailableDates,
+    isApprentice,
+    apprenticeshipStage,
+    siteTickets,
+    resumePath,
+    resumeUploadedAt,
     deletedAt,
   ];
 }

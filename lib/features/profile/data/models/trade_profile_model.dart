@@ -1,3 +1,4 @@
+import '../../domain/entities/apprenticeship_stage.dart';
 import '../../domain/entities/trade_profile.dart';
 
 class TradeProfileModel extends TradeProfile {
@@ -32,6 +33,11 @@ class TradeProfileModel extends TradeProfile {
     super.isAvailable,
     super.availableFrom,
     super.unavailableDates,
+    super.isApprentice,
+    super.apprenticeshipStage,
+    super.siteTickets,
+    super.resumePath,
+    super.resumeUploadedAt,
     super.deletedAt,
   });
 
@@ -85,6 +91,16 @@ class TradeProfileModel extends TradeProfile {
             ? DateTime.parse(json['available_from'] as String)
             : null,
         unavailableDates: _parseDates(json['unavailable_dates']),
+        isApprentice: json['is_apprentice'] as bool? ?? false,
+        apprenticeshipStage: ApprenticeshipStageX.fromDb(
+          json['apprenticeship_stage'] as String?,
+        ),
+        siteTickets:
+            (json['site_tickets'] as List?)?.cast<String>() ?? const [],
+        resumePath: json['resume_path'] as String?,
+        resumeUploadedAt: json['resume_uploaded_at'] != null
+            ? DateTime.parse(json['resume_uploaded_at'] as String)
+            : null,
         deletedAt: json['deleted_at'] != null
             ? DateTime.parse(json['deleted_at'] as String)
             : null,
@@ -153,6 +169,11 @@ class TradeProfileModel extends TradeProfile {
     'is_available': isAvailable,
     'available_from': availableFrom?.toIso8601String(),
     'unavailable_dates': _encodeDates(unavailableDates),
+    'is_apprentice': isApprentice,
+    'apprenticeship_stage': apprenticeshipStage?.dbValue,
+    'site_tickets': siteTickets,
+    'resume_path': resumePath,
+    'resume_uploaded_at': resumeUploadedAt?.toIso8601String(),
     'deleted_at': deletedAt?.toIso8601String(),
   };
 }

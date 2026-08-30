@@ -1,5 +1,7 @@
 import 'package:fpdart/fpdart.dart';
 
+import 'apprenticeship_stage.dart';
+
 /// Partial-update payloads for the three profile tables. Semantics:
 /// `None` = leave the column untouched (absent from the write payload),
 /// `Some(v)` = write v, `Some(null)` = clear a nullable column.
@@ -33,6 +35,11 @@ class TradeProfilePatch {
     this.baseLatitude = const None(),
     this.baseLongitude = const None(),
     this.about = const None(),
+    this.isApprentice = const None(),
+    this.apprenticeshipStage = const None(),
+    this.siteTickets = const None(),
+    this.resumePath = const None(),
+    this.resumeUploadedAt = const None(),
   });
 
   final Option<String> fullName;
@@ -52,6 +59,11 @@ class TradeProfilePatch {
   final Option<double?> baseLatitude;
   final Option<double?> baseLongitude;
   final Option<String?> about;
+  final Option<bool> isApprentice;
+  final Option<ApprenticeshipStage?> apprenticeshipStage;
+  final Option<List<String>> siteTickets;
+  final Option<String?> resumePath;
+  final Option<DateTime?> resumeUploadedAt;
 
   bool get isEmpty =>
       fullName.isNone() &&
@@ -70,7 +82,12 @@ class TradeProfilePatch {
       basePlaceId.isNone() &&
       baseLatitude.isNone() &&
       baseLongitude.isNone() &&
-      about.isNone();
+      about.isNone() &&
+      isApprentice.isNone() &&
+      apprenticeshipStage.isNone() &&
+      siteTickets.isNone() &&
+      resumePath.isNone() &&
+      resumeUploadedAt.isNone();
 }
 
 class BuilderProfilePatch {

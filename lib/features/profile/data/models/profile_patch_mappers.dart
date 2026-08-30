@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 
+import '../../domain/entities/apprenticeship_stage.dart';
 import '../../domain/entities/profile_patches.dart';
 
 // Pure patch → Supabase column-map builders. Column names mirror the
@@ -39,6 +40,21 @@ Map<String, dynamic> tradeProfilePatchColumns(TradeProfilePatch p) {
   _put(map, 'base_latitude', p.baseLatitude);
   _put(map, 'base_longitude', p.baseLongitude);
   _put(map, 'about', p.about);
+  _put(map, 'is_apprentice', p.isApprentice);
+  // Enum -> the CHECK-constrained db string. Some(null) CLEARS the column,
+  // which is what flipping apprentice mode off must do: a None() would leave
+  // the old stage in the row, so re-enabling months later would silently
+  // resurface "3rd year".
+  p.apprenticeshipStage.match(
+    () {},
+    (v) => map['apprenticeship_stage'] = v?.dbValue,
+  );
+  _put(map, 'site_tickets', p.siteTickets);
+  _put(map, 'resume_path', p.resumePath);
+  p.resumeUploadedAt.match(
+    () {},
+    (v) => map['resume_uploaded_at'] = v?.toIso8601String(),
+  );
   return map;
 }
 
