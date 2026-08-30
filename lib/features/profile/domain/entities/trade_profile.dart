@@ -91,12 +91,66 @@ class TradeProfile extends Equatable {
       ? '$baseSuburb, $baseState'
       : baseSuburb ?? baseState ?? '';
 
-  String get displayTrade => primaryTrade
-      .replaceAll('_', ' ')
-      .split(' ')
-      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-      .join(' ');
+  /// Human-readable trade name. `primary_trade` is a slug, so `floor_tiler`
+  /// reads "Floor Tiler".
+  ///
+  /// When the tradie picked "Other" the slug carries no information — the
+  /// trade they typed lives in [tradeOther]. Falling through to it is the only
+  /// way that answer ever reaches a screen: the picker and the edit sheet both
+  /// write `trade_other`, but every display path goes through here, so an
+  /// "Other → Scaffolder" tradie was shown, and searched as, plain "Other".
+  String get displayTrade {
+    final other = tradeOther?.trim();
+    if (primaryTrade == 'other' && other != null && other.isNotEmpty) {
+      return other;
+    }
+    return primaryTrade
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
+  }
 
+  /// Every field, deliberately.
+  ///
+  /// This used to be `[id, fullName, primaryTrade]`, which made two profiles
+  /// differing only in rate, suburb, bio or availability compare *equal* — so
+  /// a `ref.watch(...select((s) => s.tradeProfile))` would sit on a stale
+  /// object and a saved edit would never reach the screen. No read site
+  /// selects the whole profile today, which is the only reason it never bit;
+  /// the first one to do so would have inherited a silent bug.
   @override
-  List<Object?> get props => [id, fullName, primaryTrade];
+  List<Object?> get props => [
+    id,
+    fullName,
+    primaryTrade,
+    crewSize,
+    yearsExperience,
+    hourlyRateMin,
+    hourlyRateMax,
+    hourlyRateVisible,
+    serviceRadiusKm,
+    baseSuburb,
+    baseState,
+    basePostcode,
+    baseFormattedAddress,
+    basePlaceId,
+    baseLatitude,
+    baseLongitude,
+    about,
+    tradeOther,
+    licenceUrl,
+    portfolioUrls,
+    isVerified,
+    verifiedAt,
+    totalApplications,
+    hireCount,
+    jobsCompleted,
+    averageRating,
+    ratingCount,
+    isAvailable,
+    availableFrom,
+    unavailableDates,
+    deletedAt,
+  ];
 }

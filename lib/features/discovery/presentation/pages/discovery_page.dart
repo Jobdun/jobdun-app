@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
@@ -153,12 +154,14 @@ class _DiscoveryPageState extends ConsumerState<DiscoveryPage> {
                   ),
                   separatorBuilder: (_, _) => Gap(9.h),
                   builderDelegate: PagedChildBuilderDelegate<TradeSearchResult>(
-                    // 2026-08-18 audit: `onTap: () {}` swallowed taps on every
-                    // row while looking tappable. No trade public-profile
-                    // route exists yet — pass null so the card renders with no
-                    // tap affordance; wire a route here when one lands.
-                    itemBuilder: (context, result, i) =>
-                        DiscoveryTradieTile(result: result),
+                    // 2026-08-18 audit: `onTap: () {}` swallowed taps on
+                    // every row while looking tappable, so the tile was left
+                    // deliberately inert until a trade public-profile route
+                    // existed. /trades/:id is that route.
+                    itemBuilder: (context, result, i) => DiscoveryTradieTile(
+                      result: result,
+                      onTap: () => context.push('/trades/${result.trade.id}'),
+                    ),
                     firstPageProgressIndicatorBuilder: (_) =>
                         const _DiscoverySkeleton(),
                     newPageProgressIndicatorBuilder: (_) => Padding(

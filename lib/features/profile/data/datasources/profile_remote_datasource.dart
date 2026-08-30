@@ -15,6 +15,7 @@ abstract interface class ProfileRemoteDataSource {
   Future<BuilderProfileModel?> getBuilderProfile(String userId);
   Future<BuilderProfileModel?> getBuilderPublicProfile(String userId);
   Future<TradeProfileModel?> getTradeProfile(String userId);
+  Future<TradeProfileModel?> getTradePublicProfile(String userId);
   Future<void> patchUserProfile(String userId, UserProfilePatch patch);
   Future<void> patchTradeProfile(String userId, TradeProfilePatch patch);
   Future<void> patchBuilderProfile(String userId, BuilderProfilePatch patch);
@@ -89,6 +90,27 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           .maybeSingle();
       if (data == null) return null;
       return BuilderProfileModel.fromJson(data);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  // Storefront projection for viewing ANOTHER tradie (pre-relationship).
+  // `trade_profiles_public` drops licence_url and the job counters, gates the
+  // hourly rate behind hourly_rate_visible, rounds coordinates server-side and
+  // already filters soft-deleted rows (PII split, migration 20260611000004).
+  // TradeProfileModel.fromJson defaults every absent column, so the narrower
+  // projection deserialises without special-casing.
+  @override
+  Future<TradeProfileModel?> getTradePublicProfile(String userId) async {
+    try {
+      final data = await _client
+          .from('trade_profiles_public')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+      if (data == null) return null;
+      return TradeProfileModel.fromJson(data);
     } catch (e) {
       throw ServerException(e.toString());
     }

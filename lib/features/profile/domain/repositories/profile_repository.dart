@@ -18,6 +18,11 @@ abstract interface class ProfileRepository {
     String userId,
   );
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId);
+
+  // Front-of-card storefront view of ANOTHER tradie (no licence, rate gated
+  // by the tradie's own visibility flag, coordinates rounded). Use for
+  // pre-relationship surfaces like /trades/:id.
+  Future<Either<Failure, TradeProfile?>> getTradePublicProfile(String userId);
   // Partial updates — only columns set on the patch are written. Empty
   // patches resolve to success without touching the network.
   Future<Either<Failure, void>> patchUserProfile(

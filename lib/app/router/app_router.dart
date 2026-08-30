@@ -37,6 +37,7 @@ import '../../features/messaging/presentation/pages/message_thread_page.dart';
 import '../../features/messaging/presentation/pages/messages_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/builder_public_profile_page.dart';
+import '../../features/profile/presentation/pages/trade_public_profile_page.dart';
 import '../../features/profile/presentation/pages/availability_calendar_page.dart';
 import '../../features/profile/presentation/pages/notification_settings_page.dart';
 import '../../features/quotes/presentation/pages/quote_requests_inbox_page.dart';
@@ -409,6 +410,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/builders/:id',
         builder: (_, state) =>
             BuilderPublicProfilePage(builderId: state.pathParameters['id']!),
+      ),
+      // The tradie-side mirror: what a builder sees before hiring, and the
+      // target of the tradie's own "Preview public profile" link.
+      GoRoute(
+        path: '/trades/:id',
+        builder: (_, state) =>
+            TradePublicProfilePage(tradeId: state.pathParameters['id']!),
       ),
 
       // ── Legal (public — accessible before auth) ────────────────────────────

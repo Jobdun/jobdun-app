@@ -87,6 +87,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<Either<Failure, TradeProfile?>> getTradePublicProfile(
+    String userId,
+  ) async {
+    // No cache: public storefront views are transient vetting reads.
+    try {
+      return right(await _datasource.getTradePublicProfile(userId));
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, TradeProfile?>> getTradeProfile(String userId) async {
     final key = _tradeProfileKey(userId);
     try {
