@@ -31,7 +31,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #
 # One number covers all three targets: Android reads it via flutter.versionCode,
 # iOS via $(FLUTTER_BUILD_NUMBER) → CFBundleVersion, web via version.json.
-version: 1.0.1+7
+version: 1.0.2+8
 
 environment:
   sdk: ^3.11.5
