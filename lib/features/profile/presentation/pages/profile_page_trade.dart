@@ -24,6 +24,8 @@ class _TradeProfile extends ConsumerWidget {
     final jobsDone = (p?.jobsCompleted ?? 0).toString();
     final yrsExp = p?.yearsExperience != null ? '${p!.yearsExperience}+' : '—';
 
+    final isApprentice = p?.isApprentice ?? false;
+    final apprenticeHeadline = p?.apprenticeHeadline;
     final trade = _blank(p?.displayTrade);
     final location = _blank(p?.displayLocation);
     // Verified flag derives from the new verifications table (the legacy
@@ -49,17 +51,38 @@ class _TradeProfile extends ConsumerWidget {
           // Row, so an unevenly-wrapping label left them at different heights
           // and vertically centred against each other; JStatsRow is one card
           // with IntrinsicHeight columns, so the figures always line up.
-          JStatsRow(
-            stats: [
-              JStat(value: rating, label: 'Rating'),
-              JStat(
-                value: jobsDone,
-                label: 'Jobs Done',
-                valueColor: c.verified,
-              ),
-              JStat(value: yrsExp, label: 'Yrs Exp', valueColor: c.warning),
-            ],
-          ),
+          // An apprentice's figures are different figures. A hard "0 JOBS
+          // DONE" and a blank "— YRS EXP" on a first-year's profile carry no
+          // information and read as a failing grade, so they are replaced by
+          // what an apprentice actually has: tickets and a stage.
+          if (isApprentice)
+            JStatsRow(
+              stats: [
+                JStat(value: rating, label: 'Rating'),
+                JStat(
+                  value: '${p?.ticketCount ?? 0}',
+                  label: 'Tickets',
+                  valueColor: c.verified,
+                ),
+                JStat(
+                  value: p?.apprenticeshipStage?.label ?? '—',
+                  label: 'Stage',
+                  valueColor: c.warning,
+                ),
+              ],
+            )
+          else
+            JStatsRow(
+              stats: [
+                JStat(value: rating, label: 'Rating'),
+                JStat(
+                  value: jobsDone,
+                  label: 'Jobs Done',
+                  valueColor: c.verified,
+                ),
+                JStat(value: yrsExp, label: 'Yrs Exp', valueColor: c.warning),
+              ],
+            ),
           if (p?.id != null) ...[
             Gap(AppSpacing.sm.h),
             // The tradie half of S12 — see exactly what a builder sees before
@@ -102,12 +125,26 @@ class _TradeProfile extends ConsumerWidget {
           // orange pill with nothing in it.
           if (trade != null) ...[
             Gap(AppSpacing.md.h),
-            const FieldLabel.section('Skills'),
+            FieldLabel.section(isApprentice ? 'Looking for' : 'Skills'),
             Gap(AppSpacing.sm.h),
             Wrap(
               spacing: 8.w,
               runSpacing: 8.h,
-              children: [JChip(label: trade)],
+              children: [
+                if (apprenticeHeadline != null)
+                  ApprenticeHeaderChip(headline: apprenticeHeadline)
+                else
+                  JChip(label: trade),
+              ],
+            ),
+          ],
+          if (p?.id != null) ...[
+            Gap(AppSpacing.md.h),
+            ProfileTicketsSection(
+              userId: p!.id,
+              selectedSlugs: p.siteTickets,
+              isOwner: true,
+              onAdd: () => showTicketsSheet(context),
             ),
           ],
           Gap(AppSpacing.md.h),

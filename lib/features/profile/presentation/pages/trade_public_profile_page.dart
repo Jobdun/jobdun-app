@@ -15,12 +15,15 @@ import '../../../../core/utils/string_utils.dart';
 import '../../../verification/domain/entities/verification.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
 import '../../../verification/presentation/widgets/verification_receipts.dart';
+import '../../domain/entities/apprenticeship_stage.dart';
 import '../../domain/entities/trade_profile.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/apprentice_header_chip.dart';
 import '../widgets/portfolio_strip.dart';
 import '../widgets/profile_about_section.dart';
 import '../widgets/profile_rating_block.dart';
 import '../widgets/profile_reviews_preview.dart';
+import '../widgets/profile_tickets_section.dart';
 
 /// Fetches a tradie's profile for the public (builder-facing) view.
 /// autoDispose so each open re-fetches. Returns null on error/soft-delete so
@@ -132,6 +135,7 @@ class _TradePublicBody extends StatelessWidget {
     final yrsExp = p.yearsExperience != null ? '${p.yearsExperience}+' : '—';
     final crew = p.crewSize <= 1 ? 'Solo' : '${p.crewSize}';
     final trade = p.displayTrade.trim();
+    final apprenticeHeadline = p.apprenticeHeadline;
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, AppSpacing.xl.h),
@@ -157,7 +161,10 @@ class _TradePublicBody extends StatelessWidget {
                         color: c.text1,
                       ),
                     ),
-                    if (trade.isNotEmpty) ...[
+                    if (apprenticeHeadline != null) ...[
+                      Gap(AppSpacing.sm.h),
+                      ApprenticeHeaderChip(headline: apprenticeHeadline),
+                    ] else if (trade.isNotEmpty) ...[
                       Gap(4.h),
                       Text(
                         trade,
@@ -178,17 +185,38 @@ class _TradePublicBody extends StatelessWidget {
           // third figure is crew size rather than a jobs count — inventing one
           // from an absent column is exactly the trap the owner-side profile
           // just got fixed for.
-          JStatsRow(
-            stats: [
-              JStat(value: rating, label: 'Rating'),
-              JStat(value: yrsExp, label: 'Yrs Exp', valueColor: c.warning),
-              JStat(value: crew, label: 'Crew', valueColor: c.verified),
-            ],
-          ),
+          if (p.isApprentice)
+            JStatsRow(
+              stats: [
+                JStat(value: rating, label: 'Rating'),
+                JStat(
+                  value: '${p.ticketCount}',
+                  label: 'Tickets',
+                  valueColor: c.verified,
+                ),
+                JStat(
+                  value: p.apprenticeshipStage?.label ?? '—',
+                  label: 'Stage',
+                  valueColor: c.warning,
+                ),
+              ],
+            )
+          else
+            JStatsRow(
+              stats: [
+                JStat(value: rating, label: 'Rating'),
+                JStat(value: yrsExp, label: 'Yrs Exp', valueColor: c.warning),
+                JStat(value: crew, label: 'Crew', valueColor: c.verified),
+              ],
+            ),
           Gap(AppSpacing.md.h),
           // No addPrompt: this is the how-others-see-you view, so a blank bio
           // hides the section rather than begging a stranger to fill it in.
           ProfileAboutSection(about: p.about, label: 'About'),
+          if (p.siteTickets.isNotEmpty) ...[
+            Gap(AppSpacing.md.h),
+            ProfileTicketsSection(userId: p.id, selectedSlugs: p.siteTickets),
+          ],
           Gap(AppSpacing.md.h),
           // Explicit urls, not the signed-in owner's strip — this is someone
           // else's work. Passing `urls` makes it a read-only showcase.
