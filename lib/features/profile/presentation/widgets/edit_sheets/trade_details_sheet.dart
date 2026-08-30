@@ -9,13 +9,14 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../../core/design/colors.dart';
 import '../../../../../core/design/widgets/field_label.dart';
-import '../../../../../core/design/widgets/j_switch.dart';
 import '../../../../../core/widgets/inputs/j_text_field.dart';
+import '../../../domain/entities/apprenticeship_stage.dart';
 import '../../../domain/entities/profile_patches.dart';
-import '../../../domain/entities/trade_profile.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/trade_categories_provider.dart';
 import '../trade_category_picker.dart';
+import 'apprenticeship_fields.dart';
+import 'availability_fields.dart';
 import 'edit_sheet_scaffold.dart';
 
 /// Quick-edit sheet for trade identity + availability (tradies): trade picker,
@@ -37,6 +38,8 @@ class _TradeDetailsSheetState extends ConsumerState<TradeDetailsSheet> {
   String? _tradeSlug;
   String? _tradeOther;
   bool _showTradeError = false;
+  bool _isApprentice = false;
+  ApprenticeshipStage? _stage;
 
   @override
   void initState() {
@@ -44,6 +47,8 @@ class _TradeDetailsSheetState extends ConsumerState<TradeDetailsSheet> {
     final tp = ref.read(profileControllerProvider).tradeProfile;
     if (tp != null && tp.primaryTrade.isNotEmpty) _tradeSlug = tp.primaryTrade;
     _tradeOther = tp?.tradeOther;
+    _isApprentice = tp?.isApprentice ?? false;
+    _stage = tp?.apprenticeshipStage;
   }
 
   int? _parseIntOrNull(Object? v) {
@@ -80,18 +85,28 @@ class _TradeDetailsSheetState extends ConsumerState<TradeDetailsSheet> {
       _saving = true;
       _error = null;
     });
+    final apprentice = apprenticeshipPatch(
+      isApprentice: _isApprentice,
+      stage: _stage,
+    );
     final ok = await ref
         .read(profileControllerProvider.notifier)
         .savePatches(
           trade: TradeProfilePatch(
             primaryTrade: Some(_tradeSlug!),
             tradeOther: Some(_tradeSlug == 'other' ? _tradeOther : null),
-            yearsExperience: Some(_parseIntOrNull(values['years_experience'])),
             isAvailable: Some(isAvailable),
             // Available now ⇒ no "free from" date; otherwise keep the choice.
             availableFrom: Some(
               isAvailable ? null : values['available_from'] as DateTime?,
             ),
+            isApprentice: apprentice.isApprentice,
+            apprenticeshipStage: apprentice.apprenticeshipStage,
+            // An apprentice is on award rates, so years-of-experience is not
+            // asked for and must be cleared rather than left stale.
+            yearsExperience: _isApprentice
+                ? const Some(null)
+                : Some(_parseIntOrNull(values['years_experience'])),
           ),
         );
     if (!mounted) return;
@@ -144,26 +159,45 @@ class _TradeDetailsSheetState extends ConsumerState<TradeDetailsSheet> {
               ),
             ],
             Gap(AppSpacing.md.h),
-            const FieldLabel('YEARS OF EXPERIENCE'),
-            Gap(AppSpacing.sm.h),
-            JTextField(
-              name: 'years_experience',
-              hint: 'e.g. 8',
-              initialValue: tp?.yearsExperience?.toString(),
-              keyboardType: TextInputType.number,
-              validator: FormBuilderValidators.compose([
-                FormBuilderValidators.integer(errorText: 'Whole numbers only.'),
-                FormBuilderValidators.min(0, errorText: 'Must be 0 or more.'),
-                FormBuilderValidators.max(
-                  60,
-                  errorText: 'Must be 60 or fewer.',
-                ),
-              ]),
+            ApprenticeshipFields(
+              isApprentice: _isApprentice,
+              stage: _stage,
+              onApprenticeChanged: (v) => setState(() {
+                _isApprentice = v;
+                _dirty = true;
+              }),
+              onStageChanged: (s) => setState(() {
+                _stage = s;
+                _dirty = true;
+              }),
             ),
+            // A first-year has no years of experience to report. Asking is
+            // noise, and a blank field reads as an incomplete profile.
+            if (!_isApprentice) ...[
+              Gap(AppSpacing.md.h),
+              const FieldLabel('YEARS OF EXPERIENCE'),
+              Gap(AppSpacing.sm.h),
+              JTextField(
+                name: 'years_experience',
+                hint: 'e.g. 8',
+                initialValue: tp?.yearsExperience?.toString(),
+                keyboardType: TextInputType.number,
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.integer(
+                    errorText: 'Whole numbers only.',
+                  ),
+                  FormBuilderValidators.min(0, errorText: 'Must be 0 or more.'),
+                  FormBuilderValidators.max(
+                    60,
+                    errorText: 'Must be 60 or fewer.',
+                  ),
+                ]),
+              ),
+            ],
             Gap(AppSpacing.md.h),
             const FieldLabel('AVAILABILITY'),
             Gap(AppSpacing.sm.h),
-            _AvailabilityFields(tp: tp),
+            AvailabilityFields(tp: tp),
             Gap(AppSpacing.sm.h),
           ],
         ),
@@ -246,165 +280,6 @@ class _TradePickerTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Availability controls threaded through FormBuilder so _save reads
-/// `is_available` / `available_from` off the form values. "Open for work"
-/// off reveals an optional "free from" date.
-class _AvailabilityFields extends StatelessWidget {
-  const _AvailabilityFields({required this.tp});
-
-  final TradeProfile? tp;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormBuilderField<bool>(
-      name: 'is_available',
-      initialValue: tp?.isAvailable ?? true,
-      builder: (field) {
-        final open = field.value ?? true;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _AvailabilityToggleRow(value: open, onChanged: field.didChange),
-            if (!open) ...[
-              Gap(AppSpacing.md.h),
-              const FieldLabel('AVAILABLE FROM'),
-              Gap(AppSpacing.sm.h),
-              _AvailableFromField(initial: tp?.availableFrom),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-// "Open for work" toggle. Off ⇒ the trade is hidden from searches until their
-// available-from date passes (search treats isAvailable OR from<=today).
-class _AvailabilityToggleRow extends StatelessWidget {
-  const _AvailabilityToggleRow({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(AppRadius.input.r),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Open for work',
-                  style: tt.bodyMedium!.copyWith(
-                    color: c.text1,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Gap(2.h),
-                Text(
-                  value
-                      ? "Show up in builders' searches."
-                      : 'Hidden from searches until your start date.',
-                  style: tt.bodySmall!.copyWith(color: c.text3),
-                ),
-              ],
-            ),
-          ),
-          Gap(10.w),
-          JSwitch(value: value, onChanged: onChanged),
-        ],
-      ),
-    );
-  }
-}
-
-// Optional "free from" date tile, backed by a FormBuilderField so _save reads
-// `available_from` straight off the form values.
-class _AvailableFromField extends StatelessWidget {
-  const _AvailableFromField({required this.initial});
-
-  final DateTime? initial;
-
-  static const _months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  static String _fmt(DateTime d) =>
-      '${d.day} ${_months[d.month - 1]} ${d.year}';
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
-    return FormBuilderField<DateTime>(
-      name: 'available_from',
-      initialValue: initial,
-      builder: (field) {
-        final v = field.value;
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () async {
-            final now = DateTime.now();
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: v ?? now,
-              firstDate: now,
-              lastDate: now.add(const Duration(days: 365)),
-            );
-            if (picked != null) field.didChange(picked);
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: c.surface,
-              borderRadius: BorderRadius.circular(AppRadius.input.r),
-              border: Border.all(color: c.border),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  AppIcons.calendar,
-                  size: AppIconSize.inline.r,
-                  color: c.text3,
-                ),
-                Gap(10.w),
-                Expanded(
-                  child: Text(
-                    v != null ? _fmt(v) : "Leave blank if you're ready now.",
-                    style: tt.bodyMedium!.copyWith(
-                      color: v != null ? c.text1 : c.text3,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

@@ -61,7 +61,11 @@ class TicketRow extends StatelessWidget {
           child: ConstrainedBox(
             // minHeight, never a fixed height: the row has to grow when the
             // OS text scaler is turned up (clamped 0.9-1.3 app-wide).
-            constraints: BoxConstraints(minHeight: 48.h),
+            //
+            // 48 unscaled, NOT 48.h — the WCAG 2.5.5 floor is an absolute in
+            // logical pixels, and .h shrinks it on short screens. Matches
+            // AppTheme's `const Size(48, 48)`.
+            constraints: const BoxConstraints(minHeight: 48),
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8.h),
               child: Row(
