@@ -29,7 +29,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   static const String feedColumns =
       'id, builder_id, title, description, suburb, state, postcode, '
       'trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, '
-      'requires_verified, requires_white_card, application_count, view_count, '
+      'requires_verified, requires_white_card, open_to_apprentices, '
+      'application_count, view_count, '
       'status, published_at, created_at, updated_at, '
       'latitude, longitude, formatted_address, place_id';
 

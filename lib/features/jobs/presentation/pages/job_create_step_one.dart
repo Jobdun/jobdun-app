@@ -22,6 +22,8 @@ class _StepOne extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _UrgentToggle(),
+          Gap(16.h),
+          const _OpenToApprenticesToggle(),
           Gap(24.h),
           JTextField(
             name: 'title',

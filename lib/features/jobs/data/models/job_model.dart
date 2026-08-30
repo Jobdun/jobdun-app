@@ -26,6 +26,7 @@ class JobModel extends Job {
     super.requiresWhiteCard,
     super.requiresPublicLiability,
     super.requiresVerified,
+    super.openToApprentices,
     super.requiredCertifications,
     super.applicationCount,
     super.viewCount,
@@ -73,6 +74,7 @@ class JobModel extends Job {
     requiresWhiteCard: json['requires_white_card'] as bool? ?? false,
     requiresPublicLiability: json['requires_public_liability'] as bool? ?? true,
     requiresVerified: json['requires_verified'] as bool? ?? true,
+    openToApprentices: json['open_to_apprentices'] as bool? ?? false,
     requiredCertifications:
         (json['required_certifications'] as List<dynamic>?)?.cast<String>() ??
         [],
@@ -119,6 +121,7 @@ class JobModel extends Job {
     requiresWhiteCard: job.requiresWhiteCard,
     requiresPublicLiability: job.requiresPublicLiability,
     requiresVerified: job.requiresVerified,
+    openToApprentices: job.openToApprentices,
     requiredCertifications: job.requiredCertifications,
     applicationCount: job.applicationCount,
     viewCount: job.viewCount,
@@ -150,6 +153,7 @@ class JobModel extends Job {
     'requires_white_card': requiresWhiteCard,
     'requires_public_liability': requiresPublicLiability,
     'requires_verified': requiresVerified,
+    'open_to_apprentices': openToApprentices,
     'required_certifications': requiredCertifications,
     // Lat/lng/place_id/formatted_address are post-MapTiler additions. Emit
     // only when set so writes don't fail pre-migration on environments that
@@ -190,6 +194,7 @@ class JobModel extends Job {
     'requires_white_card': requiresWhiteCard,
     'requires_public_liability': requiresPublicLiability,
     'requires_verified': requiresVerified,
+    'open_to_apprentices': openToApprentices,
     'required_certifications': requiredCertifications,
     'application_count': applicationCount,
     'view_count': viewCount,

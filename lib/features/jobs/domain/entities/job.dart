@@ -131,6 +131,7 @@ class Job extends Equatable {
     this.requiresWhiteCard = false,
     this.requiresPublicLiability = true,
     this.requiresVerified = true,
+    this.openToApprentices = false,
     this.requiredCertifications = const [],
     this.applicationCount = 0,
     this.viewCount = 0,
@@ -167,6 +168,14 @@ class Job extends Equatable {
   final bool requiresWhiteCard;
   final bool requiresPublicLiability;
   final bool requiresVerified;
+
+  /// Builder invites apprentice applicants.
+  ///
+  /// An INVITATION SIGNAL, not a gate waiver. requiresVerified and
+  /// requiresPublicLiability are displayed on the card but never enforced
+  /// at apply time, so there is nothing to waive. This drives an OPEN TO
+  /// APPRENTICES chip and an apprentice-side feed filter.
+  final bool openToApprentices;
   final List<String> requiredCertifications;
   final int applicationCount;
   final int viewCount;

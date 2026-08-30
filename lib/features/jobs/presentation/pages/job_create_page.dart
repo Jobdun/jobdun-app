@@ -26,6 +26,7 @@ part 'job_create_page_widgets.dart';
 part 'job_create_helpers.dart';
 part 'job_create_step_one.dart';
 part 'job_create_step_two.dart';
+part 'job_apprentice_toggle.dart';
 
 class JobCreatePage extends ConsumerStatefulWidget {
   const JobCreatePage({super.key});
@@ -269,6 +270,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
             'pricingMode': PricingType.builderSet,
             'pricingUnit': PricingUnit.hourly,
             'urgent': false,
+            'open_to_apprentices': false,
           },
           child: Column(
             children: [

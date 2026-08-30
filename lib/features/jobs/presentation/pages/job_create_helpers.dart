@@ -97,6 +97,7 @@ Job _buildJob(String builderId, Map<String, dynamic> values) {
     longitude: longitude,
     formattedAddress: formattedAddress,
     placeId: placeId,
+    openToApprentices: values['open_to_apprentices'] as bool? ?? false,
   );
 }
 
