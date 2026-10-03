@@ -1,0 +1,22 @@
+Command: bash scripts/validate.sh
+Exit: 0
+IPA check: PASS 1.0.3 (10), always-location API references: 0
+
+=== Summary ===
+  PASS  No GoogleFonts.* outside theme config
+  PASS  No Colors.white (use AppColors / tokens)
+  PASS  No raw SizedBox spacing (use Gap)
+  PASS  No hardcoded Color(0xFF in lib/features/
+  PASS  No inline gradient in lib/features/
+  PASS  No AppColors.* in lib/features/
+  PASS  No Theme.colorScheme in lib/features/ (use context.c)
+  PASS  No CARTO tile URLs (watermarked - use JBasemap)
+  PASS  No server secrets in bundled .env asset
+  PASS  No new oversize files
+  PASS  check-architecture.sh
+  PASS  dart format (no changes)
+  PASS  flutter analyze (no fatal infos)
+  PASS  flutter test (all suites)
+  SKIP  flutter build apk  (set FULL=1 to enable, ~5 min)
+
+All checks passed.

@@ -97,7 +97,7 @@ class _ActionBarState extends State<_ActionBar> {
             children: [
               Expanded(
                 child: JButton(
-                  label: 'Hire this tradie',
+                  label: 'Hire applicant',
                   variant: JButtonVariant.successOutline,
                   isLoading: _busy == _BarAction.hire,
                   onPressed: _guarded(_BarAction.hire, widget.onHire),

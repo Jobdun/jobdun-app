@@ -52,8 +52,8 @@
 		<!-- Location is whileInUse only — shown to the user on first map view or
 	     when tapping "Use my current location" in the address picker. Copy is
 	     intentionally specific so iOS users see a clear reason in the permission
-	     dialog. No NSLocationAlwaysAndWhenInUseUsageDescription because Jobdun
-	     does NOT use background location. -->
+	     dialog. The Podfile sets BYPASS_PERMISSION_LOCATION_ALWAYS=1 for
+	     geolocator_apple so the compiled app excludes always authorization. -->
 		<!-- App Store gate G3 (app-store-review-check): every capability the app
 		     touches needs a specific purpose string — image_picker uses both the
 		     camera and the photo library (avatars, portfolio, verification docs).

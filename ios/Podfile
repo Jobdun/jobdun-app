@@ -42,6 +42,13 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Jobdun only requests foreground location. Compile out geolocator's
+      # unused always-authorization API to avoid ITMS-90683 (build 9).
+      if target.name == 'geolocator_apple'
+        definitions = Array(config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'])
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] =
+          (definitions + ['$(inherited)', 'BYPASS_PERMISSION_LOCATION_ALWAYS=1']).uniq
+      end
       # Force dSYM generation for every pod target (Release/Profile). Without
       # this, natively-compiled plugin frameworks — e.g. objective_c.framework,
       # pulled in transitively by an FFI/ObjC-interop plugin — archive without

@@ -80,6 +80,10 @@ class _ListingCard extends ConsumerWidget {
               ],
             ),
             Gap(AppSpacing.md.h),
+            if (job.opportunityLabel != null) ...[
+              JobOpportunityBadge(label: job.opportunityLabel!),
+              Gap(AppSpacing.sm.h),
+            ],
             Text(
               job.title,
               maxLines: 2,

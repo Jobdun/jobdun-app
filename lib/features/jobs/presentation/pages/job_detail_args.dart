@@ -23,6 +23,9 @@ class JobDetailArgs {
     this.builderInitials,
     this.requiresWhiteCard = false,
     this.requiresLiability = true,
+    this.jobKind = JobKind.tradeJob,
+    this.openToApprentices = false,
+    this.status = JobStatus.open,
   });
 
   final String? id;
@@ -45,9 +48,15 @@ class JobDetailArgs {
   final String? builderInitials;
   final bool requiresWhiteCard;
   final bool requiresLiability;
+  final JobKind jobKind;
+  final JobStatus status;
+  bool get canApply => status == JobStatus.open;
+  final bool openToApprentices;
+  bool get isApprenticeship => jobKind == JobKind.apprenticeship;
 
   factory JobDetailArgs.fromJob(Job job) => JobDetailArgs(
     id: job.id,
+    status: job.status,
     builderId: job.builderId,
     title: job.title,
     description: job.description,
@@ -64,5 +73,7 @@ class JobDetailArgs {
     pricingType: job.pricingType,
     requiresWhiteCard: job.requiresWhiteCard,
     requiresLiability: job.requiresPublicLiability,
+    jobKind: job.jobKind,
+    openToApprentices: job.openToApprentices,
   );
 }

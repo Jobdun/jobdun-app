@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
+import '../../domain/entities/trade_profile.dart';
 
 /// The single highest-impact thing missing from a profile, plus where to fix
 /// it. (S8) We surface exactly one — never a progress ring or a checklist —
@@ -17,6 +18,33 @@ class ProfileGap {
 
   /// Where ADD NOW sends the owner to close the gap.
   final String route;
+}
+
+/// Apprentices build credibility through their introduction, tickets and resume.
+ProfileGap? topApprenticeGap(TradeProfile profile) {
+  final missing = [
+    (profile.primaryTrade.isEmpty, 'Choose the trade you want to learn.'),
+    (
+      profile.about?.trim().isNotEmpty != true,
+      'Tell builders about yourself and what you want to learn.',
+    ),
+    (
+      !profile.hasResume,
+      'Upload your resume so builders can review it when you apply.',
+    ),
+    (
+      profile.portfolioCount == 0,
+      'Add photos of yourself, your tools or your work.',
+    ),
+    (
+      profile.baseSuburb?.isNotEmpty != true,
+      'Add your base suburb to find nearby work.',
+    ),
+  ];
+  for (final item in missing) {
+    if (item.$1) return ProfileGap(message: item.$2, route: '/profile/edit');
+  }
+  return null;
 }
 
 /// Top gap for a tradie, in impact order: licence (trust floor) → portfolio

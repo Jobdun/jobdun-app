@@ -8,6 +8,7 @@ import '../../../../core/cache/cache_store_provider.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../auth/domain/entities/user_role.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
 import '../../data/repositories/profile_repository_impl.dart';
 import '../../domain/entities/builder_profile.dart';
@@ -411,11 +412,13 @@ class ProfileState {
   /// `public.verifications` — the wizard never writes `licence_url`, so a
   /// regulator-verified tradie scored 0 licence points forever off this
   /// state alone (K9, 2026-08-18 audit).
-  int completenessPct({bool hasVerifiedLicence = false}) {
+  int completenessPct({UserRole? role, bool hasVerifiedLicence = false}) {
     if (profile == null) return 0;
     final phoneVerified = profile!.isPhoneVerified;
 
-    if (builderProfile != null) {
+    final activeRole =
+        role ?? (builderProfile == null ? UserRole.trade : UserRole.builder);
+    if (activeRole == UserRole.builder && builderProfile != null) {
       final bp = builderProfile!;
       final done =
           (bp.companyName.isNotEmpty ? 1 : 0) +
@@ -425,8 +428,17 @@ class ProfileState {
       return done * 25;
     }
 
-    if (tradeProfile != null) {
+    if (activeRole == UserRole.trade && tradeProfile != null) {
       final tp = tradeProfile!;
+      if (tp.isApprentice) {
+        final done =
+            (tp.primaryTrade.isNotEmpty ? 1 : 0) +
+            (tp.about?.trim().isNotEmpty == true ? 1 : 0) +
+            (tp.hasResume ? 1 : 0) +
+            (tp.portfolioCount > 0 ? 1 : 0) +
+            (tp.baseSuburb?.isNotEmpty == true ? 1 : 0);
+        return done * 20;
+      }
       final done =
           (tp.primaryTrade.isNotEmpty ? 1 : 0) +
           ((tp.hasLicence || hasVerifiedLicence) ? 1 : 0) +

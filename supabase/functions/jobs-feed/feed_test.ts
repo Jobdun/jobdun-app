@@ -1,18 +1,22 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { clampLimit, FEED_COLUMNS, MAX_LIMIT } from "./feed.ts";
 
-// Drift guard: this canonical copy must equal `feedColumns` in
-// lib/features/jobs/data/datasources/job_remote_datasource.dart. The app parses
-// the function's rows with JobModel.fromJson — update BOTH sides together.
-const DART_FEED_COLUMNS =
-  "id, builder_id, title, description, suburb, state, postcode, " +
-  "trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, " +
-  "requires_verified, requires_white_card, application_count, view_count, " +
-  "status, published_at, created_at, updated_at, " +
-  "latitude, longitude, formatted_address, place_id";
-
 Deno.test("FEED_COLUMNS matches the Dart feedColumns projection", () => {
-  assertEquals(FEED_COLUMNS, DART_FEED_COLUMNS);
+  // Read the app's source: a second hand-maintained copy can drift together
+  // with the Edge Function while the real mobile projection changes.
+  const source = Deno.readTextFileSync(
+    new URL(
+      "../../../lib/features/jobs/data/datasources/job_remote_datasource.dart",
+      import.meta.url,
+    ),
+  );
+  const declaration = source.match(
+    /static const String feedColumns =([\s\S]*?);/,
+  );
+  if (!declaration) throw new Error("Dart feedColumns declaration not found");
+  const dartColumns = [...declaration[1].matchAll(/'([^']*)'/g)]
+    .map((match) => match[1]).join("");
+  assertEquals(FEED_COLUMNS, dartColumns);
 });
 
 Deno.test("clampLimit caps upward (client can never widen the query)", () => {

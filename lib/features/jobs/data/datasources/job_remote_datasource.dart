@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -29,8 +32,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   static const String feedColumns =
       'id, builder_id, title, description, suburb, state, postcode, '
       'trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, '
-      'requires_verified, requires_white_card, open_to_apprentices, '
-      'application_count, view_count, '
+      'requires_verified, requires_white_card, requires_public_liability, open_to_apprentices, job_kind, '
+      'start_date, application_count, view_count, '
       'status, published_at, created_at, updated_at, '
       'latitude, longitude, formatted_address, place_id';
 
@@ -61,6 +64,12 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         if (filter.tradeType != null) {
           query = query.eq('trade_type_required', filter.tradeType!) as dynamic;
         }
+        if (filter.jobKind != null) {
+          query = query.eq('job_kind', filter.jobKind!.dbValue);
+        }
+        if (filter.openToApprentices != null) {
+          query = query.eq('open_to_apprentices', filter.openToApprentices!);
+        }
         if (filter.builderId != null) {
           // "Your listings" — scope the feed to one builder's own jobs. RLS
           // jobs_select_own then exposes all their statuses (incl. draft).
@@ -88,8 +97,16 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
       return data
           .map((e) => JobModel.fromJson(e as Map<String, dynamic>))
           .toList();
-    } catch (e) {
-      throw ServerException(e.toString());
+    } on TimeoutException {
+      throw const ServerException(
+        'Loading jobs took too long. Please try again.',
+      );
+    } on http.ClientException {
+      throw const ServerException(
+        "You're offline. Check your connection and try again.",
+      );
+    } catch (_) {
+      throw const ServerException("Couldn't load jobs. Please try again.");
     }
   }
 

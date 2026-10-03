@@ -26,8 +26,8 @@ class LegalDocumentPage extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: c.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(AppIcons.back, color: c.text1, size: AppIconSize.md.r),
+        leading: BackButton(
+          color: c.text1,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(

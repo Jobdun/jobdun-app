@@ -12,6 +12,7 @@ import 'package:jobdun/core/theme/app_icons.dart';
 
 import '../../../../core/design/colors.dart';
 import '../../../../core/design/widgets/gv_chip.dart';
+import '../../../../core/design/widgets/empty_state.dart';
 import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/j_skeleton_list.dart';
 import '../../../../core/design/widgets/job_card.dart';
@@ -23,6 +24,8 @@ import '../../../jobs/domain/entities/job.dart';
 import '../../../verification/presentation/widgets/verification_nudge_banner.dart';
 import '../providers/jobs_provider.dart';
 import '../widgets/jobs_search_place_chip.dart';
+import '../widgets/job_opportunity_filters.dart';
+import '../widgets/jobs_result_count.dart';
 import 'job_detail_page.dart';
 
 part 'jobs_page_widgets.dart';
@@ -123,11 +126,8 @@ class _JobsPageState extends ConsumerState<JobsPage> {
     // for filter/search changes (which run through it) without listening
     // to every page append individually — the PagedListView below handles
     // its own incremental rebuilds.
-    final pagingController = ref
-        .read(jobsControllerProvider.notifier)
-        .pagingController;
-    final count = pagingController.itemList?.length ?? 0;
-    final hasMorePages = pagingController.nextPageKey != null;
+    final notifier = ref.read(jobsControllerProvider.notifier);
+    final pagingController = notifier.pagingController;
 
     return Scaffold(
       backgroundColor: c.background,
@@ -214,6 +214,10 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                     },
                   ),
                   Gap(12.h),
+                  if (!_viewingSaved) ...[
+                    const JobOpportunityFilters(),
+                    Gap(8.h),
+                  ],
                   // ── Filter chips
                   // Signed-in tradies get a SAVED chip in front of the trade
                   // filters that switches the body to their saved jobs list.
@@ -311,26 +315,24 @@ class _JobsPageState extends ConsumerState<JobsPage> {
             // fully verified or dismissed for this session. Account-based —
             // guests never see it.
             if (isAuthed) const VerificationNudgeBanner(),
-            // ── Results count. "X+ jobs found" while more pages remain so
-            // the number never looks misleadingly small during scroll-load.
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.md.w,
-                12.h,
-                AppSpacing.md.w,
-                4.h,
-              ),
-              child: Text(
-                _viewingSaved
-                    ? '${jobsState.savedJobs.length} saved'
-                    : '$count${hasMorePages && count > 0 ? '+' : ''} '
-                          '${count == 1 ? 'job' : 'jobs'} found',
-                style: tt.labelMedium!.copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: c.text3,
+            if (!_viewingSaved)
+              JobsResultCount(controller: pagingController)
+            else
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.md.w,
+                  12.h,
+                  AppSpacing.md.w,
+                  4.h,
+                ),
+                child: Text(
+                  '${jobsState.savedJobs.length} saved',
+                  style: tt.labelMedium!.copyWith(
+                    fontWeight: FontWeight.w400,
+                    color: c.text3,
+                  ),
                 ),
               ),
-            ),
             // ── Job list
             Expanded(
               child: _viewingSaved
@@ -345,7 +347,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                   : RefreshIndicator(
                       color: c.action,
                       backgroundColor: c.surface,
-                      onRefresh: () async => pagingController.refresh(),
+                      onRefresh: notifier.refresh,
                       child: PagedListView<int, Job>.separated(
                         pagingController: pagingController,
                         padding: EdgeInsets.fromLTRB(
@@ -359,6 +361,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           itemBuilder: (context, j, i) {
                             final card = JobCard(
                               title: j.title,
+                              opportunityLabel: j.opportunityLabel,
                               description: j.description,
                               rate: j.displayBudget,
                               // 'TBD' matches job_detail_args; the old
@@ -448,9 +451,15 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                             ),
                           ),
                           noItemsFoundIndicatorBuilder: (_) => _EmptyState(
-                            hasFilter:
-                                activeFilter != null ||
-                                _searchCtrl.text.isNotEmpty,
+                            onClear: () {
+                              _debounce?.cancel();
+                              _searchCtrl.clear();
+                              setState(() => _currentQuery = '');
+                              ref
+                                  .read(jobsControllerProvider.notifier)
+                                  .clearFilter();
+                            },
+                            hasFilter: !(jobsState.filter?.isEmpty ?? true),
                           ),
                           // Only a guest reaching the end of their capped
                           // preview sees the conversion nudge — a signed-in
@@ -462,7 +471,7 @@ class _JobsPageState extends ConsumerState<JobsPage> {
                           firstPageErrorIndicatorBuilder: (_) => _PageError(
                             message:
                                 pagingController.error?.toString() ?? 'Error',
-                            onRetry: () => pagingController.refresh(),
+                            onRetry: notifier.refresh,
                           ),
                           newPageErrorIndicatorBuilder: (_) => _PageError(
                             message:

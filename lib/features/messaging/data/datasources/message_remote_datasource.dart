@@ -2,13 +2,14 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../core/errors/exceptions.dart';
+import '../../../../core/errors/exceptions.dart' show ServerException;
 import '../../domain/entities/report_submission.dart';
 import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 import '../models/message_reaction_model.dart';
 
 part 'message_remote_datasource_safety_part.dart';
+part 'message_remote_datasource_image_part.dart';
 
 abstract interface class MessageRemoteDataSource {
   Future<List<ConversationModel>> getConversations(String userId);
@@ -33,6 +34,10 @@ abstract interface class MessageRemoteDataSource {
     required String body,
     required String clientTag,
   });
+  Future<MessageModel?> getMessageByClientTag(
+    String conversationId,
+    String clientTag,
+  );
 
   /// Soft-delete (unsend) a message — sets `deleted_at`. RLS limits this to the
   /// sender's own messages.
@@ -122,11 +127,29 @@ abstract interface class MessageRemoteDataSource {
 }
 
 class MessageRemoteDataSourceImpl
-    with _InboxSafetyRemote
+    with _InboxSafetyRemote, _ImageUploadRemote
     implements MessageRemoteDataSource {
   const MessageRemoteDataSourceImpl(this._client);
   @override
   final SupabaseClient _client;
+
+  @override
+  Future<MessageModel?> getMessageByClientTag(
+    String conversationId,
+    String clientTag,
+  ) async {
+    try {
+      final row = await _client
+          .from('messages')
+          .select()
+          .eq('conversation_id', conversationId)
+          .eq('client_tag', clientTag)
+          .maybeSingle();
+      return row == null ? null : MessageModel.fromJson(row);
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
 
   @override
   Future<List<ConversationModel>> getConversations(String userId) async {
@@ -259,23 +282,23 @@ class MessageRemoteDataSourceImpl
     try {
       final ext = mime == 'image/jpeg' ? 'jpg' : mime.split('/').last;
       final path = '$conversationId/$clientTag.$ext';
-      await _client.storage
-          .from('chat-attachments')
-          .upload(
-            path,
-            file,
-            fileOptions: FileOptions(contentType: mime, upsert: true),
+      await _uploadImmutableImage(path, file, mime);
+      await _client
+          .from('messages')
+          .upsert(
+            {
+              'conversation_id': conversationId,
+              'sender_id': senderId,
+              'body': '',
+              'client_tag': clientTag,
+              'attachment_path': path,
+              'attachment_mime': mime,
+              'attachment_w': ?width,
+              'attachment_h': ?height,
+            },
+            onConflict: 'conversation_id,client_tag',
+            ignoreDuplicates: true,
           );
-      await _client.from('messages').insert({
-        'conversation_id': conversationId,
-        'sender_id': senderId,
-        'body': '',
-        'client_tag': clientTag,
-        'attachment_path': path,
-        'attachment_mime': mime,
-        'attachment_w': ?width,
-        'attachment_h': ?height,
-      });
     } catch (e) {
       throw ServerException(e.toString());
     }

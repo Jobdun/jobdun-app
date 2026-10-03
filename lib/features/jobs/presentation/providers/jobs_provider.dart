@@ -25,6 +25,9 @@ import '../../domain/usecases/get_job_by_id.dart';
 import '../../domain/usecases/get_jobs.dart';
 import '../../domain/usecases/update_job.dart';
 
+import 'jobs_state.dart';
+export 'jobs_state.dart';
+
 // ── Data layer providers (public so tests can override) ───────────────────────
 final jobDatasourceProvider = Provider<JobRemoteDataSource>(
   (ref) => JobRemoteDataSourceImpl(SupabaseConfig.client),
@@ -216,9 +219,10 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
 
     // Clear state on logout or account switch to prevent stale data
     resetOnAccountChange((_) {
+      _feedGeneration++;
       state = const JobsState();
       _builderScopeId = null;
-      _pagingController?.refresh();
+      if (_pagingController != null) unawaited(loadFeed());
     });
 
     ref.onDispose(() {
@@ -256,6 +260,8 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
       status: base?.status,
       searchQuery: base?.searchQuery,
       builderId: _builderScopeId,
+      jobKind: base?.jobKind,
+      openToApprentices: base?.openToApprentices,
     );
   }
 
@@ -303,15 +309,22 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   }
 
   Future<void> loadFeed() async {
+    // Invalidate immediately: the replacement page request starts on a later
+    // frame, and an old response can otherwise refill the refreshed list.
+    final generation = ++_feedGeneration;
     final paging = _pagingController;
     if (paging != null) {
       paging.refresh();
+      // Refreshing an already-loading controller can be an equal-state no-op,
+      // so its widget listener may not request the replacement page.
+      if (generation == _feedGeneration) unawaited(_fetchPage(0));
       return;
     }
     state = state.copyWith(isLoading: true, error: null);
     final result = await ref
         .read(getJobsUseCaseProvider)
         .call(filter: _effectiveFilter(), limit: _effectivePageSize);
+    if (generation != _feedGeneration) return;
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (jobs) {
@@ -324,14 +337,14 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
   }
 
   Future<void> applyFilter(String? tradeType) async {
-    final newFilter = tradeType == null
-        ? null
-        : JobFilter(
-            tradeType: tradeType,
-            status: state.filter?.status,
-            searchQuery: state.filter?.searchQuery,
-          );
-    state = state.copyWith(filter: newFilter, clearFilter: newFilter == null);
+    final newFilter = JobFilter(
+      tradeType: tradeType,
+      status: state.filter?.status,
+      searchQuery: state.filter?.searchQuery,
+      jobKind: state.filter?.jobKind,
+      openToApprentices: state.filter?.openToApprentices,
+    );
+    state = state.copyWith(filter: newFilter, clearFilter: newFilter.isEmpty);
     await loadFeed();
   }
 
@@ -340,12 +353,29 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
       tradeType: state.filter?.tradeType,
       status: state.filter?.status,
       searchQuery: query.isEmpty ? null : query,
+      jobKind: state.filter?.jobKind,
+      openToApprentices: state.filter?.openToApprentices,
     );
     if (newFilter.isEmpty) {
       state = state.copyWith(clearFilter: true);
     } else {
       state = state.copyWith(filter: newFilter);
     }
+    await loadFeed();
+  }
+
+  Future<void> filterOpportunities({
+    JobKind? jobKind,
+    bool? openToApprentices,
+  }) async {
+    final filter = JobFilter(
+      tradeType: state.filter?.tradeType,
+      status: state.filter?.status,
+      searchQuery: state.filter?.searchQuery,
+      jobKind: jobKind,
+      openToApprentices: openToApprentices,
+    );
+    state = state.copyWith(filter: filter, clearFilter: filter.isEmpty);
     await loadFeed();
   }
 
@@ -436,47 +466,4 @@ class JobsController extends Notifier<JobsState> with AccountScoped<JobsState> {
           onError: (Object e) => state = state.copyWith(error: e.toString()),
         );
   }
-}
-
-class JobsState {
-  const JobsState({
-    this.jobs = const [],
-    this.savedJobs = const [],
-    this.savedJobIds = const {},
-    this.hiddenJobIds = const {},
-    this.filter,
-    this.isLoading = false,
-    this.isLoadingSaved = false,
-    this.error,
-  });
-
-  final List<Job> jobs;
-  final List<Job> savedJobs;
-  final Set<String> savedJobIds;
-  final Set<String> hiddenJobIds;
-  final JobFilter? filter;
-  final bool isLoading;
-  final bool isLoadingSaved;
-  final String? error;
-
-  JobsState copyWith({
-    List<Job>? jobs,
-    List<Job>? savedJobs,
-    Set<String>? savedJobIds,
-    Set<String>? hiddenJobIds,
-    JobFilter? filter,
-    bool clearFilter = false,
-    bool? isLoading,
-    bool? isLoadingSaved,
-    String? error,
-  }) => JobsState(
-    jobs: jobs ?? this.jobs,
-    savedJobs: savedJobs ?? this.savedJobs,
-    savedJobIds: savedJobIds ?? this.savedJobIds,
-    hiddenJobIds: hiddenJobIds ?? this.hiddenJobIds,
-    filter: clearFilter ? null : (filter ?? this.filter),
-    isLoading: isLoading ?? this.isLoading,
-    isLoadingSaved: isLoadingSaved ?? this.isLoadingSaved,
-    error: error,
-  );
 }

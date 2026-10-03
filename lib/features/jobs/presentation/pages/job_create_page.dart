@@ -27,6 +27,7 @@ part 'job_create_helpers.dart';
 part 'job_create_step_one.dart';
 part 'job_create_step_two.dart';
 part 'job_apprentice_toggle.dart';
+part 'job_create_kind_picker.dart';
 
 class JobCreatePage extends ConsumerStatefulWidget {
   const JobCreatePage({super.key});
@@ -54,6 +55,8 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   // Mirrors the active pricing unit + mode into local state so the amount
   // field's suffix and visibility can react without rebuilding the whole form
   // via the FormBuilder controller every keystroke.
+  JobKind _jobKind = JobKind.tradeJob;
+
   PricingUnit _pricingUnit = PricingUnit.hourly;
   PricingType _pricingMode = PricingType.builderSet;
 
@@ -181,7 +184,8 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
   /// null for non-hourly types or unknown trades so the slot stays empty.
   String? _rateHint() {
     final trade = _selectedTrade;
-    if (_pricingMode != PricingType.builderSet ||
+    if (_jobKind == JobKind.apprenticeship ||
+        _pricingMode != PricingType.builderSet ||
         _pricingUnit != PricingUnit.hourly ||
         trade == null) {
       return null;
@@ -267,6 +271,7 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
           // itself the moment the last required value lands.
           onChanged: () => setState(() {}),
           initialValue: const {
+            'jobKind': JobKind.tradeJob,
             'pricingMode': PricingType.builderSet,
             'pricingUnit': PricingUnit.hourly,
             'urgent': false,
@@ -286,16 +291,25 @@ class _JobCreatePageState extends ConsumerState<JobCreatePage> {
                   // horizontal drag must not skip past validation.
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _StepOne(
-                      trades: _trades,
-                      onTradeChanged: (t) => setState(() => _selectedTrade = t),
+                    _KeepCreateStep(
+                      child: _StepOne(
+                        jobKind: _jobKind,
+                        onKindChanged: (kind) =>
+                            setState(() => _jobKind = kind),
+                        trades: _trades,
+                        onTradeChanged: (t) =>
+                            setState(() => _selectedTrade = t),
+                      ),
                     ),
-                    _StepTwo(
-                      pricingMode: _pricingMode,
-                      pricingUnit: _pricingUnit,
-                      rateHint: _rateHint(),
-                      onModeChanged: (m) => setState(() => _pricingMode = m),
-                      onUnitChanged: (u) => setState(() => _pricingUnit = u),
+                    _KeepCreateStep(
+                      child: _StepTwo(
+                        isApprenticeship: _jobKind == JobKind.apprenticeship,
+                        pricingMode: _pricingMode,
+                        pricingUnit: _pricingUnit,
+                        rateHint: _rateHint(),
+                        onModeChanged: (m) => setState(() => _pricingMode = m),
+                        onUnitChanged: (u) => setState(() => _pricingUnit = u),
+                      ),
                     ),
                   ],
                 ),

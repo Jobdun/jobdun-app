@@ -16,6 +16,20 @@ class MessageRepositoryImpl implements MessageRepository {
   final MessageRemoteDataSource _datasource;
 
   @override
+  Future<Either<Failure, Message?>> getMessageByClientTag(
+    String conversationId,
+    String clientTag,
+  ) async {
+    try {
+      return right(
+        await _datasource.getMessageByClientTag(conversationId, clientTag),
+      );
+    } on ServerException catch (e) {
+      return left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<Conversation>>> getConversations(
     String userId,
   ) async {

@@ -702,6 +702,67 @@ COMMENT ON FUNCTION "public"."get_trade_public_credentials"("p_user_id" "uuid") 
 
 
 
+CREATE OR REPLACE FUNCTION "public"."guard_application_lifecycle"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  actor uuid := auth.uid();
+  vacancy public.jobs%ROWTYPE;
+BEGIN
+  -- Administrative maintenance retains its existing privileged path.
+  IF auth.role() = 'service_role' THEN RETURN NEW; END IF;
+  IF actor IS NULL THEN
+    RAISE EXCEPTION 'Sign in to manage applications' USING ERRCODE='42501';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    SELECT * INTO vacancy FROM public.jobs WHERE id=NEW.job_id FOR UPDATE;
+    IF actor IS DISTINCT FROM NEW.trade_id OR NEW.status <> 'pending'
+       OR NEW.builder_id IS DISTINCT FROM vacancy.builder_id
+       OR actor = vacancy.builder_id
+       OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=actor AND role='trade') THEN
+      RAISE EXCEPTION 'Invalid application owner or initial status' USING ERRCODE='42501';
+    END IF;
+    IF vacancy.id IS NULL OR vacancy.status <> 'open' OR vacancy.deleted_at IS NOT NULL THEN
+      RAISE EXCEPTION 'This job is no longer accepting applications' USING ERRCODE='23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  IF actor = OLD.builder_id THEN
+    IF OLD.status NOT IN ('pending','shortlisted') OR NEW.status NOT IN ('shortlisted','rejected','hired') THEN
+      RAISE EXCEPTION 'This application can no longer be changed' USING ERRCODE='23514';
+    END IF;
+  ELSIF actor = OLD.trade_id THEN
+    IF NOT ((OLD.status IN ('pending','shortlisted') AND NEW.status='withdrawn')
+       OR (OLD.status='hired' AND NEW.status='declined_by_trade')) THEN
+      RAISE EXCEPTION 'Applicants may only withdraw or decline their application' USING ERRCODE='42501';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Not a participant in this application' USING ERRCODE='42501';
+  END IF;
+  IF NEW.status='hired' THEN
+    -- The job row lock serialises two concurrent hires for the same vacancy.
+    SELECT * INTO vacancy FROM public.jobs WHERE id=NEW.job_id FOR UPDATE;
+    IF vacancy.status <> 'open' OR vacancy.deleted_at IS NOT NULL
+       OR vacancy.hired_trade_id IS NOT NULL
+       OR EXISTS (SELECT 1 FROM public.applications
+                  WHERE job_id=NEW.job_id AND status='hired' AND id<>NEW.id) THEN
+      RAISE EXCEPTION 'This job is no longer available to hire' USING ERRCODE='23514';
+    END IF;
+    UPDATE public.jobs SET status='filled', hired_trade_id=NEW.trade_id WHERE id=NEW.job_id;
+  ELSIF NEW.status='declined_by_trade' THEN
+    UPDATE public.jobs SET status='open', hired_trade_id=NULL
+      WHERE id=NEW.job_id AND hired_trade_id=NEW.trade_id AND status='filled' AND deleted_at IS NULL;
+  END IF;
+  NEW.status_changed_at := now();
+  RETURN NEW;
+END $$;
+
+
+ALTER FUNCTION "public"."guard_application_lifecycle"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1613,7 +1674,7 @@ COMMENT ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" 
 
 
 
-CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric DEFAULT NULL::numeric, "p_available_only" boolean DEFAULT false, "p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "full_name" "text", "primary_trade" "text", "crew_size" integer, "years_experience" integer, "hourly_rate_min" numeric, "hourly_rate_max" numeric, "hourly_rate_visible" boolean, "service_radius_km" integer, "base_suburb" "text", "base_state" "text", "base_postcode" "text", "base_formatted_address" "text", "base_place_id" "text", "base_latitude" double precision, "base_longitude" double precision, "about" "text", "trade_other" "text", "licence_url" "text", "portfolio_urls" "text"[], "is_verified" boolean, "average_rating" numeric, "rating_count" integer, "is_available" boolean, "available_from" "date", "distance_km" double precision)
+CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric DEFAULT NULL::numeric, "p_available_only" boolean DEFAULT false, "p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0, "p_apprentice" boolean DEFAULT false) RETURNS TABLE("id" "uuid", "full_name" "text", "primary_trade" "text", "crew_size" integer, "years_experience" integer, "hourly_rate_min" numeric, "hourly_rate_max" numeric, "hourly_rate_visible" boolean, "service_radius_km" integer, "base_suburb" "text", "base_state" "text", "base_postcode" "text", "base_formatted_address" "text", "base_place_id" "text", "base_latitude" double precision, "base_longitude" double precision, "about" "text", "trade_other" "text", "licence_url" "text", "portfolio_urls" "text"[], "is_verified" boolean, "average_rating" numeric, "rating_count" integer, "is_available" boolean, "available_from" "date", "distance_km" double precision, "is_apprentice" boolean, "apprenticeship_stage" "text", "site_tickets" "text"[])
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1632,7 +1693,10 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
     NULL::text,  -- licence_url: private-docs pointer; badge = is_verified
     sub.portfolio_urls, sub.is_verified,
     sub.average_rating, sub.rating_count,
-    sub.is_available, sub.available_from, sub.distance_km
+    sub.is_available, sub.available_from, sub.distance_km,
+    -- Apprentice projection. site_tickets is SELF-DECLARED: the caller must
+    -- render it as a distinct, weaker tier than is_verified. Never merge them.
+    sub.is_apprentice, sub.apprenticeship_stage, sub.site_tickets
   FROM (
     SELECT
       tp.*,
@@ -1658,6 +1722,9 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
            OR tp.full_name     ILIKE '%' || p_query || '%'
            OR tp.primary_trade ILIKE '%' || p_query || '%'
            OR COALESCE(tp.trade_other, '') ILIKE '%' || p_query || '%')
+      -- The one new predicate. coalesce so an explicit NULL from a client
+      -- behaves as "qualified trades", never as "everyone".
+      AND tp.is_apprentice = coalesce(p_apprentice, false)
   ) sub
   WHERE sub.distance_km <= p_radius_km
   ORDER BY sub.distance_km ASC
@@ -1665,7 +1732,7 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
 $$;
 
 
-ALTER FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
@@ -2093,12 +2160,20 @@ CREATE TABLE IF NOT EXISTS "public"."jobs" (
     "pricing_unit" "public"."job_pricing_unit" DEFAULT 'per_job'::"public"."job_pricing_unit" NOT NULL,
     "pricing_type" "public"."job_pricing_type" DEFAULT 'builder_set'::"public"."job_pricing_type" NOT NULL,
     "budget_amount" numeric(10,2),
+    "open_to_apprentices" boolean DEFAULT false NOT NULL,
+    "job_kind" "text" DEFAULT 'trade_job'::"text" NOT NULL,
+    CONSTRAINT "jobs_apprenticeship_terms" CHECK ((("job_kind" <> 'apprenticeship'::"text") OR ("open_to_apprentices" AND ("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("pricing_unit" = 'hourly'::"public"."job_pricing_unit") AND ("budget_amount" IS NOT NULL) AND ("budget_amount" > (0)::numeric) AND ("budget_amount" < 'Infinity'::numeric)))),
     CONSTRAINT "jobs_budget_amount_positive" CHECK ((("budget_amount" IS NULL) OR ("budget_amount" > (0)::numeric))),
-    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type")))
+    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type"))),
+    CONSTRAINT "jobs_kind_valid" CHECK (("job_kind" = ANY (ARRAY['trade_job'::"text", 'apprenticeship'::"text"])))
 );
 
 
 ALTER TABLE "public"."jobs" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."jobs"."open_to_apprentices" IS 'Builder invites apprentice applicants. Drives a job-card chip and an apprentice-side filter -- it gates nothing.';
+
 
 
 CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
@@ -2132,7 +2207,9 @@ CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
     NULLIF("concat_ws"(', '::"text", NULLIF("suburb", ''::"text"), NULLIF("state", ''::"text")), ''::"text") AS "formatted_address",
     NULL::"text" AS "place_id",
     NULL::timestamp with time zone AS "deleted_at",
-    "search_vector"
+    "search_vector",
+    "open_to_apprentices",
+    "job_kind"
    FROM "public"."jobs" "j"
   WHERE (("status" = ANY (ARRAY['open'::"public"."job_status", 'filled'::"public"."job_status"])) AND ("deleted_at" IS NULL));
 
@@ -2289,7 +2366,13 @@ CREATE TABLE IF NOT EXISTS "public"."trade_profiles" (
     "available_from" "date",
     "average_rating" numeric(3,2),
     "rating_count" integer DEFAULT 0 NOT NULL,
-    "unavailable_dates" "date"[] DEFAULT '{}'::"date"[] NOT NULL
+    "unavailable_dates" "date"[] DEFAULT '{}'::"date"[] NOT NULL,
+    "is_apprentice" boolean DEFAULT false NOT NULL,
+    "apprenticeship_stage" "text",
+    "site_tickets" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "resume_path" "text",
+    "resume_uploaded_at" timestamp with time zone,
+    CONSTRAINT "trade_profiles_apprenticeship_stage_valid" CHECK ((("apprenticeship_stage" IS NULL) OR ("apprenticeship_stage" = ANY (ARRAY['pre_apprentice'::"text", 'year_1'::"text", 'year_2'::"text", 'year_3'::"text", 'year_4'::"text"]))))
 );
 
 
@@ -2297,6 +2380,18 @@ ALTER TABLE "public"."trade_profiles" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."trade_profiles"."unavailable_dates" IS '#13 availability calendar: specific dates the trade has blocked off (booked / on leave). Date-only; default empty. Owner-write via the existing trade_profiles RLS; readable by authenticated users for the profile view.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."is_apprentice" IS 'True when this trade is seeking an apprenticeship. Flips the profile to the apprentice layout (no rates, no insurance, no jobs-completed stat) and moves the row to the APPRENTICES side of search_trades.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."site_tickets" IS 'SELF-DECLARED site ticket slugs (FK-by-convention to site_tickets.slug). A tick is a claim, NOT proof -- verified credentials live in verification_documents and surface via get_trade_public_credentials. Never merge the two lists on a display surface.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."resume_path" IS 'private-docs path, {uid}/resume/{epoch}.{ext}. Never a public URL: reading it requires a signed URL gated by private_docs_resume_applied_builder_select.';
 
 
 
@@ -2316,7 +2411,11 @@ CREATE OR REPLACE VIEW "public"."profile_completeness" WITH ("security_invoker"=
     "ur"."role",
         CASE "ur"."role"
             WHEN 'builder'::"text" THEN ((((((("bp"."company_name" IS NOT NULL) AND ("bp"."company_name" <> ''::"text")))::integer + ((("bp"."abn" IS NOT NULL) AND ("bp"."abn" <> ''::"text")))::integer) + ((("bp"."service_suburb" IS NOT NULL) AND ("bp"."service_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) * 25)
-            WHEN 'trade'::"text" THEN (((((((("tp"."primary_trade" IS NOT NULL) AND ("tp"."primary_trade" <> ''::"text")))::integer + ((("tp"."licence_url" IS NOT NULL) AND ("tp"."licence_url" <> ''::"text")))::integer) + ((("tp"."base_suburb" IS NOT NULL) AND ("tp"."base_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) * 20)
+            WHEN 'trade'::"text" THEN
+            CASE
+                WHEN "tp"."is_apprentice" THEN (((((((COALESCE("tp"."primary_trade", ''::"text") <> ''::"text"))::integer + (("btrim"(COALESCE("tp"."about", ''::"text")) <> ''::"text"))::integer) + ((COALESCE("tp"."resume_path", ''::"text") <> ''::"text"))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) + ((COALESCE("tp"."base_suburb", ''::"text") <> ''::"text"))::integer) * 20)
+                ELSE (((((((("tp"."primary_trade" IS NOT NULL) AND ("tp"."primary_trade" <> ''::"text")))::integer + ((("tp"."licence_url" IS NOT NULL) AND ("tp"."licence_url" <> ''::"text")))::integer) + ((("tp"."base_suburb" IS NOT NULL) AND ("tp"."base_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) * 20)
+            END
             ELSE NULL::integer
         END AS "completeness_pct"
    FROM ((("public"."profiles" "p"
@@ -2435,6 +2534,25 @@ CREATE TABLE IF NOT EXISTS "public"."saved_jobs" (
 ALTER TABLE "public"."saved_jobs" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."site_tickets" (
+    "slug" "text" NOT NULL,
+    "display_name" "text" NOT NULL,
+    "short_name" "text" NOT NULL,
+    "category" "text" NOT NULL,
+    "doc_type" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "site_tickets_category_check" CHECK (("category" = ANY (ARRAY['induction'::"text", 'safety'::"text", 'licence'::"text", 'transport'::"text"])))
+);
+
+
+ALTER TABLE "public"."site_tickets" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."site_tickets" IS 'Reference list of site tickets an apprentice or tradie can self-declare. doc_type non-null means the ticket has a verification_documents review path and can reach the VERIFIED tier; null means self-declared only.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."timesheets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_id" "uuid" NOT NULL,
@@ -2500,7 +2618,10 @@ CREATE OR REPLACE VIEW "public"."trade_profiles_public" AS
     "hourly_rate_visible",
     "average_rating",
     "rating_count",
-    "created_at"
+    "created_at",
+    "is_apprentice",
+    "apprenticeship_stage",
+    "site_tickets"
    FROM "public"."trade_profiles" "tp"
   WHERE ("deleted_at" IS NULL);
 
@@ -2823,6 +2944,11 @@ ALTER TABLE ONLY "public"."saved_jobs"
 
 
 
+ALTER TABLE ONLY "public"."site_tickets"
+    ADD CONSTRAINT "site_tickets_pkey" PRIMARY KEY ("slug");
+
+
+
 ALTER TABLE ONLY "public"."timesheets"
     ADD CONSTRAINT "timesheets_pkey" PRIMARY KEY ("id");
 
@@ -2870,6 +2996,11 @@ ALTER TABLE ONLY "public"."verification_rate_limits"
 
 ALTER TABLE ONLY "public"."verifications"
     ADD CONSTRAINT "verifications_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."verifications"
+    ADD CONSTRAINT "verifications_user_kind_unique" UNIQUE ("user_id", "kind");
 
 
 
@@ -3037,6 +3168,14 @@ CREATE INDEX "idx_vfe_user_id" ON "public"."verification_funnel_events" USING "b
 
 
 
+CREATE INDEX "jobs_apprentice_invitation_feed_idx" ON "public"."jobs" USING "btree" ("published_at" DESC) WHERE ("open_to_apprentices" AND ("deleted_at" IS NULL));
+
+
+
+CREATE INDEX "jobs_apprenticeship_feed_idx" ON "public"."jobs" USING "btree" ("published_at" DESC) WHERE (("job_kind" = 'apprenticeship'::"text") AND ("deleted_at" IS NULL));
+
+
+
 CREATE INDEX "jobs_builder_id_idx" ON "public"."jobs" USING "btree" ("builder_id");
 
 
@@ -3141,6 +3280,10 @@ CREATE INDEX "trade_profiles_average_rating_idx" ON "public"."trade_profiles" US
 
 
 
+CREATE INDEX "trade_profiles_is_apprentice_idx" ON "public"."trade_profiles" USING "btree" ("is_apprentice") WHERE ("deleted_at" IS NULL);
+
+
+
 CREATE INDEX "trade_profiles_is_available_idx" ON "public"."trade_profiles" USING "btree" ("is_available");
 
 
@@ -3186,6 +3329,10 @@ CREATE INDEX "verifications_status_idx" ON "public"."verifications" USING "btree
 
 
 CREATE INDEX "verifications_user_idx" ON "public"."verifications" USING "btree" ("user_id");
+
+
+
+CREATE OR REPLACE TRIGGER "application_lifecycle_guard" BEFORE INSERT OR UPDATE ON "public"."applications" FOR EACH ROW EXECUTE FUNCTION "public"."guard_application_lifecycle"();
 
 
 
@@ -3973,6 +4120,13 @@ CREATE POLICY "saved_jobs_select_own" ON "public"."saved_jobs" FOR SELECT USING 
 
 
 
+ALTER TABLE "public"."site_tickets" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "site_tickets_select_all" ON "public"."site_tickets" FOR SELECT TO "authenticated" USING (true);
+
+
+
 ALTER TABLE "public"."timesheets" ENABLE ROW LEVEL SECURITY;
 
 
@@ -4240,6 +4394,13 @@ GRANT ALL ON FUNCTION "public"."get_trade_public_credentials"("p_user_id" "uuid"
 
 
 
+REVOKE ALL ON FUNCTION "public"."guard_application_lifecycle"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "anon";
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "supabase_auth_admin";
@@ -4353,8 +4514,9 @@ GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind
 
 
 
-GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "service_role";
+REVOKE ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) TO "service_role";
 
 
 
@@ -4706,6 +4868,12 @@ GRANT ALL ON TABLE "public"."reviews" TO "service_role";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "anon";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "authenticated";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."site_tickets" TO "anon";
+GRANT ALL ON TABLE "public"."site_tickets" TO "authenticated";
+GRANT ALL ON TABLE "public"."site_tickets" TO "service_role";
 
 
 

@@ -310,21 +310,18 @@ class _PhoneAuthPageState extends ConsumerState<PhoneAuthPage> {
       backgroundColor: c.background,
       appBar: AppBar(
         backgroundColor: c.background,
-        leading: _step == 0 || _alreadyVerified || _justVerified
-            ? IconButton(
-                icon: Icon(AppIcons.back, color: c.text1),
-                onPressed: () {
+        leading: BackButton(
+          color: c.text1,
+          onPressed: _step == 0 || _alreadyVerified || _justVerified
+              ? () {
                   if (context.canPop()) {
                     context.pop();
                   } else {
                     context.go('/login');
                   }
-                },
-              )
-            : IconButton(
-                icon: Icon(AppIcons.back, color: c.text1),
-                onPressed: _backToPhone,
-              ),
+                }
+              : _backToPhone,
+        ),
         elevation: 0,
       ),
       body: SafeArea(child: _buildBody(authState)),

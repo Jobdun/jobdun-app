@@ -222,8 +222,8 @@ void main() {
     drainKnownOverflow(tester);
 
     expect(pathOf(container), '/browse');
-    // PageHeader uppercases titles at render.
-    expect(find.text('OPEN NEAR YOU'), findsOneWidget);
+    // The Figma feed header preserves sentence case.
+    expect(find.text('Open near you'), findsOneWidget);
     expect(find.text('LOG IN'), findsOneWidget); // guest header CTA
     expect(find.text('SAVED'), findsNothing); // account-based chip hidden
 

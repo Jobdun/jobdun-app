@@ -29,6 +29,8 @@ import '../state/thread_messages.dart';
 
 part 'messaging_inbox_actions_part.dart';
 part 'messaging_reactions_part.dart';
+part 'messaging_state_actions_part.dart';
+part 'messaging_image_retry_part.dart';
 
 // How many older messages a history page fetches.
 const _pageSize = 30;
@@ -56,8 +58,19 @@ final messagingControllerProvider =
     );
 
 class MessagingController extends Notifier<MessagingState>
-    with AccountScoped<MessagingState>, _ReactionActions, _InboxActions {
+    with
+        AccountScoped<MessagingState>,
+        _MessageStateActions,
+        _ReactionActions,
+        _InboxActions {
   late MessageRepository _repo;
+  // Invalidates async completions even after the same user signs in again.
+  @override
+  int _accountGeneration = 0;
+
+  @override
+  bool _isCurrent(int generation) =>
+      ref.mounted && generation == _accountGeneration;
   StreamSubscription<List<Conversation>>? _conversationsSub;
   final Map<String, StreamSubscription<List<Message>>> _messageSubs = {};
   final Map<String, StreamSubscription<Conversation>> _convRowSubs = {};
@@ -71,6 +84,7 @@ class MessagingController extends Notifier<MessagingState>
 
     // Clear state on logout or account switch to prevent stale data
     resetOnAccountChange((_) {
+      _accountGeneration++;
       _cancelAllSubscriptions();
       state = const MessagingState();
     });
@@ -80,11 +94,13 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   Future<void> loadConversations() async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
 
     state = state.copyWith(isLoading: true, error: null);
     await _refreshInbox(userId);
+    if (!_isCurrent(generation)) return;
     state = state.copyWith(isLoading: false);
     _startConversationsStream(userId);
   }
@@ -93,7 +109,9 @@ class MessagingController extends Notifier<MessagingState>
   // realtime stream can't do that join, so we never use its rows directly.
   @override
   Future<void> _refreshInbox(String userId) async {
+    final generation = _accountGeneration;
     final result = await ref.read(getConversationsUseCaseProvider).call(userId);
+    if (!_isCurrent(generation)) return;
     result.fold(
       (f) => state = state.copyWith(error: f.message),
       (convs) => state = state.copyWith(
@@ -104,23 +122,32 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   void _startConversationsStream(String userId) {
+    final generation = _accountGeneration;
     _conversationsSub?.cancel();
     // The stream only signals "a conversation changed"; re-fetch through
     // get_inbox so names/unread stay resolved (raw rows showed "Unknown").
     _conversationsSub = _repo
         .watchConversations(userId)
         .listen(
-          (_) => unawaited(_refreshInbox(userId)),
-          onError: (Object e) => state = state.copyWith(error: e.toString()),
+          (_) {
+            if (_isCurrent(generation)) unawaited(_refreshInbox(userId));
+          },
+          onError: (Object e) {
+            if (_isCurrent(generation)) {
+              state = state.copyWith(error: e.toString());
+            }
+          },
         );
   }
 
   /// Loads the latest history page, opens the live tail + reaction stream, and
   /// watches the conversation row for the counterparty's read marker (Seen).
   Future<void> loadMessages(String conversationId) async {
+    final generation = _accountGeneration;
     final result = await ref
         .read(getMessagesUseCaseProvider)
         .call(conversationId, limit: _pageSize);
+    if (!_isCurrent(generation)) return;
     result.fold((f) => state = state.copyWith(error: f.message), (msgs) {
       _mergeConfirmed(conversationId, msgs);
       _setHasMore(conversationId, msgs.length >= _pageSize);
@@ -132,6 +159,7 @@ class MessagingController extends Notifier<MessagingState>
 
   /// Fetches the page of messages immediately older than the oldest one loaded.
   Future<void> loadOlder(String conversationId) async {
+    final generation = _accountGeneration;
     if (_loadingOlder.contains(conversationId)) return;
     if (!state.hasMoreFor(conversationId)) return;
     final current = state.messagesFor(conversationId);
@@ -145,6 +173,7 @@ class MessagingController extends Notifier<MessagingState>
           limit: _pageSize,
           before: current.first.createdAt,
         );
+    if (!_isCurrent(generation)) return;
     _loadingOlder.remove(conversationId);
     result.fold((f) => state = state.copyWith(error: f.message), (older) {
       _mergeConfirmed(conversationId, older);
@@ -153,11 +182,15 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   void _subscribeToMessages(String conversationId) {
+    final generation = _accountGeneration;
     if (_messageSubs.containsKey(conversationId)) return;
     final stream = ref.read(watchMessagesUseCaseProvider).call(conversationId);
     _messageSubs[conversationId] = stream.listen(
-      (msgs) => _mergeConfirmed(conversationId, msgs),
+      (msgs) {
+        if (_isCurrent(generation)) _mergeConfirmed(conversationId, msgs);
+      },
       onError: (Object e) {
+        if (!_isCurrent(generation)) return;
         // Drop the dead entry so re-entering the thread resubscribes —
         // else live delivery never recovers (2026-08-18 audit).
         _messageSubs.remove(conversationId)?.cancel();
@@ -167,12 +200,14 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   void _subscribeToConversation(String conversationId) {
+    final generation = _accountGeneration;
     if (_convRowSubs.containsKey(conversationId)) return;
     final me = readCurrentUserId(ref);
     if (me == null) return;
     _convRowSubs[conversationId] = _repo
         .watchConversation(conversationId)
         .listen((conv) {
+          if (!_isCurrent(generation)) return;
           final updated = Map<String, DateTime?>.from(
             state.otherLastReadByConvId,
           )..[conversationId] = conv.otherLastReadAtFor(me);
@@ -190,13 +225,14 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   void _subscribeToReactions(String conversationId) {
+    final generation = _accountGeneration;
     if (_reactionSubs.containsKey(conversationId)) return;
-    _reactionSubs[conversationId] = _repo
-        .watchReactions(conversationId)
-        .listen(
-          (reactions) => _setReactions(conversationId, reactions),
-          onError: (_) {},
-        );
+    _reactionSubs[conversationId] = _repo.watchReactions(conversationId).listen(
+      (reactions) {
+        if (_isCurrent(generation)) _setReactions(conversationId, reactions);
+      },
+      onError: (_) {},
+    );
   }
 
   void unsubscribeMessages(String conversationId) {
@@ -237,6 +273,7 @@ class MessagingController extends Notifier<MessagingState>
     required String conversationId,
     required String clientTag,
   }) async {
+    final generation = _accountGeneration;
     final matches = state
         .outboxFor(conversationId)
         .where((p) => p.clientTag == clientTag);
@@ -245,12 +282,18 @@ class MessagingController extends Notifier<MessagingState>
     _updateOutbox(conversationId, clientTag, failed: false);
     if (reset.isImage && reset.localImagePath != null) {
       await _dispatchImage(reset, File(reset.localImagePath!), null, null);
+      if (!_isCurrent(generation)) return;
+      final stillSending = state
+          .outboxFor(conversationId)
+          .any((p) => p.clientTag == clientTag && !p.failed);
+      if (stillSending) await _confirmRetriedImage(reset, generation);
     } else {
       await _dispatch(reset);
     }
   }
 
   Future<void> _dispatch(PendingMessage pending) async {
+    final generation = _accountGeneration;
     Either<Failure, void> result;
     try {
       result = await ref
@@ -265,6 +308,7 @@ class MessagingController extends Notifier<MessagingState>
     } on TimeoutException {
       result = left(ServerFailure('Send timed out'));
     }
+    if (!_isCurrent(generation)) return;
     result.fold(
       (_) => _updateOutbox(
         pending.conversationId,
@@ -305,6 +349,7 @@ class MessagingController extends Notifier<MessagingState>
     int? width,
     int? height,
   ) async {
+    final generation = _accountGeneration;
     Either<Failure, void> result;
     try {
       result = await _repo
@@ -321,6 +366,7 @@ class MessagingController extends Notifier<MessagingState>
     } on TimeoutException {
       result = left(ServerFailure('Upload timed out'));
     }
+    if (!_isCurrent(generation)) return;
     result.fold(
       (_) => _updateOutbox(
         pending.conversationId,
@@ -337,6 +383,7 @@ class MessagingController extends Notifier<MessagingState>
     required String conversationId,
     required String messageId,
   }) async {
+    final generation = _accountGeneration;
     final list = state.messagesFor(conversationId);
     final idx = list.indexWhere((m) => m.id == messageId);
     if (idx == -1) return;
@@ -347,6 +394,7 @@ class MessagingController extends Notifier<MessagingState>
     _setMessages(conversationId, optimistic);
 
     final result = await _repo.softDeleteMessage(messageId);
+    if (!_isCurrent(generation)) return;
     result.fold((f) {
       final cur = state.messagesFor(conversationId);
       final i = cur.indexWhere((m) => m.id == messageId);
@@ -366,9 +414,11 @@ class MessagingController extends Notifier<MessagingState>
     required String tradeId,
     String? jobId,
   }) async {
+    final generation = _accountGeneration;
     final result = await ref
         .read(getOrCreateConversationUseCaseProvider)
         .call(builderId: builderId, tradeId: tradeId, jobId: jobId);
+    if (!_isCurrent(generation)) return null;
     return result.fold((f) {
       state = state.copyWith(error: f.message);
       return null;
@@ -390,6 +440,7 @@ class MessagingController extends Notifier<MessagingState>
   /// the other party still sees it until they archive too). Optimistically
   /// drops it from the list; the realtime watch reconciles.
   Future<void> archiveConversation(String conversationId) async {
+    final generation = _accountGeneration;
     final isBuilder = ref.read(authControllerProvider).role == UserRole.builder;
     final remaining = state.conversations
         .where((c) => c.id != conversationId)
@@ -402,74 +453,8 @@ class MessagingController extends Notifier<MessagingState>
       conversationId: conversationId,
       isBuilder: isBuilder,
     );
+    if (!_isCurrent(generation)) return;
     result.fold((f) => state = state.copyWith(error: f.message), (_) {});
-  }
-
-  // ── State mutation helpers ──────────────────────────────────────────────────
-
-  /// Unions [incoming] server rows into the confirmed list (dedup by id, sorted
-  /// oldest→newest) and prunes outbox twins whose client_tag has echoed back.
-  void _mergeConfirmed(String conversationId, List<Message> incoming) {
-    final byId = <String, Message>{
-      for (final m in state.messagesFor(conversationId)) m.id: m,
-    };
-    for (final m in incoming) {
-      byId[m.id] = m;
-    }
-    final merged = byId.values.toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final messages = Map<String, List<Message>>.from(state.messagesByConvId)
-      ..[conversationId] = merged;
-
-    final confirmedTags = merged
-        .map((m) => m.clientTag)
-        .whereType<String>()
-        .toSet();
-    final outbox = Map<String, List<PendingMessage>>.from(state.outboxByConvId);
-    final remaining = state
-        .outboxFor(conversationId)
-        .where((p) => !confirmedTags.contains(p.clientTag))
-        .toList();
-    if (remaining.isEmpty) {
-      outbox.remove(conversationId);
-    } else {
-      outbox[conversationId] = remaining;
-    }
-
-    state = state.copyWith(messagesByConvId: messages, outboxByConvId: outbox);
-  }
-
-  void _setMessages(String conversationId, List<Message> msgs) {
-    final map = Map<String, List<Message>>.from(state.messagesByConvId)
-      ..[conversationId] = msgs;
-    state = state.copyWith(messagesByConvId: map);
-  }
-
-  void _addToOutbox(String conversationId, PendingMessage pending) {
-    final outbox = Map<String, List<PendingMessage>>.from(state.outboxByConvId);
-    outbox[conversationId] = [...state.outboxFor(conversationId), pending];
-    state = state.copyWith(outboxByConvId: outbox);
-  }
-
-  void _updateOutbox(
-    String conversationId,
-    String clientTag, {
-    required bool failed,
-  }) {
-    final current = state.outboxFor(conversationId);
-    if (current.every((p) => p.clientTag != clientTag)) return;
-    final updated = current
-        .map((p) => p.clientTag == clientTag ? p.copyWith(failed: failed) : p)
-        .toList();
-    final outbox = Map<String, List<PendingMessage>>.from(state.outboxByConvId)
-      ..[conversationId] = updated;
-    state = state.copyWith(outboxByConvId: outbox);
-  }
-
-  void _setHasMore(String conversationId, bool hasMore) {
-    final map = Map<String, bool>.from(state.hasMoreByConvId)
-      ..[conversationId] = hasMore;
-    state = state.copyWith(hasMoreByConvId: map);
   }
 
   @override
@@ -482,7 +467,9 @@ class MessagingController extends Notifier<MessagingState>
   }
 
   void _cancelAllSubscriptions() {
+    _loadingOlder.clear();
     _conversationsSub?.cancel();
+    _conversationsSub = null;
     for (final sub in _messageSubs.values) {
       sub.cancel();
     }

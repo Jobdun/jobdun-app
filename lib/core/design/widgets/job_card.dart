@@ -6,6 +6,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_typography.dart';
 import '../../../features/verification/presentation/widgets/job_card_poster_badge.dart';
 import 'status_badge.dart';
+import 'job_opportunity_badge.dart';
 
 class JobCard extends StatelessWidget {
   const JobCard({
@@ -17,10 +18,12 @@ class JobCard extends StatelessWidget {
     this.distanceKm,
     required this.isUrgent,
     this.onTap,
+    this.opportunityLabel,
     this.posterVerificationStatus = PosterVerificationStatus.unknown,
   });
 
   final String title;
+  final String? opportunityLabel;
   final String description;
   final String rate;
   final String startDate;
@@ -60,6 +63,10 @@ class JobCard extends StatelessWidget {
             if (isUrgent) ...[
               const StatusBadge(variant: BadgeVariant.urgent),
               Gap(AppSpacing.md.h),
+            ],
+            if (opportunityLabel != null) ...[
+              JobOpportunityBadge(label: opportunityLabel!),
+              Gap(AppSpacing.sm.h),
             ],
             Text(
               title,

@@ -5,6 +5,13 @@ Any change that affects the mobile app's UI (new screens, redesigns,
 copy, form fields, navigation, theming, asset swaps) must produce fresh
 screenshots before being marked done.
 
+On macOS, use `ANDROID_SDK="$HOME/Library/Android/sdk"` when invoking the
+script. The capture requires Python 3 to locate controls in the Android
+accessibility XML. It supports macOS Bash 3.2. The current FTUE login link and
+Create account link are located by label, rather than obsolete SKIP coordinates.
+Start an existing Apple Silicon AVD first; the script's automatic AVD creation
+still targets a Linux x86_64 host.
+
 **One command does it all:**
 
 ```bash
@@ -29,8 +36,9 @@ places:
 6. **Installs the APK** + pre-grants `POST_NOTIFICATIONS` so the runtime dialog doesn't sit on top of FTUE.
 7. **Launches MainActivity** and captures the launch screen.
 8. **Drives the flow** with `adb input tap` + `uiautomator dump`:
-   - Taps `SKIP` on FTUE page 1.
+   - Opens the current FTUE login link (or uses an existing login screen).
    - Locates the "Create account" link by accessibility bounds, taps the centre.
+   - Captures role selection, chooses "Find Work", then captures registration.
 9. **Copies the create-account capture** to the website asset path so the marketing site picks it up on the next build.
 
 ## What it does NOT do

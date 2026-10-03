@@ -37,6 +37,8 @@ final markConversationUnreadUseCaseProvider = Provider(
 /// immediately, the realtime inbox watch / explicit refresh reconciles, and
 /// failures roll back via a full refresh.
 mixin _InboxActions on Notifier<MessagingState> {
+  int get _accountGeneration;
+  bool _isCurrent(int generation);
   // Satisfied by MessagingController (same library, so the private names
   // resolve across the part boundary).
   Future<void> _refreshInbox(String userId);
@@ -75,6 +77,7 @@ mixin _InboxActions on Notifier<MessagingState> {
     String conversationId, {
     required bool pin,
   }) async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final isBuilder = _isBuilderViewer();
@@ -92,6 +95,7 @@ mixin _InboxActions on Notifier<MessagingState> {
     final result = await ref
         .read(pinConversationUseCaseProvider)
         .call(conversationId: conversationId, isBuilder: isBuilder, pin: pin);
+    if (!_isCurrent(generation)) return;
     result.fold((f) {
       state = state.copyWith(error: f.message);
       unawaited(_refreshInbox(userId));
@@ -102,6 +106,7 @@ mixin _InboxActions on Notifier<MessagingState> {
     String conversationId, {
     required bool mute,
   }) async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final isBuilder = _isBuilderViewer();
@@ -119,6 +124,7 @@ mixin _InboxActions on Notifier<MessagingState> {
     final result = await ref
         .read(muteConversationUseCaseProvider)
         .call(conversationId: conversationId, isBuilder: isBuilder, mute: mute);
+    if (!_isCurrent(generation)) return;
     result.fold((f) {
       state = state.copyWith(error: f.message);
       unawaited(_refreshInbox(userId));
@@ -127,6 +133,7 @@ mixin _InboxActions on Notifier<MessagingState> {
 
   /// Mark-unread sentinel (D-6): viewer's last-read cleared + badge of 1.
   Future<void> markConversationUnread(String conversationId) async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final isBuilder = _isBuilderViewer();
@@ -146,6 +153,7 @@ mixin _InboxActions on Notifier<MessagingState> {
     final result = await ref
         .read(markConversationUnreadUseCaseProvider)
         .call(conversationId: conversationId, isBuilder: isBuilder);
+    if (!_isCurrent(generation)) return;
     result.fold((f) {
       state = state.copyWith(error: f.message);
       unawaited(_refreshInbox(userId));

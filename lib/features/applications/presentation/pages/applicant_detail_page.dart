@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,6 +14,7 @@ import '../../../../core/design/widgets/j_button.dart';
 import '../../../../core/design/widgets/section_label.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../messaging/presentation/pages/message_thread_page.dart';
+import '../../../jobs/presentation/providers/jobs_provider.dart';
 import '../../../messaging/presentation/providers/messaging_provider.dart';
 import '../../../profile/domain/entities/trade_profile.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
@@ -28,6 +31,8 @@ import '../../../verification/presentation/widgets/trust_chip.dart';
 import '../../domain/entities/job_application.dart';
 import '../providers/applications_provider.dart';
 import '../widgets/applicant_resume_block.dart';
+import '../widgets/applicant_apprenticeship_identity.dart';
+import '../../../profile/presentation/widgets/profile_tickets_section.dart';
 import 'job_applicants_args.dart';
 
 part 'applicant_detail_action_bar.dart';
@@ -103,6 +108,9 @@ class ApplicantDetailPage extends ConsumerWidget {
         .updateStatus(args.application.id, status);
     if (!context.mounted) return;
     if (ok) {
+      invalidateBuilderJobAggregates(ref);
+      ref.invalidate(jobByIdProvider(args.application.jobId));
+      unawaited(ref.read(jobsControllerProvider.notifier).refresh());
       context.pop();
       return;
     }
@@ -121,6 +129,10 @@ class ApplicantDetailPage extends ConsumerWidget {
     final c = context.c;
     final app = args.application;
     final profile = ref.watch(_tradeProfileProvider(app.tradeId)).asData?.value;
+    final isApprentice = profile?.isApprentice ?? app.tradeIsApprentice;
+    final profileApplication =
+        app.jobKind == 'apprenticeship' ||
+        (app.jobOpenToApprentices && (app.tradeIsApprentice || isApprentice));
     final ver = ref.watch(verificationsForUserProvider(app.tradeId));
     // U2: pass the full rows (not booleans) so the header chips can open a
     // provenance sheet with the register/as-at/expiry detail.
@@ -213,13 +225,30 @@ class ApplicantDetailPage extends ConsumerWidget {
                         abnVerif: abnVerif,
                         verificationsKnown: verificationsKnown,
                       ),
-                      Gap(AppSpacing.lg.h),
-                      _QuoteBlock(app: app),
-                      Gap(AppSpacing.lg.h),
-                      QuoteRequestBuilderCard(
-                        jobId: app.jobId,
-                        tradeId: app.tradeId,
-                      ),
+                      if (profileApplication || isApprentice) ...[
+                        Gap(AppSpacing.lg.h),
+                        ApplicantApprenticeshipIdentity(
+                          application: app,
+                          profile: profile,
+                        ),
+                      ],
+                      if (!profileApplication) ...[
+                        Gap(AppSpacing.lg.h),
+                        _QuoteBlock(app: app),
+                        Gap(AppSpacing.lg.h),
+                        QuoteRequestBuilderCard(
+                          jobId: app.jobId,
+                          tradeId: app.tradeId,
+                        ),
+                      ],
+                      if (profile != null &&
+                          profile.siteTickets.isNotEmpty) ...[
+                        Gap(AppSpacing.lg.h),
+                        ProfileTicketsSection(
+                          userId: app.tradeId,
+                          selectedSlugs: profile.siteTickets,
+                        ),
+                      ],
                       if (app.status == ApplicationStatus.hired) ...[
                         Gap(AppSpacing.lg.h),
                         ScheduleBuilderCard(
@@ -227,7 +256,7 @@ class ApplicantDetailPage extends ConsumerWidget {
                           tradeId: app.tradeId,
                         ),
                       ],
-                      if (profile != null) ...[
+                      if (profile != null && !isApprentice) ...[
                         Gap(AppSpacing.lg.h),
                         _StatsStrip(profile: profile),
                       ],

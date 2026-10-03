@@ -4,6 +4,8 @@ part of 'messaging_provider.dart';
 /// the controller stays under the file-size budget. Reaches the repository via
 /// `ref`, so it needs no controller-private state.
 mixin _ReactionActions on Notifier<MessagingState> {
+  int get _accountGeneration;
+  bool _isCurrent(int generation);
   void _setReactions(String conversationId, List<MessageReaction> reactions) {
     final map = Map<String, List<MessageReaction>>.from(state.reactionsByConvId)
       ..[conversationId] = reactions;
@@ -17,6 +19,7 @@ mixin _ReactionActions on Notifier<MessagingState> {
     required String messageId,
     required String emoji,
   }) async {
+    final generation = _accountGeneration;
     final me = readCurrentUserId(ref);
     if (me == null) return;
     final repo = ref.read(messageRepositoryProvider);
@@ -49,6 +52,7 @@ mixin _ReactionActions on Notifier<MessagingState> {
             userId: me,
             emoji: emoji,
           );
+    if (!_isCurrent(generation)) return;
     result.fold((f) => state = state.copyWith(error: f.message), (_) {});
   }
 }

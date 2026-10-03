@@ -9,6 +9,7 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 import '../../../../core/design/colors.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../../core/services/profile_analytics.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../verification/presentation/providers/verifications_provider.dart';
 
@@ -62,10 +63,15 @@ class ProfileCompletenessBanner extends ConsumerWidget {
     // Wizard/regulator licence lives in public.verifications, which the
     // profile state can't see (K9) — OR it into the score.
     final wizardLicence = ref.watch(myWizardLicenceVerifiedProvider) ?? false;
+    final role = ref.watch(authControllerProvider.select((s) => s.role));
     final snap = ref.watch(
       profileControllerProvider.select(
         (s) => (
-          pct: s.completenessPct(hasVerifiedLicence: wizardLicence),
+          pct: s.completenessPct(role: role, hasVerifiedLicence: wizardLicence),
+          ambiguousRole:
+              role == null &&
+              s.builderProfile != null &&
+              s.tradeProfile != null,
           isLoading: s.isLoading,
           hasProfile: s.profile != null,
           error: s.error,
@@ -77,7 +83,10 @@ class ProfileCompletenessBanner extends ConsumerWidget {
     // Loading and failed loads are UNKNOWN — rendering them as "0%" (and
     // firing a false banner_shown event) told complete users their profile
     // was empty (K9, 2026-08-18 audit).
-    if (snap.isLoading || snap.error != null || !snap.hasProfile) {
+    if (snap.isLoading ||
+        snap.error != null ||
+        !snap.hasProfile ||
+        snap.ambiguousRole) {
       return const SizedBox.shrink();
     }
     final pct = snap.pct;
@@ -146,8 +155,13 @@ class ProfileCompletenessBanner extends ConsumerWidget {
                           Gap(4.h),
                           Text(
                             messageOverride ??
-                                'Add a few details to build trust and get '
-                                    'applicants',
+                                switch (role) {
+                                  UserRole.builder =>
+                                    'Add a few details to build trust and get applicants',
+                                  UserRole.trade =>
+                                    'Add a few details to build trust and get more work',
+                                  _ => 'Add a few details to build trust',
+                                },
                             style: tt.bodyMedium!.copyWith(
                               height: 1.4,
                               color: c.text1,

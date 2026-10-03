@@ -105,6 +105,86 @@ Read `CLAUDE.md → Required skills` for the full set, including `superpowers` a
 
 ## Last release-related work
 
+### 2026-10-03 — shared mobile fixes and API verification
+
+Source version is `1.0.3+13`. Shared Flutter fixes cover job-feed error/loading
+states, accessible back navigation, role-aware profile completion and banner
+copy, account-scoped messaging/notifications, and idempotent image retry. These
+implementations are shared by Android and iOS; native runtime parity still
+requires platform-specific testing. The iOS foreground-only location build
+configuration is included.
+
+The October 3 local validation and three Deno feed tests passed. Live API
+checks were read-only and anonymous; authenticated paired-user lifecycles and
+full RLS coverage remain pending. See
+`docs/verification/2026-10-01-android-audit/report.md` for scope and limitations.
+
+The current admin site is Next.js on Vercel, maintained in the separate
+`admin-web` repository (intentionally ignored here). Its clean local checkout
+matches GitHub commit `a5d3f5f`; this does not establish the deployed commit.
+The old Flutter admin entrypoint and `scripts/deploy-admin.sh` remain legacy
+code, not the deployment path for the observed live admin site.
+
+### 2026-09-15 — apprenticeship vacancies and hiring
+
+Apprenticeship vacancies now use `jobs.job_kind = apprenticeship`, separately
+from ordinary trade jobs that invite apprentices. Dedicated apprenticeships
+require employer-set, positive finite hourly pay and `open_to_apprentices`.
+Creation, public browse, search filters, saved/home/builder cards, job details,
+applications and applicant review carry this distinction. Invited apprentices
+apply with their profile/resume; qualified trades retain quotes on trade jobs.
+Apprentice profile completeness uses trade, about, resume, portfolio and suburb;
+site tickets and apprenticeship stage remain optional.
+
+Production migrations `20260915000001`–`20260915000003` and the updated
+`jobs-feed` Edge Function are deployed. Database triggers enforce application
+transitions and lock the vacancy while hiring, so competing hires cannot both
+succeed. A hired trade declining reopens their assigned vacancy. Public views
+retain their explicit privacy-safe projections. The schema snapshot is current.
+
+Signed Android `1.0.3+9` is built and its manifest/upload certificate verified.
+Full validation and Android screenshot capture pass. iOS build 9 uploaded,
+then received ITMS-90683 for geolocator's unused always-location API. The
+Podfile now compiles that API out with `BYPASS_PERMISSION_LOCATION_ALWAYS=1`;
+source version is `1.0.3+10`. The exported build 10 IPA passes
+`scripts/check_ios_location_permissions.py` and uploaded successfully to Apple;
+processing/review remains pending. See the September 15 store
+submission record for upload status. Play Store upload and
+publication are **not performed**.
+Work remains uncommitted on `feat/ui-refresh-figma-2026-08-28`, preserving the
+existing September 7 edits. See the September 15 verification record for final
+build and validation evidence.
+
+### 2026-09-07 — apprentice production schema
+
+Production `zethpanvkfyijislxesn` now has migrations `20260831000001` through
+`20260831000005`, applied with the authenticated Supabase CLI after a dry run
+and a schema-only backup. Live SQL and REST checks confirmed the five apprentice
+columns on `trade_profiles`, `jobs.open_to_apprentices`, nine `site_tickets`
+rows with RLS, and the relationship-gated resume storage policy.
+`search_trades` accepts both legacy calls and the new apprentice argument;
+`authenticated` can execute it, `anon` cannot (REST returns 401).
+
+Live-app verification then caught missing projections beyond the original five
+migrations. `20260907000001` adds the invitation flag to `jobs_public_browse`;
+`20260907000002` adds apprentice identity/stage/tickets to
+`trade_profiles_public`, preserving document/address privacy. The `jobs-feed`
+Edge Function was redeployed with the same flag, and its projection test now
+reads the real Dart source instead of comparing two stale copies.
+
+The implemented model uses `apprenticeship_stage`, a `site_tickets` array, and
+`resume_uploaded_at`. Neither `apprenticeship_started_at` nor a `trade_tickets`
+table is referenced by this app or created by these migrations. Earlier release
+notes listing them as required schema were inaccurate.
+
+`supabase/schema.sql` was refreshed from production. The full validation suite
+passes, including the corrected navigation/header expectations and the refreshed
+builder-profile golden. `validate.sh` now runs all test directories.
+
+Signed Android AAB and iOS IPA builds of `1.0.2 (8)` completed against production.
+The iOS upload to App Store Connect succeeded; store publication is pending. See
+`docs/verification/2026-09-07-production-release.md` for submission status.
+
 `f474d2e` — *Merge PR #4: feat/trade-credentials-trust-layer*. Prior commits close
 out Android Play store blockers (`dc11e91`), PII visibility split (`41e3212`,
 F-RLS-03), schema-drift CI job, and the Flutter 3.41.7 pin. App is store-ready on

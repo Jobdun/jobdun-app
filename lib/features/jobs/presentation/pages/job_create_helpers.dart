@@ -42,11 +42,15 @@ void _showError(
 /// placeholders — `JobModel.toJson` drops them so the DB generates them.
 Job _buildJob(String builderId, Map<String, dynamic> values) {
   final now = DateTime.now();
+  final jobKind = values['jobKind'] as JobKind? ?? JobKind.tradeJob;
+  final apprenticeship = jobKind == JobKind.apprenticeship;
   final rate = double.tryParse('${values['rate'] ?? ''}');
-  final pricingType =
-      values['pricingMode'] as PricingType? ?? PricingType.builderSet;
-  final pricingUnit =
-      values['pricingUnit'] as PricingUnit? ?? PricingUnit.hourly;
+  final pricingType = apprenticeship
+      ? PricingType.builderSet
+      : values['pricingMode'] as PricingType? ?? PricingType.builderSet;
+  final pricingUnit = apprenticeship
+      ? PricingUnit.hourly
+      : values['pricingUnit'] as PricingUnit? ?? PricingUnit.hourly;
 
   // Location resolves two ways: the MapTiler picker emits a single
   // JPlaceResult under 'place'; the legacy fallback emits suburb / state /
@@ -97,7 +101,11 @@ Job _buildJob(String builderId, Map<String, dynamic> values) {
     longitude: longitude,
     formattedAddress: formattedAddress,
     placeId: placeId,
-    openToApprentices: values['open_to_apprentices'] as bool? ?? false,
+    jobKind: jobKind,
+    requiresVerified: !apprenticeship,
+    requiresPublicLiability: !apprenticeship,
+    openToApprentices:
+        apprenticeship || (values['open_to_apprentices'] as bool? ?? false),
   );
 }
 

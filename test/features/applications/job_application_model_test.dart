@@ -13,6 +13,33 @@ Map<String, dynamic> _baseRow() => {
 };
 
 void main() {
+  test(
+    'maps apprenticeship joins and keeps them out of application writes',
+    () {
+      final model = JobApplicationModel.fromJson({
+        ..._baseRow(),
+        'jobs': {'job_kind': 'apprenticeship', 'open_to_apprentices': true},
+        'trade_profiles': {
+          'is_apprentice': true,
+          'apprenticeship_stage': 'year_2',
+        },
+      });
+      expect(model.jobKind, 'apprenticeship');
+      expect(model.jobOpenToApprentices, isTrue);
+      expect(model.tradeIsApprentice, isTrue);
+      expect(model.tradeApprenticeshipStage, 'year_2');
+      expect(model.toJson().containsKey('job_kind'), isFalse);
+      expect(model.toJson().containsKey('is_apprentice'), isFalse);
+    },
+  );
+  test('legacy application joins default to trade behaviour', () {
+    final model = JobApplicationModel.fromJson(_baseRow());
+    expect(model.jobKind, isNull);
+    expect(model.jobOpenToApprentices, isFalse);
+    expect(model.tradeIsApprentice, isFalse);
+    expect(model.tradeApprenticeshipStage, isNull);
+  });
+
   group('JobApplicationModel.fromJson — trade avatar', () {
     test('maps embedded profiles.avatar_url to tradeAvatarUrl', () {
       final model = JobApplicationModel.fromJson({

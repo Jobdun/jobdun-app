@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:jobdun/features/jobs/domain/entities/job.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,7 +9,8 @@ import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/features/jobs/presentation/pages/job_apply_sheet.dart';
 import 'package:jobdun/features/jobs/presentation/pages/job_detail_args.dart';
 
-JobDetailArgs _args() => const JobDetailArgs(
+JobDetailArgs _args({bool openToApprentices = false}) => JobDetailArgs(
+  openToApprentices: openToApprentices,
   id: 'job-1',
   title: 'Install 3-phase switchboard',
   description: 'Commercial site',
@@ -26,7 +29,60 @@ Widget _wrap(Widget child) => ScreenUtilInit(
 );
 
 void main() {
-  testWidgets('routes the prefilled rate + typed cover note to onSubmit', (
+  for (final kind in JobKind.values) {
+    testWidgets('$kind apprentice applications omit quote and can retry', (
+      tester,
+    ) async {
+      double? gotRate = 99;
+      String? gotNote;
+      var calls = 0;
+      final pending = Completer<String?>();
+      await tester.pumpWidget(
+        _wrap(
+          JobApplySheet(
+            isApprenticeApplicant: true,
+            args: JobDetailArgs(
+              id: 'job-1',
+              title: 'Apprentice carpenter',
+              description: 'Training',
+              rate: r'$24.75/hr',
+              startDate: 'TBD',
+              distanceKm: 0,
+              isUrgent: false,
+              jobKind: kind,
+              openToApprentices: kind == JobKind.tradeJob,
+            ),
+            onSubmit: (rate, note) async {
+              calls++;
+              gotRate = rate;
+              gotNote = note;
+              return calls == 1 ? pending.future : null;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('YOUR QUOTE'), findsNothing);
+      expect(find.text(AppStrings.respondSheetTitle), findsNothing);
+      expect(find.text('APPLY FOR THIS JOB'), findsOneWidget);
+      expect(find.textContaining('resume'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).last, '  Keen to learn  ');
+      await tester.tap(find.text('SEND APPLICATION'));
+      await tester.tap(find.text('SEND APPLICATION'));
+      await tester.pump();
+      expect(calls, 1);
+      expect(gotRate, isNull);
+      expect(gotNote, 'Keen to learn');
+      pending.complete('Try again');
+      await tester.pumpAndSettle();
+      expect(find.text('Try again'), findsOneWidget);
+      await tester.tap(find.text('SEND APPLICATION'));
+      await tester.pumpAndSettle();
+      expect(calls, 2);
+    });
+  }
+
+  testWidgets('qualified trades can quote on invited trade jobs', (
     tester,
   ) async {
     double? gotRate;
@@ -35,7 +91,7 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         JobApplySheet(
-          args: _args(),
+          args: _args(openToApprentices: true),
           onSubmit: (rate, note) async {
             gotRate = rate;
             gotNote = note;

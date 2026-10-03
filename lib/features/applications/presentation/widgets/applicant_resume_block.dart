@@ -14,7 +14,7 @@ import '../../../profile/presentation/widgets/resume_row.dart';
 /// `private_docs_resume_applied_builder_select` encodes. The signed URL is
 /// minted on tap and lives 60 minutes, so it is never cached or embedded.
 ///
-/// If Postgres refuses (no application, or the row was withdrawn between the
+/// If Postgres refuses (no application relationship remains between the
 /// page loading and the tap), the failure surfaces as a message rather than a
 /// silent no-op — the policy denying access is a real answer, not a bug.
 class ApplicantResumeBlock extends ConsumerStatefulWidget {

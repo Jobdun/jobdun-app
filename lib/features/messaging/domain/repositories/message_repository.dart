@@ -9,6 +9,10 @@ import '../entities/message_reaction.dart';
 import '../entities/report_submission.dart';
 
 abstract interface class MessageRepository {
+  Future<Either<Failure, Message?>> getMessageByClientTag(
+    String conversationId,
+    String clientTag,
+  );
   Future<Either<Failure, List<Conversation>>> getConversations(String userId);
   Future<Either<Failure, String>> getOrCreateConversation({
     required String builderId,

@@ -110,7 +110,7 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
       final rows = await _client
           .from('applications')
           .select(
-            '*, jobs(title, suburb, state, status, budget_amount, pricing_unit, pricing_type)',
+            '*, jobs(title, suburb, state, status, budget_amount, pricing_unit, pricing_type, job_kind, open_to_apprentices)',
           )
           .eq('trade_id', tradeId)
           .order('created_at', ascending: false);
@@ -139,7 +139,7 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
       final rows = await _client
           .from('applications')
           .select(
-            '*, jobs(title, suburb, state, budget_amount, pricing_unit, pricing_type)',
+            '*, jobs(title, suburb, state, budget_amount, pricing_unit, pricing_type, job_kind, open_to_apprentices)',
           )
           .eq('builder_id', builderId)
           .order('created_at', ascending: false);
@@ -149,7 +149,8 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
         rows: apps,
         idKey: 'trade_id',
         table: 'trade_profiles',
-        columns: 'id, full_name, primary_trade, is_verified',
+        columns:
+            'id, full_name, primary_trade, is_verified, is_apprentice, apprenticeship_stage',
         embedKey: 'trade_profiles',
       );
       // avatar_url lives on `profiles` (not trade_profiles) — merge it under
@@ -224,7 +225,9 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
       await _client
           .from('applications')
           .update(payload)
-          .eq('id', applicationId);
+          .eq('id', applicationId)
+          .select('id')
+          .single();
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -239,7 +242,9 @@ class ApplicationRemoteDataSourceImpl implements ApplicationRemoteDataSource {
             'status': ApplicationStatus.withdrawn.dbValue,
             'status_changed_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', applicationId);
+          .eq('id', applicationId)
+          .select('id')
+          .single();
     } catch (e) {
       throw ServerException(e.toString());
     }

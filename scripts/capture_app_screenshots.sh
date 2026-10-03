@@ -152,41 +152,60 @@ shoot() {
 }
 
 echo "::info::Launching $MAIN_ACTIVITY"
+adb shell "am force-stop $PACKAGE_ID" >/dev/null
 adb shell "am start -n $MAIN_ACTIVITY" >/dev/null
 sleep 20
 shoot 01-launch
 
-# Skip FTUE and capture the login screen.
-# SKIP button on FTUE page 1 sits at top-right, ~y=130 on a 1080x1920 device.
-adb shell "input tap 1000 130" >/dev/null
-sleep 4
+# Find controls by their real accessibility labels. The current FTUE has a
+# login link, not the old top-right SKIP button. Parse XML rather than grepping
+# a possibly absent label under pipefail.
+tap_label() {
+  local coords
+  adb shell "uiautomator dump /sdcard/ui.xml" >/dev/null
+  coords="$(adb shell cat /sdcard/ui.xml | python3 -c '
+import re, sys, xml.etree.ElementTree as ET
+needle = sys.argv[1].casefold()
+for node in ET.parse(sys.stdin).iter("node"):
+    label = node.get("text", "") + " " + node.get("content-desc", "")
+    if needle in label.casefold() and node.get("clickable") == "true":
+        x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.get("bounds", "")))
+        print((x1 + x2) // 2, (y1 + y2) // 2)
+        sys.exit(0)
+sys.exit(1)
+' "$1")" || return 1
+  adb shell input tap $coords
+}
+
+# A repeated run may already start at login after completing FTUE.
+if tap_label "already have an account"; then
+  sleep 4
+fi
 shoot 02-login
 
-# Tap "Create account" — coords from uiautomator dump.
-adb shell "uiautomator dump /sdcard/ui.xml" >/dev/null
-CREATE_ACCOUNT_BOUNDS="$(adb shell cat /sdcard/ui.xml | tr '>' '\n' | grep -i "Create account" | grep -oE 'bounds="\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]"' | head -1 | grep -oE '[0-9]+' | tr '\n' ' ')"
-if [ -n "$CREATE_ACCOUNT_BOUNDS" ]; then
-  set -- $CREATE_ACCOUNT_BOUNDS
-  CX=$(( ($1 + $3) / 2 ))
-  CY=$(( ($2 + $4) / 2 ))
-  echo "::info::Tapping Create account at $CX,$CY"
-  adb shell "input tap $CX $CY" >/dev/null
-  sleep 4
-  shoot 03-create-account
+if ! tap_label "Create account"; then
+  echo "::error::Create account link not found; refusing to publish a mislabeled screenshot" >&2
+  exit 1
 fi
+sleep 4
+# Registration first asks which side of the marketplace to join.
+shoot 03-role-select
+if ! tap_label "Find Work"; then
+  echo "::error::Find Work role choice not found" >&2
+  exit 1
+fi
+sleep 4
+shoot 03-create-account
 
 # --- Step 7: copy to website asset dir --------------------------------------
 
 # Keep the website asset filenames stable: only overwrite if a name is
 # explicitly mapped. The marketing site references these by name.
-declare -A WEBSITE_MAP=(
-  ["$DATE_TAG-emulator-03-create-account.png"]="create-account.png"
-)
-for src in "${!WEBSITE_MAP[@]}"; do
-  if [ -f "$SCREENSHOT_DIR/$src" ]; then
-    cp "$SCREENSHOT_DIR/$src" "$WEBSITE_SCREENSHOT_DIR/${WEBSITE_MAP[$src]}"
-    echo "::info::website asset: $WEBSITE_SCREENSHOT_DIR/${WEBSITE_MAP[$src]}"
-  fi
-done
+# Keep this compatible with macOS's bundled Bash 3.2 (no associative arrays).
+CREATE_ACCOUNT_SHOT="$SCREENSHOT_DIR/$DATE_TAG-emulator-03-create-account.png"
+if [ -f "$CREATE_ACCOUNT_SHOT" ]; then
+  cp "$CREATE_ACCOUNT_SHOT" "$WEBSITE_SCREENSHOT_DIR/create-account.png"
+  echo "::info::website asset: $WEBSITE_SCREENSHOT_DIR/create-account.png"
+fi
 
 echo "::info::Done. Captured: $(ls -1 "$SCREENSHOT_DIR" | wc -l) files in $SCREENSHOT_DIR"

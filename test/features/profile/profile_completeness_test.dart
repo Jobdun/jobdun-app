@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:jobdun/app/theme/app_theme.dart';
 import 'package:jobdun/core/services/ftue_service.dart';
+import 'package:jobdun/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jobdun/features/home/presentation/widgets/profile_completeness_banner.dart';
 import 'package:jobdun/features/profile/domain/entities/builder_profile.dart';
 import 'package:jobdun/features/profile/domain/entities/trade_profile.dart';
@@ -22,6 +23,15 @@ class _FakeProfileController extends ProfileController {
 
   @override
   ProfileState build() => _initial;
+}
+
+class _RoleController extends AuthController {
+  _RoleController(this.role);
+  final UserRole? role;
+
+  @override
+  AuthState build() =>
+      AuthState(isAuthenticated: true, isRoleLoaded: true, role: role);
 }
 
 void main() {
@@ -57,14 +67,23 @@ void main() {
 
   // Tiny harness — drops the banner under a router that knows /profile/edit
   // so the CTA tap can be observed via router.state.uri.
-  ({Widget widget, GoRouter router}) buildHarness(ProfileState state) {
+  ({Widget widget, GoRouter router}) buildHarness(
+    ProfileState state, {
+    UserRole? role,
+    bool roleUnknown = false,
+    String? messageOverride,
+  }) {
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
         GoRoute(
           path: '/home',
-          builder: (_, _) => const Scaffold(
-            body: SafeArea(child: ProfileCompletenessBanner()),
+          builder: (_, _) => Scaffold(
+            body: SafeArea(
+              child: ProfileCompletenessBanner(
+                messageOverride: messageOverride,
+              ),
+            ),
           ),
         ),
         GoRoute(
@@ -75,6 +94,16 @@ void main() {
     );
     final widget = ProviderScope(
       overrides: [
+        authControllerProvider.overrideWith(
+          () => _RoleController(
+            roleUnknown
+                ? null
+                : role ??
+                      (state.tradeProfile != null
+                          ? UserRole.trade
+                          : UserRole.builder),
+          ),
+        ),
         profileControllerProvider.overrideWith(
           () => _FakeProfileController(state),
         ),
@@ -146,7 +175,63 @@ void main() {
     // carries the figure, and the number stays available to screen readers on
     // the bar's semantics node.
     expect(find.bySemanticsLabel('50 percent complete'), findsOneWidget);
+    expect(
+      find.text('Add a few details to build trust and get applicants'),
+      findsOneWidget,
+    );
   });
+
+  testWidgets('trade banner describes getting work, not applicants', (
+    tester,
+  ) async {
+    final h = buildHarness(
+      const ProfileState(
+        profile: UserProfile(id: 'u1'),
+        tradeProfile: TradeProfile(
+          id: 'u1',
+          fullName: 'Test Trade',
+          primaryTrade: 'electrician',
+        ),
+      ),
+      role: UserRole.trade,
+    );
+    await tester.pumpWidget(h.widget);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Add a few details to build trust and get more work'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('applicants'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('unknown role banner uses neutral copy', (tester) async {
+    final h = buildHarness(builderHalfDone(), roleUnknown: true);
+    await tester.pumpWidget(h.widget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add a few details to build trust'), findsOneWidget);
+    expect(find.textContaining('applicants'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final role in [UserRole.builder, UserRole.trade, null]) {
+    testWidgets('message override takes priority for $role', (tester) async {
+      final h = buildHarness(
+        builderHalfDone(),
+        role: role,
+        roleUnknown: role == null,
+        messageOverride: 'Add your phone number',
+      );
+      await tester.pumpWidget(h.widget);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add your phone number'), findsOneWidget);
+      expect(find.textContaining('Add a few details'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   // ───────────────────────────────────────────────────────────────────────────
   // Banner hides at 100% (builder)
@@ -257,5 +342,49 @@ void main() {
     expect(await FtueService.hasSeenFirstHomeToast(), isTrue);
     await FtueService.resetFtue();
     expect(await FtueService.hasSeenFirstHomeToast(), isFalse);
+  });
+  testWidgets('trade ignores an empty builder row when scoring completion', (
+    tester,
+  ) async {
+    final h = buildHarness(
+      const ProfileState(
+        profile: UserProfile(id: 'u1'),
+        builderProfile: BuilderProfile(id: 'u1', companyName: ''),
+        tradeProfile: TradeProfile(
+          id: 'u1',
+          fullName: 'Test Trade',
+          primaryTrade: 'electrician',
+          baseSuburb: 'Sydney',
+          portfolioUrls: ['photo'],
+        ),
+      ),
+      role: UserRole.trade,
+    );
+    await tester.pumpWidget(h.widget);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('60 percent complete'), findsOneWidget);
+    expect(find.bySemanticsLabel('0 percent complete'), findsNothing);
+  });
+
+  testWidgets('builder ignores a populated trade row when scoring completion', (
+    tester,
+  ) async {
+    final h = buildHarness(
+      const ProfileState(
+        profile: UserProfile(id: 'u1'),
+        builderProfile: BuilderProfile(id: 'u1', companyName: 'Test Company'),
+        tradeProfile: TradeProfile(
+          id: 'u1',
+          fullName: 'Test Trade',
+          primaryTrade: 'electrician',
+          baseSuburb: 'Sydney',
+          portfolioUrls: ['photo'],
+        ),
+      ),
+      role: UserRole.builder,
+    );
+    await tester.pumpWidget(h.widget);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('25 percent complete'), findsOneWidget);
   });
 }

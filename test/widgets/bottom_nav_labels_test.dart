@@ -15,12 +15,12 @@ void main() {
     // Floating-dock nav (2026-06-11): four work tabs; Profile moved off the bar
     // to the avatar/account-sheet — the dock's 5th slot is a button, not a tab.
     test(
-      'builder roster has 4 work tabs, slots 1/2 are My Jobs and Applicants',
+      'builder roster has 4 work tabs, slots 1/2 are Listings and Applicants',
       () {
         final tabs = TabSpec.forRole(UserRole.builder);
         expect(tabs, hasLength(4));
         expect(tabs[0].shortLabel, 'Home');
-        expect(tabs[1].shortLabel, 'My Jobs');
+        expect(tabs[1].shortLabel, 'Listings');
         expect(tabs[1].semanticsLabel, 'My posted jobs');
         expect(tabs[2].shortLabel, 'Applicants');
         expect(tabs[2].semanticsLabel, 'Job applicants');

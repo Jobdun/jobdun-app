@@ -183,8 +183,8 @@ run_check "dart format (no changes)" \
 run_check "flutter analyze (no fatal infos)" \
   flutter analyze --no-fatal-infos
 
-run_check "flutter test test/features/" \
-  flutter test test/features/
+run_check "flutter test (all suites)" \
+  flutter test
 
 echo ""
 

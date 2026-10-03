@@ -50,6 +50,10 @@ class JobApplication extends Equatable {
     this.availableFrom,
     this.rejectionReason,
     // Joined fields
+    this.jobKind,
+    this.jobOpenToApprentices = false,
+    this.tradeIsApprentice = false,
+    this.tradeApprenticeshipStage,
     this.jobTitle,
     this.jobSuburb,
     this.jobState,
@@ -82,6 +86,14 @@ class JobApplication extends Equatable {
   final DateTime updatedAt;
 
   // Joined from jobs (trade view)
+  final String? jobKind;
+  final bool jobOpenToApprentices;
+  final bool tradeIsApprentice;
+  final String? tradeApprenticeshipStage;
+  bool get isProfileApplication =>
+      jobKind == 'apprenticeship' ||
+      (jobOpenToApprentices && tradeIsApprentice);
+
   final String? jobTitle;
   final String? jobSuburb;
   final String? jobState;

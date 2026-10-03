@@ -369,6 +369,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       final j = feedJobs[i];
                       return JobCard(
                         title: j.title,
+                        opportunityLabel: j.opportunityLabel,
                         description: j.description,
                         rate: j.displayBudget,
                         startDate: j.startDate != null

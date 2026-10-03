@@ -8,6 +8,8 @@ class JobFilter extends Equatable {
     this.status,
     this.searchQuery,
     this.builderId,
+    this.jobKind,
+    this.openToApprentices,
   });
 
   final String? tradeType; // trade_type_required value
@@ -15,13 +17,24 @@ class JobFilter extends Equatable {
   final String? searchQuery;
   // When set, scope the feed to this builder's own jobs ("Your listings").
   final String? builderId;
+  final JobKind? jobKind;
+  final bool? openToApprentices;
 
   bool get isEmpty =>
       tradeType == null &&
       status == null &&
       (searchQuery == null || searchQuery!.isEmpty) &&
-      builderId == null;
+      builderId == null &&
+      jobKind == null &&
+      openToApprentices == null;
 
   @override
-  List<Object?> get props => [tradeType, status, searchQuery, builderId];
+  List<Object?> get props => [
+    tradeType,
+    status,
+    searchQuery,
+    builderId,
+    jobKind,
+    openToApprentices,
+  ];
 }

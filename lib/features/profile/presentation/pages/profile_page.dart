@@ -88,6 +88,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             hasServiceArea: bp?.serviceSuburb?.isNotEmpty ?? false,
             phoneVerified: phoneVerified,
           )
+        : tp?.isApprentice == true
+        ? topApprenticeGap(tp!)
         : topTradeGap(
             // OR in the wizard/regulator truth — licence_url alone misses
             // regulator-verified tradies (K9, 2026-08-18 audit).

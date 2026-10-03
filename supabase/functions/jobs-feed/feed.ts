@@ -7,7 +7,7 @@
 import { jsonResponse } from "../_shared/cors.ts";
 import { serviceClient } from "../_shared/supabase-client.ts";
 
-export const CACHE_KEY = "jobs:feed:v1:open:p0";
+export const CACHE_KEY = "jobs:feed:v2:open:p0";
 export const STATS_HIT_KEY = "jobs:feed:v1:stats:hit";
 export const STATS_MISS_KEY = "jobs:feed:v1:stats:miss";
 export const INVALIDATE_LOCK_KEY = "jobs:feed:v1:lock";
@@ -22,7 +22,8 @@ export const MAX_LIMIT = 20;
 export const FEED_COLUMNS =
   "id, builder_id, title, description, suburb, state, postcode, " +
   "trade_type_required, budget_amount, pricing_unit, pricing_type, urgency, " +
-  "requires_verified, requires_white_card, application_count, view_count, " +
+  "requires_verified, requires_white_card, requires_public_liability, open_to_apprentices, job_kind, " +
+  "start_date, application_count, view_count, " +
   "status, published_at, created_at, updated_at, " +
   "latitude, longitude, formatted_address, place_id";
 

@@ -8,8 +8,15 @@ part of 'job_create_page.dart';
 /// Every field keeps the name it had when this page was one long scroll, so
 /// `_buildJob` and `_scrollToFirstError` read exactly the same map.
 class _StepOne extends StatelessWidget {
-  const _StepOne({required this.trades, required this.onTradeChanged});
+  const _StepOne({
+    required this.trades,
+    required this.onTradeChanged,
+    required this.jobKind,
+    required this.onKindChanged,
+  });
 
+  final JobKind jobKind;
+  final ValueChanged<JobKind> onKindChanged;
   final List<String> trades;
   final ValueChanged<String?> onTradeChanged;
 
@@ -21,14 +28,18 @@ class _StepOne extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _JobKindPicker(onChanged: onKindChanged),
+          Gap(24.h),
           const _UrgentToggle(),
           Gap(16.h),
-          const _OpenToApprenticesToggle(),
+          if (jobKind == JobKind.tradeJob) const _OpenToApprenticesToggle(),
           Gap(24.h),
           JTextField(
             name: 'title',
             label: 'Job Title',
-            hint: 'e.g. Install a 3 phase switchboard',
+            hint: jobKind == JobKind.apprenticeship
+                ? 'e.g. Carpentry apprenticeship'
+                : 'e.g. Install a 3 phase switchboard',
             textInputAction: TextInputAction.next,
             textCapitalization: TextCapitalization.sentences,
             validator: FormBuilderValidators.compose([
@@ -47,8 +58,9 @@ class _StepOne extends StatelessWidget {
           JTextField(
             name: 'description',
             label: 'Description',
-            hint:
-                'Describe the scope of work, site conditions, tools required…',
+            hint: jobKind == JobKind.apprenticeship
+                ? 'Describe the training, hours, supervision and apprentice stage you are looking for.'
+                : 'Describe the scope of work, site conditions, tools required…',
             textCapitalization: TextCapitalization.sentences,
             maxLength: 1000,
             maxLines: 5,

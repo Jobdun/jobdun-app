@@ -55,7 +55,11 @@ class _PageError extends StatelessWidget {
             ),
             Gap(AppSpacing.md.h),
             Text(
-              message,
+              switch (message) {
+                "You're offline. Check your connection and try again." ||
+                'Loading jobs took too long. Please try again.' => message,
+                _ => "Couldn't load jobs. Please try again.",
+              },
               style: tt.bodyMedium!.copyWith(color: c.urgentTx),
               textAlign: TextAlign.center,
             ),
@@ -162,6 +166,7 @@ class _SavedJobsList extends StatelessWidget {
           ),
           child: JobCard(
             title: j.title,
+            opportunityLabel: j.opportunityLabel,
             description: j.description,
             rate: j.displayBudget,
             startDate: j.startDate != null
@@ -254,14 +259,13 @@ class _GuestSignInTeaser extends StatelessWidget {
 }
 
 class _EmptyState extends ConsumerWidget {
-  const _EmptyState({required this.hasFilter});
+  const _EmptyState({required this.hasFilter, required this.onClear});
 
   final bool hasFilter;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
-    final tt = Theme.of(context).textTheme;
     final isBuilder = ref.watch(
       authControllerProvider.select((s) => s.role == UserRole.builder),
     );
@@ -282,47 +286,16 @@ class _EmptyState extends ConsumerWidget {
         ? 'POST A JOB'
         : null;
 
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xl.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.search, size: AppIconSize.hero.r, color: c.text3),
-            Gap(AppSpacing.md.h),
-            Text(
-              headline,
-              style: tt.headlineSmall!.copyWith(color: c.text1),
-              textAlign: TextAlign.center,
-            ),
-            Gap(AppSpacing.sm.h),
-            Text(
-              body,
-              style: tt.bodyLarge!.copyWith(color: c.text3),
-              textAlign: TextAlign.center,
-            ),
-            if (ctaLabel != null) ...[
-              Gap(AppSpacing.lg.h),
-              SizedBox(
-                width: 200.w,
-                child: JButton(
-                  label: ctaLabel,
-                  onPressed: () {
-                    if (hasFilter) {
-                      ref
-                          .read(jobsControllerProvider.notifier)
-                          .applyFilter(null);
-                      ref.read(jobsControllerProvider.notifier).search('');
-                    } else {
-                      context.push('/jobs/create');
-                    }
-                  },
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return EmptyState(
+      lottieAsset: 'assets/animations/job-search.json',
+      headline: headline,
+      body: body,
+      ctaLabel: ctaLabel ?? 'REFRESH JOBS',
+      onCta: hasFilter
+          ? onClear
+          : isBuilder
+          ? () => context.push('/jobs/create')
+          : () => ref.read(jobsControllerProvider.notifier).refresh(),
     );
   }
 }

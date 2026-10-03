@@ -9,6 +9,7 @@ part of 'job_create_page.dart';
 /// `jobs_budget_amount_when_set` CHECK.
 class _StepTwo extends StatelessWidget {
   const _StepTwo({
+    required this.isApprenticeship,
     required this.pricingMode,
     required this.pricingUnit,
     required this.rateHint,
@@ -16,6 +17,7 @@ class _StepTwo extends StatelessWidget {
     required this.onUnitChanged,
   });
 
+  final bool isApprenticeship;
   final PricingType pricingMode;
   final PricingUnit pricingUnit;
   final String? rateHint;
@@ -33,16 +35,20 @@ class _StepTwo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PricingModePicker(onChanged: onModeChanged),
-          Gap(24.h),
-          Text(
-            'Price per:',
-            style: tt.bodyMedium!.copyWith(height: 1.0, color: c.text1),
-          ),
-          Gap(12.h),
-          _PricingUnitPicker(onChanged: onUnitChanged),
+          if (isApprenticeship)
+            Text('Hourly pay', style: tt.titleLarge!.copyWith(color: c.text1))
+          else
+            _PricingModePicker(onChanged: onModeChanged),
+          if (!isApprenticeship) Gap(24.h),
+          if (!isApprenticeship)
+            Text(
+              'Price per:',
+              style: tt.bodyMedium!.copyWith(height: 1.0, color: c.text1),
+            ),
+          if (!isApprenticeship) Gap(12.h),
+          if (!isApprenticeship) _PricingUnitPicker(onChanged: onUnitChanged),
           Gap(16.h),
-          if (pricingMode == PricingType.builderSet)
+          if (isApprenticeship || pricingMode == PricingType.builderSet)
             JTextField(
               name: 'rate',
               // Persistent "$" via the always-visible prefix slot, mirroring
@@ -58,25 +64,39 @@ class _StepTwo extends StatelessWidget {
                 ),
               ),
               hint: '0',
-              helperText: rateHint,
-              keyboardType: TextInputType.number,
+              helperText: isApprenticeship
+                  ? 'Enter the hourly pay you offer. Include training and hours in the description.'
+                  : rateHint,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.done,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                TextInputFormatter.withFunction(
+                  (oldValue, newValue) =>
+                      RegExp(r'^\d*\.?\d{0,2}$').hasMatch(newValue.text)
+                      ? newValue
+                      : oldValue,
+                ),
+              ],
               suffixIcon: Padding(
                 padding: EdgeInsets.only(right: 12.w),
                 child: Text(
-                  pricingUnit.suffix.isEmpty ? 'total' : pricingUnit.suffix,
+                  isApprenticeship
+                      ? '/hr'
+                      : pricingUnit.suffix.isEmpty
+                      ? 'total'
+                      : pricingUnit.suffix,
                   style: tt.bodyMedium!.copyWith(color: c.text3),
                 ),
               ),
-              validator: FormBuilderValidators.compose([
-                FormBuilderValidators.required(errorText: 'Rate is required.'),
-                FormBuilderValidators.integer(errorText: 'Whole dollars only.'),
-                FormBuilderValidators.min(
-                  1,
-                  errorText: 'Must be at least \$1.',
-                ),
-              ]),
+              validator: (value) {
+                final amount = double.tryParse(value?.trim() ?? '');
+                if (amount == null || !amount.isFinite || amount <= 0) {
+                  return 'Enter a positive amount.';
+                }
+                return null;
+              },
             )
           else
             const _QuoteModeNote(),

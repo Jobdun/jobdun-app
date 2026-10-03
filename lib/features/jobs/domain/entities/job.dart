@@ -105,6 +105,17 @@ extension PricingTypeX on PricingType {
       v == 'request_quote' ? PricingType.requestQuote : PricingType.builderSet;
 }
 
+enum JobKind { tradeJob, apprenticeship }
+
+extension JobKindX on JobKind {
+  String get dbValue =>
+      this == JobKind.apprenticeship ? 'apprenticeship' : 'trade_job';
+  String get label =>
+      this == JobKind.apprenticeship ? 'Apprenticeship' : 'Trade job';
+  static JobKind fromDb(String? value) =>
+      value == 'apprenticeship' ? JobKind.apprenticeship : JobKind.tradeJob;
+}
+
 class Job extends Equatable {
   const Job({
     required this.id,
@@ -132,6 +143,7 @@ class Job extends Equatable {
     this.requiresPublicLiability = true,
     this.requiresVerified = true,
     this.openToApprentices = false,
+    this.jobKind = JobKind.tradeJob,
     this.requiredCertifications = const [],
     this.applicationCount = 0,
     this.viewCount = 0,
@@ -176,6 +188,13 @@ class Job extends Equatable {
   /// at apply time, so there is nothing to waive. This drives an OPEN TO
   /// APPRENTICES chip and an apprentice-side feed filter.
   final bool openToApprentices;
+  final JobKind jobKind;
+  bool get isApprenticeship => jobKind == JobKind.apprenticeship;
+  String? get opportunityLabel => isApprenticeship
+      ? 'APPRENTICESHIP'
+      : openToApprentices
+      ? 'OPEN TO APPRENTICES'
+      : null;
   final List<String> requiredCertifications;
   final int applicationCount;
   final int viewCount;
@@ -218,12 +237,16 @@ class Job extends Equatable {
 
   // Pure-Dart grouping (domain stays free of formatting packages).
   static String _groupThousands(double value) {
-    final digits = value.toStringAsFixed(0);
+    final parts = value
+        .toStringAsFixed(value == value.roundToDouble() ? 0 : 2)
+        .split('.');
+    final digits = parts.first;
     final out = StringBuffer();
     for (var i = 0; i < digits.length; i++) {
       if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
       out.write(digits[i]);
     }
+    if (parts.length > 1) out.write('.${parts.last}');
     return out.toString();
   }
 
@@ -238,5 +261,16 @@ class Job extends Equatable {
   bool get hasLocation => latitude != null && longitude != null;
 
   @override
-  List<Object?> get props => [id, builderId, title, status, tradeTypeRequired];
+  List<Object?> get props => [
+    id,
+    builderId,
+    title,
+    status,
+    tradeTypeRequired,
+    jobKind,
+    openToApprentices,
+    budgetAmount,
+    pricingUnit,
+    pricingType,
+  ];
 }

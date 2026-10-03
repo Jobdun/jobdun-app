@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/providers/account_scoped.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../data/datasources/notification_remote_datasource.dart';
 import '../../data/repositories/notification_repository_impl.dart';
@@ -41,49 +40,69 @@ final notificationsControllerProvider =
       NotificationsController.new,
     );
 
-class NotificationsController extends Notifier<NotificationsState>
-    with AccountScoped<NotificationsState> {
+class NotificationsController extends Notifier<NotificationsState> {
   late NotificationRepository _repo;
   StreamSubscription<List<AppNotification>>? _sub;
+  int _accountGeneration = 0;
 
   @override
   NotificationsState build() {
     _repo = ref.read(notificationRepositoryProvider);
 
-    // Clear + reload on logout / account switch to prevent stale data.
-    resetOnAccountChange((userId) {
+    // Every identity transition includes signing in from a logged-out state.
+    // The generation also rejects work from a previous session of the same user.
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (previous?.value == next.value) return;
+      final generation = ++_accountGeneration;
       _sub?.cancel();
+      _sub = null;
       state = const NotificationsState();
-      if (userId != null) Future.microtask(_loadAndWatch);
+      if (next.value != null) {
+        Future.microtask(() => _loadAndWatch(generation));
+      }
     });
 
     ref.onDispose(() => _sub?.cancel());
     // First-load triggers belong here — CLAUDE.md → Engineering Standards.
-    Future.microtask(_loadAndWatch);
+    final generation = _accountGeneration;
+    Future.microtask(() => _loadAndWatch(generation));
     return const NotificationsState();
   }
 
-  Future<void> _loadAndWatch() async {
+  bool _isCurrent(int generation) =>
+      ref.mounted && generation == _accountGeneration;
+
+  Future<void> _loadAndWatch(int generation) async {
+    if (!_isCurrent(generation)) return;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     await load();
+    if (!_isCurrent(generation)) return;
     _sub?.cancel();
     _sub = _repo
         .watchNotifications(userId)
         .listen(
-          (rows) => state = state.copyWith(
-            notifications: rows,
-            unreadCount: rows.where((n) => !n.isRead).length,
-          ),
-          onError: (Object e) => state = state.copyWith(error: e.toString()),
+          (rows) {
+            if (!_isCurrent(generation)) return;
+            state = state.copyWith(
+              notifications: rows,
+              unreadCount: rows.where((n) => !n.isRead).length,
+            );
+          },
+          onError: (Object e) {
+            if (!_isCurrent(generation)) return;
+            state = state.copyWith(error: e.toString());
+          },
         );
   }
 
   Future<void> load() async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     state = state.copyWith(isLoading: true, error: null);
     final result = await ref.read(getNotificationsUseCaseProvider).call(userId);
+    if (!_isCurrent(generation)) return;
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
       (rows) => state = state.copyWith(
@@ -95,6 +114,7 @@ class NotificationsController extends Notifier<NotificationsState>
   }
 
   Future<void> markRead(String notificationId) async {
+    final generation = _accountGeneration;
     // Optimistic — stamp readAt locally, ROLL BACK on failure (the old
     // comment promised a rollback that never existed: badges cleared
     // locally, nothing persisted, counts came back on restart — races
@@ -112,6 +132,7 @@ class NotificationsController extends Notifier<NotificationsState>
     final result = await ref
         .read(markAsReadUseCaseProvider)
         .call(notificationId);
+    if (!_isCurrent(generation)) return;
     result.fold(
       (f) => state = state.copyWith(
         notifications: prev,
@@ -123,6 +144,7 @@ class NotificationsController extends Notifier<NotificationsState>
   }
 
   Future<void> markAllRead() async {
+    final generation = _accountGeneration;
     final userId = readCurrentUserId(ref);
     if (userId == null) return;
     final prev = state.notifications;
@@ -131,6 +153,7 @@ class NotificationsController extends Notifier<NotificationsState>
     final next = prev.map((n) => n.asRead(now)).toList();
     state = state.copyWith(notifications: next, unreadCount: 0);
     final result = await ref.read(markAllAsReadUseCaseProvider).call(userId);
+    if (!_isCurrent(generation)) return;
     result.fold(
       (f) => state = state.copyWith(
         notifications: prev,

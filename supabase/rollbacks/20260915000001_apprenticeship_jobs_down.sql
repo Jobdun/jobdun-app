@@ -1,0 +1,3 @@
+-- Preserve vacancies/data on app rollback: older clients ignore job_kind.
+-- Intentionally retain the additive column, constraints and public view.
+-- Disable the new create UI by deploying the prior app build.

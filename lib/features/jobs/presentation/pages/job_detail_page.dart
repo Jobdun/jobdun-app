@@ -1,3 +1,5 @@
+import '../../../../core/design/widgets/job_opportunity_badge.dart';
+import '../providers/job_applicant_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -21,6 +23,7 @@ import '../../../auth/presentation/widgets/onboarding_completion_sheet.dart';
 import '../providers/jobs_provider.dart';
 import 'job_apply_sheet.dart';
 import 'job_detail_args.dart';
+import '../../domain/entities/job.dart';
 
 export 'job_detail_args.dart';
 
@@ -88,6 +91,15 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       ),
     );
 
+    final applicantMode =
+        isAuthed &&
+            !needsOnboarding &&
+            !isOwner &&
+            args.openToApprentices &&
+            !args.isApprenticeship
+        ? ref.watch(jobApplicantIsApprenticeProvider)
+        : const AsyncData(false);
+
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
@@ -99,14 +111,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
               padding: EdgeInsets.fromLTRB(4.w, AppSpacing.sm.h, 20.w, 12.h),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: Icon(
-                      AppIcons.back,
-                      size: AppIconSize.md.r,
-                      color: c.text1,
-                    ),
-                  ),
+                  BackButton(color: c.text1, onPressed: () => context.pop()),
                   Expanded(
                     child: Text(
                       'Job Details',
@@ -199,6 +204,14 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     // text — the exact pattern MASTER bans for landing under
                     // AA. JSelectChip's tint + ink pair clears 4.92:1.
                     JSelectChip(label: args.tradeType, selected: true),
+                    if (args.isApprenticeship || args.openToApprentices) ...[
+                      Gap(12.h),
+                      JobOpportunityBadge(
+                        label: args.isApprenticeship
+                            ? 'APPRENTICESHIP'
+                            : 'OPEN TO APPRENTICES',
+                      ),
+                    ],
                     Gap(24.h),
 
                     // ── Description
@@ -222,11 +235,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                     // ── Requirements
                     const _SectionLabel('Requirements'),
                     Gap(12.h),
-                    _ReqRow(
-                      icon: AppIcons.licence,
-                      label: 'Current trade licence required',
-                      met: true,
-                    ),
+                    if (!args.isApprenticeship && !args.openToApprentices)
+                      _ReqRow(
+                        icon: AppIcons.licence,
+                        label: 'Current trade licence required',
+                        met: true,
+                      ),
                     if (args.requiresWhiteCard)
                       _ReqRow(
                         icon: AppIcons.card,
@@ -239,11 +253,12 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                         label: 'Public liability insurance (\$10M+)',
                         met: true,
                       ),
-                    _ReqRow(
-                      icon: AppIcons.document,
-                      label: 'SWMS to be provided on site',
-                      met: false,
-                    ),
+                    if (!args.isApprenticeship)
+                      _ReqRow(
+                        icon: AppIcons.document,
+                        label: 'SWMS to be provided on site',
+                        met: false,
+                      ),
                   ],
                 ),
               ),
@@ -297,11 +312,20 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
             else
               BottomActionBar(
                 primary: JButton(
-                  label: AppStrings.respondToJob,
+                  isLoading: applicantMode.isLoading,
+                  label: applicantMode.hasError
+                      ? 'RETRY PROFILE'
+                      : args.canApply
+                      ? (args.isApprenticeship || args.openToApprentices
+                            ? 'Apply for this job'
+                            : AppStrings.respondToJob)
+                      : 'POSITION ${args.status.label.toUpperCase()}',
                   // Applying is account-based — guests get the sign-in gate
                   // and return here after auth (App Review 5.1.1(v)); a
                   // signed-in user with no role yet finishes onboarding first.
-                  onPressed: !isAuthed
+                  onPressed: !args.canApply || applicantMode.isLoading
+                      ? null
+                      : !isAuthed
                       ? () => GuestGateSheet.show(
                           context,
                           actionCaps: 'APPLY',
@@ -309,6 +333,8 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                         )
                       : needsOnboarding
                       ? () => OnboardingCompletionSheet.show(context)
+                      : applicantMode.hasError
+                      ? () => ref.invalidate(jobApplicantIsApprenticeProvider)
                       : () => _showApplySheet(context, c, args),
                 ),
               ),
@@ -379,6 +405,9 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       ),
       builder: (ctx) => JobApplySheet(
         args: args,
+        isApprenticeApplicant: args.openToApprentices && !args.isApprenticeship
+            ? ref.read(jobApplicantIsApprenticeProvider).requireValue
+            : false,
         onSubmit: (rate, note) async {
           final jobId = args.id;
           final builderId = args.builderId;
