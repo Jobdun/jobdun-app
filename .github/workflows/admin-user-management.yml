@@ -1,0 +1,36 @@
+name: Admin user management
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/admin-users/**'
+      - 'supabase/functions/_shared/cors.ts'
+      - 'supabase/migrations/*admin_user_management.sql'
+      - 'supabase/schema.sql'
+      - '.github/workflows/admin-user-management.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/admin-users/**'
+      - 'supabase/functions/_shared/cors.ts'
+      - 'supabase/migrations/*admin_user_management.sql'
+      - 'supabase/schema.sql'
+      - '.github/workflows/admin-user-management.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/admin-users/index.ts
+      - run: deno lint supabase/functions/admin-users/
+      - run: deno fmt --check supabase/functions/admin-users/*.ts
+      - name: Handler, SDK and isolated PostgreSQL tests
+        run: deno test --allow-read supabase/functions/admin-users/
