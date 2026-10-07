@@ -254,6 +254,79 @@ COMMENT ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status
 
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "uuid", "p_role" "text", "p_expected_role" "text", "p_reason" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_old_role text;
+  v_name text;
+  v_previous_actor text;
+  v_previous_reason text;
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501';
+  END IF;
+  IF p_actor_id IS NULL OR p_user_id IS NULL OR p_role IS NULL
+    OR p_role NOT IN ('builder','trade','admin')
+    OR (p_expected_role IS NOT NULL AND p_expected_role NOT IN ('builder','trade','admin'))
+    OR p_reason IS NULL OR length(btrim(p_reason)) NOT BETWEEN 5 AND 500
+    OR p_reason ~ '[[:cntrl:]]' THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
+  END IF;
+  -- Serialize promotions/demotions, including opposing concurrent requests.
+  PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles', 0));
+  -- Lock fresh actor rows so a concurrent suspension/demotion cannot slip
+  -- between this verification and commit. Never trust JWT user_role.
+  PERFORM 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
+    FOR UPDATE OF r, p;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501'; END IF;
+  IF p_actor_id = p_user_id THEN RAISE EXCEPTION 'self_role_change' USING ERRCODE = 'P0001'; END IF;
+  PERFORM 1 FROM auth.users WHERE id = p_user_id FOR KEY SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found' USING ERRCODE = 'P0001'; END IF;
+
+  SELECT role INTO v_old_role FROM public.user_roles WHERE user_id = p_user_id FOR UPDATE;
+  -- NULL means the UI observed no role, not permission to overwrite any role.
+  IF v_old_role IS DISTINCT FROM p_expected_role THEN
+    RAISE EXCEPTION 'role_conflict' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_old_role = 'admin' AND p_role <> 'admin'
+    AND (SELECT count(*) FROM public.user_roles WHERE role = 'admin') <= 1 THEN
+    RAISE EXCEPTION 'last_admin' USING ERRCODE = 'P0001';
+  END IF;
+
+  INSERT INTO public.profiles(id, display_name)
+    SELECT id, nullif(btrim(raw_user_meta_data->>'full_name'), '') FROM auth.users WHERE id = p_user_id
+    ON CONFLICT (id) DO NOTHING;
+  SELECT display_name INTO v_name FROM public.profiles WHERE id = p_user_id;
+  IF p_role = 'builder' THEN
+    INSERT INTO public.builder_profiles(id) VALUES(p_user_id) ON CONFLICT (id) DO NOTHING;
+  ELSIF p_role = 'trade' THEN
+    INSERT INTO public.trade_profiles(id, full_name) VALUES(p_user_id, v_name) ON CONFLICT (id) DO NOTHING;
+  END IF;
+  -- Preserve both historical role profiles; never clear apprentice, business,
+  -- verification, job, quote or application data when changing the auth role.
+  v_previous_actor := current_setting('jobdun.admin_actor_id', true);
+  v_previous_reason := current_setting('jobdun.admin_role_reason', true);
+  PERFORM set_config('jobdun.admin_actor_id', p_actor_id::text, true);
+  PERFORM set_config('jobdun.admin_role_reason', btrim(p_reason), true);
+  INSERT INTO public.user_roles(user_id, role) VALUES(p_user_id, p_role)
+    ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role;
+  PERFORM set_config('jobdun.admin_actor_id', coalesce(v_previous_actor, ''), true);
+  PERFORM set_config('jobdun.admin_role_reason', coalesce(v_previous_reason, ''), true);
+
+  INSERT INTO public.admin_actions(actor_id, action, target_table, target_id, metadata)
+    VALUES(p_actor_id, 'set_user_role', 'user_roles', p_user_id,
+      jsonb_build_object('old_role', v_old_role, 'new_role', p_role, 'reason', btrim(p_reason)));
+  RETURN jsonb_build_object('userId', p_user_id, 'role', p_role);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "uuid", "p_role" "text", "p_expected_role" "text", "p_reason" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -284,6 +357,99 @@ ALTER FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "
 
 COMMENT ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") IS '#21a admin moderation: set a user active/suspended/banned. Admin-only; audited via log_admin_action. Enforcement (blocking suspended users) is a follow-up RLS concern.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_user_invitation_preflight"("p_actor_id" "uuid", "p_email" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM public.admin_user_management_ready(p_actor_id);
+  IF p_email IS NULL OR length(p_email) NOT BETWEEN 3 AND 254 THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
+  END IF;
+  IF EXISTS (SELECT 1 FROM auth.users WHERE lower(email) = lower(btrim(p_email))) THEN
+    RAISE EXCEPTION 'user_exists' USING ERRCODE = 'P0001';
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_user_invitation_preflight"("p_actor_id" "uuid", "p_email" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_user_management_is_admin"() RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = auth.uid() AND r.role = 'admin' AND p.user_status = 'active'
+  );
+$$;
+
+
+ALTER FUNCTION "public"."admin_user_management_is_admin"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_user_management_rate_limit"("p_actor_id" "uuid", "p_ip" "text", "p_action" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_endpoint text;
+  v_actor_limit integer;
+  v_ip_limit integer;
+  v_minute timestamptz := date_trunc('minute', clock_timestamp());
+  v_actor_bucket text := 'user:' || p_actor_id::text;
+  v_ip_bucket text := 'ip:' || coalesce(nullif(btrim(p_ip), ''), 'unknown');
+BEGIN
+  PERFORM public.admin_user_management_ready(p_actor_id);
+  IF p_action IS NULL OR p_action NOT IN ('invite','set-role') OR length(p_ip) > 200 THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
+  END IF;
+  v_endpoint := 'admin-users-' || p_action;
+  v_actor_limit := CASE WHEN p_action = 'invite' THEN 5 ELSE 30 END;
+  v_ip_limit := CASE WHEN p_action = 'invite' THEN 20 ELSE 90 END;
+  PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:rate-limit', 0));
+  IF (SELECT coalesce(sum(attempt_count),0) FROM public.verification_rate_limits
+      WHERE endpoint = v_endpoint AND bucket_key = v_actor_bucket AND window_start >= v_minute - interval '1 hour') >= v_actor_limit
+    OR (SELECT coalesce(sum(attempt_count),0) FROM public.verification_rate_limits
+      WHERE endpoint = v_endpoint AND bucket_key = v_ip_bucket AND window_start >= v_minute - interval '1 hour') >= v_ip_limit THEN
+    RETURN jsonb_build_object('allowed', false, 'retry_after', 3660);
+  END IF;
+  INSERT INTO public.verification_rate_limits(bucket_key, endpoint, window_start, attempt_count)
+    VALUES(v_actor_bucket, v_endpoint, v_minute, 1), (v_ip_bucket, v_endpoint, v_minute, 1)
+    ON CONFLICT (bucket_key, endpoint, window_start) DO UPDATE
+    SET attempt_count = public.verification_rate_limits.attempt_count + 1;
+  RETURN jsonb_build_object('allowed', true, 'retry_after', 3660);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_user_management_rate_limit"("p_actor_id" "uuid", "p_ip" "text", "p_action" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_user_management_ready"("p_actor_id" "uuid") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' OR p_actor_id IS NULL THEN
+    RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501';
+  END IF;
+  RETURN true;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_user_management_ready"("p_actor_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") RETURNS "jsonb"
@@ -349,6 +515,7 @@ ALTER FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text
 
 CREATE OR REPLACE FUNCTION "public"."applications_protect_quote"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   IF NEW.quote_amount IS DISTINCT FROM OLD.quote_amount
@@ -365,6 +532,7 @@ ALTER FUNCTION "public"."applications_protect_quote"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."bookings_touch_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -529,15 +697,9 @@ CREATE OR REPLACE FUNCTION "public"."forbid_role_mutation"() RETURNS "trigger"
     SET "search_path" TO ''
     AS $$
 BEGIN
-  -- Allow non-role column updates (e.g. created_at backfill, never used today
-  -- but future-proof). Only block when the role itself changed.
-  IF OLD.role IS DISTINCT FROM NEW.role THEN
-    -- auth.role() returns 'service_role' when the request is signed with the
-    -- service-role key, 'authenticated' for end-users, 'anon' for unauthed.
-    IF auth.role() <> 'service_role' THEN
-      RAISE EXCEPTION 'user_roles.role is immutable from client; role changes must go through an admin Edge Function (service_role)'
-        USING ERRCODE = '42501';
-    END IF;
+  IF OLD.role IS DISTINCT FROM NEW.role AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'user_roles.role is immutable from client; role changes must go through an admin Edge Function (service_role)'
+      USING ERRCODE = '42501';
   END IF;
   RETURN NEW;
 END;
@@ -549,11 +711,11 @@ ALTER FUNCTION "public"."forbid_role_mutation"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."forbid_self_admin"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO ''
     AS $$
 BEGIN
-  IF NEW.role = 'admin' THEN
-    RAISE EXCEPTION 'admin role cannot be self-assigned'
-      USING ERRCODE = '42501';
+  IF NEW.role = 'admin' AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'admin role cannot be self-assigned' USING ERRCODE = '42501';
   END IF;
   RETURN NEW;
 END;
@@ -699,6 +861,67 @@ COMMENT ON FUNCTION "public"."get_trade_public_credentials"("p_user_id" "uuid") 
 
 
 
+CREATE OR REPLACE FUNCTION "public"."guard_application_lifecycle"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  actor uuid := auth.uid();
+  vacancy public.jobs%ROWTYPE;
+BEGIN
+  -- Administrative maintenance retains its existing privileged path.
+  IF auth.role() = 'service_role' THEN RETURN NEW; END IF;
+  IF actor IS NULL THEN
+    RAISE EXCEPTION 'Sign in to manage applications' USING ERRCODE='42501';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    SELECT * INTO vacancy FROM public.jobs WHERE id=NEW.job_id FOR UPDATE;
+    IF actor IS DISTINCT FROM NEW.trade_id OR NEW.status <> 'pending'
+       OR NEW.builder_id IS DISTINCT FROM vacancy.builder_id
+       OR actor = vacancy.builder_id
+       OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=actor AND role='trade') THEN
+      RAISE EXCEPTION 'Invalid application owner or initial status' USING ERRCODE='42501';
+    END IF;
+    IF vacancy.id IS NULL OR vacancy.status <> 'open' OR vacancy.deleted_at IS NOT NULL THEN
+      RAISE EXCEPTION 'This job is no longer accepting applications' USING ERRCODE='23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  IF actor = OLD.builder_id THEN
+    IF OLD.status NOT IN ('pending','shortlisted') OR NEW.status NOT IN ('shortlisted','rejected','hired') THEN
+      RAISE EXCEPTION 'This application can no longer be changed' USING ERRCODE='23514';
+    END IF;
+  ELSIF actor = OLD.trade_id THEN
+    IF NOT ((OLD.status IN ('pending','shortlisted') AND NEW.status='withdrawn')
+       OR (OLD.status='hired' AND NEW.status='declined_by_trade')) THEN
+      RAISE EXCEPTION 'Applicants may only withdraw or decline their application' USING ERRCODE='42501';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Not a participant in this application' USING ERRCODE='42501';
+  END IF;
+  IF NEW.status='hired' THEN
+    -- The job row lock serialises two concurrent hires for the same vacancy.
+    SELECT * INTO vacancy FROM public.jobs WHERE id=NEW.job_id FOR UPDATE;
+    IF vacancy.status <> 'open' OR vacancy.deleted_at IS NOT NULL
+       OR vacancy.hired_trade_id IS NOT NULL
+       OR EXISTS (SELECT 1 FROM public.applications
+                  WHERE job_id=NEW.job_id AND status='hired' AND id<>NEW.id) THEN
+      RAISE EXCEPTION 'This job is no longer available to hire' USING ERRCODE='23514';
+    END IF;
+    UPDATE public.jobs SET status='filled', hired_trade_id=NEW.trade_id WHERE id=NEW.job_id;
+  ELSIF NEW.status='declined_by_trade' THEN
+    UPDATE public.jobs SET status='open', hired_trade_id=NULL
+      WHERE id=NEW.job_id AND hired_trade_id=NEW.trade_id AND status='filled' AND deleted_at IS NULL;
+  END IF;
+  NEW.status_changed_at := now();
+  RETURN NEW;
+END $$;
+
+
+ALTER FUNCTION "public"."guard_application_lifecycle"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -823,30 +1046,26 @@ CREATE OR REPLACE FUNCTION "public"."log_role_event"() RETURNS "trigger"
     AS $$
 DECLARE
   v_reason text;
-  v_old    text;
+  v_old text;
+  v_actor uuid := auth.uid();
 BEGIN
   IF TG_OP = 'INSERT' THEN
     v_reason := 'signup';
-    v_old    := NULL;
+    v_old := NULL;
   ELSIF TG_OP = 'UPDATE' THEN
-    -- 20260520000001's trigger ensures only service_role can land here
-    -- with a changed role. Anything else got an exception before this
-    -- AFTER trigger could fire.
-    IF OLD.role IS NOT DISTINCT FROM NEW.role THEN
-      RETURN NEW; -- no-op update; nothing to log
-    END IF;
+    IF OLD.role IS NOT DISTINCT FROM NEW.role THEN RETURN NEW; END IF;
     v_reason := 'admin_change';
-    v_old    := OLD.role;
-  ELSE
-    RETURN NEW;
+    v_old := OLD.role;
+  ELSE RETURN NEW;
   END IF;
-
-  INSERT INTO public.user_role_events (
-    user_id, old_role, new_role, changed_by, reason
-  ) VALUES (
-    NEW.user_id, v_old, NEW.role, auth.uid(), v_reason
-  );
-
+  -- Never honor caller-supplied context on an authenticated signup request.
+  IF auth.role() = 'service_role'
+    AND nullif(current_setting('jobdun.admin_actor_id', true), '') IS NOT NULL THEN
+    v_actor := current_setting('jobdun.admin_actor_id', true)::uuid;
+    v_reason := nullif(current_setting('jobdun.admin_role_reason', true), '');
+  END IF;
+  INSERT INTO public.user_role_events(user_id, old_role, new_role, changed_by, reason)
+  VALUES (NEW.user_id, v_old, NEW.role, v_actor, v_reason);
   RETURN NEW;
 END;
 $$;
@@ -857,6 +1076,7 @@ ALTER FUNCTION "public"."log_role_event"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."notification_category"("p_type" "text") RETURNS "text"
     LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public'
     AS $$
   SELECT CASE
     WHEN p_type = 'new_job'                 THEN 'jobs'
@@ -1298,6 +1518,7 @@ COMMENT ON FUNCTION "public"."notify_trades_on_new_job"() IS '#8 in-app fan-out:
 
 CREATE OR REPLACE FUNCTION "public"."quote_requests_touch_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -1608,7 +1829,7 @@ COMMENT ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" 
 
 
 
-CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric DEFAULT NULL::numeric, "p_available_only" boolean DEFAULT false, "p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "full_name" "text", "primary_trade" "text", "crew_size" integer, "years_experience" integer, "hourly_rate_min" numeric, "hourly_rate_max" numeric, "hourly_rate_visible" boolean, "service_radius_km" integer, "base_suburb" "text", "base_state" "text", "base_postcode" "text", "base_formatted_address" "text", "base_place_id" "text", "base_latitude" double precision, "base_longitude" double precision, "about" "text", "trade_other" "text", "licence_url" "text", "portfolio_urls" "text"[], "is_verified" boolean, "average_rating" numeric, "rating_count" integer, "is_available" boolean, "available_from" "date", "distance_km" double precision)
+CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric DEFAULT NULL::numeric, "p_available_only" boolean DEFAULT false, "p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0, "p_apprentice" boolean DEFAULT false) RETURNS TABLE("id" "uuid", "full_name" "text", "primary_trade" "text", "crew_size" integer, "years_experience" integer, "hourly_rate_min" numeric, "hourly_rate_max" numeric, "hourly_rate_visible" boolean, "service_radius_km" integer, "base_suburb" "text", "base_state" "text", "base_postcode" "text", "base_formatted_address" "text", "base_place_id" "text", "base_latitude" double precision, "base_longitude" double precision, "about" "text", "trade_other" "text", "licence_url" "text", "portfolio_urls" "text"[], "is_verified" boolean, "average_rating" numeric, "rating_count" integer, "is_available" boolean, "available_from" "date", "distance_km" double precision, "is_apprentice" boolean, "apprenticeship_stage" "text", "site_tickets" "text"[])
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -1627,7 +1848,10 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
     NULL::text,  -- licence_url: private-docs pointer; badge = is_verified
     sub.portfolio_urls, sub.is_verified,
     sub.average_rating, sub.rating_count,
-    sub.is_available, sub.available_from, sub.distance_km
+    sub.is_available, sub.available_from, sub.distance_km,
+    -- Apprentice projection. site_tickets is SELF-DECLARED: the caller must
+    -- render it as a distinct, weaker tier than is_verified. Never merge them.
+    sub.is_apprentice, sub.apprenticeship_stage, sub.site_tickets
   FROM (
     SELECT
       tp.*,
@@ -1653,6 +1877,9 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
            OR tp.full_name     ILIKE '%' || p_query || '%'
            OR tp.primary_trade ILIKE '%' || p_query || '%'
            OR COALESCE(tp.trade_other, '') ILIKE '%' || p_query || '%')
+      -- The one new predicate. coalesce so an explicit NULL from a client
+      -- behaves as "qualified trades", never as "everyone".
+      AND tp.is_apprentice = coalesce(p_apprentice, false)
   ) sub
   WHERE sub.distance_km <= p_radius_km
   ORDER BY sub.distance_km ASC
@@ -1660,11 +1887,12 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
 $$;
 
 
-ALTER FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -1805,6 +2033,7 @@ COMMENT ON FUNCTION "public"."sync_trade_is_verified"() IS 'Trigger fn — mirro
 
 CREATE OR REPLACE FUNCTION "public"."update_conversation_last_message"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
     AS $$
 BEGIN
   UPDATE public.conversations c
@@ -1969,6 +2198,35 @@ COMMENT ON TABLE "public"."builder_unverified_acknowledgements" IS 'One-time con
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."contact_enquiries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "name" "text" NOT NULL,
+    "email" "text" NOT NULL,
+    "phone" "text",
+    "role" "text",
+    "state" "text",
+    "message" "text" NOT NULL,
+    "user_agent" "text",
+    "ip_hash" "text",
+    CONSTRAINT "contact_enquiries_email_check" CHECK ((("char_length"("email") >= 3) AND ("char_length"("email") <= 320))),
+    CONSTRAINT "contact_enquiries_ip_hash_check" CHECK ((("ip_hash" IS NULL) OR ("char_length"("ip_hash") <= 64))),
+    CONSTRAINT "contact_enquiries_message_check" CHECK ((("char_length"("message") >= 1) AND ("char_length"("message") <= 5000))),
+    CONSTRAINT "contact_enquiries_name_check" CHECK ((("char_length"("name") >= 1) AND ("char_length"("name") <= 200))),
+    CONSTRAINT "contact_enquiries_phone_check" CHECK ((("phone" IS NULL) OR ("char_length"("phone") <= 40))),
+    CONSTRAINT "contact_enquiries_role_check" CHECK ((("role" IS NULL) OR ("char_length"("role") <= 40))),
+    CONSTRAINT "contact_enquiries_state_check" CHECK ((("state" IS NULL) OR ("char_length"("state") <= 10))),
+    CONSTRAINT "contact_enquiries_user_agent_check" CHECK ((("user_agent" IS NULL) OR ("char_length"("user_agent") <= 512)))
+);
+
+
+ALTER TABLE "public"."contact_enquiries" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."contact_enquiries" IS 'Marketing-site contact form submissions. Service-role only (contact-send edge function).';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."conversations" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_id" "uuid",
@@ -2057,12 +2315,20 @@ CREATE TABLE IF NOT EXISTS "public"."jobs" (
     "pricing_unit" "public"."job_pricing_unit" DEFAULT 'per_job'::"public"."job_pricing_unit" NOT NULL,
     "pricing_type" "public"."job_pricing_type" DEFAULT 'builder_set'::"public"."job_pricing_type" NOT NULL,
     "budget_amount" numeric(10,2),
+    "open_to_apprentices" boolean DEFAULT false NOT NULL,
+    "job_kind" "text" DEFAULT 'trade_job'::"text" NOT NULL,
+    CONSTRAINT "jobs_apprenticeship_terms" CHECK ((("job_kind" <> 'apprenticeship'::"text") OR ("open_to_apprentices" AND ("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("pricing_unit" = 'hourly'::"public"."job_pricing_unit") AND ("budget_amount" IS NOT NULL) AND ("budget_amount" > (0)::numeric) AND ("budget_amount" < 'Infinity'::numeric)))),
     CONSTRAINT "jobs_budget_amount_positive" CHECK ((("budget_amount" IS NULL) OR ("budget_amount" > (0)::numeric))),
-    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type")))
+    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type"))),
+    CONSTRAINT "jobs_kind_valid" CHECK (("job_kind" = ANY (ARRAY['trade_job'::"text", 'apprenticeship'::"text"])))
 );
 
 
 ALTER TABLE "public"."jobs" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."jobs"."open_to_apprentices" IS 'Builder invites apprentice applicants. Drives a job-card chip and an apprentice-side filter -- it gates nothing.';
+
 
 
 CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
@@ -2096,7 +2362,9 @@ CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
     NULLIF("concat_ws"(', '::"text", NULLIF("suburb", ''::"text"), NULLIF("state", ''::"text")), ''::"text") AS "formatted_address",
     NULL::"text" AS "place_id",
     NULL::timestamp with time zone AS "deleted_at",
-    "search_vector"
+    "search_vector",
+    "open_to_apprentices",
+    "job_kind"
    FROM "public"."jobs" "j"
   WHERE (("status" = ANY (ARRAY['open'::"public"."job_status", 'filled'::"public"."job_status"])) AND ("deleted_at" IS NULL));
 
@@ -2253,7 +2521,13 @@ CREATE TABLE IF NOT EXISTS "public"."trade_profiles" (
     "available_from" "date",
     "average_rating" numeric(3,2),
     "rating_count" integer DEFAULT 0 NOT NULL,
-    "unavailable_dates" "date"[] DEFAULT '{}'::"date"[] NOT NULL
+    "unavailable_dates" "date"[] DEFAULT '{}'::"date"[] NOT NULL,
+    "is_apprentice" boolean DEFAULT false NOT NULL,
+    "apprenticeship_stage" "text",
+    "site_tickets" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "resume_path" "text",
+    "resume_uploaded_at" timestamp with time zone,
+    CONSTRAINT "trade_profiles_apprenticeship_stage_valid" CHECK ((("apprenticeship_stage" IS NULL) OR ("apprenticeship_stage" = ANY (ARRAY['pre_apprentice'::"text", 'year_1'::"text", 'year_2'::"text", 'year_3'::"text", 'year_4'::"text"]))))
 );
 
 
@@ -2261,6 +2535,18 @@ ALTER TABLE "public"."trade_profiles" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."trade_profiles"."unavailable_dates" IS '#13 availability calendar: specific dates the trade has blocked off (booked / on leave). Date-only; default empty. Owner-write via the existing trade_profiles RLS; readable by authenticated users for the profile view.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."is_apprentice" IS 'True when this trade is seeking an apprenticeship. Flips the profile to the apprentice layout (no rates, no insurance, no jobs-completed stat) and moves the row to the APPRENTICES side of search_trades.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."site_tickets" IS 'SELF-DECLARED site ticket slugs (FK-by-convention to site_tickets.slug). A tick is a claim, NOT proof -- verified credentials live in verification_documents and surface via get_trade_public_credentials. Never merge the two lists on a display surface.';
+
+
+
+COMMENT ON COLUMN "public"."trade_profiles"."resume_path" IS 'private-docs path, {uid}/resume/{epoch}.{ext}. Never a public URL: reading it requires a signed URL gated by private_docs_resume_applied_builder_select.';
 
 
 
@@ -2280,7 +2566,11 @@ CREATE OR REPLACE VIEW "public"."profile_completeness" WITH ("security_invoker"=
     "ur"."role",
         CASE "ur"."role"
             WHEN 'builder'::"text" THEN ((((((("bp"."company_name" IS NOT NULL) AND ("bp"."company_name" <> ''::"text")))::integer + ((("bp"."abn" IS NOT NULL) AND ("bp"."abn" <> ''::"text")))::integer) + ((("bp"."service_suburb" IS NOT NULL) AND ("bp"."service_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) * 25)
-            WHEN 'trade'::"text" THEN (((((((("tp"."primary_trade" IS NOT NULL) AND ("tp"."primary_trade" <> ''::"text")))::integer + ((("tp"."licence_url" IS NOT NULL) AND ("tp"."licence_url" <> ''::"text")))::integer) + ((("tp"."base_suburb" IS NOT NULL) AND ("tp"."base_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) * 20)
+            WHEN 'trade'::"text" THEN
+            CASE
+                WHEN "tp"."is_apprentice" THEN (((((((COALESCE("tp"."primary_trade", ''::"text") <> ''::"text"))::integer + (("btrim"(COALESCE("tp"."about", ''::"text")) <> ''::"text"))::integer) + ((COALESCE("tp"."resume_path", ''::"text") <> ''::"text"))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) + ((COALESCE("tp"."base_suburb", ''::"text") <> ''::"text"))::integer) * 20)
+                ELSE (((((((("tp"."primary_trade" IS NOT NULL) AND ("tp"."primary_trade" <> ''::"text")))::integer + ((("tp"."licence_url" IS NOT NULL) AND ("tp"."licence_url" <> ''::"text")))::integer) + ((("tp"."base_suburb" IS NOT NULL) AND ("tp"."base_suburb" <> ''::"text")))::integer) + (("p"."phone_verified_at" IS NOT NULL))::integer) + ((COALESCE("array_length"("tp"."portfolio_urls", 1), 0) > 0))::integer) * 20)
+            END
             ELSE NULL::integer
         END AS "completeness_pct"
    FROM ((("public"."profiles" "p"
@@ -2399,6 +2689,25 @@ CREATE TABLE IF NOT EXISTS "public"."saved_jobs" (
 ALTER TABLE "public"."saved_jobs" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."site_tickets" (
+    "slug" "text" NOT NULL,
+    "display_name" "text" NOT NULL,
+    "short_name" "text" NOT NULL,
+    "category" "text" NOT NULL,
+    "doc_type" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "site_tickets_category_check" CHECK (("category" = ANY (ARRAY['induction'::"text", 'safety'::"text", 'licence'::"text", 'transport'::"text"])))
+);
+
+
+ALTER TABLE "public"."site_tickets" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."site_tickets" IS 'Reference list of site tickets an apprentice or tradie can self-declare. doc_type non-null means the ticket has a verification_documents review path and can reach the VERIFIED tier; null means self-declared only.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."timesheets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_id" "uuid" NOT NULL,
@@ -2464,7 +2773,10 @@ CREATE OR REPLACE VIEW "public"."trade_profiles_public" AS
     "hourly_rate_visible",
     "average_rating",
     "rating_count",
-    "created_at"
+    "created_at",
+    "is_apprentice",
+    "apprenticeship_stage",
+    "site_tickets"
    FROM "public"."trade_profiles" "tp"
   WHERE ("deleted_at" IS NULL);
 
@@ -2559,7 +2871,7 @@ CREATE TABLE IF NOT EXISTS "public"."verification_rate_limits" (
     "endpoint" "text" NOT NULL,
     "window_start" timestamp with time zone NOT NULL,
     "attempt_count" integer DEFAULT 1 NOT NULL,
-    CONSTRAINT "verification_rate_limits_endpoint_check" CHECK (("endpoint" = ANY (ARRAY['verify-abn'::"text", 'verify-licence'::"text"])))
+    CONSTRAINT "verification_rate_limits_endpoint_check" CHECK (("endpoint" = ANY (ARRAY['verify-abn'::"text", 'verify-licence'::"text", 'admin-users-invite'::"text", 'admin-users-set-role'::"text"])))
 );
 
 
@@ -2677,6 +2989,11 @@ ALTER TABLE ONLY "public"."builder_unverified_acknowledgements"
 
 
 
+ALTER TABLE ONLY "public"."contact_enquiries"
+    ADD CONSTRAINT "contact_enquiries_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."conversations"
     ADD CONSTRAINT "conversations_pkey" PRIMARY KEY ("id");
 
@@ -2782,6 +3099,11 @@ ALTER TABLE ONLY "public"."saved_jobs"
 
 
 
+ALTER TABLE ONLY "public"."site_tickets"
+    ADD CONSTRAINT "site_tickets_pkey" PRIMARY KEY ("slug");
+
+
+
 ALTER TABLE ONLY "public"."timesheets"
     ADD CONSTRAINT "timesheets_pkey" PRIMARY KEY ("id");
 
@@ -2829,6 +3151,11 @@ ALTER TABLE ONLY "public"."verification_rate_limits"
 
 ALTER TABLE ONLY "public"."verifications"
     ADD CONSTRAINT "verifications_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."verifications"
+    ADD CONSTRAINT "verifications_user_kind_unique" UNIQUE ("user_id", "kind");
 
 
 
@@ -2996,6 +3323,14 @@ CREATE INDEX "idx_vfe_user_id" ON "public"."verification_funnel_events" USING "b
 
 
 
+CREATE INDEX "jobs_apprentice_invitation_feed_idx" ON "public"."jobs" USING "btree" ("published_at" DESC) WHERE ("open_to_apprentices" AND ("deleted_at" IS NULL));
+
+
+
+CREATE INDEX "jobs_apprenticeship_feed_idx" ON "public"."jobs" USING "btree" ("published_at" DESC) WHERE (("job_kind" = 'apprenticeship'::"text") AND ("deleted_at" IS NULL));
+
+
+
 CREATE INDEX "jobs_builder_id_idx" ON "public"."jobs" USING "btree" ("builder_id");
 
 
@@ -3100,6 +3435,10 @@ CREATE INDEX "trade_profiles_average_rating_idx" ON "public"."trade_profiles" US
 
 
 
+CREATE INDEX "trade_profiles_is_apprentice_idx" ON "public"."trade_profiles" USING "btree" ("is_apprentice") WHERE ("deleted_at" IS NULL);
+
+
+
 CREATE INDEX "trade_profiles_is_available_idx" ON "public"."trade_profiles" USING "btree" ("is_available");
 
 
@@ -3145,6 +3484,10 @@ CREATE INDEX "verifications_status_idx" ON "public"."verifications" USING "btree
 
 
 CREATE INDEX "verifications_user_idx" ON "public"."verifications" USING "btree" ("user_id");
+
+
+
+CREATE OR REPLACE TRIGGER "application_lifecycle_guard" BEFORE INSERT OR UPDATE ON "public"."applications" FOR EACH ROW EXECUTE FUNCTION "public"."guard_application_lifecycle"();
 
 
 
@@ -3683,6 +4026,9 @@ CREATE POLICY "builder_profiles_update_own" ON "public"."builder_profiles" FOR U
 ALTER TABLE "public"."builder_unverified_acknowledgements" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."contact_enquiries" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3929,6 +4275,13 @@ CREATE POLICY "saved_jobs_select_own" ON "public"."saved_jobs" FOR SELECT USING 
 
 
 
+ALTER TABLE "public"."site_tickets" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "site_tickets_select_all" ON "public"."site_tickets" FOR SELECT TO "authenticated" USING (true);
+
+
+
 ALTER TABLE "public"."timesheets" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3982,7 +4335,7 @@ ALTER TABLE "public"."user_role_events" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "user_roles_admin_read" ON "public"."user_roles" FOR SELECT TO "authenticated" USING ((COALESCE(("auth"."jwt"() ->> 'user_role'::"text"), ''::"text") = 'admin'::"text"));
+CREATE POLICY "user_roles_admin_read" ON "public"."user_roles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4092,34 +4445,56 @@ GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
 
 
 REVOKE ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "uuid", "p_role" "text", "p_expected_role" "text", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "uuid", "p_role" "text", "p_expected_role" "text", "p_reason" "text") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."admin_user_invitation_preflight"("p_actor_id" "uuid", "p_email" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_user_invitation_preflight"("p_actor_id" "uuid", "p_email" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_user_management_is_admin"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_user_management_is_admin"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_user_management_is_admin"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_user_management_rate_limit"("p_actor_id" "uuid", "p_ip" "text", "p_action" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_user_management_rate_limit"("p_actor_id" "uuid", "p_ip" "text", "p_action" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_user_management_ready"("p_actor_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_user_management_ready"("p_actor_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_view_verification_raw"("p_verification_id" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."append_portfolio_url"("user_id" "uuid", "new_url" "text") TO "service_role";
 
@@ -4137,8 +4512,7 @@ GRANT ALL ON FUNCTION "public"."bookings_touch_updated_at"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "anon";
-GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."builder_profiles_pin_verified_abn"() TO "service_role";
 
 
@@ -4155,8 +4529,7 @@ GRANT ALL ON FUNCTION "public"."delete_my_account"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "anon";
-GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."expire_stale_verifications"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."expire_stale_verifications"() TO "service_role";
 
 
@@ -4167,8 +4540,7 @@ GRANT ALL ON FUNCTION "public"."forbid_identity_col_change"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "anon";
-GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."forbid_role_mutation"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."forbid_role_mutation"() TO "service_role";
 
 
@@ -4185,14 +4557,13 @@ GRANT ALL ON FUNCTION "public"."get_builder_public_verification"("p_user_id" "uu
 
 
 
-GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_inbox"("p_user" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_or_create_conversation"("p_builder" "uuid", "p_trade" "uuid", "p_job" "uuid") TO "service_role";
 
@@ -4204,9 +4575,16 @@ GRANT ALL ON FUNCTION "public"."get_trade_public_credentials"("p_user_id" "uuid"
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."guard_application_lifecycle"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "anon";
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "supabase_auth_admin";
 
 
 
@@ -4216,14 +4594,13 @@ GRANT ALL ON FUNCTION "public"."is_builder_abn_verified"("p_uid" "uuid") TO "ser
 
 
 
-GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."log_role_event"() TO "anon";
-GRANT ALL ON FUNCTION "public"."log_role_event"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."log_role_event"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_role_event"() TO "service_role";
 
 
@@ -4234,57 +4611,47 @@ GRANT ALL ON FUNCTION "public"."notification_category"("p_type" "text") TO "serv
 
 
 
-GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notifications_push_fanout"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notifications_push_fanout"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_builder_on_new_application"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_builder_on_new_application"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_builder_on_quote_response"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_builder_on_quote_response"() TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."notify_expiring_verifications"("p_days" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_on_new_message"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_on_new_message"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_on_new_review"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_on_new_review"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trade_on_application_status"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trade_on_application_status"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trade_on_quote_request"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trade_on_quote_request"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "anon";
-GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."notify_trades_on_new_job"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."notify_trades_on_new_job"() TO "service_role";
 
 
@@ -4295,45 +4662,42 @@ GRANT ALL ON FUNCTION "public"."quote_requests_touch_updated_at"() TO "service_r
 
 
 
-GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."recompute_builder_rating"("p_builder_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."recompute_trade_rating"("p_trade_id" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "anon";
-GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."reviews_sync_trade_rating"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."reviews_sync_trade_rating"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer) TO "service_role";
+REVOKE ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_trades"("p_lat" double precision, "p_lng" double precision, "p_radius_km" integer, "p_min_rating" numeric, "p_available_only" boolean, "p_query" "text", "p_limit" integer, "p_offset" integer, "p_apprentice" boolean) TO "service_role";
 
 
 
@@ -4343,20 +4707,18 @@ GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_job_application_count"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_phone_verified_at"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."sync_phone_verified_at"() TO "supabase_auth_admin";
 
 
 
-GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "anon";
-GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."sync_trade_is_verified"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_trade_is_verified"() TO "service_role";
 
 
@@ -4465,6 +4827,10 @@ GRANT ALL ON TABLE "public"."builder_profiles_public" TO "service_role";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "anon";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "authenticated";
 GRANT ALL ON TABLE "public"."builder_unverified_acknowledgements" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."contact_enquiries" TO "service_role";
 
 
 
@@ -4683,6 +5049,12 @@ GRANT ALL ON TABLE "public"."reviews" TO "service_role";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "anon";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "authenticated";
 GRANT ALL ON TABLE "public"."saved_jobs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."site_tickets" TO "anon";
+GRANT ALL ON TABLE "public"."site_tickets" TO "authenticated";
+GRANT ALL ON TABLE "public"."site_tickets" TO "service_role";
 
 
 

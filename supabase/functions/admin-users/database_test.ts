@@ -12,14 +12,25 @@ const migration = new URL(
   import.meta.url,
 );
 
-async function baseline(db: PGlite) {
+const adminFunctions = [
+  "admin_user_management_is_admin",
+  "admin_user_management_ready",
+  "admin_user_invitation_preflight",
+  "admin_user_management_rate_limit",
+  "admin_set_user_role",
+];
+
+async function baseline(
+  db: PGlite,
+  schemaPath = Deno.args[0] ?? "../../schema.sql",
+) {
   // Pull the relevant real table/function/constraint/policy definitions from
   // the checked-in schema. Only Auth's environment and unrelated app objects
   // are omitted; tests will fail if a required definition disappears.
   // Optional fixture path allows checking origin/main independently of the
   // working branch: deno test --allow-read database_test.ts -- /tmp/schema.sql
   const schema = await Deno.readTextFile(
-    new URL(Deno.args[0] ?? "../../schema.sql", import.meta.url),
+    new URL(schemaPath, import.meta.url),
   );
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
@@ -88,6 +99,11 @@ async function baseline(db: PGlite) {
       "forbid_role_mutation",
       "log_role_event",
       "handle_new_user",
+      // A refreshed snapshot contains the fresh-admin policy dependency and
+      // deployed RPCs. Older fixture snapshots may legitimately omit these.
+      ...adminFunctions.filter((name) =>
+        schema.includes(`CREATE OR REPLACE FUNCTION "public"."${name}"(`)
+      ),
     ]
   ) {
     const definition = schema.match(
@@ -97,6 +113,15 @@ async function baseline(db: PGlite) {
     )?.[0];
     if (!definition) throw new Error(`Schema function missing: ${name}`);
     await db.exec(definition);
+  }
+  // Load the snapshot's actual function ACLs, not hand-written grants. This
+  // lets the snapshot-only run detect accidental public RPC exposure.
+  for (
+    const match of schema.matchAll(
+      /(?:GRANT|REVOKE) [^;\n]+ ON FUNCTION "public"\."([^"]+)"[^;]+;/g,
+    )
+  ) {
+    if (adminFunctions.includes(match[1])) await db.exec(match[0]);
   }
   for (
     const match of schema.matchAll(
@@ -138,15 +163,19 @@ async function setRole(
   );
 }
 
-Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only guards", async (t) => {
+async function verifyManagement(t: Deno.TestContext, source: string) {
   const db = new PGlite();
   try {
-    await baseline(db);
-    try {
+    // Exercise the dumped definitions without replacing them with migration
+    // SQL, as well as the migration path. The optional old-schema fixture is
+    // used only for migration compatibility; snapshot tests stay authoritative.
+    await baseline(
+      db,
+      source === "deployed snapshot" ? "../../schema.sql" : undefined,
+    );
+    if (source === "migration") {
       await db.exec(await Deno.readTextFile(migration));
-    } catch (error) {
-      if (!(error instanceof Deno.errors.NotFound)) throw error;
-    } // Red run uses current schema.
+    }
     const step = async (name: string, fn: () => Promise<void>) => {
       await t.step(name, async () => {
         await db.exec("BEGIN");
@@ -245,12 +274,16 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
       async () => {
         await setRole(db, A, N, "admin", null);
         deepStrictEqual(
-          (await db.query("SELECT user_status FROM profiles WHERE id=$1", [N]))
+          (await db.query("SELECT user_status FROM profiles WHERE id=$1", [
+            N,
+          ]))
             .rows,
           [{ user_status: "active" }],
         );
         deepStrictEqual(
-          (await db.query("SELECT role FROM user_roles WHERE user_id=$1", [N]))
+          (await db.query("SELECT role FROM user_roles WHERE user_id=$1", [
+            N,
+          ]))
             .rows,
           [{ role: "admin" }],
         );
@@ -259,7 +292,10 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
     await step(
       "CAS refuses stale role or unknown role and changes nothing",
       async () => {
-        await rejects(() => setRole(db, A, T, "admin", null), /role_conflict/);
+        await rejects(
+          () => setRole(db, A, T, "admin", null),
+          /role_conflict/,
+        );
       },
     );
     await step("self role change forbidden", async () => {
@@ -294,7 +330,13 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
     await step("target must exist in Auth", async () => {
       await rejects(
         () =>
-          setRole(db, A, "00000000-0000-4000-8000-000000000099", "admin", null),
+          setRole(
+            db,
+            A,
+            "00000000-0000-4000-8000-000000000099",
+            "admin",
+            null,
+          ),
         /user_not_found/,
       );
     });
@@ -352,9 +394,12 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
         A,
       ]);
       await session(db, "authenticated", A);
-      deepStrictEqual((await db.query("SELECT user_id FROM user_roles")).rows, [
-        { user_id: A },
-      ]);
+      deepStrictEqual(
+        (await db.query("SELECT user_id FROM user_roles")).rows,
+        [
+          { user_id: A },
+        ],
+      );
     });
     await step(
       "authenticated caller cannot invoke role RPC or forge actor",
@@ -390,7 +435,10 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
               user_id: "00000000-0000-4000-8000-000000000011",
               role: "builder",
             },
-            { user_id: "00000000-0000-4000-8000-000000000012", role: "trade" },
+            {
+              user_id: "00000000-0000-4000-8000-000000000012",
+              role: "trade",
+            },
           ],
         );
       },
@@ -399,9 +447,12 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
       await session(db, "authenticated", N);
       await rejects(
         () =>
-          db.query("INSERT INTO user_roles(user_id,role) VALUES ($1,'admin')", [
-            N,
-          ]),
+          db.query(
+            "INSERT INTO user_roles(user_id,role) VALUES ($1,'admin')",
+            [
+              N,
+            ],
+          ),
         /admin role cannot be self-assigned/,
       );
     });
@@ -517,4 +568,9 @@ Deno.test("admin user management SQL: atomic roles, audit, RLS and service-only 
   } finally {
     await db.close();
   }
-});
+}
+
+for (const source of ["migration", "deployed snapshot"]) {
+  Deno.test(`admin user management SQL (${source}): atomic roles, audit, RLS and service-only guards`, (t) =>
+    verifyManagement(t, source));
+}
