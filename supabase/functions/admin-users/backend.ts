@@ -10,8 +10,16 @@ const statuses: Record<string, number> = {
   role_conflict: 409,
   user_exists: 409,
 };
+// Keep the Edge API vocabulary stable across the October safety migration.
+const databaseAliases: Record<string, string> = {
+  not_admin: "not_authorized",
+  last_active_admin: "last_admin",
+};
 function databaseError(error: { message?: string }): DirectoryError {
-  const code = error.message ?? "";
+  const message = error.message ?? "";
+  const code = Object.hasOwn(databaseAliases, message)
+    ? databaseAliases[message]
+    : message;
   return Object.hasOwn(statuses, code)
     ? new DirectoryError(code, statuses[code])
     : new DirectoryError("unavailable", 503);

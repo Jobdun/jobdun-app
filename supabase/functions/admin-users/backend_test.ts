@@ -1,6 +1,7 @@
 import { deepStrictEqual, equal, rejects } from "node:assert/strict";
 import { createClient } from "npm:@supabase/supabase-js@2.108.2";
 import { createBackend } from "./backend.ts";
+import { createHandler } from "./handler.ts";
 
 const actor = "00000000-0000-4000-8000-000000000001";
 function fixture(responses: { body: unknown; status?: number }[]) {
@@ -57,6 +58,72 @@ Deno.test("SDK adapter rejects failed Auth verification and denied database auth
     message: "not_authorized",
     status: 403,
   });
+});
+
+Deno.test("old and current database authorization codes retain the Edge 403 contract", async () => {
+  for (const code of ["not_authorized", "not_admin"]) {
+    const denied = { status: 403, body: { code: "42501", message: code } };
+    const { backend } = fixture([denied, denied, denied, denied]);
+    const expected = {
+      message: "not_authorized",
+      code: "not_authorized",
+      status: 403,
+    };
+    await rejects(() => backend.assertAdmin(actor), expected);
+    await rejects(
+      () => backend.consume(actor, "192.0.2.1", "set-role"),
+      expected,
+    );
+    await rejects(
+      () => backend.preflightInvite(actor, "new@example.test"),
+      expected,
+    );
+    await rejects(
+      () => backend.setRole(actor, actor, "trade", "admin", "Reason"),
+      expected,
+    );
+
+    const http = fixture([{ body: { id: actor } }, denied]);
+    const response = await createHandler(http.backend, null)(
+      new Request("https://edge.test/admin-users", {
+        headers: { Authorization: "Bearer session-token" },
+      }),
+    );
+    equal(response.status, 403);
+    deepStrictEqual(await response.json(), { error: "not_authorized" });
+    equal(http.calls.length, 2);
+  }
+});
+
+Deno.test("old and current last-admin codes retain the Edge 409 contract", async () => {
+  const target = "00000000-0000-4000-8000-000000000002";
+  for (const code of ["last_admin", "last_active_admin"]) {
+    const { backend, calls } = fixture([
+      { body: { id: actor } },
+      { body: true },
+      { body: { allowed: true, retry_after: 3600 } },
+      { status: 400, body: { code: "P0001", message: code } },
+    ]);
+    const response = await createHandler(backend, null)(
+      new Request("https://edge.test/admin-users", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer session-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "set-role",
+          userId: target,
+          role: "builder",
+          expectedRole: "admin",
+          reason: "Synthetic test reason",
+        }),
+      }),
+    );
+    equal(response.status, 409);
+    deepStrictEqual(await response.json(), { error: "last_admin" });
+    equal(calls.length, 4);
+  }
 });
 
 Deno.test("SDK invite uses built-in invite endpoint and full_name only; redirect is server supplied", async () => {
