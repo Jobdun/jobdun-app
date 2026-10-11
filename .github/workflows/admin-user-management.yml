@@ -50,4 +50,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Isolated permissions, rollback and concurrency regressions
+        # Official mirror with the same image digest; anonymous ECR pulls are
+        # rate-limited on shared GitHub-hosted runner addresses.
+        env:
+          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
         run: bash supabase/tests/run_admin_safety.sh
