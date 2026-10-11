@@ -18,7 +18,7 @@ $statement
 COMMIT;
 SQL
   then echo 'FAIL: restricted RPC was callable'; return 1; fi
-  rg -q '42501: permission denied for function' "$test_tmp/acl.log"
+  grep -Fq '42501: permission denied for function' "$test_tmp/acl.log"
 }
 expect_acl_denied anon "SELECT public.admin_broadcast('Local title','Local body','all');"
 expect_acl_denied anon "SELECT public.review_verification_document('d0000000-0000-0000-0000-000000000001','approved');"
@@ -69,7 +69,7 @@ SQL
     return 1
   fi
   wait "$first_pid"
-  rg -q '42501: not_admin' "$test_tmp/second.log"
+  grep -Fq '42501: not_admin' "$test_tmp/second.log"
   [[ "$(psql_local -Atc "SELECT count(*) FROM public.user_roles r JOIN public.profiles p ON p.id=r.user_id WHERE role='admin' AND user_status='active'")" == 1 ]]
 }
 
