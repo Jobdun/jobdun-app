@@ -168,52 +168,57 @@ CREATE TYPE "public"."verification_status" AS ENUM (
 ALTER TYPE "public"."verification_status" OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_actor_is_active"("p_actor_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
+  );
+$$;
+
+
+ALTER FUNCTION "public"."admin_actor_is_active"("p_actor_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb" DEFAULT '{}'::"jsonb") RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
+    AS $_$
 DECLARE
+  v_title text := regexp_replace(p_title, '^[[:space:]]+|[[:space:]]+$', '', 'g');
+  v_body text := regexp_replace(p_body, '^[[:space:]]+|[[:space:]]+$', '', 'g');
+  v_user_id uuid;
   v_count integer;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
+  PERFORM public.admin_require_active(auth.uid());
+  IF v_title IS NULL OR char_length(v_title) NOT BETWEEN 1 AND 80
+    OR v_body IS NULL OR char_length(v_body) NOT BETWEEN 1 AND 240
+    OR p_audience IS NULL OR jsonb_typeof(coalesce(p_data, '{}'::jsonb)) <> 'object' THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
   END IF;
-
-  INSERT INTO public.notifications (user_id, type, title, body, data)
-  SELECT t.id, 'announcement', p_title, p_body, COALESCE(p_data, '{}'::jsonb)
-  FROM (
-    SELECT p.id
-    FROM public.profiles p
-    WHERE p_audience = 'all'
-
-    UNION
-
-    SELECT ur.user_id AS id
-    FROM public.user_roles ur
-    WHERE (p_audience = 'builders' AND ur.role = 'builder')
-       OR (p_audience = 'trades'   AND ur.role = 'trade')
-
-    UNION
-
-    SELECT p.id
-    FROM public.profiles p
-    WHERE p_audience NOT IN ('all', 'builders', 'trades')
-      AND p.id = p_audience::uuid
-  ) AS t;
-
+  IF p_audience NOT IN ('all', 'builders', 'trades') THEN
+    IF p_audience !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
+      RAISE EXCEPTION 'invalid_audience' USING ERRCODE = '22023';
+    END IF;
+    v_user_id := p_audience::uuid;
+    PERFORM 1 FROM public.profiles WHERE id = v_user_id FOR KEY SHARE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found' USING ERRCODE = 'P0001'; END IF;
+  END IF;
+  INSERT INTO public.notifications(user_id, type, title, body, data)
+    SELECT p.id, 'announcement', v_title, v_body, coalesce(p_data, '{}'::jsonb)
+    FROM public.profiles p LEFT JOIN public.user_roles r ON r.user_id = p.id
+    WHERE p_audience = 'all' OR p.id = v_user_id
+      OR (p_audience = 'builders' AND r.role = 'builder')
+      OR (p_audience = 'trades' AND r.role = 'trade');
   GET DIAGNOSTICS v_count = ROW_COUNT;
-
-  PERFORM public.log_admin_action(
-    'broadcast', 'notifications', NULL,
-    jsonb_build_object('audience', p_audience, 'count', v_count)
-  );
-
+  IF v_count = 0 THEN RAISE EXCEPTION 'no_recipients' USING ERRCODE = 'P0001'; END IF;
+  PERFORM public.log_admin_action('broadcast', 'notifications', v_user_id,
+    jsonb_build_object('audience', p_audience, 'count', v_count));
   RETURN v_count;
 END;
-$$;
+$_$;
 
 
 ALTER FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") OWNER TO "postgres";
@@ -223,26 +228,46 @@ COMMENT ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text"
 
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb" DEFAULT '{}'::"jsonb") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM public.admin_require_active(auth.uid());
+  IF p_user_id IS NULL THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023'; END IF;
+  RETURN public.admin_broadcast(p_title, p_body, p_user_id::text, p_data);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles', 0));
+  PERFORM 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+    WHERE r.user_id = p_actor_id FOR UPDATE OF r, p;
+  IF NOT public.admin_actor_is_active(p_actor_id) THEN
+    RAISE EXCEPTION 'not_admin' USING ERRCODE = '42501';
+  END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
-  END IF;
-
-  UPDATE public.jobs
-     SET status = p_status::public.job_status
-   WHERE id = p_job_id;
-
-  PERFORM public.log_admin_action(
-    'set_job_status', 'jobs', p_job_id,
-    jsonb_build_object('status', p_status)
-  );
+  -- Preserve legacy clients while marking the absent reviewer reason honestly.
+  PERFORM public.admin_set_job_status(p_job_id, p_status, 'Legacy client: reason not supplied');
 END;
 $$;
 
@@ -252,6 +277,32 @@ ALTER FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "te
 
 COMMENT ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") IS '#21a admin moderation: set a job status (e.g. closed). Admin-only; audited.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text", "p_reason" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_old_status public.job_status;
+  v_reason text := regexp_replace(p_reason, '^[[:space:]]+|[[:space:]]+$', '', 'g');
+BEGIN
+  PERFORM public.admin_require_active(auth.uid());
+  IF p_job_id IS NULL OR p_status IS NULL
+    OR NOT (p_status = ANY(enum_range(NULL::public.job_status)::text[]))
+    OR v_reason IS NULL OR char_length(v_reason) NOT BETWEEN 1 AND 500 THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
+  END IF;
+  SELECT status INTO v_old_status FROM public.jobs WHERE id = p_job_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'job_not_found' USING ERRCODE = 'P0001'; END IF;
+  UPDATE public.jobs SET status = p_status::public.job_status WHERE id = p_job_id;
+  PERFORM public.log_admin_action('set_job_status', 'jobs', p_job_id,
+    jsonb_build_object('status', p_status, 'old_status', v_old_status, 'reason', v_reason));
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text", "p_reason" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "uuid", "p_role" "text", "p_expected_role" "text", "p_reason" "text") RETURNS "jsonb"
@@ -275,13 +326,7 @@ BEGIN
     RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
   END IF;
   -- Serialize promotions/demotions, including opposing concurrent requests.
-  PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles', 0));
-  -- Lock fresh actor rows so a concurrent suspension/demotion cannot slip
-  -- between this verification and commit. Never trust JWT user_role.
-  PERFORM 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
-    FOR UPDATE OF r, p;
-  IF NOT FOUND THEN RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501'; END IF;
+  PERFORM public.admin_require_active(p_actor_id);
   IF p_actor_id = p_user_id THEN RAISE EXCEPTION 'self_role_change' USING ERRCODE = 'P0001'; END IF;
   PERFORM 1 FROM auth.users WHERE id = p_user_id FOR KEY SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found' USING ERRCODE = 'P0001'; END IF;
@@ -292,8 +337,10 @@ BEGIN
     RAISE EXCEPTION 'role_conflict' USING ERRCODE = 'P0001';
   END IF;
   IF v_old_role = 'admin' AND p_role <> 'admin'
-    AND (SELECT count(*) FROM public.user_roles WHERE role = 'admin') <= 1 THEN
-    RAISE EXCEPTION 'last_admin' USING ERRCODE = 'P0001';
+    AND EXISTS (SELECT 1 FROM public.profiles WHERE id = p_user_id AND user_status = 'active')
+    AND (SELECT count(*) FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+         WHERE r.role = 'admin' AND p.user_status = 'active') <= 1 THEN
+    RAISE EXCEPTION 'last_active_admin' USING ERRCODE = 'P0001';
   END IF;
 
   INSERT INTO public.profiles(id, display_name)
@@ -330,26 +377,33 @@ ALTER FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "
 CREATE OR REPLACE FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
+    AS $_$
+DECLARE
+  v_old_status public.user_status;
+  v_reason text := regexp_replace(p_reason, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
+  PERFORM public.admin_require_active(auth.uid());
+  IF p_user_id IS NULL OR p_status IS NULL OR p_status NOT IN ('active','suspended','banned')
+    OR (p_reason IS NOT NULL AND char_length(v_reason) NOT BETWEEN 1 AND 500) THEN
+    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
   END IF;
-
-  UPDATE public.profiles
-     SET user_status   = p_status::public.user_status,
-         status_reason = p_reason
-   WHERE id = p_user_id;
-
-  PERFORM public.log_admin_action(
-    'set_user_status', 'profiles', p_user_id,
-    jsonb_build_object('status', p_status, 'reason', p_reason)
-  );
+  IF p_user_id = auth.uid() AND p_status <> 'active' THEN
+    RAISE EXCEPTION 'self_status_change' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT user_status INTO v_old_status FROM public.profiles WHERE id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found' USING ERRCODE = 'P0001'; END IF;
+  IF v_old_status = 'active' AND p_status <> 'active'
+    AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role = 'admin')
+    AND (SELECT count(*) FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
+         WHERE r.role = 'admin' AND p.user_status = 'active') <= 1 THEN
+    RAISE EXCEPTION 'last_active_admin' USING ERRCODE = 'P0001';
+  END IF;
+  UPDATE public.profiles SET user_status = p_status::public.user_status,
+    status_reason = v_reason WHERE id = p_user_id;
+  PERFORM public.log_admin_action('set_user_status', 'profiles', p_user_id,
+    jsonb_build_object('status', p_status, 'old_status', v_old_status, 'reason', v_reason));
 END;
-$$;
+$_$;
 
 
 ALTER FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") OWNER TO "postgres";
@@ -382,10 +436,7 @@ CREATE OR REPLACE FUNCTION "public"."admin_user_management_is_admin"() RETURNS b
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-    WHERE r.user_id = auth.uid() AND r.role = 'admin' AND p.user_status = 'active'
-  );
+  SELECT public.admin_actor_is_active(auth.uid());
 $$;
 
 
@@ -438,12 +489,7 @@ BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role' OR p_actor_id IS NULL THEN
     RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501';
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
-  ) THEN
-    RAISE EXCEPTION 'not_authorized' USING ERRCODE = '42501';
-  END IF;
+  PERFORM public.admin_require_active(p_actor_id);
   RETURN true;
 END;
 $$;
@@ -459,11 +505,11 @@ CREATE OR REPLACE FUNCTION "public"."admin_view_verification_raw"("p_verificatio
 DECLARE
   v_raw jsonb;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
+  PERFORM public.admin_require_active(auth.uid());
+
+  PERFORM 1 FROM public.verifications WHERE id = p_verification_id FOR KEY SHARE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'verification_not_found' USING ERRCODE = 'P0001';
   END IF;
 
   PERFORM public.log_admin_action(
@@ -1017,12 +1063,7 @@ CREATE OR REPLACE FUNCTION "public"."log_admin_action"("p_action" "text", "p_tar
 DECLARE
   v_id uuid;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
-  END IF;
+  PERFORM public.admin_require_active(auth.uid());
 
   INSERT INTO public.admin_actions (actor_id, action, target_table, target_id, metadata)
   VALUES (auth.uid(), p_action, p_target_table, p_target_id, COALESCE(p_metadata, '{}'::jsonb))
@@ -1595,19 +1636,14 @@ DECLARE
   v_existing  uuid;
   v_doc_label text;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
-  END IF;
+  PERFORM public.admin_require_active(auth.uid());
 
-  IF p_status NOT IN ('approved', 'rejected') THEN
+  IF p_status IS NULL OR p_status NOT IN ('approved', 'rejected') THEN
     RAISE EXCEPTION 'invalid_status: %', p_status;
   END IF;
 
   UPDATE public.verification_documents
-     SET status       = p_status,
+     SET status       = p_status::public.document_status,
          reviewed_at  = now(),
          reviewed_by  = auth.uid(),
          review_notes = COALESCE(NULLIF(btrim(p_notes), ''), review_notes)
@@ -1765,12 +1801,7 @@ CREATE OR REPLACE FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p
 DECLARE
   v_id uuid;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_id = auth.uid() AND role = 'admin'
-  ) THEN
-    RAISE EXCEPTION 'not_admin' USING errcode = '42501';
-  END IF;
+  PERFORM public.admin_require_active(auth.uid());
 
   IF p_kind NOT IN ('abn', 'licence') THEN
     RAISE EXCEPTION 'invalid_kind: %', p_kind;
@@ -2070,6 +2101,49 @@ CREATE TABLE IF NOT EXISTS "public"."admin_actions" (
 
 
 ALTER TABLE "public"."admin_actions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."profiles" (
+    "id" "uuid" NOT NULL,
+    "display_name" "text",
+    "avatar_url" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "phone_verified_at" timestamp with time zone,
+    "phone" "text",
+    "user_status" "public"."user_status" DEFAULT 'active'::"public"."user_status" NOT NULL,
+    "status_reason" "text"
+);
+
+
+ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."user_roles" (
+    "user_id" "uuid" NOT NULL,
+    "role" "text" DEFAULT 'trade'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "user_roles_role_check" CHECK (("role" = ANY (ARRAY['builder'::"text", 'trade'::"text", 'admin'::"text"])))
+);
+
+
+ALTER TABLE "public"."user_roles" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."admin_user_directory" WITH ("security_invoker"='true') AS
+ SELECT "p"."id",
+    "p"."display_name",
+    "p"."avatar_url",
+    "p"."created_at",
+    "p"."user_status",
+    "p"."phone",
+    "r"."role"
+   FROM ("public"."profiles" "p"
+     LEFT JOIN "public"."user_roles" "r" ON (("r"."user_id" = "p"."id")))
+  WHERE ( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin");
+
+
+ALTER VIEW "public"."admin_user_directory" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."applications" (
@@ -2476,22 +2550,6 @@ ALTER TABLE ONLY "public"."notifications" REPLICA IDENTITY FULL;
 ALTER TABLE "public"."notifications" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."profiles" (
-    "id" "uuid" NOT NULL,
-    "display_name" "text",
-    "avatar_url" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "phone_verified_at" timestamp with time zone,
-    "phone" "text",
-    "user_status" "public"."user_status" DEFAULT 'active'::"public"."user_status" NOT NULL,
-    "status_reason" "text"
-);
-
-
-ALTER TABLE "public"."profiles" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."trade_profiles" (
     "id" "uuid" NOT NULL,
     "full_name" "text",
@@ -2548,17 +2606,6 @@ COMMENT ON COLUMN "public"."trade_profiles"."site_tickets" IS 'SELF-DECLARED sit
 
 COMMENT ON COLUMN "public"."trade_profiles"."resume_path" IS 'private-docs path, {uid}/resume/{epoch}.{ext}. Never a public URL: reading it requires a signed URL gated by private_docs_resume_applied_builder_select.';
 
-
-
-CREATE TABLE IF NOT EXISTS "public"."user_roles" (
-    "user_id" "uuid" NOT NULL,
-    "role" "text" DEFAULT 'trade'::"text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "user_roles_role_check" CHECK (("role" = ANY (ARRAY['builder'::"text", 'trade'::"text", 'admin'::"text"])))
-);
-
-
-ALTER TABLE "public"."user_roles" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."profile_completeness" WITH ("security_invoker"='on') AS
@@ -3904,9 +3951,7 @@ ALTER TABLE ONLY "public"."verifications"
 
 
 
-CREATE POLICY "Admins read all acceptances" ON "public"."legal_acceptances" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "Admins read all acceptances" ON "public"."legal_acceptances" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -3921,18 +3966,14 @@ CREATE POLICY "Users read own acceptances" ON "public"."legal_acceptances" FOR S
 ALTER TABLE "public"."admin_actions" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "admin_actions_admin_read" ON "public"."admin_actions" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "admin_actions_admin_read" ON "public"."admin_actions" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
 ALTER TABLE "public"."applications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "applications_admin_read" ON "public"."applications" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'admin'::"text")))));
+CREATE POLICY "applications_admin_read" ON "public"."applications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -3980,9 +4021,7 @@ CREATE POLICY "bookings_trade_update" ON "public"."bookings" FOR UPDATE TO "auth
 
 
 
-CREATE POLICY "buak_admin_read" ON "public"."builder_unverified_acknowledgements" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "buak_admin_read" ON "public"."builder_unverified_acknowledgements" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -3997,9 +4036,7 @@ CREATE POLICY "buak_owner_read" ON "public"."builder_unverified_acknowledgements
 ALTER TABLE "public"."builder_profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "builder_profiles_admin_read" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'admin'::"text")))));
+CREATE POLICY "builder_profiles_admin_read" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4069,9 +4106,7 @@ CREATE POLICY "hidden_jobs_select_own" ON "public"."hidden_jobs" FOR SELECT USIN
 ALTER TABLE "public"."jobs" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "jobs_admin_read" ON "public"."jobs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'admin'::"text")))));
+CREATE POLICY "jobs_admin_read" ON "public"."jobs" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4131,9 +4166,7 @@ CREATE POLICY "messages_select" ON "public"."messages" FOR SELECT USING ((EXISTS
 
 
 
-CREATE POLICY "mvr_admin_read" ON "public"."manual_verification_requests" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "mvr_admin_read" ON "public"."manual_verification_requests" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4166,9 +4199,7 @@ CREATE POLICY "notifications_update_own" ON "public"."notifications" FOR UPDATE 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "profiles_admin_read" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'admin'::"text")))));
+CREATE POLICY "profiles_admin_read" ON "public"."profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4248,11 +4279,7 @@ CREATE POLICY "reviews_select_authenticated" ON "public"."reviews" FOR SELECT US
 
 
 
-CREATE POLICY "role_events_admin_all" ON "public"."user_role_events" TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "role_events_admin_read" ON "public"."user_role_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4303,9 +4330,7 @@ CREATE POLICY "trade_categories_select_all" ON "public"."trade_categories" FOR S
 ALTER TABLE "public"."trade_profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "trade_profiles_admin_read" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles" "ur"
-  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = 'admin'::"text")))));
+CREATE POLICY "trade_profiles_admin_read" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4350,17 +4375,7 @@ CREATE POLICY "user_roles_select_own" ON "public"."user_roles" FOR SELECT USING 
 ALTER TABLE "public"."verification_documents" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verification_documents_admin_select" ON "public"."verification_documents" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
-
-
-
-CREATE POLICY "verification_documents_admin_update" ON "public"."verification_documents" FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "verification_documents_admin_select" ON "public"."verification_documents" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4379,9 +4394,7 @@ CREATE POLICY "verification_documents_update_own" ON "public"."verification_docu
 ALTER TABLE "public"."verification_events" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verification_events_admin_read" ON "public"."verification_events" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "verification_events_admin_read" ON "public"."verification_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4395,9 +4408,7 @@ CREATE POLICY "verification_events_owner_read" ON "public"."verification_events"
 
 
 
-CREATE POLICY "verification_funnel_admin_read" ON "public"."verification_funnel_events" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "verification_funnel_admin_read" ON "public"."verification_funnel_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4414,9 +4425,7 @@ ALTER TABLE "public"."verification_rate_limits" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."verifications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verifications_admin_read" ON "public"."verifications" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'admin'::"text")))));
+CREATE POLICY "verifications_admin_read" ON "public"."verifications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
 
 
 
@@ -4444,15 +4453,37 @@ GRANT USAGE ON SCHEMA "public" TO "supabase_auth_admin";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_actor_is_active"("p_actor_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_actor_is_active"("p_actor_id" "uuid") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "text", "p_audience" "text", "p_data" "jsonb") TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_set_job_status"("p_job_id" "uuid", "p_status" "text", "p_reason" "text") TO "service_role";
 
 
 
@@ -4595,7 +4626,6 @@ GRANT ALL ON FUNCTION "public"."is_builder_abn_verified"("p_uid" "uuid") TO "ser
 
 
 REVOKE ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."log_admin_action"("p_action" "text", "p_target_table" "text", "p_target_id" "uuid", "p_metadata" "jsonb") TO "service_role";
 
 
@@ -4732,6 +4762,51 @@ GRANT ALL ON FUNCTION "public"."update_conversation_last_message"() TO "service_
 GRANT ALL ON TABLE "public"."admin_actions" TO "anon";
 GRANT ALL ON TABLE "public"."admin_actions" TO "authenticated";
 GRANT ALL ON TABLE "public"."admin_actions" TO "service_role";
+
+
+
+GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."profiles" TO "anon";
+GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."profiles" TO "service_role";
+
+
+
+GRANT INSERT("id"),UPDATE("id") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("display_name"),UPDATE("display_name") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("avatar_url"),UPDATE("avatar_url") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("created_at"),UPDATE("created_at") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("updated_at"),UPDATE("updated_at") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("phone_verified_at"),UPDATE("phone_verified_at") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT INSERT("phone"),UPDATE("phone") ON TABLE "public"."profiles" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."user_roles" TO "anon";
+GRANT ALL ON TABLE "public"."user_roles" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_roles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_user_directory" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_user_directory" TO "authenticated";
 
 
 
@@ -4900,12 +4975,6 @@ GRANT ALL ON TABLE "public"."notifications" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
-GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
-GRANT ALL ON TABLE "public"."profiles" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."trade_profiles" TO "anon";
 GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."trade_profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."trade_profiles" TO "service_role";
@@ -5004,12 +5073,6 @@ GRANT INSERT("unavailable_dates"),UPDATE("unavailable_dates") ON TABLE "public".
 
 
 
-GRANT ALL ON TABLE "public"."user_roles" TO "anon";
-GRANT ALL ON TABLE "public"."user_roles" TO "authenticated";
-GRANT ALL ON TABLE "public"."user_roles" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."profile_completeness" TO "anon";
 GRANT ALL ON TABLE "public"."profile_completeness" TO "authenticated";
 GRANT ALL ON TABLE "public"."profile_completeness" TO "service_role";
@@ -5075,9 +5138,8 @@ GRANT ALL ON TABLE "public"."trade_profiles_public" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."user_role_events" TO "anon";
-GRANT ALL ON TABLE "public"."user_role_events" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_role_events" TO "service_role";
+GRANT SELECT ON TABLE "public"."user_role_events" TO "authenticated";
 
 
 

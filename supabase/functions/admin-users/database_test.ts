@@ -13,6 +13,9 @@ const migration = new URL(
 );
 
 const adminFunctions = [
+  // Safety-era SQL helpers must precede functions that resolve them at creation.
+  "admin_actor_is_active",
+  "admin_require_active",
   "admin_user_management_is_admin",
   "admin_user_management_ready",
   "admin_user_invitation_preflight",
@@ -136,6 +139,9 @@ async function baseline(
   await db.exec(
     "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();",
   );
+  return schema.includes(
+    'CREATE OR REPLACE FUNCTION "public"."admin_require_active"(',
+  );
 }
 
 async function session(
@@ -169,13 +175,21 @@ async function verifyManagement(t: Deno.TestContext, source: string) {
     // Exercise the dumped definitions without replacing them with migration
     // SQL, as well as the migration path. The optional old-schema fixture is
     // used only for migration compatibility; snapshot tests stay authoritative.
-    await baseline(
+    const hasSafetyHelpers = await baseline(
       db,
       source === "deployed snapshot" ? "../../schema.sql" : undefined,
     );
     if (source === "migration") {
       await db.exec(await Deno.readTextFile(migration));
     }
+    // Reapplying October 7 deliberately exercises its original RPC contract;
+    // only a safety-era snapshot uses the newer shared actor guard's message.
+    const actorDenied = {
+      message: source === "deployed snapshot" && hasSafetyHelpers
+        ? "not_admin"
+        : "not_authorized",
+      code: "42501",
+    };
     const step = async (name: string, fn: () => Promise<void>) => {
       await t.step(name, async () => {
         await db.exec("BEGIN");
@@ -200,6 +214,9 @@ async function verifyManagement(t: Deno.TestContext, source: string) {
         "admin_user_invitation_preflight(uuid,text)",
         "admin_user_management_rate_limit(uuid,text,text)",
         "admin_set_user_role(uuid,uuid,text,text,text)",
+        ...(hasSafetyHelpers
+          ? ["admin_actor_is_active(uuid)", "admin_require_active(uuid)"]
+          : []),
       ];
       for (const role of ["anon", "authenticated"]) {
         for (const fn of signatures) {
@@ -308,7 +325,7 @@ async function verifyManagement(t: Deno.TestContext, source: string) {
       await setRole(db, A, B, "trade", "admin");
       await rejects(
         () => setRole(db, B, A, "trade", "admin"),
-        /not_authorized/,
+        actorDenied,
       );
     });
     await step("inactive actor denied", async () => {
@@ -316,7 +333,7 @@ async function verifyManagement(t: Deno.TestContext, source: string) {
         "UPDATE profiles SET user_status='suspended' WHERE id=$1",
         [A],
       );
-      await rejects(() => setRole(db), /not_authorized/);
+      await rejects(() => setRole(db), actorDenied);
     });
     await step("invalid role and blank reason rejected in SQL", async () => {
       await rejects(() => setRole(db, A, T, "apprentice"), /invalid_request/);

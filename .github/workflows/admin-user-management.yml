@@ -7,6 +7,10 @@ on:
       - 'supabase/functions/admin-users/**'
       - 'supabase/functions/_shared/cors.ts'
       - 'supabase/migrations/*admin_user_management.sql'
+      - 'supabase/migrations/*admin_safety.sql'
+      - 'supabase/rollbacks/*admin_safety_down.sql'
+      - 'supabase/tests/admin_safety*'
+      - 'supabase/tests/run_admin_safety.sh'
       - 'supabase/schema.sql'
       - '.github/workflows/admin-user-management.yml'
   pull_request:
@@ -15,6 +19,10 @@ on:
       - 'supabase/functions/admin-users/**'
       - 'supabase/functions/_shared/cors.ts'
       - 'supabase/migrations/*admin_user_management.sql'
+      - 'supabase/migrations/*admin_safety.sql'
+      - 'supabase/rollbacks/*admin_safety_down.sql'
+      - 'supabase/tests/admin_safety*'
+      - 'supabase/tests/run_admin_safety.sh'
       - 'supabase/schema.sql'
       - '.github/workflows/admin-user-management.yml'
 
@@ -34,3 +42,12 @@ jobs:
       - run: deno fmt --check supabase/functions/admin-users/*.ts
       - name: Handler, SDK and isolated PostgreSQL tests
         run: deno test --allow-read supabase/functions/admin-users/
+
+  safety:
+    name: Admin SQL safety and concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolated permissions, rollback and concurrency regressions
+        run: bash supabase/tests/run_admin_safety.sh
