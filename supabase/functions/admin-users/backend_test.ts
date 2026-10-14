@@ -4,7 +4,9 @@ import { createBackend } from "./backend.ts";
 import { createHandler } from "./handler.ts";
 
 const actor = "00000000-0000-4000-8000-000000000001";
-const token = `header.${btoa(JSON.stringify({sub:actor,aal:"aal2"}))}.signature`;
+const token = `header.${
+  btoa(JSON.stringify({ sub: actor, aal: "aal2" }))
+}.signature`;
 function fixture(responses: { body: unknown; status?: number }[]) {
   const calls: { url: URL; init?: RequestInit }[] = [];
   const client = createClient(
@@ -45,7 +47,8 @@ Deno.test("SDK adapter verifies explicit bearer with Auth, keeps service credent
     "Bearer test-service-key",
   );
   deepStrictEqual(JSON.parse(String(calls[1].init?.body)), {
-    p_actor_id: actor, p_aal: "aal2",
+    p_actor_id: actor,
+    p_aal: "aal2",
   });
 });
 
@@ -182,15 +185,26 @@ Deno.test("SDK role and rate RPC contracts are exact; unknown database errors do
 
 Deno.test("SDK adapter fails closed on malformed readiness/rate replies", async () => {
   const { backend } = fixture([{ body: null }, { body: { allowed: "yes" } }]);
-  await rejects(() => backend.assertAdmin(actor, token), { message: "unavailable" });
+  await rejects(() => backend.assertAdmin(actor, token), {
+    message: "unavailable",
+  });
   await rejects(() => backend.consume(actor, "unknown", "invite"), {
     message: "unavailable",
   });
 });
 
 Deno.test("owner guard rejects mismatched subjects before service RPC", async () => {
- const {backend,calls}=fixture([]);
- const wrong=`header.${btoa(JSON.stringify({sub:"00000000-0000-4000-8000-000000000099",aal:"aal2"}))}.signature`;
- await rejects(()=>backend.assertAdmin(actor,wrong),{message:"not_authorized"});
- equal(calls.length,0);
+  const { backend, calls } = fixture([]);
+  const wrong = `header.${
+    btoa(
+      JSON.stringify({
+        sub: "00000000-0000-4000-8000-000000000099",
+        aal: "aal2",
+      }),
+    )
+  }.signature`;
+  await rejects(() => backend.assertAdmin(actor, wrong), {
+    message: "not_authorized",
+  });
+  equal(calls.length, 0);
 });

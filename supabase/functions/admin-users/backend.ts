@@ -47,12 +47,26 @@ export function createBackend(client: SupabaseClient): Backend {
       // assurance only after that verification, never from an unverified body.
       let aal: "aal1" | "aal2";
       try {
-        const payload = JSON.parse(atob(verifiedToken.split(".")[1].replaceAll("-", "+").replaceAll("_", "/")));
-        if (payload.sub !== actorId || !["aal1", "aal2"].includes(payload.aal)) throw Error("invalid");
+        const payload = JSON.parse(
+          atob(
+            verifiedToken.split(".")[1].replaceAll("-", "+").replaceAll(
+              "_",
+              "/",
+            ),
+          ),
+        );
+        if (
+          payload.sub !== actorId || !["aal1", "aal2"].includes(payload.aal)
+        ) throw Error("invalid");
         aal = payload.aal;
-      } catch { throw new DirectoryError("not_authorized", 403); }
+      } catch {
+        throw new DirectoryError("not_authorized", 403);
+      }
       if (
-        await rpc("admin_company_assert_owner", { p_actor_id: actorId, p_aal: aal }) !==
+        await rpc("admin_company_assert_owner", {
+          p_actor_id: actorId,
+          p_aal: aal,
+        }) !==
           true
       ) throw new DirectoryError("unavailable", 503);
     },
