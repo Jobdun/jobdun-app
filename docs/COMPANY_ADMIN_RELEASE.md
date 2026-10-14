@@ -42,3 +42,16 @@ independent authorized operator; no public reset bypass is included.
 
 User authorization covered publication to both repositories' `main` branches.
 Unrelated mobile work is excluded from this backend commit.
+
+## Schema snapshot and security audit
+
+After production deployment, `supabase/schema.sql` was synchronized from the live
+public schema. The migration regression runner uses a fixed pre-company schema
+fixture, with the historical public anon token replaced by an inert test value.
+This preserves apply/rollback/reapply coverage after the current-state snapshot
+already contains the company migration. Remote migration history is unchanged.
+
+A redacted Gitleaks audit of both repositories’ new commits and reachable main
+history found only SHA-256 manifest hashes, dependency checksums and historical
+public Supabase anon keys. No private credential was identified; no key rotation
+or history rewrite was performed. Private backup/auth artifacts remain outside Git.

@@ -172,10 +172,7 @@ CREATE OR REPLACE FUNCTION "public"."admin_actor_is_active"("p_actor_id" "uuid")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-    WHERE r.user_id = p_actor_id AND r.role = 'admin' AND p.user_status = 'active'
-  );
+ SELECT public.admin_company_actor_role(p_actor_id)='owner'
 $$;
 
 
@@ -192,7 +189,7 @@ DECLARE
   v_user_id uuid;
   v_count integer;
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
+  PERFORM public.admin_company_require('communications.send');
   IF v_title IS NULL OR char_length(v_title) NOT BETWEEN 1 AND 80
     OR v_body IS NULL OR char_length(v_body) NOT BETWEEN 1 AND 240
     OR p_audience IS NULL OR jsonb_typeof(coalesce(p_data, '{}'::jsonb)) <> 'object' THEN
@@ -233,7 +230,7 @@ CREATE OR REPLACE FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", 
     SET "search_path" TO ''
     AS $$
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
+  PERFORM public.admin_company_require('communications.send');
   IF p_user_id IS NULL THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023'; END IF;
   RETURN public.admin_broadcast(p_title, p_body, p_user_id::text, p_data);
 END;
@@ -243,19 +240,418 @@ $$;
 ALTER FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_company_actor_role"("p_actor_id" "uuid") RETURNS "text"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT s.staff_role FROM public.admin_staff s JOIN public.user_roles r ON r.user_id=s.user_id
+ JOIN public.profiles p ON p.id=s.user_id
+ WHERE s.user_id=p_actor_id AND s.active AND r.role='admin' AND p.user_status='active'
+$$;
+
+
+ALTER FUNCTION "public"."admin_company_actor_role"("p_actor_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_assert_owner"("p_actor_id" "uuid", "p_aal" "text") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF auth.role() IS DISTINCT FROM 'service_role' OR public.admin_company_actor_role(p_actor_id) IS DISTINCT FROM 'owner'
+ OR (EXISTS(SELECT 1 FROM public.admin_platform_settings WHERE key='admin_mfa_required' AND value='true'::jsonb)
+     AND p_aal IS DISTINCT FROM 'aal2') THEN
+  RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501';
+ END IF;
+ RETURN true;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_assert_owner"("p_actor_id" "uuid", "p_aal" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_guard_owner"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE v_user uuid; v_loses boolean; v_self uuid:=auth.uid();
+BEGIN
+ PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles',0));
+ IF TG_TABLE_NAME='admin_staff' THEN
+  v_user:=OLD.user_id;
+  v_loses:=OLD.staff_role='owner' AND OLD.active AND
+    (TG_OP='DELETE' OR NEW.staff_role<>'owner' OR NOT NEW.active OR NEW.user_id<>OLD.user_id);
+  IF TG_OP='UPDATE' AND NEW.user_id<>OLD.user_id THEN RAISE EXCEPTION 'immutable_staff_identity'; END IF;
+  IF v_user=v_self AND (TG_OP='DELETE' OR NEW.staff_role<>OLD.staff_role OR NOT NEW.active) THEN
+   RAISE EXCEPTION 'self_staff_change';
+  END IF;
+ ELSIF TG_TABLE_NAME='profiles' THEN
+  v_user:=OLD.id; v_loses:=TG_OP='DELETE' OR NEW.user_status<>'active';
+ ELSE
+  v_user:=OLD.user_id; v_loses:=TG_OP='DELETE' OR NEW.role<>'admin';
+ END IF;
+ IF v_loses AND EXISTS(SELECT 1 FROM public.admin_staff s JOIN public.profiles p ON p.id=s.user_id
+   JOIN public.user_roles r ON r.user_id=s.user_id WHERE s.user_id=v_user AND s.active AND s.staff_role='owner'
+   AND p.user_status='active' AND r.role='admin') THEN
+  IF v_user=v_self THEN RAISE EXCEPTION 'self_owner_change'; END IF;
+  IF (SELECT count(*) FROM public.admin_staff s JOIN public.profiles p ON p.id=s.user_id
+   JOIN public.user_roles r ON r.user_id=s.user_id WHERE s.active AND s.staff_role='owner'
+   AND p.user_status='active' AND r.role='admin')<=1 THEN RAISE EXCEPTION 'last_active_owner'; END IF;
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_guard_owner"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_has_permission"("p_permission" "text") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT coalesce(
+  (p_permission='session' OR NOT EXISTS(SELECT 1 FROM public.admin_platform_settings WHERE key='admin_mfa_required' AND value='true'::jsonb)
+   OR auth.jwt()->>'aal'='aal2') AND
+  CASE public.admin_company_actor_role(auth.uid())
+   WHEN 'owner' THEN p_permission=ANY(ARRAY['session','users.read','users.manage','marketplace.read','marketplace.manage','verification.read','verification.manage','support.read','support.manage','analytics.read','communications.read','communications.send','audit.read','staff.read','staff.manage','platform.read','platform.manage'])
+   WHEN 'operations' THEN p_permission=ANY(ARRAY['session','users.read','users.manage','marketplace.read','marketplace.manage','support.read','support.manage','analytics.read','communications.read','communications.send','audit.read'])
+   WHEN 'verification' THEN p_permission=ANY(ARRAY['session','users.read','verification.read','verification.manage','audit.read'])
+   WHEN 'support' THEN p_permission=ANY(ARRAY['session','users.read','marketplace.read','support.read','support.manage','audit.read'])
+   WHEN 'read_only' THEN p_permission=ANY(ARRAY['session','users.read','marketplace.read','support.read','analytics.read','communications.read','audit.read'])
+   ELSE false END,false)
+$$;
+
+
+ALTER FUNCTION "public"."admin_company_has_permission"("p_permission" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_list"("p_resource" "text", "p_page" integer DEFAULT 1, "p_user_id" "uuid" DEFAULT NULL::"uuid", "p_status" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE v_permission text; v_source text; v_filter text:='true'; v_sql text; v_rows jsonb; v_total bigint; v_offset bigint;
+BEGIN
+ v_permission:=CASE p_resource
+  WHEN 'applications' THEN 'marketplace.read' WHEN 'quotes' THEN 'marketplace.read'
+  WHEN 'timesheets' THEN 'marketplace.read' WHEN 'reports' THEN 'support.read'
+  WHEN 'reviews' THEN 'marketplace.read' WHEN 'enquiries' THEN 'support.read'
+  WHEN 'support' THEN 'support.read' WHEN 'staff' THEN 'staff.read'
+  WHEN 'settings' THEN 'platform.read' WHEN 'communications' THEN 'communications.read'
+  WHEN 'health' THEN 'platform.read' WHEN 'reference' THEN 'platform.read'
+  WHEN 'verifications' THEN 'verification.read' END;
+ IF v_permission IS NULL THEN RAISE EXCEPTION 'invalid_resource' USING ERRCODE='22023'; END IF;
+ PERFORM public.admin_company_require(v_permission);
+ IF p_page IS NULL OR p_page<1 OR p_page>100000 OR length(coalesce(p_status,''))>50 THEN
+  RAISE EXCEPTION 'invalid_page' USING ERRCODE='22023'; END IF;
+ v_offset:=(p_page::bigint-1)*50;
+ v_source:=CASE p_resource
+  WHEN 'applications' THEN 'SELECT id,job_id,trade_id,builder_id,status::text AS status,created_at FROM public.applications'
+  WHEN 'quotes' THEN 'SELECT id,job_id,builder_id,trade_id,status::text AS status,quote_amount,created_at FROM public.quote_requests'
+  WHEN 'timesheets' THEN 'SELECT id,job_id,builder_id,trade_id,check_in_at,check_out_at,note,created_at FROM public.timesheets'
+  WHEN 'reports' THEN 'SELECT id,reporter_id,reported_id,reason,details,status,version,created_at FROM public.reports'
+  WHEN 'reviews' THEN 'SELECT id,reviewer_id,reviewee_id,rating,comment,created_at FROM public.reviews'
+  WHEN 'enquiries' THEN 'SELECT id,name,email,phone,message,created_at FROM public.contact_enquiries'
+  WHEN 'support' THEN $q$SELECT c.id,c.subject,c.user_id,c.priority,c.assignee_id,c.status,c.version,c.created_at,c.updated_at,
+    (SELECT coalesce(jsonb_agg(jsonb_build_object('id',n.id,'body',n.body,'author_id',n.author_id,'created_at',n.created_at) ORDER BY n.created_at), '[]'::jsonb)
+     FROM public.admin_support_notes n WHERE n.case_id=c.id) AS notes FROM public.admin_support_cases c$q$
+  WHEN 'staff' THEN $q$SELECT s.id,s.user_id,p.display_name,u.email,s.staff_role,s.active,p.user_status,s.version,s.created_at,s.updated_at
+    FROM public.admin_staff s JOIN public.profiles p ON p.id=s.user_id JOIN auth.users u ON u.id=s.user_id$q$
+  WHEN 'settings' THEN 'SELECT id,key,value,version,updated_at,updated_at AS created_at FROM public.admin_platform_settings'
+  WHEN 'communications' THEN $q$SELECT id,action,metadata->>'audience' AS audience,metadata->>'count' AS count,created_at FROM public.admin_actions WHERE action='broadcast'$q$
+  WHEN 'health' THEN $q$SELECT '00000000-0000-0000-0000-000000000001'::uuid AS id,'available'::text AS status,'Database reachable'::text AS detail,now() AS created_at$q$
+  WHEN 'reference' THEN $q$SELECT md5('trade_categories:'||slug)::uuid AS id,'trade_categories'::text AS source,display_name AS name,slug,display_name,sort_order,version,created_at FROM public.trade_categories
+   UNION ALL SELECT md5('site_tickets:'||slug)::uuid,'site_tickets',display_name,slug,display_name,sort_order,version,created_at FROM public.site_tickets$q$
+  WHEN 'verifications' THEN $q$SELECT d.id,d.trade_id,d.doc_type::text AS doc_type,d.status::text AS status,d.expiry_date,d.reviewed_by,
+     a.assignee_id,coalesce(a.version,1) AS version,d.created_at FROM public.verification_documents d
+     LEFT JOIN public.admin_verification_assignments a ON a.id=d.id WHERE d.deleted_at IS NULL$q$ END;
+ IF p_user_id IS NOT NULL THEN
+  IF p_resource NOT IN ('applications','quotes','timesheets','reports','reviews','support','staff','verifications') THEN
+   RAISE EXCEPTION 'invalid_user_filter' USING ERRCODE='22023'; END IF;
+  v_filter:=CASE p_resource
+   WHEN 'applications' THEN format('(x.trade_id=%L::uuid OR x.builder_id=%L::uuid)',p_user_id,p_user_id)
+   WHEN 'quotes' THEN format('(x.trade_id=%L::uuid OR x.builder_id=%L::uuid)',p_user_id,p_user_id)
+   WHEN 'timesheets' THEN format('(x.trade_id=%L::uuid OR x.builder_id=%L::uuid)',p_user_id,p_user_id)
+   WHEN 'reports' THEN format('(x.reporter_id=%L::uuid OR x.reported_id=%L::uuid)',p_user_id,p_user_id)
+   WHEN 'reviews' THEN format('(x.reviewer_id=%L::uuid OR x.reviewee_id=%L::uuid)',p_user_id,p_user_id)
+   WHEN 'support' THEN format('x.user_id=%L::uuid',p_user_id)
+   WHEN 'staff' THEN format('x.user_id=%L::uuid',p_user_id)
+   WHEN 'verifications' THEN format('x.trade_id=%L::uuid',p_user_id)
+   ELSE 'false' END;
+ END IF;
+ IF p_status IS NOT NULL AND p_status<>'' THEN
+  IF p_resource='support' AND p_status='active' THEN
+   v_filter:=v_filter||' AND x.status IN (''open'',''in_progress'')';
+  ELSIF p_resource='verifications' AND p_status='expiring' THEN
+   v_filter:=v_filter||' AND x.status=''approved'' AND x.expiry_date>=current_date AND x.expiry_date<=current_date+30';
+  ELSIF p_resource='verifications' AND p_status='expired' THEN
+   v_filter:=v_filter||' AND (x.status=''expired'' OR (x.status=''approved'' AND x.expiry_date<current_date))';
+  ELSIF p_resource IN ('applications','quotes','reports','support','verifications') THEN
+   v_filter:=v_filter||format(' AND x.status::text=%L',p_status);
+  ELSE RAISE EXCEPTION 'invalid_status_filter' USING ERRCODE='22023'; END IF;
+ END IF;
+ v_sql:=format('WITH x AS (%s) SELECT count(*) FROM x WHERE %s',v_source,v_filter);
+ EXECUTE v_sql INTO v_total;
+ v_sql:=format('WITH x AS (%s) SELECT coalesce(jsonb_agg(to_jsonb(y) ORDER BY y.created_at DESC,y.id DESC),''[]''::jsonb) FROM (SELECT * FROM x WHERE %s ORDER BY created_at DESC,id DESC LIMIT 50 OFFSET %s) y',v_source,v_filter,v_offset);
+ EXECUTE v_sql INTO v_rows;
+ RETURN jsonb_build_object('rows',v_rows,'total',v_total,'page',p_page,'pageSize',50);
+END $_$;
+
+
+ALTER FUNCTION "public"."admin_company_list"("p_resource" "text", "p_page" integer, "p_user_id" "uuid", "p_status" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_mutate"("p_resource" "text", "p_id" "uuid", "p_payload" "jsonb", "p_expected_version" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE v_permission text; v_reason text; v_id uuid:=p_id; v_version integer; v_keys text[]; v_allowed text[];
+ v_source text; v_slug text; v_assignee uuid; v_role text; v_value jsonb; v_old_value jsonb; v_key text;
+BEGIN
+ v_permission:=CASE p_resource WHEN 'support' THEN 'support.manage' WHEN 'note' THEN 'support.manage'
+  WHEN 'report' THEN 'support.manage' WHEN 'staff' THEN 'staff.manage'
+  WHEN 'setting' THEN 'platform.manage' WHEN 'verification-assignment' THEN 'verification.manage'
+  WHEN 'reference' THEN 'platform.manage' END;
+ IF v_permission IS NULL THEN RAISE EXCEPTION 'invalid_resource' USING ERRCODE='22023'; END IF;
+ PERFORM public.admin_company_require(v_permission);
+ IF jsonb_typeof(p_payload)<>'object' THEN RAISE EXCEPTION 'invalid_payload' USING ERRCODE='22023'; END IF;
+ v_reason:=btrim(p_payload->>'reason');
+ IF jsonb_typeof(p_payload->'reason') IS DISTINCT FROM 'string' OR length(v_reason) NOT BETWEEN 5 AND 500 THEN RAISE EXCEPTION 'invalid_reason' USING ERRCODE='22023'; END IF;
+ v_allowed:=CASE p_resource
+  WHEN 'support' THEN ARRAY['subject','user_id','priority','assignee_id','status','reason']
+  WHEN 'note' THEN ARRAY['case_id','body','reason']
+  WHEN 'report' THEN ARRAY['status','reason']
+  WHEN 'staff' THEN ARRAY['user_id','staff_role','active','reason']
+  WHEN 'setting' THEN ARRAY['value','reason']
+  WHEN 'verification-assignment' THEN ARRAY['assignee_id','reason']
+  WHEN 'reference' THEN ARRAY['source','slug','display_name','sort_order','reason'] END;
+ SELECT array_agg(key) INTO v_keys FROM jsonb_object_keys(p_payload) key;
+ IF EXISTS(SELECT 1 FROM unnest(v_keys) k WHERE k<>ALL(v_allowed)) THEN
+  RAISE EXCEPTION 'invalid_keys' USING ERRCODE='22023'; END IF;
+ IF p_resource='support' THEN
+  IF p_payload->>'priority' NOT IN ('low','normal','high','urgent')
+   OR p_payload->>'status' NOT IN ('open','in_progress','resolved','closed')
+   OR length(btrim(p_payload->>'subject')) NOT BETWEEN 3 AND 200 THEN RAISE EXCEPTION 'invalid_support' USING ERRCODE='22023'; END IF;
+  v_assignee:=nullif(p_payload->>'assignee_id','')::uuid;
+  IF v_assignee IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.admin_staff s WHERE s.user_id=v_assignee AND s.active AND s.staff_role IN ('owner','operations','support')
+   AND public.admin_company_actor_role(s.user_id) IS NOT NULL) THEN RAISE EXCEPTION 'invalid_assignee' USING ERRCODE='22023'; END IF;
+  IF p_id IS NULL THEN
+   IF p_expected_version IS NOT NULL THEN RAISE EXCEPTION 'invalid_version' USING ERRCODE='22023'; END IF;
+   INSERT INTO public.admin_support_cases(subject,user_id,priority,assignee_id,status)
+   VALUES(btrim(p_payload->>'subject'),nullif(p_payload->>'user_id','')::uuid,p_payload->>'priority',v_assignee,p_payload->>'status')
+   RETURNING id,version INTO v_id,v_version;
+  ELSE
+   UPDATE public.admin_support_cases SET subject=btrim(p_payload->>'subject'),user_id=nullif(p_payload->>'user_id','')::uuid,
+    priority=p_payload->>'priority',assignee_id=v_assignee,status=p_payload->>'status',version=version+1,updated_at=now()
+   WHERE id=p_id AND version=p_expected_version RETURNING version INTO v_version;
+  END IF;
+ ELSIF p_resource='note' THEN
+  IF p_id IS NOT NULL OR p_expected_version IS NOT NULL OR length(btrim(p_payload->>'body')) NOT BETWEEN 1 AND 5000
+   OR p_payload->>'case_id' IS NULL THEN RAISE EXCEPTION 'invalid_note' USING ERRCODE='22023'; END IF;
+  PERFORM 1 FROM public.admin_support_cases WHERE id=(p_payload->>'case_id')::uuid FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'case_not_found'; END IF;
+  INSERT INTO public.admin_support_notes(case_id,author_id,body)
+  VALUES((p_payload->>'case_id')::uuid,auth.uid(),btrim(p_payload->>'body')) RETURNING id INTO v_id;
+  v_version:=1;
+ ELSIF p_resource='report' THEN
+  IF p_id IS NULL OR p_payload->>'status' NOT IN ('pending','reviewed','actioned','dismissed') THEN RAISE EXCEPTION 'invalid_report' USING ERRCODE='22023'; END IF;
+  UPDATE public.reports SET status=p_payload->>'status',version=version+1 WHERE id=p_id AND version=p_expected_version RETURNING version INTO v_version;
+ ELSIF p_resource='staff' THEN
+  v_role:=p_payload->>'staff_role';
+  IF v_role NOT IN ('owner','operations','verification','support','read_only') OR jsonb_typeof(p_payload->'active')<>'boolean'
+   OR p_payload->>'user_id' IS NULL THEN RAISE EXCEPTION 'invalid_staff' USING ERRCODE='22023'; END IF;
+  IF v_role='owner' AND public.admin_company_actor_role(auth.uid())<>'owner' THEN RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501'; END IF;
+  IF p_id IS NULL THEN
+   IF p_expected_version IS NOT NULL THEN RAISE EXCEPTION 'invalid_version' USING ERRCODE='22023'; END IF;
+   IF NOT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.id=r.user_id
+    WHERE r.user_id=(p_payload->>'user_id')::uuid AND r.role='admin' AND p.user_status='active') THEN RAISE EXCEPTION 'invalid_staff_user'; END IF;
+   INSERT INTO public.admin_staff(user_id,staff_role,active)
+   VALUES((p_payload->>'user_id')::uuid,v_role,(p_payload->>'active')::boolean) RETURNING id,version INTO v_id,v_version;
+  ELSE
+   IF public.admin_company_actor_role(auth.uid())<>'owner' AND EXISTS
+    (SELECT 1 FROM public.admin_staff WHERE id=p_id AND staff_role='owner') THEN RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501'; END IF;
+   UPDATE public.admin_staff SET staff_role=v_role,active=(p_payload->>'active')::boolean,version=version+1,updated_at=now()
+    WHERE id=p_id AND user_id=(p_payload->>'user_id')::uuid AND version=p_expected_version RETURNING version INTO v_version;
+  END IF;
+ ELSIF p_resource='setting' THEN
+  IF p_id IS NULL THEN RAISE EXCEPTION 'invalid_setting' USING ERRCODE='22023'; END IF;
+  SELECT key,value INTO v_key,v_old_value FROM public.admin_platform_settings WHERE id=p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'setting_not_found'; END IF;
+  v_value:=p_payload->'value';
+  IF v_key IN ('marketplace_enabled','registration_enabled','admin_mfa_required') THEN
+   IF jsonb_typeof(v_value)<>'boolean' THEN RAISE EXCEPTION 'invalid_setting_value' USING ERRCODE='22023'; END IF;
+  ELSIF v_key='maintenance_notice' THEN
+   IF jsonb_typeof(v_value)<>'string' OR length(v_value#>>'{}')>500 THEN RAISE EXCEPTION 'invalid_setting_value' USING ERRCODE='22023'; END IF;
+  ELSE
+   IF jsonb_typeof(v_value)<>'string' OR (v_value#>>'{}') !~ '^[0-9]+\.[0-9]+\.[0-9]+$' THEN
+    RAISE EXCEPTION 'invalid_setting_value' USING ERRCODE='22023'; END IF;
+  END IF;
+  IF v_key='admin_mfa_required' AND v_value='true'::jsonb AND auth.jwt()->>'aal' IS DISTINCT FROM 'aal2' THEN
+   RAISE EXCEPTION 'mfa_required' USING ERRCODE='42501'; END IF;
+  UPDATE public.admin_platform_settings SET value=v_value,version=version+1,updated_at=now()
+   WHERE id=p_id AND version=p_expected_version RETURNING version INTO v_version;
+ ELSIF p_resource='verification-assignment' THEN
+  IF p_id IS NULL OR NOT EXISTS(SELECT 1 FROM public.verification_documents WHERE id=p_id AND deleted_at IS NULL) THEN
+   RAISE EXCEPTION 'invalid_document' USING ERRCODE='22023'; END IF;
+  v_assignee:=nullif(p_payload->>'assignee_id','')::uuid;
+  IF v_assignee IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.admin_staff s WHERE s.user_id=v_assignee AND s.active
+   AND s.staff_role IN ('owner','verification') AND public.admin_company_actor_role(s.user_id) IS NOT NULL) THEN
+   RAISE EXCEPTION 'invalid_assignee' USING ERRCODE='22023'; END IF;
+  IF p_expected_version=1 AND NOT EXISTS(SELECT 1 FROM public.admin_verification_assignments WHERE id=p_id) THEN
+   INSERT INTO public.admin_verification_assignments(id,assignee_id,version) VALUES(p_id,v_assignee,2) RETURNING version INTO v_version;
+  ELSE
+   UPDATE public.admin_verification_assignments SET assignee_id=v_assignee,version=version+1,updated_at=now()
+    WHERE id=p_id AND version=p_expected_version RETURNING version INTO v_version;
+  END IF;
+ ELSIF p_resource='reference' THEN
+  v_source:=p_payload->>'source'; v_slug:=p_payload->>'slug';
+  IF p_id IS NOT NULL OR v_source NOT IN ('trade_categories','site_tickets') OR v_slug !~ '^[a-z0-9_]{1,100}$'
+   OR length(btrim(p_payload->>'display_name')) NOT BETWEEN 2 AND 100
+   OR (p_payload->>'sort_order')::integer NOT BETWEEN 0 AND 10000 THEN RAISE EXCEPTION 'invalid_reference' USING ERRCODE='22023'; END IF;
+  EXECUTE format('UPDATE public.%I SET display_name=$1,sort_order=$2,version=version+1 WHERE slug=$3 AND version=$4 RETURNING version',v_source)
+   INTO v_version USING btrim(p_payload->>'display_name'),(p_payload->>'sort_order')::integer,v_slug,p_expected_version;
+ ELSE RAISE EXCEPTION 'invalid_resource' USING ERRCODE='22023'; END IF;
+ IF v_version IS NULL THEN RAISE EXCEPTION 'stale_version' USING ERRCODE='40001'; END IF;
+ INSERT INTO public.admin_actions(actor_id,action,target_table,target_id,metadata)
+ VALUES(auth.uid(),'company_'||p_resource,p_resource,v_id,
+  jsonb_build_object('reason',v_reason,'version',v_version,'source',v_source,'slug',v_slug)
+  || CASE WHEN p_resource='setting' THEN jsonb_build_object('key',v_key,'old_value',v_old_value,'new_value',v_value) ELSE '{}'::jsonb END);
+ RETURN jsonb_build_object('id',v_id,'version',v_version);
+END $_$;
+
+
+ALTER FUNCTION "public"."admin_company_mutate"("p_resource" "text", "p_id" "uuid", "p_payload" "jsonb", "p_expected_version" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_overview"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE v_counts jsonb; v_trends jsonb:='[]'::jsonb; v_can_users boolean; v_can_market boolean; v_can_support boolean; v_can_verify boolean;
+BEGIN
+ PERFORM public.admin_company_require('session');
+ v_can_users:=public.admin_company_has_permission('users.read');
+ v_can_market:=public.admin_company_has_permission('marketplace.read');
+ v_can_support:=public.admin_company_has_permission('support.read');
+ v_can_verify:=public.admin_company_has_permission('verification.read');
+ SELECT jsonb_build_object(
+  'profiles',CASE WHEN v_can_users THEN (SELECT count(*) FROM public.profiles) END,
+  'jobs',CASE WHEN v_can_market THEN (SELECT count(*) FROM public.jobs) END,
+  'openJobs',CASE WHEN v_can_market THEN (SELECT count(*) FROM public.jobs WHERE status='open') END,
+  'pendingReports',CASE WHEN v_can_support THEN (SELECT count(*) FROM public.reports WHERE status='pending') END,
+  'pendingVerifications',CASE WHEN v_can_verify THEN (SELECT count(*) FROM public.verification_documents WHERE status='pending' AND deleted_at IS NULL) END,
+  'openSupport',CASE WHEN v_can_support THEN (SELECT count(*) FROM public.admin_support_cases WHERE status IN ('open','in_progress')) END) INTO v_counts;
+ IF public.admin_company_has_permission('analytics.read') AND v_can_users AND v_can_market THEN
+  SELECT coalesce(jsonb_agg(jsonb_build_object('date',d::date,'profiles',(SELECT count(*) FROM public.profiles WHERE created_at::date=d::date),
+   'jobs',(SELECT count(*) FROM public.jobs WHERE created_at::date=d::date)) ORDER BY d),'[]'::jsonb)
+  INTO v_trends FROM generate_series(current_date-13,current_date,'1 day'::interval) d;
+ END IF;
+ RETURN jsonb_build_object('counts',v_counts,'trends',v_trends,'sources',jsonb_build_object('profiles','profiles','jobs','jobs','reports','reports','verifications','verification_documents','support','admin_support_cases'),'asOf',now());
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_overview"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_public_config"() RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb) FROM public.admin_platform_settings
+ WHERE key IN ('maintenance_notice','minimum_android_version','minimum_ios_version','marketplace_enabled','registration_enabled')
+$$;
+
+
+ALTER FUNCTION "public"."admin_company_public_config"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_require"("p_permission" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ -- Serialize revocations with privileged writes. Current membership is re-read.
+ PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles',0));
+ IF NOT public.admin_company_has_permission(p_permission) THEN
+  RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501';
+ END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_require"("p_permission" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_search_users"("p_q" "text", "p_search_by" "text", "p_role" "text" DEFAULT 'all'::"text", "p_status" "text" DEFAULT 'all'::"text", "p_page" integer DEFAULT 1) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE v_rows jsonb; v_total bigint; v_q text:=btrim(p_q); v_phone text; v_phone_query text;
+BEGIN
+ PERFORM public.admin_company_require('users.read');
+ IF p_q IS NULL OR p_search_by IS NULL OR p_role IS NULL OR p_status IS NULL OR p_page IS NULL
+ OR p_search_by NOT IN ('email','company','full_name','phone','name','id') OR p_role NOT IN ('all','builder','trade','admin')
+ OR p_status NOT IN ('all','active','suspended','banned') OR p_page NOT BETWEEN 1 AND 100000
+ OR length(v_q) NOT BETWEEN 1 AND 200 THEN RAISE EXCEPTION 'invalid_search' USING ERRCODE='22023'; END IF;
+ v_phone:=regexp_replace(v_q,'[^0-9]','','g');
+ v_phone_query:=CASE WHEN v_phone LIKE '0%' THEN '61'||substring(v_phone FROM 2) ELSE v_phone END;
+ WITH matches AS (
+  SELECT p.id,p.display_name,p.user_status,p.avatar_url,p.created_at,r.role,
+   coalesce(t.is_verified,false) AS is_verified
+  FROM public.profiles p LEFT JOIN public.user_roles r ON r.user_id=p.id
+  LEFT JOIN public.trade_profiles t ON t.id=p.id
+  LEFT JOIN public.builder_profiles b ON b.id=p.id
+  LEFT JOIN auth.users u ON u.id=p.id
+  WHERE (p_role='all' OR r.role::text=p_role) AND (p_status='all' OR p.user_status::text=p_status)
+   AND CASE p_search_by
+    WHEN 'email' THEN u.email ILIKE '%' || replace(replace(replace(v_q,'\','\\'),'%','\%'),'_','\_') || '%'
+    WHEN 'company' THEN b.company_name ILIKE '%' || replace(replace(replace(v_q,'\','\\'),'%','\%'),'_','\_') || '%'
+    WHEN 'full_name' THEN t.full_name ILIKE '%' || replace(replace(replace(v_q,'\','\\'),'%','\%'),'_','\_') || '%'
+    WHEN 'phone' THEN length(v_phone)>=3 AND (regexp_replace(coalesce(p.phone,''),'[^0-9]','','g') LIKE '%'||v_phone||'%'
+       OR regexp_replace(coalesce(p.phone,''),'[^0-9]','','g') LIKE '%'||v_phone_query||'%')
+    WHEN 'id' THEN p.id::text=v_q
+    ELSE p.display_name ILIKE '%' || replace(replace(replace(v_q,'\','\\'),'%','\%'),'_','\_') || '%' END
+ ), page AS (SELECT * FROM matches ORDER BY created_at DESC,id DESC LIMIT 50 OFFSET (p_page::bigint-1)*50)
+ SELECT (SELECT count(*) FROM matches),
+  (SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'displayName',coalesce(nullif(btrim(display_name),''),left(id::text,8)||'…'),
+   'role',coalesce(role::text,'unknown'),'userStatus',user_status::text,'isVerified',is_verified,
+   'createdAt',created_at,'avatarUrl',avatar_url) ORDER BY created_at DESC,id DESC),'[]'::jsonb) FROM page)
+ INTO v_total,v_rows;
+ RETURN jsonb_build_object('rows',v_rows,'total',v_total,'page',p_page,'pageSize',50);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_search_users"("p_q" "text", "p_search_by" "text", "p_role" "text", "p_status" "text", "p_page" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_company_session"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE v_role text:=public.admin_company_actor_role(auth.uid()); v_mfa boolean;
+BEGIN
+ IF v_role IS NULL THEN RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501'; END IF;
+ SELECT value='true'::jsonb INTO v_mfa FROM public.admin_platform_settings WHERE key='admin_mfa_required';
+ RETURN jsonb_build_object('staffRole',v_role,'mfaRequired',coalesce(v_mfa,false));
+END $$;
+
+
+ALTER FUNCTION "public"."admin_company_session"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles', 0));
-  PERFORM 1 FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-    WHERE r.user_id = p_actor_id FOR UPDATE OF r, p;
-  IF NOT public.admin_actor_is_active(p_actor_id) THEN
-    RAISE EXCEPTION 'not_admin' USING ERRCODE = '42501';
-  END IF;
-END;
-$$;
+ PERFORM pg_advisory_xact_lock(hashtextextended('admin-users:roles',0));
+ IF public.admin_company_actor_role(p_actor_id) IS DISTINCT FROM 'owner' THEN
+  RAISE EXCEPTION 'not_admin' USING ERRCODE='42501';
+ END IF;
+ IF auth.role() IS DISTINCT FROM 'service_role' THEN
+  IF p_actor_id IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'not_admin' USING ERRCODE='42501'; END IF;
+  PERFORM public.admin_company_require('staff.manage');
+ END IF;
+END $$;
 
 
 ALTER FUNCTION "public"."admin_require_active"("p_actor_id" "uuid") OWNER TO "postgres";
@@ -287,7 +683,7 @@ DECLARE
   v_old_status public.job_status;
   v_reason text := regexp_replace(p_reason, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
+  PERFORM public.admin_company_require('marketplace.manage');
   IF p_job_id IS NULL OR p_status IS NULL
     OR NOT (p_status = ANY(enum_range(NULL::public.job_status)::text[]))
     OR v_reason IS NULL OR char_length(v_reason) NOT BETWEEN 1 AND 500 THEN
@@ -377,33 +773,24 @@ ALTER FUNCTION "public"."admin_set_user_role"("p_actor_id" "uuid", "p_user_id" "
 CREATE OR REPLACE FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $_$
-DECLARE
-  v_old_status public.user_status;
-  v_reason text := regexp_replace(p_reason, '^[[:space:]]+|[[:space:]]+$', '', 'g');
+    AS $$
+DECLARE v_old public.user_status; v_reason text:=btrim(p_reason);
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
-  IF p_user_id IS NULL OR p_status IS NULL OR p_status NOT IN ('active','suspended','banned')
-    OR (p_reason IS NOT NULL AND char_length(v_reason) NOT BETWEEN 1 AND 500) THEN
-    RAISE EXCEPTION 'invalid_request' USING ERRCODE = '22023';
-  END IF;
-  IF p_user_id = auth.uid() AND p_status <> 'active' THEN
-    RAISE EXCEPTION 'self_status_change' USING ERRCODE = 'P0001';
-  END IF;
-  SELECT user_status INTO v_old_status FROM public.profiles WHERE id = p_user_id FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found' USING ERRCODE = 'P0001'; END IF;
-  IF v_old_status = 'active' AND p_status <> 'active'
-    AND EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role = 'admin')
-    AND (SELECT count(*) FROM public.user_roles r JOIN public.profiles p ON p.id = r.user_id
-         WHERE r.role = 'admin' AND p.user_status = 'active') <= 1 THEN
-    RAISE EXCEPTION 'last_active_admin' USING ERRCODE = 'P0001';
-  END IF;
-  UPDATE public.profiles SET user_status = p_status::public.user_status,
-    status_reason = v_reason WHERE id = p_user_id;
-  PERFORM public.log_admin_action('set_user_status', 'profiles', p_user_id,
-    jsonb_build_object('status', p_status, 'old_status', v_old_status, 'reason', v_reason));
-END;
-$_$;
+ PERFORM public.admin_company_require('users.manage');
+ IF p_user_id IS NULL OR p_status IS NULL OR p_status NOT IN ('active','suspended','banned')
+ OR v_reason IS NULL OR length(v_reason) NOT BETWEEN 5 AND 500 THEN
+  RAISE EXCEPTION 'invalid_request' USING ERRCODE='22023'; END IF;
+ IF p_user_id=auth.uid() AND p_status<>'active' THEN RAISE EXCEPTION 'self_status_change'; END IF;
+ IF NOT public.admin_company_has_permission('staff.manage') AND (EXISTS
+  (SELECT 1 FROM public.admin_staff WHERE user_id=p_user_id) OR EXISTS
+  (SELECT 1 FROM public.user_roles WHERE user_id=p_user_id AND role='admin')) THEN
+  RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501'; END IF;
+ SELECT user_status INTO v_old FROM public.profiles WHERE id=p_user_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_not_found'; END IF;
+ UPDATE public.profiles SET user_status=p_status::public.user_status,status_reason=v_reason WHERE id=p_user_id;
+ INSERT INTO public.admin_actions(actor_id,action,target_table,target_id,metadata)
+ VALUES(auth.uid(),'set_user_status','profiles',p_user_id,jsonb_build_object('status',p_status,'old_status',v_old,'reason',v_reason));
+END $$;
 
 
 ALTER FUNCTION "public"."admin_set_user_status"("p_user_id" "uuid", "p_status" "text", "p_reason" "text") OWNER TO "postgres";
@@ -436,7 +823,7 @@ CREATE OR REPLACE FUNCTION "public"."admin_user_management_is_admin"() RETURNS b
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  SELECT public.admin_actor_is_active(auth.uid());
+ SELECT public.admin_company_has_permission('users.read')
 $$;
 
 
@@ -505,7 +892,7 @@ CREATE OR REPLACE FUNCTION "public"."admin_view_verification_raw"("p_verificatio
 DECLARE
   v_raw jsonb;
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
+  PERFORM public.admin_company_require('verification.read');
 
   PERFORM 1 FROM public.verifications WHERE id = p_verification_id FOR KEY SHARE;
   IF NOT FOUND THEN
@@ -884,19 +1271,12 @@ CREATE OR REPLACE FUNCTION "public"."get_trade_public_credentials"("p_user_id" "
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
-  SELECT
-    vd.trade_id    AS user_id,
-    vd.doc_type,
-    vd.expiry_date AS expires_at,
-    CASE WHEN vd.expiry_date IS NULL OR vd.expiry_date >= current_date
-         THEN 'current' ELSE 'expired' END AS credential_status,
-    vd.reviewed_at AS captured_at
-  FROM public.verification_documents vd
-  LEFT JOIN public.trade_profiles tp ON tp.id = vd.trade_id
-  WHERE vd.trade_id = p_user_id
-    AND vd.status   = 'approved'
-    AND vd.doc_type IN ('white_card', 'public_liability')
-    AND tp.deleted_at IS NULL;  -- NULL when no trade profile — still passes
+ SELECT vd.trade_id,vd.doc_type::text,vd.expiry_date,
+  CASE WHEN vd.expiry_date IS NULL OR vd.expiry_date>=current_date THEN 'current' ELSE 'expired' END,
+  vd.reviewed_at FROM public.verification_documents vd
+ JOIN public.trade_profiles tp ON tp.id=vd.trade_id
+ WHERE vd.trade_id=p_user_id AND vd.status='approved' AND vd.deleted_at IS NULL
+  AND vd.doc_type IN ('white_card','public_liability') AND tp.deleted_at IS NULL;
 $$;
 
 
@@ -935,6 +1315,13 @@ BEGIN
   END IF;
   IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
   IF actor = OLD.builder_id THEN
+    -- Lock before every builder decision, not only hire, so cancellation and
+    -- filling a vacancy cannot race shortlist/reject requests from stale UI.
+    SELECT * INTO vacancy FROM public.jobs WHERE id=OLD.job_id FOR UPDATE;
+    IF vacancy.id IS NULL OR vacancy.builder_id IS DISTINCT FROM actor
+       OR vacancy.status <> 'open' OR vacancy.deleted_at IS NOT NULL THEN
+      RAISE EXCEPTION 'This job is no longer accepting application decisions' USING ERRCODE='23514';
+    END IF;
     IF OLD.status NOT IN ('pending','shortlisted') OR NEW.status NOT IN ('shortlisted','rejected','hired') THEN
       RAISE EXCEPTION 'This application can no longer be changed' USING ERRCODE='23514';
     END IF;
@@ -966,6 +1353,110 @@ END $$;
 
 
 ALTER FUNCTION "public"."guard_application_lifecycle"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."guard_conversation_creation"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE actor uuid := auth.uid();
+BEGIN
+  IF auth.role() = 'service_role' THEN RETURN NEW; END IF;
+  IF actor IS NULL OR (actor IS DISTINCT FROM NEW.builder_id AND actor IS DISTINCT FROM NEW.trade_id) THEN
+    RAISE EXCEPTION 'Not a participant in this conversation' USING ERRCODE='42501';
+  END IF;
+  IF NEW.builder_id = NEW.trade_id
+     OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=NEW.builder_id AND role='builder')
+     OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id=NEW.trade_id AND role='trade') THEN
+    RAISE EXCEPTION 'Conversations require a builder and a trade' USING ERRCODE='42501';
+  END IF;
+  IF NEW.job_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.jobs WHERE id=NEW.job_id AND builder_id=NEW.builder_id
+  ) THEN
+    RAISE EXCEPTION 'Conversation job must belong to its builder' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."guard_conversation_creation"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."guard_timesheet_lifecycle"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  actor uuid := auth.uid();
+  vacancy public.jobs%ROWTYPE;
+BEGIN
+  IF auth.role() = 'service_role' THEN RETURN NEW; END IF;
+  IF actor IS NULL OR actor IS DISTINCT FROM NEW.trade_id THEN
+    RAISE EXCEPTION 'Only the trade may manage their timesheet' USING ERRCODE = '42501';
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    -- Hold the vacancy stable through this transaction. Concurrent closure,
+    -- deletion or hired-trade reassignment must serialize with clock-in.
+    SELECT * INTO vacancy FROM public.jobs WHERE id = NEW.job_id FOR SHARE;
+    IF vacancy.id IS NULL THEN
+      RAISE EXCEPTION 'This job is not available for check-in' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.builder_id IS DISTINCT FROM vacancy.builder_id
+       OR actor = vacancy.builder_id
+       OR NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = actor AND role = 'trade') THEN
+      RAISE EXCEPTION 'Invalid timesheet owner or builder' USING ERRCODE = '42501';
+    END IF;
+    IF vacancy.status <> 'filled' OR vacancy.deleted_at IS NOT NULL
+       OR vacancy.hired_trade_id IS DISTINCT FROM actor
+       OR NOT EXISTS (
+         SELECT 1 FROM public.applications
+         WHERE job_id = NEW.job_id AND trade_id = actor
+           AND builder_id = vacancy.builder_id AND status = 'hired'
+       ) THEN
+      RAISE EXCEPTION 'Only the hired trade may check in to an active job' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.check_out_at IS NOT NULL OR NEW.check_out_lat IS NOT NULL OR NEW.check_out_lng IS NOT NULL THEN
+      RAISE EXCEPTION 'A new timesheet must start with check-in only' USING ERRCODE = '23514';
+    END IF;
+    -- The app omits these fields. Override submitted values too, so a client
+    -- cannot fabricate an earlier start or a different creation timestamp.
+    NEW.check_in_at := statement_timestamp();
+    NEW.created_at := NEW.check_in_at;
+    RETURN NEW;
+  END IF;
+
+  IF OLD.check_out_at IS NOT NULL THEN
+    RAISE EXCEPTION 'A completed timesheet cannot be changed' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.job_id IS DISTINCT FROM OLD.job_id
+     OR NEW.builder_id IS DISTINCT FROM OLD.builder_id
+     OR NEW.trade_id IS DISTINCT FROM OLD.trade_id
+     OR NEW.check_in_at IS DISTINCT FROM OLD.check_in_at
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.check_in_lat IS DISTINCT FROM OLD.check_in_lat
+     OR NEW.check_in_lng IS DISTINCT FROM OLD.check_in_lng
+     OR NEW.note IS DISTINCT FROM OLD.note THEN
+    RAISE EXCEPTION 'Timesheet identity and check-in details are immutable' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.check_out_at IS NULL OR NOT isfinite(NEW.check_out_at)
+     OR NEW.check_out_at < OLD.check_in_at
+     OR statement_timestamp() < OLD.check_in_at THEN
+    RAISE EXCEPTION 'Check-out must be a finite time at or after check-in' USING ERRCODE = '23514';
+  END IF;
+  -- Keep rejecting malformed or out-of-order input, but never let a client's
+  -- clock determine shift duration. Privileged historical maintenance already
+  -- returned above and retains its submitted timestamps.
+  NEW.check_out_at := statement_timestamp();
+  -- Do not recheck job/hire eligibility here: closing, deleting or reassigning
+  -- a job must not strand its trade with an existing open entry.
+  RETURN NEW;
+END; $$;
+
+
+ALTER FUNCTION "public"."guard_timesheet_lifecycle"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
@@ -1042,14 +1533,54 @@ COMMENT ON FUNCTION "public"."handle_new_user"() IS 'Fires on auth.users INSERT.
 
 
 
+CREATE OR REPLACE FUNCTION "public"."invalidate_deleted_verification_file"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF OLD.bucket_id='private-docs' THEN
+  UPDATE public.verification_documents SET deleted_at=coalesce(deleted_at,clock_timestamp()),
+   status='rejected',rejection_reason='Evidence file removed. Upload a new document.'
+  -- Include receipts hidden before the physical file was removed: restoring
+  -- their deleted_at must never attach their old decision to replacement bytes.
+  WHERE file_path=OLD.name;
+ END IF;
+ RETURN OLD;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."invalidate_deleted_verification_file"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."invalidate_removed_verification_evidence"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF TG_OP='UPDATE' AND (NEW.deleted_at IS NULL OR OLD.deleted_at IS NOT NULL) THEN RETURN NEW; END IF;
+ IF OLD.status='approved' AND OLD.doc_type IN ('abn_certificate','trade_licence') THEN
+  UPDATE public.verifications SET status='failed',failure_reason='manual_evidence_removed',
+   manual_fallback_allowed=true,last_checked_at=clock_timestamp(),updated_at=clock_timestamp()
+  WHERE user_id=OLD.trade_id AND status='verified' AND register_source='admin_manual'
+   AND verified_at=OLD.reviewed_at
+   AND kind=CASE OLD.doc_type WHEN 'abn_certificate' THEN 'abn' ELSE 'licence' END;
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."invalidate_removed_verification_evidence"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."is_builder_abn_verified"("p_uid" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO ''
     AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.verifications
-    WHERE user_id = p_uid AND kind = 'abn' AND status = 'verified'
-  );
+ SELECT EXISTS(SELECT 1 FROM public.verifications WHERE user_id=p_uid
+  AND kind='abn' AND status='verified' AND (expires_at IS NULL OR expires_at>now()));
 $$;
 
 
@@ -1063,7 +1594,7 @@ CREATE OR REPLACE FUNCTION "public"."log_admin_action"("p_action" "text", "p_tar
 DECLARE
   v_id uuid;
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
+  PERFORM public.admin_company_require('session');
 
   INSERT INTO public.admin_actions (actor_id, action, target_table, target_id, metadata)
   VALUES (auth.uid(), p_action, p_target_table, p_target_id, COALESCE(p_metadata, '{}'::jsonb))
@@ -1629,138 +2160,121 @@ ALTER FUNCTION "public"."remove_portfolio_url"("user_id" "uuid", "target_url" "t
 CREATE OR REPLACE FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text" DEFAULT NULL::"text", "p_confirmed_number" "text" DEFAULT NULL::"text", "p_trade_class" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
+    AS $_$
 DECLARE
-  v_doc       public.verification_documents%ROWTYPE;
-  v_kind      text;
-  v_existing  uuid;
-  v_doc_label text;
+ v_doc public.verification_documents%ROWTYPE;
+ v_existing public.verifications%ROWTYPE;
+ v_kind text;
+ v_role text;
+ v_owner uuid;
+ v_number text;
+ v_class text;
+ v_label text;
+ v_notes text := nullif(regexp_replace(p_notes,'^[[:space:]]+|[[:space:]]+$','','g'),'');
+ v_checked timestamptz;
+ v_checksum integer;
+ v_file_id uuid;
+ v_file_path text;
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
-
-  IF p_status IS NULL OR p_status NOT IN ('approved', 'rejected') THEN
-    RAISE EXCEPTION 'invalid_status: %', p_status;
+ PERFORM public.admin_company_require('verification.manage');
+ IF p_status IS NULL OR p_status NOT IN ('approved','rejected') THEN
+  RAISE EXCEPTION 'invalid_status' USING ERRCODE='22023';
+ END IF;
+ IF v_notes IS NULL THEN RAISE EXCEPTION 'review_notes_required' USING ERRCODE='22023'; END IF;
+ SELECT trade_id,file_path INTO v_owner,v_file_path FROM public.verification_documents WHERE id=p_document_id;
+ IF NOT FOUND THEN RAISE EXCEPTION 'document_not_found'; END IF;
+ -- Lock Storage before the receipt: Storage DELETE already holds the object
+ -- row before its trigger locks receipts. The owner still serializes competing
+ -- documents, and revocation uses the same receipt -> credential order.
+ PERFORM 1 FROM public.profiles WHERE id=v_owner FOR UPDATE;
+ SELECT role INTO v_role FROM public.user_roles WHERE user_id=v_owner FOR UPDATE;
+ IF p_status='approved' THEN
+  SELECT id INTO v_file_id FROM storage.objects
+   WHERE bucket_id='private-docs' AND name=v_file_path FOR UPDATE;
+ END IF;
+ SELECT * INTO v_doc FROM public.verification_documents WHERE id=p_document_id FOR UPDATE;
+ IF v_doc.id IS NULL THEN RAISE EXCEPTION 'document_not_found'; END IF;
+ IF v_doc.deleted_at IS NOT NULL THEN RAISE EXCEPTION 'document_deleted'; END IF;
+ IF v_doc.status <> 'pending' THEN RAISE EXCEPTION 'document_not_pending'; END IF;
+ v_kind := CASE v_doc.doc_type WHEN 'abn_certificate' THEN 'abn' WHEN 'trade_licence' THEN 'licence' END;
+ IF p_status='approved' THEN
+  IF v_doc.expiry_date < current_date THEN RAISE EXCEPTION 'document_expired'; END IF;
+  IF v_role IS NULL OR v_role NOT IN ('builder','trade')
+   OR (v_kind='abn' AND v_role <> 'builder') OR (v_kind='licence' AND v_role <> 'trade') THEN
+   RAISE EXCEPTION 'document_role_mismatch' USING ERRCODE='42501';
   END IF;
-
-  UPDATE public.verification_documents
-     SET status       = p_status::public.document_status,
-         reviewed_at  = now(),
-         reviewed_by  = auth.uid(),
-         review_notes = COALESCE(NULLIF(btrim(p_notes), ''), review_notes)
-   WHERE id = p_document_id
-   RETURNING * INTO v_doc;
-
-  IF v_doc.id IS NULL THEN
-    RAISE EXCEPTION 'document_not_found';
+  IF v_doc.file_path IS DISTINCT FROM v_file_path
+   OR v_doc.trade_id IS DISTINCT FROM v_owner
+   OR v_doc.file_path IS NULL
+   OR split_part(v_doc.file_path,'/',1) <> v_doc.trade_id::text
+   OR length(v_doc.file_path)<=37 THEN
+   RAISE EXCEPTION 'document_file_mismatch';
   END IF;
-
-  -- On approval of a CORE credential doc, promote to a verified verifications
-  -- row so the status is visible everywhere. Supplementary docs (public
-  -- liability, white card, photo id, …) approve but do not create a row.
-  IF p_status = 'approved' THEN
-    v_kind := CASE v_doc.doc_type
-                WHEN 'trade_licence'   THEN 'licence'
-                WHEN 'abn_certificate' THEN 'abn'
-                ELSE NULL
-              END;
-
-    IF v_kind IS NOT NULL THEN
-      SELECT id INTO v_existing
-        FROM public.verifications
-       WHERE user_id = v_doc.trade_id AND kind = v_kind
-       ORDER BY updated_at DESC
-       LIMIT 1;
-
-      IF v_existing IS NULL THEN
-        INSERT INTO public.verifications (
-          user_id, kind, status,
-          abn, licence_number, licence_state, licence_trade_class,
-          register_source, detail_captured_at, verified_at, expires_at,
-          manual_fallback_allowed, last_checked_at, failure_reason
-        ) VALUES (
-          v_doc.trade_id, v_kind, 'verified',
-          -- abn: reviewer-confirmed value wins, else the typed document number.
-          CASE WHEN v_kind = 'abn'
-               THEN COALESCE(NULLIF(btrim(p_confirmed_number), ''), v_doc.document_number)
-          END,
-          -- licence_number: reviewer-confirmed value wins, else typed number.
-          CASE WHEN v_kind = 'licence'
-               THEN COALESCE(NULLIF(btrim(p_confirmed_number), ''), v_doc.document_number)
-          END,
-          CASE WHEN v_kind = 'licence' THEN v_doc.state END,
-          -- licence_trade_class: reviewer-confirmed class wins, else the class
-          -- captured on the document at upload time.
-          CASE WHEN v_kind = 'licence'
-               THEN COALESCE(NULLIF(btrim(p_trade_class), ''), v_doc.trade_class)
-          END,
-          'admin_manual', now(), now(), v_doc.expiry_date,
-          false, now(), NULL
-        );
-      ELSE
-        UPDATE public.verifications
-           SET status                  = 'verified',
-               abn                     = CASE WHEN v_kind = 'abn'
-                                              THEN COALESCE(NULLIF(btrim(p_confirmed_number), ''), v_doc.document_number)
-                                              ELSE abn END,
-               licence_number          = CASE WHEN v_kind = 'licence'
-                                              THEN COALESCE(NULLIF(btrim(p_confirmed_number), ''), v_doc.document_number)
-                                              ELSE licence_number END,
-               licence_state           = CASE WHEN v_kind = 'licence' THEN v_doc.state ELSE licence_state END,
-               licence_trade_class     = CASE WHEN v_kind = 'licence'
-                                              THEN COALESCE(NULLIF(btrim(p_trade_class), ''), v_doc.trade_class)
-                                              ELSE licence_trade_class END,
-               register_source         = 'admin_manual',
-               detail_captured_at      = now(),
-               verified_at             = now(),
-               expires_at              = v_doc.expiry_date,
-               failure_reason          = NULL,
-               manual_fallback_allowed = false,
-               last_checked_at         = now(),
-               updated_at              = now()
-         WHERE id = v_existing;
-      END IF;
-    END IF;
+  IF v_file_id IS NULL THEN RAISE EXCEPTION 'document_file_missing'; END IF;
+  v_number := coalesce(nullif(btrim(p_confirmed_number),''),nullif(btrim(v_doc.document_number),''));
+  v_class := coalesce(nullif(btrim(p_trade_class),''),nullif(btrim(v_doc.trade_class),''));
+  IF v_kind='abn' THEN
+   v_number := regexp_replace(v_number,'[[:space:]]','','g');
+   IF v_number IS NULL OR v_number !~ '^[0-9]{11}$' THEN
+    RAISE EXCEPTION 'invalid_abn_number' USING ERRCODE='22023';
+   END IF;
+   SELECT sum((substr(v_number,n,1)::int - CASE WHEN n=1 THEN 1 ELSE 0 END)
+    * (ARRAY[10,1,3,5,7,9,11,13,15,17,19])[n]) INTO v_checksum FROM generate_series(1,11) n;
+   IF v_checksum % 89 <> 0 THEN RAISE EXCEPTION 'invalid_abn_number' USING ERRCODE='22023'; END IF;
+  ELSIF v_kind='licence' THEN
+   IF v_number IS NULL OR v_number !~ '^[A-Za-z0-9][A-Za-z0-9 /-]{0,79}$' THEN
+    RAISE EXCEPTION 'invalid_licence_number' USING ERRCODE='22023';
+   END IF;
+   IF v_doc.state IS NULL OR v_doc.state NOT IN ('NSW','VIC','QLD','SA','WA','TAS','ACT','NT') THEN
+    RAISE EXCEPTION 'invalid_licence_state' USING ERRCODE='22023';
+   END IF;
   END IF;
-
-  -- ALWAYS notify the trade — approve OR reject. The app already understands
-  -- these type strings ('verification_approved' / 'verification_rejected') and
-  -- routes the tap to the receipts / re-upload surface. Without this, an
-  -- approved or rejected trade gets no signal that their status changed (B2).
-  v_doc_label := CASE v_doc.doc_type
-                   WHEN 'trade_licence'        THEN 'trade licence'
-                   WHEN 'abn_certificate'      THEN 'ABN certificate'
-                   WHEN 'public_liability'     THEN 'public liability cover'
-                   WHEN 'workers_compensation' THEN 'workers compensation cover'
-                   WHEN 'white_card'           THEN 'white card'
-                   WHEN 'photo_id'             THEN 'photo ID'
-                   ELSE 'document'
-                 END;
-
-  INSERT INTO public.notifications (user_id, type, title, body, data)
-  VALUES (
-    v_doc.trade_id,
-    CASE WHEN p_status = 'approved' THEN 'verification_approved' ELSE 'verification_rejected' END,
-    CASE WHEN p_status = 'approved'
-         THEN 'You''re verified'
-         ELSE 'Verification needs another look' END,
-    CASE WHEN p_status = 'approved'
-         THEN 'Your ' || v_doc_label || ' was approved.'
-         ELSE 'Your ' || v_doc_label || ' wasn''t approved — tap to re-upload.' END,
-    jsonb_build_object(
-      'doc_type',    v_doc.doc_type,
-      'kind',        v_kind,
-      'document_id', p_document_id
-    )
-  );
-
-  PERFORM public.log_admin_action(
-    'review_verification_document',
-    'verification_documents',
-    p_document_id,
-    jsonb_build_object('status', p_status, 'promoted_kind', v_kind)
-  );
+  IF v_kind IS NOT NULL THEN
+   SELECT * INTO v_existing FROM public.verifications WHERE user_id=v_owner AND kind=v_kind FOR UPDATE;
+   IF v_existing.id IS NOT NULL
+    AND greatest(v_existing.last_checked_at,v_existing.updated_at,v_existing.verified_at)
+      > coalesce(v_doc.submitted_at,v_doc.created_at) THEN
+    RAISE EXCEPTION 'document_stale';
+   END IF;
+  END IF;
+ END IF;
+ v_checked := clock_timestamp();
+ UPDATE public.verification_documents SET status=p_status::public.document_status,
+  reviewed_at=v_checked, reviewed_by=auth.uid(), review_notes=v_notes,
+  rejection_reason=CASE WHEN p_status='rejected' THEN v_notes END
+ WHERE id=p_document_id;
+ IF p_status='approved' AND v_kind IS NOT NULL THEN
+  INSERT INTO public.verifications(user_id,kind,status,abn,licence_number,
+   licence_state,licence_trade_class,register_source,detail_captured_at,
+   verified_at,expires_at,manual_fallback_allowed,last_checked_at,failure_reason)
+  VALUES(v_owner,v_kind,'verified',CASE WHEN v_kind='abn' THEN v_number END,
+   CASE WHEN v_kind='licence' THEN v_number END,CASE WHEN v_kind='licence' THEN v_doc.state END,
+   CASE WHEN v_kind='licence' THEN v_class END,'admin_manual',v_checked,v_checked,
+   -- A document valid on its expiry date remains valid until that day ends.
+   CASE WHEN v_doc.expiry_date IS NOT NULL THEN (v_doc.expiry_date+1)::timestamptz END,
+   false,v_checked,NULL)
+  ON CONFLICT (user_id,kind) DO UPDATE SET status='verified',abn=excluded.abn,
+   licence_number=excluded.licence_number,licence_state=excluded.licence_state,
+   licence_trade_class=excluded.licence_trade_class,register_source='admin_manual',
+   detail_captured_at=v_checked,verified_at=v_checked,expires_at=excluded.expires_at,
+   manual_fallback_allowed=false,last_checked_at=v_checked,failure_reason=NULL,updated_at=v_checked;
+ END IF;
+ v_label := CASE v_doc.doc_type WHEN 'abn_certificate' THEN 'ABN certificate'
+  WHEN 'trade_licence' THEN 'trade licence' WHEN 'public_liability' THEN 'public liability cover'
+  WHEN 'workers_compensation' THEN 'workers compensation cover' WHEN 'white_card' THEN 'white card'
+  WHEN 'photo_id' THEN 'photo ID' ELSE 'document' END;
+ INSERT INTO public.notifications(user_id,type,title,body,data) VALUES(v_owner,
+  CASE WHEN p_status='approved' THEN 'verification_approved' ELSE 'verification_rejected' END,
+  CASE WHEN p_status='approved' THEN 'Your '||v_label||' was approved' ELSE 'Your '||v_label||' needs another look' END,
+  CASE WHEN p_status='approved' THEN 'Your '||v_label||' was approved. Phone verification is separate.'
+   ELSE v_notes||' Tap to upload a replacement document.' END,
+  jsonb_build_object('doc_type',v_doc.doc_type,'kind',v_kind,'document_id',p_document_id));
+ PERFORM public.log_admin_action('review_verification_document','verification_documents',p_document_id,
+  jsonb_build_object('status',p_status,'promoted_kind',CASE WHEN p_status='approved' THEN v_kind END,
+   'notes',v_notes,'confirmed_number',CASE WHEN v_kind IS NOT NULL AND p_status='approved' THEN v_number END,
+   'trade_class',CASE WHEN v_kind='licence' AND p_status='approved' THEN v_class END));
 END;
-$$;
+$_$;
 
 
 ALTER FUNCTION "public"."review_verification_document"("p_document_id" "uuid", "p_status" "text", "p_notes" "text", "p_confirmed_number" "text", "p_trade_class" "text") OWNER TO "postgres";
@@ -1797,60 +2311,33 @@ ALTER FUNCTION "public"."reviews_sync_trade_rating"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$
+    AS $_$
 DECLARE
-  v_id uuid;
+ v_id uuid;
+ v_reason text := nullif(regexp_replace(p_reason,'^[[:space:]]+|[[:space:]]+$','','g'),'');
 BEGIN
-  PERFORM public.admin_require_active(auth.uid());
-
-  IF p_kind NOT IN ('abn', 'licence') THEN
-    RAISE EXCEPTION 'invalid_kind: %', p_kind;
-  END IF;
-
-  -- Latest verified row for this (user, kind). "Latest" matches the
-  -- select-then-upsert convention used elsewhere (no UNIQUE(user_id, kind)).
-  SELECT id INTO v_id
-    FROM public.verifications
-   WHERE user_id = p_user_id
-     AND kind    = p_kind
-     AND status  = 'verified'
-   ORDER BY updated_at DESC
-   LIMIT 1;
-
-  IF v_id IS NULL THEN
-    RAISE EXCEPTION 'no_verified_row';
-  END IF;
-
-  UPDATE public.verifications
-     SET status                  = 'failed',
-         failure_reason          = 'admin_revoked: ' || COALESCE(p_reason, ''),
-         manual_fallback_allowed = true,
-         updated_at              = now()
-   WHERE id = v_id;
-
-  -- Reuse the 'verification_rejected' channel the app already understands so
-  -- the revoked user is told and pointed back at the re-upload surface.
-  INSERT INTO public.notifications (user_id, type, title, body, data)
-  VALUES (
-    p_user_id,
-    'verification_rejected',
-    'Verification revoked',
-    'Your ' || p_kind || ' verification was revoked'
-      || CASE WHEN COALESCE(btrim(p_reason), '') <> ''
-              THEN ': ' || btrim(p_reason)
-              ELSE '.' END
-      || ' Tap to re-verify.',
-    jsonb_build_object('kind', p_kind, 'reason', p_reason)
-  );
-
-  PERFORM public.log_admin_action(
-    'revoke_verification',
-    'verifications',
-    v_id,
-    jsonb_build_object('kind', p_kind, 'reason', p_reason)
-  );
+ PERFORM public.admin_company_require('verification.manage');
+ IF p_kind IS NULL OR p_kind NOT IN ('abn','licence') THEN RAISE EXCEPTION 'invalid_kind' USING ERRCODE='22023'; END IF;
+ IF v_reason IS NULL THEN RAISE EXCEPTION 'reason_required' USING ERRCODE='22023'; END IF;
+ PERFORM 1 FROM public.profiles WHERE id=p_user_id FOR UPDATE;
+ -- Same lock order as review; collect receipts before locking the projection.
+ PERFORM 1 FROM public.verification_documents WHERE trade_id=p_user_id
+  AND doc_type=(CASE WHEN p_kind='abn' THEN 'abn_certificate' ELSE 'trade_licence' END)::public.document_doc_type
+  ORDER BY id FOR UPDATE;
+ SELECT id INTO v_id FROM public.verifications WHERE user_id=p_user_id AND kind=p_kind AND status='verified' FOR UPDATE;
+ IF v_id IS NULL THEN RAISE EXCEPTION 'no_verified_row'; END IF;
+ UPDATE public.verifications SET status='failed',failure_reason='admin_revoked: '||v_reason,
+  manual_fallback_allowed=true,last_checked_at=clock_timestamp(),updated_at=clock_timestamp() WHERE id=v_id;
+ UPDATE public.verification_documents SET status='rejected',reviewed_at=clock_timestamp(),
+  reviewed_by=auth.uid(),review_notes=v_reason,rejection_reason=v_reason
+ WHERE trade_id=p_user_id AND status='approved'
+  AND doc_type=(CASE WHEN p_kind='abn' THEN 'abn_certificate' ELSE 'trade_licence' END)::public.document_doc_type;
+ INSERT INTO public.notifications(user_id,type,title,body,data) VALUES(p_user_id,'verification_rejected',
+  CASE WHEN p_kind='abn' THEN 'Business verification revoked' ELSE 'Trade licence verification revoked' END,
+  v_reason||' Tap to upload a replacement document.',jsonb_build_object('kind',p_kind,'reason',v_reason));
+ PERFORM public.log_admin_action('revoke_verification','verifications',v_id,jsonb_build_object('kind',p_kind,'reason',v_reason));
 END;
-$$;
+$_$;
 
 
 ALTER FUNCTION "public"."revoke_verification"("p_user_id" "uuid", "p_kind" "text", "p_reason" "text") OWNER TO "postgres";
@@ -1877,7 +2364,7 @@ CREATE OR REPLACE FUNCTION "public"."search_trades"("p_lat" double precision, "p
     round(sub.base_longitude::numeric, 2)::double precision,
     sub.about, sub.trade_other,
     NULL::text,  -- licence_url: private-docs pointer; badge = is_verified
-    sub.portfolio_urls, sub.is_verified,
+    sub.portfolio_urls, EXISTS (SELECT 1 FROM public.verifications v WHERE v.user_id=sub.id AND v.kind='licence' AND v.status='verified' AND (v.expires_at IS NULL OR v.expires_at>now())),
     sub.average_rating, sub.rating_count,
     sub.is_available, sub.available_from, sub.distance_km,
     -- Apprentice projection. site_tickets is SELF-DECLARED: the caller must
@@ -1933,6 +2420,23 @@ $$;
 
 
 ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."stamp_verification_submission"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF auth.role() = 'authenticated' THEN
+  NEW.created_at := clock_timestamp();
+  NEW.submitted_at := NEW.created_at;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."stamp_verification_submission"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."sync_job_application_count"() RETURNS "trigger"
@@ -2036,6 +2540,7 @@ BEGIN
     WHERE user_id = affected_user
       AND kind    = 'licence'
       AND status  = 'verified'
+      AND (expires_at IS NULL OR expires_at>now())
   ) INTO has_verified;
 
   -- Only write when the flag actually changes — keeps `updated_at` from
@@ -2103,6 +2608,67 @@ CREATE TABLE IF NOT EXISTS "public"."admin_actions" (
 ALTER TABLE "public"."admin_actions" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."admin_platform_settings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "key" "text" NOT NULL,
+    "value" "jsonb" NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "admin_platform_settings_key_check" CHECK (("key" = ANY (ARRAY['maintenance_notice'::"text", 'minimum_android_version'::"text", 'minimum_ios_version'::"text", 'marketplace_enabled'::"text", 'registration_enabled'::"text", 'admin_mfa_required'::"text"])))
+);
+
+
+ALTER TABLE "public"."admin_platform_settings" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_staff" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "staff_role" "text" NOT NULL,
+    "active" boolean DEFAULT true NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "admin_staff_staff_role_check" CHECK (("staff_role" = ANY (ARRAY['owner'::"text", 'operations'::"text", 'verification'::"text", 'support'::"text", 'read_only'::"text"]))),
+    CONSTRAINT "admin_staff_version_check" CHECK (("version" > 0))
+);
+
+
+ALTER TABLE "public"."admin_staff" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_support_cases" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "subject" "text" NOT NULL,
+    "priority" "text" DEFAULT 'normal'::"text" NOT NULL,
+    "assignee_id" "uuid",
+    "status" "text" DEFAULT 'open'::"text" NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "admin_support_cases_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'normal'::"text", 'high'::"text", 'urgent'::"text"]))),
+    CONSTRAINT "admin_support_cases_status_check" CHECK (("status" = ANY (ARRAY['open'::"text", 'in_progress'::"text", 'resolved'::"text", 'closed'::"text"]))),
+    CONSTRAINT "admin_support_cases_subject_check" CHECK ((("length"("btrim"("subject")) >= 1) AND ("length"("btrim"("subject")) <= 200)))
+);
+
+
+ALTER TABLE "public"."admin_support_cases" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_support_notes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "case_id" "uuid" NOT NULL,
+    "author_id" "uuid" NOT NULL,
+    "body" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "admin_support_notes_body_check" CHECK ((("length"("btrim"("body")) >= 1) AND ("length"("btrim"("body")) <= 5000)))
+);
+
+
+ALTER TABLE "public"."admin_support_notes" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "display_name" "text",
@@ -2140,10 +2706,21 @@ CREATE OR REPLACE VIEW "public"."admin_user_directory" WITH ("security_invoker"=
     "r"."role"
    FROM ("public"."profiles" "p"
      LEFT JOIN "public"."user_roles" "r" ON (("r"."user_id" = "p"."id")))
-  WHERE ( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin");
+  WHERE ( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission");
 
 
 ALTER VIEW "public"."admin_user_directory" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_verification_assignments" (
+    "id" "uuid" NOT NULL,
+    "assignee_id" "uuid",
+    "version" integer DEFAULT 1 NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."admin_verification_assignments" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."applications" (
@@ -2175,6 +2752,82 @@ COMMENT ON COLUMN "public"."applications"."applied_when_verified_at" IS 'Stamp c
 
 
 COMMENT ON COLUMN "public"."applications"."verification_snapshot_at_hire" IS 'Captured at the moment status flips to ''accepted''. Shape: {"abn":"verified|none|expired","licence":"verified|none|expired|cancelled|suspended","licence_state":"NSW|VIC|...","as_of":"<iso>"}. Immutable in practice.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."jobs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "builder_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text" NOT NULL,
+    "trade_type_required" "text" DEFAULT ''::"text" NOT NULL,
+    "status" "public"."job_status" DEFAULT 'draft'::"public"."job_status" NOT NULL,
+    "suburb" "text" DEFAULT ''::"text" NOT NULL,
+    "state" "text" DEFAULT ''::"text" NOT NULL,
+    "postcode" "text" DEFAULT ''::"text" NOT NULL,
+    "latitude" double precision,
+    "longitude" double precision,
+    "budget_min" numeric(10,2),
+    "budget_max" numeric(10,2),
+    "budget_type" "public"."budget_type",
+    "urgency" "public"."job_urgency" DEFAULT 'standard'::"public"."job_urgency" NOT NULL,
+    "start_date" "date",
+    "estimated_duration_days" integer,
+    "duration_text" "text",
+    "requires_white_card" boolean DEFAULT false NOT NULL,
+    "requires_public_liability" boolean DEFAULT true NOT NULL,
+    "requires_verified" boolean DEFAULT true NOT NULL,
+    "required_certifications" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "application_count" integer DEFAULT 0 NOT NULL,
+    "view_count" integer DEFAULT 0 NOT NULL,
+    "published_at" timestamp with time zone,
+    "hired_trade_id" "uuid",
+    "deleted_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "search_vector" "tsvector" GENERATED ALWAYS AS ("to_tsvector"('"english"'::"regconfig", ((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")))) STORED,
+    "formatted_address" "text",
+    "place_id" "text",
+    "pricing_unit" "public"."job_pricing_unit" DEFAULT 'per_job'::"public"."job_pricing_unit" NOT NULL,
+    "pricing_type" "public"."job_pricing_type" DEFAULT 'builder_set'::"public"."job_pricing_type" NOT NULL,
+    "budget_amount" numeric(10,2),
+    "open_to_apprentices" boolean DEFAULT false NOT NULL,
+    "job_kind" "text" DEFAULT 'trade_job'::"text" NOT NULL,
+    CONSTRAINT "jobs_apprenticeship_terms" CHECK ((("job_kind" <> 'apprenticeship'::"text") OR ("open_to_apprentices" AND ("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("pricing_unit" = 'hourly'::"public"."job_pricing_unit") AND ("budget_amount" IS NOT NULL) AND ("budget_amount" > (0)::numeric) AND ("budget_amount" < 'Infinity'::numeric)))),
+    CONSTRAINT "jobs_budget_amount_positive" CHECK ((("budget_amount" IS NULL) OR ("budget_amount" > (0)::numeric))),
+    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type"))),
+    CONSTRAINT "jobs_kind_valid" CHECK (("job_kind" = ANY (ARRAY['trade_job'::"text", 'apprenticeship'::"text"])))
+);
+
+
+ALTER TABLE "public"."jobs" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."jobs"."open_to_apprentices" IS 'Builder invites apprentice applicants. Drives a job-card chip and an apprentice-side filter -- it gates nothing.';
+
+
+
+CREATE OR REPLACE VIEW "public"."application_job_summaries" WITH ("security_barrier"='true', "security_invoker"='false') AS
+ SELECT "id",
+    "title",
+    "suburb",
+    "state",
+    "status",
+    "budget_amount",
+    "pricing_unit",
+    "pricing_type",
+    "job_kind",
+    "open_to_apprentices"
+   FROM "public"."jobs" "j"
+  WHERE ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL) AND (EXISTS ( SELECT 1
+           FROM "public"."applications" "a"
+          WHERE (("a"."job_id" = "j"."id") AND ((( SELECT "auth"."uid"() AS "uid") = "a"."builder_id") OR (( SELECT "auth"."uid"() AS "uid") = "a"."trade_id"))))));
+
+
+ALTER VIEW "public"."application_job_summaries" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."application_job_summaries" IS 'Read-only job summaries for application participants, including closed, cancelled and soft-deleted jobs. Excludes description, precise location and contact details; does not expand jobs RLS.';
 
 
 
@@ -2351,58 +3004,6 @@ CREATE TABLE IF NOT EXISTS "public"."hidden_jobs" (
 
 
 ALTER TABLE "public"."hidden_jobs" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."jobs" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "builder_id" "uuid" NOT NULL,
-    "title" "text" NOT NULL,
-    "description" "text" NOT NULL,
-    "trade_type_required" "text" DEFAULT ''::"text" NOT NULL,
-    "status" "public"."job_status" DEFAULT 'draft'::"public"."job_status" NOT NULL,
-    "suburb" "text" DEFAULT ''::"text" NOT NULL,
-    "state" "text" DEFAULT ''::"text" NOT NULL,
-    "postcode" "text" DEFAULT ''::"text" NOT NULL,
-    "latitude" double precision,
-    "longitude" double precision,
-    "budget_min" numeric(10,2),
-    "budget_max" numeric(10,2),
-    "budget_type" "public"."budget_type",
-    "urgency" "public"."job_urgency" DEFAULT 'standard'::"public"."job_urgency" NOT NULL,
-    "start_date" "date",
-    "estimated_duration_days" integer,
-    "duration_text" "text",
-    "requires_white_card" boolean DEFAULT false NOT NULL,
-    "requires_public_liability" boolean DEFAULT true NOT NULL,
-    "requires_verified" boolean DEFAULT true NOT NULL,
-    "required_certifications" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
-    "application_count" integer DEFAULT 0 NOT NULL,
-    "view_count" integer DEFAULT 0 NOT NULL,
-    "published_at" timestamp with time zone,
-    "hired_trade_id" "uuid",
-    "deleted_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "search_vector" "tsvector" GENERATED ALWAYS AS ("to_tsvector"('"english"'::"regconfig", ((COALESCE("title", ''::"text") || ' '::"text") || COALESCE("description", ''::"text")))) STORED,
-    "formatted_address" "text",
-    "place_id" "text",
-    "pricing_unit" "public"."job_pricing_unit" DEFAULT 'per_job'::"public"."job_pricing_unit" NOT NULL,
-    "pricing_type" "public"."job_pricing_type" DEFAULT 'builder_set'::"public"."job_pricing_type" NOT NULL,
-    "budget_amount" numeric(10,2),
-    "open_to_apprentices" boolean DEFAULT false NOT NULL,
-    "job_kind" "text" DEFAULT 'trade_job'::"text" NOT NULL,
-    CONSTRAINT "jobs_apprenticeship_terms" CHECK ((("job_kind" <> 'apprenticeship'::"text") OR ("open_to_apprentices" AND ("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("pricing_unit" = 'hourly'::"public"."job_pricing_unit") AND ("budget_amount" IS NOT NULL) AND ("budget_amount" > (0)::numeric) AND ("budget_amount" < 'Infinity'::numeric)))),
-    CONSTRAINT "jobs_budget_amount_positive" CHECK ((("budget_amount" IS NULL) OR ("budget_amount" > (0)::numeric))),
-    CONSTRAINT "jobs_budget_amount_when_set" CHECK (((("pricing_type" = 'builder_set'::"public"."job_pricing_type") AND ("budget_amount" IS NOT NULL)) OR ("pricing_type" = 'request_quote'::"public"."job_pricing_type"))),
-    CONSTRAINT "jobs_kind_valid" CHECK (("job_kind" = ANY (ARRAY['trade_job'::"text", 'apprenticeship'::"text"])))
-);
-
-
-ALTER TABLE "public"."jobs" OWNER TO "postgres";
-
-
-COMMENT ON COLUMN "public"."jobs"."open_to_apprentices" IS 'Builder invites apprentice applicants. Drives a job-card chip and an apprentice-side filter -- it gates nothing.';
-
 
 
 CREATE OR REPLACE VIEW "public"."jobs_public_browse" AS
@@ -2696,6 +3297,7 @@ CREATE TABLE IF NOT EXISTS "public"."reports" (
     "details" "text",
     "status" "text" DEFAULT 'pending'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
     CONSTRAINT "reports_details_check" CHECK (("char_length"("details") <= 500)),
     CONSTRAINT "reports_no_self_report" CHECK (("reporter_id" <> "reported_id")),
     CONSTRAINT "reports_reason_check" CHECK (("reason" = ANY (ARRAY['harassment'::"text", 'spam_or_scam'::"text", 'fake_profile'::"text", 'inappropriate_content'::"text", 'other'::"text"]))),
@@ -2744,6 +3346,7 @@ CREATE TABLE IF NOT EXISTS "public"."site_tickets" (
     "doc_type" "text",
     "sort_order" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
     CONSTRAINT "site_tickets_category_check" CHECK (("category" = ANY (ARRAY['induction'::"text", 'safety'::"text", 'licence'::"text", 'transport'::"text"])))
 );
 
@@ -2784,11 +3387,84 @@ CREATE TABLE IF NOT EXISTS "public"."trade_categories" (
     "category" "text" NOT NULL,
     "sort_order" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
     CONSTRAINT "trade_categories_category_check" CHECK (("category" = ANY (ARRAY['electrical'::"text", 'structural'::"text", 'finishing'::"text", 'heavy_specialist'::"text"])))
 );
 
 
 ALTER TABLE "public"."trade_categories" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."verifications" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "kind" "text" NOT NULL,
+    "abn" "text",
+    "abn_entity_name" "text",
+    "licence_number" "text",
+    "licence_state" "text",
+    "licence_trade_class" "text",
+    "status" "public"."verification_status" DEFAULT 'pending'::"public"."verification_status" NOT NULL,
+    "verified_at" timestamp with time zone,
+    "expires_at" timestamp with time zone,
+    "last_checked_at" timestamp with time zone,
+    "failure_reason" "text",
+    "manual_fallback_allowed" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "entity_type" "text",
+    "abn_registered_at" "date",
+    "abr_state" "text",
+    "abr_postcode" "text",
+    "gst_registered" boolean,
+    "register_source" "text",
+    "detail_captured_at" timestamp with time zone,
+    CONSTRAINT "verifications_kind_check" CHECK (("kind" = ANY (ARRAY['abn'::"text", 'licence'::"text"]))),
+    CONSTRAINT "verifications_licence_state_check" CHECK (("licence_state" = ANY (ARRAY['NSW'::"text", 'VIC'::"text", 'QLD'::"text", 'SA'::"text", 'WA'::"text", 'TAS'::"text", 'ACT'::"text", 'NT'::"text"])))
+);
+
+
+ALTER TABLE "public"."verifications" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."verifications" IS 'API-first verification state machine. One row per (user_id, kind). kind=abn for builders and trades; kind=licence for trades only.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."abn_entity_name" IS 'Registered entity name from ABR. Stored alongside the user-entered trading name (builder_profiles.company_name) so both are visible on the badge.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."manual_fallback_allowed" IS 'True only when failure_reason is recoverable (not_found / unknown / timeout). False for cancelled/suspended — those cannot be overridden by a doc upload.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."entity_type" IS 'ABR EntityTypeName, e.g. "Individual/Sole Trader". Replaces the hardcoded "Company" label on the profile COMPANY DETAILS card.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."abn_registered_at" IS 'ABR AbnStatusFromDate — the date the current AbnStatus took effect. Used to render "In business since YYYY" on profiles.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."abr_state" IS 'AU state where the business is registered (from ABR AddressState). Distinct from builder_profiles.service_state (where they actually work).';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."abr_postcode" IS 'Postcode of the registered business address (from ABR AddressPostcode). Public information per ABR; storing per Privacy Act exempt-business-info.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."gst_registered" IS 'Whether the ABN is registered for GST (from ABR Gst field). NULL until an ABN verify runs. Register-derived, public per ABR.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."register_source" IS 'Which register produced this row: ''ABR'' (ABN), ''admin_manual'' (admin-approved licence), or a regulator code for future auto-licence adapters.';
+
+
+
+COMMENT ON COLUMN "public"."verifications"."detail_captured_at" IS 'The "as at" timestamp for the captured details. ALWAYS shown next to a verified badge so a stale snapshot can never read as a bare "Verified".';
+
 
 
 CREATE OR REPLACE VIEW "public"."trade_profiles_public" AS
@@ -2806,7 +3482,9 @@ CREATE OR REPLACE VIEW "public"."trade_profiles_public" AS
     "years_experience",
     "service_radius_km",
     "portfolio_urls",
-    "is_verified",
+    (EXISTS ( SELECT 1
+           FROM "public"."verifications" "v"
+          WHERE (("v"."user_id" = "tp"."id") AND ("v"."kind" = 'licence'::"text") AND ("v"."status" = 'verified'::"public"."verification_status") AND (("v"."expires_at" IS NULL) OR ("v"."expires_at" > "now"()))))) AS "is_verified",
     "is_available",
     "available_from",
         CASE
@@ -2929,80 +3607,43 @@ COMMENT ON TABLE "public"."verification_rate_limits" IS 'bucket_key is "user:<uu
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."verifications" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "kind" "text" NOT NULL,
-    "abn" "text",
-    "abn_entity_name" "text",
-    "licence_number" "text",
-    "licence_state" "text",
-    "licence_trade_class" "text",
-    "status" "public"."verification_status" DEFAULT 'pending'::"public"."verification_status" NOT NULL,
-    "verified_at" timestamp with time zone,
-    "expires_at" timestamp with time zone,
-    "last_checked_at" timestamp with time zone,
-    "failure_reason" "text",
-    "manual_fallback_allowed" boolean DEFAULT false NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "entity_type" "text",
-    "abn_registered_at" "date",
-    "abr_state" "text",
-    "abr_postcode" "text",
-    "gst_registered" boolean,
-    "register_source" "text",
-    "detail_captured_at" timestamp with time zone,
-    CONSTRAINT "verifications_kind_check" CHECK (("kind" = ANY (ARRAY['abn'::"text", 'licence'::"text"]))),
-    CONSTRAINT "verifications_licence_state_check" CHECK (("licence_state" = ANY (ARRAY['NSW'::"text", 'VIC'::"text", 'QLD'::"text", 'SA'::"text", 'WA'::"text", 'TAS'::"text", 'ACT'::"text", 'NT'::"text"])))
-);
-
-
-ALTER TABLE "public"."verifications" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."verifications" IS 'API-first verification state machine. One row per (user_id, kind). kind=abn for builders and trades; kind=licence for trades only.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."abn_entity_name" IS 'Registered entity name from ABR. Stored alongside the user-entered trading name (builder_profiles.company_name) so both are visible on the badge.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."manual_fallback_allowed" IS 'True only when failure_reason is recoverable (not_found / unknown / timeout). False for cancelled/suspended — those cannot be overridden by a doc upload.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."entity_type" IS 'ABR EntityTypeName, e.g. "Individual/Sole Trader". Replaces the hardcoded "Company" label on the profile COMPANY DETAILS card.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."abn_registered_at" IS 'ABR AbnStatusFromDate — the date the current AbnStatus took effect. Used to render "In business since YYYY" on profiles.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."abr_state" IS 'AU state where the business is registered (from ABR AddressState). Distinct from builder_profiles.service_state (where they actually work).';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."abr_postcode" IS 'Postcode of the registered business address (from ABR AddressPostcode). Public information per ABR; storing per Privacy Act exempt-business-info.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."gst_registered" IS 'Whether the ABN is registered for GST (from ABR Gst field). NULL until an ABN verify runs. Register-derived, public per ABR.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."register_source" IS 'Which register produced this row: ''ABR'' (ABN), ''admin_manual'' (admin-approved licence), or a regulator code for future auto-licence adapters.';
-
-
-
-COMMENT ON COLUMN "public"."verifications"."detail_captured_at" IS 'The "as at" timestamp for the captured details. ALWAYS shown next to a verified badge so a stale snapshot can never read as a bare "Verified".';
-
-
-
 ALTER TABLE ONLY "public"."admin_actions"
     ADD CONSTRAINT "admin_actions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_platform_settings"
+    ADD CONSTRAINT "admin_platform_settings_key_key" UNIQUE ("key");
+
+
+
+ALTER TABLE ONLY "public"."admin_platform_settings"
+    ADD CONSTRAINT "admin_platform_settings_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_staff"
+    ADD CONSTRAINT "admin_staff_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_staff"
+    ADD CONSTRAINT "admin_staff_user_id_key" UNIQUE ("user_id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_cases"
+    ADD CONSTRAINT "admin_support_cases_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_notes"
+    ADD CONSTRAINT "admin_support_notes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_verification_assignments"
+    ADD CONSTRAINT "admin_verification_assignments_pkey" PRIMARY KEY ("id");
 
 
 
@@ -3215,6 +3856,14 @@ CREATE INDEX "admin_actions_created_at_idx" ON "public"."admin_actions" USING "b
 
 
 CREATE INDEX "admin_actions_target_idx" ON "public"."admin_actions" USING "btree" ("target_table", "target_id");
+
+
+
+CREATE INDEX "admin_support_cases_user_idx" ON "public"."admin_support_cases" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "admin_support_notes_case_idx" ON "public"."admin_support_notes" USING "btree" ("case_id", "created_at");
 
 
 
@@ -3474,6 +4123,10 @@ CREATE INDEX "timesheets_job_idx" ON "public"."timesheets" USING "btree" ("job_i
 
 
 
+CREATE UNIQUE INDEX "timesheets_one_active_job_trade" ON "public"."timesheets" USING "btree" ("job_id", "trade_id") WHERE ("check_out_at" IS NULL);
+
+
+
 CREATE INDEX "timesheets_trade_idx" ON "public"."timesheets" USING "btree" ("trade_id");
 
 
@@ -3558,6 +4211,22 @@ CREATE OR REPLACE TRIGGER "builder_profiles_updated_at" BEFORE UPDATE ON "public
 
 
 
+CREATE OR REPLACE TRIGGER "company_profile_owner_guard" BEFORE DELETE OR UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."admin_company_guard_owner"();
+
+
+
+CREATE OR REPLACE TRIGGER "company_role_owner_guard" BEFORE DELETE OR UPDATE ON "public"."user_roles" FOR EACH ROW EXECUTE FUNCTION "public"."admin_company_guard_owner"();
+
+
+
+CREATE OR REPLACE TRIGGER "company_staff_owner_guard" BEFORE DELETE OR UPDATE ON "public"."admin_staff" FOR EACH ROW EXECUTE FUNCTION "public"."admin_company_guard_owner"();
+
+
+
+CREATE OR REPLACE TRIGGER "conversation_creation_guard" BEFORE INSERT ON "public"."conversations" FOR EACH ROW EXECUTE FUNCTION "public"."guard_conversation_creation"();
+
+
+
 CREATE OR REPLACE TRIGGER "jobs_updated_at" BEFORE UPDATE ON "public"."jobs" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
@@ -3610,6 +4279,10 @@ CREATE OR REPLACE TRIGGER "reviews_sync_trade_rating_trg" AFTER INSERT OR DELETE
 
 
 
+CREATE OR REPLACE TRIGGER "timesheet_lifecycle_guard" BEFORE INSERT OR UPDATE ON "public"."timesheets" FOR EACH ROW EXECUTE FUNCTION "public"."guard_timesheet_lifecycle"();
+
+
+
 CREATE OR REPLACE TRIGGER "trade_profiles_updated_at" BEFORE UPDATE ON "public"."trade_profiles" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
@@ -3654,6 +4327,14 @@ CREATE OR REPLACE TRIGGER "user_roles_forbid_self_admin" BEFORE INSERT ON "publi
 
 
 
+CREATE OR REPLACE TRIGGER "verification_documents_invalidate_removed_evidence" AFTER DELETE OR UPDATE OF "deleted_at" ON "public"."verification_documents" FOR EACH ROW EXECUTE FUNCTION "public"."invalidate_removed_verification_evidence"();
+
+
+
+CREATE OR REPLACE TRIGGER "verification_documents_stamp_submission" BEFORE INSERT ON "public"."verification_documents" FOR EACH ROW EXECUTE FUNCTION "public"."stamp_verification_submission"();
+
+
+
 CREATE OR REPLACE TRIGGER "verification_documents_updated_at" BEFORE UPDATE ON "public"."verification_documents" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
@@ -3668,6 +4349,41 @@ CREATE OR REPLACE TRIGGER "verifications_updated_at" BEFORE UPDATE ON "public"."
 
 ALTER TABLE ONLY "public"."admin_actions"
     ADD CONSTRAINT "admin_actions_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."admin_staff"
+    ADD CONSTRAINT "admin_staff_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_cases"
+    ADD CONSTRAINT "admin_support_cases_assignee_id_fkey" FOREIGN KEY ("assignee_id") REFERENCES "public"."admin_staff"("user_id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_cases"
+    ADD CONSTRAINT "admin_support_cases_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_notes"
+    ADD CONSTRAINT "admin_support_notes_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_support_notes"
+    ADD CONSTRAINT "admin_support_notes_case_id_fkey" FOREIGN KEY ("case_id") REFERENCES "public"."admin_support_cases"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_verification_assignments"
+    ADD CONSTRAINT "admin_verification_assignments_assignee_id_fkey" FOREIGN KEY ("assignee_id") REFERENCES "public"."admin_staff"("user_id");
+
+
+
+ALTER TABLE ONLY "public"."admin_verification_assignments"
+    ADD CONSTRAINT "admin_verification_assignments_id_fkey" FOREIGN KEY ("id") REFERENCES "public"."verification_documents"("id");
 
 
 
@@ -3951,7 +4667,7 @@ ALTER TABLE ONLY "public"."verifications"
 
 
 
-CREATE POLICY "Admins read all acceptances" ON "public"."legal_acceptances" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "Admins read all acceptances" ON "public"."legal_acceptances" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -3966,14 +4682,29 @@ CREATE POLICY "Users read own acceptances" ON "public"."legal_acceptances" FOR S
 ALTER TABLE "public"."admin_actions" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "admin_actions_admin_read" ON "public"."admin_actions" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "admin_actions_admin_read" ON "public"."admin_actions" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('audit.read'::"text") AS "admin_company_has_permission"));
 
+
+
+ALTER TABLE "public"."admin_platform_settings" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_staff" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_support_cases" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_support_notes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_verification_assignments" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."applications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "applications_admin_read" ON "public"."applications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "applications_admin_read" ON "public"."applications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4021,7 +4752,7 @@ CREATE POLICY "bookings_trade_update" ON "public"."bookings" FOR UPDATE TO "auth
 
 
 
-CREATE POLICY "buak_admin_read" ON "public"."builder_unverified_acknowledgements" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "buak_admin_read" ON "public"."builder_unverified_acknowledgements" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4036,7 +4767,7 @@ CREATE POLICY "buak_owner_read" ON "public"."builder_unverified_acknowledgements
 ALTER TABLE "public"."builder_profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "builder_profiles_admin_read" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "builder_profiles_admin_read" ON "public"."builder_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4061,6 +4792,50 @@ CREATE POLICY "builder_profiles_update_own" ON "public"."builder_profiles" FOR U
 
 
 ALTER TABLE "public"."builder_unverified_acknowledgements" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "company_scoped_read" ON "public"."admin_platform_settings" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('platform.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."admin_staff" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('staff.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."admin_support_cases" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('support.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."admin_support_notes" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('support.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."admin_verification_assignments" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."applications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."contact_enquiries" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('support.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."quote_requests" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."reports" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('support.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."reviews" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
+
+
+
+CREATE POLICY "company_scoped_read" ON "public"."timesheets" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
+
 
 
 ALTER TABLE "public"."contact_enquiries" ENABLE ROW LEVEL SECURITY;
@@ -4106,7 +4881,7 @@ CREATE POLICY "hidden_jobs_select_own" ON "public"."hidden_jobs" FOR SELECT USIN
 ALTER TABLE "public"."jobs" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "jobs_admin_read" ON "public"."jobs" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "jobs_admin_read" ON "public"."jobs" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('marketplace.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4114,7 +4889,9 @@ CREATE POLICY "jobs_delete_own" ON "public"."jobs" FOR DELETE USING (("auth"."ui
 
 
 
-CREATE POLICY "jobs_insert_own" ON "public"."jobs" FOR INSERT WITH CHECK ((("auth"."uid"() = "builder_id") AND "public"."is_builder_abn_verified"("auth"."uid"())));
+CREATE POLICY "jobs_insert_own" ON "public"."jobs" FOR INSERT WITH CHECK ((("auth"."uid"() = "builder_id") AND "public"."is_builder_abn_verified"("auth"."uid"()) AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'builder'::"text"))))));
 
 
 
@@ -4166,7 +4943,7 @@ CREATE POLICY "messages_select" ON "public"."messages" FOR SELECT USING ((EXISTS
 
 
 
-CREATE POLICY "mvr_admin_read" ON "public"."manual_verification_requests" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "mvr_admin_read" ON "public"."manual_verification_requests" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4199,7 +4976,7 @@ CREATE POLICY "notifications_update_own" ON "public"."notifications" FOR UPDATE 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "profiles_admin_read" ON "public"."profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "profiles_admin_read" ON "public"."profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4279,7 +5056,7 @@ CREATE POLICY "reviews_select_authenticated" ON "public"."reviews" FOR SELECT US
 
 
 
-CREATE POLICY "role_events_admin_read" ON "public"."user_role_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "role_events_admin_read" ON "public"."user_role_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4316,7 +5093,15 @@ CREATE POLICY "timesheets_builder_select" ON "public"."timesheets" FOR SELECT TO
 
 
 
-CREATE POLICY "timesheets_trade_all" ON "public"."timesheets" TO "authenticated" USING (("trade_id" = "auth"."uid"())) WITH CHECK (("trade_id" = "auth"."uid"()));
+CREATE POLICY "timesheets_trade_insert" ON "public"."timesheets" FOR INSERT TO "authenticated" WITH CHECK (("trade_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "timesheets_trade_select" ON "public"."timesheets" FOR SELECT TO "authenticated" USING (("trade_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "timesheets_trade_update" ON "public"."timesheets" FOR UPDATE TO "authenticated" USING (("trade_id" = "auth"."uid"())) WITH CHECK (("trade_id" = "auth"."uid"()));
 
 
 
@@ -4330,7 +5115,7 @@ CREATE POLICY "trade_categories_select_all" ON "public"."trade_categories" FOR S
 ALTER TABLE "public"."trade_profiles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "trade_profiles_admin_read" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "trade_profiles_admin_read" ON "public"."trade_profiles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4360,7 +5145,7 @@ ALTER TABLE "public"."user_role_events" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "user_roles_admin_read" ON "public"."user_roles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "user_roles_admin_read" ON "public"."user_roles" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('users.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4375,11 +5160,13 @@ CREATE POLICY "user_roles_select_own" ON "public"."user_roles" FOR SELECT USING 
 ALTER TABLE "public"."verification_documents" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verification_documents_admin_select" ON "public"."verification_documents" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "verification_documents_admin_select" ON "public"."verification_documents" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
-CREATE POLICY "verification_documents_insert_own" ON "public"."verification_documents" FOR INSERT WITH CHECK (("auth"."uid"() = "trade_id"));
+CREATE POLICY "verification_documents_insert_own" ON "public"."verification_documents" FOR INSERT TO "authenticated" WITH CHECK ((("auth"."uid"() = "trade_id") AND ("status" = 'pending'::"public"."document_status") AND ("reviewed_by" IS NULL) AND ("reviewed_at" IS NULL) AND ("review_notes" IS NULL) AND ("rejection_reason" IS NULL) AND ("deleted_at" IS NULL) AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles" "r"
+  WHERE (("r"."user_id" = "auth"."uid"()) AND ("r"."role" = ANY (ARRAY['builder'::"text", 'trade'::"text"])) AND (("verification_documents"."doc_type" IS DISTINCT FROM 'abn_certificate'::"public"."document_doc_type") OR ("r"."role" = 'builder'::"text")) AND (("verification_documents"."doc_type" IS DISTINCT FROM 'trade_licence'::"public"."document_doc_type") OR ("r"."role" = 'trade'::"text")))))));
 
 
 
@@ -4394,7 +5181,7 @@ CREATE POLICY "verification_documents_update_own" ON "public"."verification_docu
 ALTER TABLE "public"."verification_events" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verification_events_admin_read" ON "public"."verification_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "verification_events_admin_read" ON "public"."verification_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4408,7 +5195,7 @@ CREATE POLICY "verification_events_owner_read" ON "public"."verification_events"
 
 
 
-CREATE POLICY "verification_funnel_admin_read" ON "public"."verification_funnel_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "verification_funnel_admin_read" ON "public"."verification_funnel_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4425,7 +5212,7 @@ ALTER TABLE "public"."verification_rate_limits" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."verifications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "verifications_admin_read" ON "public"."verifications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_user_management_is_admin"() AS "admin_user_management_is_admin"));
+CREATE POLICY "verifications_admin_read" ON "public"."verifications" FOR SELECT TO "authenticated" USING (( SELECT "public"."admin_company_has_permission"('verification.read'::"text") AS "admin_company_has_permission"));
 
 
 
@@ -4467,6 +5254,59 @@ GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "tex
 REVOKE ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_actor_role"("p_actor_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_assert_owner"("p_actor_id" "uuid", "p_aal" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_assert_owner"("p_actor_id" "uuid", "p_aal" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_guard_owner"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_has_permission"("p_permission" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_has_permission"("p_permission" "text") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_list"("p_resource" "text", "p_page" integer, "p_user_id" "uuid", "p_status" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_list"("p_resource" "text", "p_page" integer, "p_user_id" "uuid", "p_status" "text") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_mutate"("p_resource" "text", "p_id" "uuid", "p_payload" "jsonb", "p_expected_version" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_mutate"("p_resource" "text", "p_id" "uuid", "p_payload" "jsonb", "p_expected_version" integer) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_overview"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_overview"() TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_public_config"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_public_config"() TO "anon";
+GRANT ALL ON FUNCTION "public"."admin_company_public_config"() TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_require"("p_permission" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_search_users"("p_q" "text", "p_search_by" "text", "p_role" "text", "p_status" "text", "p_page" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_search_users"("p_q" "text", "p_search_by" "text", "p_role" "text", "p_status" "text", "p_page" integer) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_company_session"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_company_session"() TO "authenticated";
 
 
 
@@ -4613,9 +5453,29 @@ GRANT ALL ON FUNCTION "public"."guard_application_lifecycle"() TO "service_role"
 
 
 
+REVOKE ALL ON FUNCTION "public"."guard_conversation_creation"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_conversation_creation"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."guard_timesheet_lifecycle"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."guard_timesheet_lifecycle"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "supabase_auth_admin";
+
+
+
+REVOKE ALL ON FUNCTION "public"."invalidate_deleted_verification_file"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."invalidate_deleted_verification_file"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."invalidate_removed_verification_evidence"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."invalidate_removed_verification_evidence"() TO "service_role";
 
 
 
@@ -4737,6 +5597,11 @@ GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."stamp_verification_submission"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."stamp_verification_submission"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."sync_job_application_count"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."sync_job_application_count"() TO "service_role";
 
@@ -4765,37 +5630,29 @@ GRANT ALL ON TABLE "public"."admin_actions" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."admin_platform_settings" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_platform_settings" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."admin_staff" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_staff" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."admin_support_cases" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_support_cases" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."admin_support_notes" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_support_notes" TO "authenticated";
+
+
+
 GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."profiles" TO "anon";
 GRANT SELECT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
-
-
-
-GRANT INSERT("id"),UPDATE("id") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("display_name"),UPDATE("display_name") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("avatar_url"),UPDATE("avatar_url") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("created_at"),UPDATE("created_at") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("updated_at"),UPDATE("updated_at") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("phone_verified_at"),UPDATE("phone_verified_at") ON TABLE "public"."profiles" TO "authenticated";
-
-
-
-GRANT INSERT("phone"),UPDATE("phone") ON TABLE "public"."profiles" TO "authenticated";
 
 
 
@@ -4810,9 +5667,24 @@ GRANT SELECT ON TABLE "public"."admin_user_directory" TO "authenticated";
 
 
 
+GRANT ALL ON TABLE "public"."admin_verification_assignments" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_verification_assignments" TO "authenticated";
+
+
+
 GRANT ALL ON TABLE "public"."applications" TO "anon";
 GRANT ALL ON TABLE "public"."applications" TO "authenticated";
 GRANT ALL ON TABLE "public"."applications" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."jobs" TO "anon";
+GRANT ALL ON TABLE "public"."jobs" TO "authenticated";
+GRANT ALL ON TABLE "public"."jobs" TO "service_role";
+
+
+
+GRANT SELECT ON TABLE "public"."application_job_summaries" TO "authenticated";
 
 
 
@@ -4924,12 +5796,6 @@ GRANT ALL ON TABLE "public"."device_tokens" TO "service_role";
 GRANT ALL ON TABLE "public"."hidden_jobs" TO "anon";
 GRANT ALL ON TABLE "public"."hidden_jobs" TO "authenticated";
 GRANT ALL ON TABLE "public"."hidden_jobs" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."jobs" TO "anon";
-GRANT ALL ON TABLE "public"."jobs" TO "authenticated";
-GRANT ALL ON TABLE "public"."jobs" TO "service_role";
 
 
 
@@ -5121,8 +5987,8 @@ GRANT ALL ON TABLE "public"."site_tickets" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."timesheets" TO "anon";
-GRANT ALL ON TABLE "public"."timesheets" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,MAINTAIN,UPDATE ON TABLE "public"."timesheets" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,TRIGGER,MAINTAIN,UPDATE ON TABLE "public"."timesheets" TO "authenticated";
 GRANT ALL ON TABLE "public"."timesheets" TO "service_role";
 
 
@@ -5130,6 +5996,12 @@ GRANT ALL ON TABLE "public"."timesheets" TO "service_role";
 GRANT ALL ON TABLE "public"."trade_categories" TO "anon";
 GRANT ALL ON TABLE "public"."trade_categories" TO "authenticated";
 GRANT ALL ON TABLE "public"."trade_categories" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."verifications" TO "anon";
+GRANT ALL ON TABLE "public"."verifications" TO "authenticated";
+GRANT ALL ON TABLE "public"."verifications" TO "service_role";
 
 
 
@@ -5143,9 +6015,8 @@ GRANT SELECT ON TABLE "public"."user_role_events" TO "authenticated";
 
 
 
-GRANT ALL ON TABLE "public"."verification_documents" TO "anon";
-GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."verification_documents" TO "authenticated";
 GRANT ALL ON TABLE "public"."verification_documents" TO "service_role";
+GRANT SELECT,INSERT ON TABLE "public"."verification_documents" TO "authenticated";
 
 
 
@@ -5168,12 +6039,6 @@ GRANT ALL ON TABLE "public"."verification_funnel_events" TO "service_role";
 GRANT ALL ON TABLE "public"."verification_rate_limits" TO "anon";
 GRANT ALL ON TABLE "public"."verification_rate_limits" TO "authenticated";
 GRANT ALL ON TABLE "public"."verification_rate_limits" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."verifications" TO "anon";
-GRANT ALL ON TABLE "public"."verifications" TO "authenticated";
-GRANT ALL ON TABLE "public"."verifications" TO "service_role";
 
 
 

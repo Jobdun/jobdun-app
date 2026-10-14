@@ -139,9 +139,8 @@ is connected. Do not report general email invitation delivery as verified.
 npx --yes deno@2 test --allow-read supabase/functions/admin-users/
 npx --yes deno@2 check supabase/functions/admin-users/index.ts
 npx --yes deno@2 lint supabase/functions/admin-users/
-# Optional origin/main compatibility fixture (no checkout or production DB):
-git show origin/main:supabase/schema.sql > /tmp/jobdun-admin-users-main-schema.sql
-npx --yes deno@2 test --allow-read supabase/functions/admin-users/database_test.ts -- /tmp/jobdun-admin-users-main-schema.sql
+# Optional historical-schema fixture (no production DB):
+npx --yes deno@2 test --allow-read supabase/functions/admin-users/database_test.ts -- ../../tests/company_admin_pre_migration_schema.sql
 ```
 
 Handler tests were run red before implementation. SQL regressions first failed
@@ -162,3 +161,8 @@ That runner includes concurrent owner changes and exact rollback restoration.
 Hosted Edge bundling, real SMTP/email, and browser invitation acceptance remain
 separate deployment checks. No production account or email writes occur in the
 local suite.
+
+Legacy PGlite role/audit regressions use the fixed pre-company schema fixture.
+The full PostgreSQL company runner verifies current owner authorization, scoped
+RLS, transactional changes and rollback/reapply; both suites run in CI. The live
+public schema snapshot remains synchronized independently of those fixtures.

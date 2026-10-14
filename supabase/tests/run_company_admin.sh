@@ -4,14 +4,17 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 test_container="jobdun-company-admin-$$"
 cleanup() { docker rm -f "$test_container" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-docker run --detach --name "$test_container" --network none --env POSTGRES_PASSWORD=local-test-only public.ecr.aws/supabase/postgres:17.6.1.111 >/dev/null
+test_image="${ADMIN_TEST_IMAGE:-public.ecr.aws/supabase/postgres:17.6.1.111}"
+docker run --detach --name "$test_container" --network none --env POSTGRES_PASSWORD=local-test-only "$test_image" >/dev/null
 for attempt in {1..60}; do
  if [[ "$(docker inspect --format '{{.State.Health.Status}}' "$test_container" 2>/dev/null)" == healthy ]]; then break; fi
  sleep 1
 done
 sql() { docker exec -e PGPASSWORD=local-test-only -i "$test_container" psql -X -U "${2:-postgres}" -d postgres -q -v ON_ERROR_STOP=1 < "$repo_root/$1"; }
 sql supabase/tests/admin_safety_bootstrap.sql supabase_admin >/dev/null
-sql supabase/schema.sql supabase_admin >/dev/null
+# The committed schema mirrors live production after migration. This fixed
+# pre-company fixture verifies application and exact rollback from its baseline.
+sql supabase/tests/company_admin_pre_migration_schema.sql supabase_admin >/dev/null
 # Reconstruct the reviewed safety migration; the schema snapshot carries its
 # definitions but not all effective grants under fresh database defaults.
 sql supabase/migrations/20260527000001_verification_documents_admin_review.sql >/dev/null

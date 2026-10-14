@@ -25,10 +25,13 @@ const adminFunctions = [
 
 async function baseline(
   db: PGlite,
-  schemaPath = Deno.args[0] ?? "../../schema.sql",
+  schemaPath = Deno.args[0] ??
+    "../../tests/company_admin_pre_migration_schema.sql",
 ) {
-  // Pull the relevant real table/function/constraint/policy definitions from
-  // the checked-in schema. Only Auth's environment and unrelated app objects
+  // Preserve the legacy management regressions against their fixed pre-company
+  // schema. Current company owner/scopes are exercised by the full PostgreSQL
+  // run_company_admin.sh suite; its dependencies cannot be partially extracted.
+  // Only Auth's environment and unrelated app objects
   // are omitted; tests will fail if a required definition disappears.
   // Optional fixture path allows checking origin/main independently of the
   // working branch: deno test --allow-read database_test.ts -- /tmp/schema.sql
@@ -172,20 +175,16 @@ async function setRole(
 async function verifyManagement(t: Deno.TestContext, source: string) {
   const db = new PGlite();
   try {
-    // Exercise the dumped definitions without replacing them with migration
-    // SQL, as well as the migration path. The optional old-schema fixture is
-    // used only for migration compatibility; snapshot tests stay authoritative.
-    const hasSafetyHelpers = await baseline(
-      db,
-      source === "deployed snapshot" ? "../../schema.sql" : undefined,
-    );
+    // Exercise both the historical snapshot definitions and migration path.
+    // The current company contract is verified by the full PostgreSQL suite.
+    const hasSafetyHelpers = await baseline(db);
     if (source === "migration") {
       await db.exec(await Deno.readTextFile(migration));
     }
     // Reapplying October 7 deliberately exercises its original RPC contract;
     // only a safety-era snapshot uses the newer shared actor guard's message.
     const actorDenied = {
-      message: source === "deployed snapshot" && hasSafetyHelpers
+      message: source === "pre-company snapshot" && hasSafetyHelpers
         ? "not_admin"
         : "not_authorized",
       code: "42501",
@@ -587,7 +586,7 @@ async function verifyManagement(t: Deno.TestContext, source: string) {
   }
 }
 
-for (const source of ["migration", "deployed snapshot"]) {
+for (const source of ["migration", "pre-company snapshot"]) {
   Deno.test(`admin user management SQL (${source}): atomic roles, audit, RLS and service-only guards`, (t) =>
     verifyManagement(t, source));
 }

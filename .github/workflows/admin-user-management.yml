@@ -11,6 +11,10 @@ on:
       - 'supabase/rollbacks/*admin_safety_down.sql'
       - 'supabase/tests/admin_safety*'
       - 'supabase/tests/run_admin_safety.sh'
+      - 'supabase/migrations/*company_admin.sql'
+      - 'supabase/rollbacks/*company_admin_down.sql'
+      - 'supabase/tests/company_admin*'
+      - 'supabase/tests/run_company_admin.sh'
       - 'supabase/schema.sql'
       - '.github/workflows/admin-user-management.yml'
   pull_request:
@@ -23,6 +27,10 @@ on:
       - 'supabase/rollbacks/*admin_safety_down.sql'
       - 'supabase/tests/admin_safety*'
       - 'supabase/tests/run_admin_safety.sh'
+      - 'supabase/migrations/*company_admin.sql'
+      - 'supabase/rollbacks/*company_admin_down.sql'
+      - 'supabase/tests/company_admin*'
+      - 'supabase/tests/run_company_admin.sh'
       - 'supabase/schema.sql'
       - '.github/workflows/admin-user-management.yml'
 
@@ -55,3 +63,14 @@ jobs:
         env:
           ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
         run: bash supabase/tests/run_admin_safety.sh
+
+  company:
+    name: Company SQL scopes, mutations and rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolated company authorization and rollback regressions
+        env:
+          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
+        run: bash supabase/tests/run_company_admin.sh
