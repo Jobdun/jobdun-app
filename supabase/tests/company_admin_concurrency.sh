@@ -23,7 +23,7 @@ if [[ "$active_owners" != 1 ]] || [[ "$first_status" -eq 0 && "$second_status" -
 fi
 failed_log="$first_log"
 if [[ "$second_status" -ne 0 ]]; then failed_log="$second_log"; fi
-if ! rg -q 'last_active_owner' "$failed_log"; then
+if ! grep -q 'last_active_owner' "$failed_log"; then
   cat "$failed_log" >&2
   printf 'Expected the losing transaction to fail at the last owner guard\n' >&2
   exit 1
