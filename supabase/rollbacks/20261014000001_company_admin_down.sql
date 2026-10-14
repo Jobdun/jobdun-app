@@ -1,0 +1,40 @@
+-- Roll back the company console while retaining marketplace data and previous access rules.
+BEGIN;
+DO $$ DECLARE p record; f record; v text; BEGIN
+ FOR p IN SELECT * FROM company_admin_private.original_policies LOOP
+  EXECUTE format('ALTER POLICY %I ON %I.%I TO %s USING (%s)',p.policy_name,p.schema_name,p.table_name,p.roles,p.expression);
+ END LOOP;
+ SELECT definition INTO v FROM company_admin_private.original_view LIMIT 1;
+ EXECUTE format('CREATE OR REPLACE VIEW public.admin_user_directory WITH (security_invoker=true) AS %s',v);
+ FOR f IN SELECT definition FROM company_admin_private.original_functions LOOP EXECUTE f.definition; END LOOP;
+END $$;
+DROP POLICY company_scoped_read ON public.applications;
+DROP POLICY company_scoped_read ON public.quote_requests;
+DROP POLICY company_scoped_read ON public.timesheets;
+DROP POLICY company_scoped_read ON public.reviews;
+DROP POLICY company_scoped_read ON public.reports;
+DROP POLICY company_scoped_read ON public.contact_enquiries;
+DROP TRIGGER company_staff_owner_guard ON public.admin_staff;
+DROP TRIGGER company_profile_owner_guard ON public.profiles;
+DROP TRIGGER company_role_owner_guard ON public.user_roles;
+DROP FUNCTION public.admin_company_guard_owner();
+DROP TABLE public.admin_support_notes;
+DROP TABLE public.admin_support_cases;
+DROP TABLE public.admin_verification_assignments;
+DROP TABLE public.admin_platform_settings;
+DROP TABLE public.admin_staff;
+DROP FUNCTION public.admin_company_mutate(text,uuid,jsonb,integer);
+DROP FUNCTION public.admin_company_overview();
+DROP FUNCTION public.admin_company_search_users(text,text,text,text,integer);
+DROP FUNCTION public.admin_company_list(text,integer,uuid,text);
+DROP FUNCTION public.admin_company_public_config();
+DROP FUNCTION public.admin_company_assert_owner(uuid,text);
+DROP FUNCTION public.admin_company_session();
+DROP FUNCTION public.admin_company_require(text);
+DROP FUNCTION public.admin_company_has_permission(text);
+DROP FUNCTION public.admin_company_actor_role(uuid);
+ALTER TABLE public.reports DROP COLUMN version;
+ALTER TABLE public.site_tickets DROP COLUMN version;
+ALTER TABLE public.trade_categories DROP COLUMN version;
+DROP SCHEMA company_admin_private CASCADE;
+COMMIT;

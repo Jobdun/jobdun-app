@@ -1,13 +1,17 @@
 # Admin user management
 
-New Edge endpoint and migration only; no Next.js service credential is needed.
+The Edge endpoint works with the company staff migration; no Next.js service credential is needed.
 Auth roles are `builder`, `trade`, `admin`. Apprentice remains Trade profile data.
 
 ## HTTP contract
 
 Requests carry the signed-in session's `Authorization: Bearer <access_token>`.
-The handler calls Auth `getUser(token)`, then the service-only readiness RPC,
-which checks the **current** role is admin and profile status is active.
+The handler calls Auth `getUser(token)` and confirms its returned user ID matches
+the bearer token subject. It then passes that verified subject and token assurance
+level to the service-only `admin_company_assert_owner` RPC. The database checks
+current owner membership, admin role, and active profile status. Once
+`admin_mfa_required` is enabled, the token must have `aal2`. A signed-in `aal1`
+owner may still reach the company session endpoint to complete MFA.
 
 - `GET` → `200 {ready:true, invitationConfigured:boolean}`. Readiness confirms
   the database authorization RPC is installed; configuration confirms a valid
@@ -48,15 +52,18 @@ GET does not consume write quota. Existing verification endpoints are unchanged.
 
 ## Database contract and security
 
-Migration: `supabase/migrations/20261007000001_admin_user_management.sql`.
-Only service_role can execute:
+Migrations: `supabase/migrations/20261007000001_admin_user_management.sql`,
+`20261011000001_admin_safety.sql`, then `20261014000001_company_admin.sql`.
+Only service_role can execute these owner/user-management guards:
 
+- `admin_company_assert_owner(p_actor_id uuid,p_aal text) -> boolean`
 - `admin_user_management_ready(p_actor_id uuid) -> boolean`
 - `admin_user_invitation_preflight(p_actor_id uuid,p_email text) -> void`
 - `admin_user_management_rate_limit(p_actor_id uuid,p_ip text,p_action text) -> jsonb`
 - `admin_set_user_role(p_actor_id uuid,p_user_id uuid,p_role text,p_expected_role text,p_reason text) -> jsonb`
 
-Every RPC checks the fresh active admin actor. Role changes serialize through
+The company owner guard is checked before every HTTP action. The existing
+mutation RPCs also recheck current authorization. Role changes serialize through
 an advisory transaction lock and lock actor rows; self changes are forbidden,
 and last-admin demotion has an additional guard. Compare-and-swap detects stale
 UI state. Missing profile/role-profile stubs are created with defaults; existing
@@ -78,15 +85,17 @@ merge unrelated mobile branch commits or apply unrelated pending migrations.
 
 1. Confirm the selected linked project and inspect pending migrations:
    `supabase migration list --linked`, then `supabase db push --linked --dry-run`.
-   Only the intended admin-management migration should be pending. If remote
+   Only the intended reviewed company migration should be pending after the
+   previous user-management and safety migrations are recorded. If remote
    history contains newer mobile migrations absent from main, do not repair or
    discard history to force a push; use the reviewed migration through the
    coordinator's established migration process while preserving that history.
-2. Apply `20261007000001_admin_user_management.sql` through that process. When
-   CLI history is consistent, the command is `supabase db push --linked`.
-   It changes functions/policy and extends a rate-limit check constraint; it
-   does not create accounts, send mail, or rewrite existing user roles.
-3. Deploy the frontend invitation acceptance callback first. Choose its exact
+2. Apply `20261014000001_company_admin.sql` through that process after the
+   user-management and safety migrations. When CLI history is consistent,
+   the command is `supabase db push --linked`. The new migration adds scoped
+   staff data and audited RPCs; it does not create accounts or send mail.
+3. Ensure the frontend invitation acceptance callback is deployed before
+   enabling invitations. Choose its exact
    HTTPS URL: `https://admin.jobdun.com.au/accept-invitation`. Add exactly that
    URL to Supabase Auth's redirect allowlist after the route is deployed.
    Verify the Invite User email template and SMTP configuration. Built-in
@@ -147,7 +156,9 @@ repo schema. They also pass against origin/main's older schema. A test-only
 columns; the production migration neither requires nor creates that column.
 The shared rate table and its primary key/check constraint exist on both branches.
 
-Docker was unavailable. Full Supabase/PostgreSQL 17 migration-chain execution,
-multiple database connection contention, hosted Edge bundling, real SMTP/email,
-and browser invitation acceptance have not been tested here. No production
-account/email writes, backend deployment, Next build, or frontend edits were made.
+The company migration is exercised separately by
+`bash supabase/tests/run_company_admin.sh` in an isolated PostgreSQL container.
+That runner includes concurrent owner changes and exact rollback restoration.
+Hosted Edge bundling, real SMTP/email, and browser invitation acceptance remain
+separate deployment checks. No production account or email writes occur in the
+local suite.

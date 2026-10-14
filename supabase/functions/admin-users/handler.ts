@@ -3,7 +3,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 export type UserRole = "builder" | "trade" | "admin";
 export interface Backend {
   verifyUser(token: string): Promise<string | null>;
-  assertAdmin(actorId: string): Promise<void>;
+  assertAdmin(actorId: string, verifiedToken: string): Promise<void>;
   consume(
     actorId: string,
     ip: string,
@@ -130,7 +130,7 @@ export function createHandler(
       if (!token) throw new DirectoryError("unauthorized", 401);
       const actor = await backend.verifyUser(token);
       if (!actor) throw new DirectoryError("unauthorized", 401);
-      await backend.assertAdmin(actor);
+      await backend.assertAdmin(actor, token);
       if (request.method === "GET") {
         return json({ ready: true, invitationConfigured: redirect !== null });
       }

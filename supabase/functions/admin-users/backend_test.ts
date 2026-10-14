@@ -4,6 +4,7 @@ import { createBackend } from "./backend.ts";
 import { createHandler } from "./handler.ts";
 
 const actor = "00000000-0000-4000-8000-000000000001";
+const token = `header.${btoa(JSON.stringify({sub:actor,aal:"aal2"}))}.signature`;
 function fixture(responses: { body: unknown; status?: number }[]) {
   const calls: { url: URL; init?: RequestInit }[] = [];
   const client = createClient(
@@ -31,20 +32,20 @@ function fixture(responses: { body: unknown; status?: number }[]) {
 
 Deno.test("SDK adapter verifies explicit bearer with Auth, keeps service credentials separate for fresh DB check", async () => {
   const { backend, calls } = fixture([{ body: { id: actor } }, { body: true }]);
-  equal(await backend.verifyUser("session-token"), actor);
-  await backend.assertAdmin(actor);
+  equal(await backend.verifyUser(token), actor);
+  await backend.assertAdmin(actor, token);
   equal(calls[0].url.pathname, "/auth/v1/user");
   equal(
     new Headers(calls[0].init?.headers).get("authorization"),
-    "Bearer session-token",
+    `Bearer ${token}`,
   );
-  equal(calls[1].url.pathname, "/rest/v1/rpc/admin_user_management_ready");
+  equal(calls[1].url.pathname, "/rest/v1/rpc/admin_company_assert_owner");
   equal(
     new Headers(calls[1].init?.headers).get("authorization"),
     "Bearer test-service-key",
   );
   deepStrictEqual(JSON.parse(String(calls[1].init?.body)), {
-    p_actor_id: actor,
+    p_actor_id: actor, p_aal: "aal2",
   });
 });
 
@@ -54,14 +55,14 @@ Deno.test("SDK adapter rejects failed Auth verification and denied database auth
     body: { message: "Invalid token", code: "bad_jwt" },
   }, { status: 403, body: { code: "42501", message: "not_authorized" } }]);
   equal(await backend.verifyUser("stale"), null);
-  await rejects(() => backend.assertAdmin(actor), {
+  await rejects(() => backend.assertAdmin(actor, token), {
     message: "not_authorized",
     status: 403,
   });
 });
 
 Deno.test("old and current database authorization codes retain the Edge 403 contract", async () => {
-  for (const code of ["not_authorized", "not_admin"]) {
+  for (const code of ["not_authorized", "not_admin", "permission_denied"]) {
     const denied = { status: 403, body: { code: "42501", message: code } };
     const { backend } = fixture([denied, denied, denied, denied]);
     const expected = {
@@ -69,7 +70,7 @@ Deno.test("old and current database authorization codes retain the Edge 403 cont
       code: "not_authorized",
       status: 403,
     };
-    await rejects(() => backend.assertAdmin(actor), expected);
+    await rejects(() => backend.assertAdmin(actor, token), expected);
     await rejects(
       () => backend.consume(actor, "192.0.2.1", "set-role"),
       expected,
@@ -86,7 +87,7 @@ Deno.test("old and current database authorization codes retain the Edge 403 cont
     const http = fixture([{ body: { id: actor } }, denied]);
     const response = await createHandler(http.backend, null)(
       new Request("https://edge.test/admin-users", {
-        headers: { Authorization: "Bearer session-token" },
+        headers: { Authorization: `Bearer ${token}` },
       }),
     );
     equal(response.status, 403);
@@ -97,7 +98,7 @@ Deno.test("old and current database authorization codes retain the Edge 403 cont
 
 Deno.test("old and current last-admin codes retain the Edge 409 contract", async () => {
   const target = "00000000-0000-4000-8000-000000000002";
-  for (const code of ["last_admin", "last_active_admin"]) {
+  for (const code of ["last_admin", "last_active_admin", "last_active_owner"]) {
     const { backend, calls } = fixture([
       { body: { id: actor } },
       { body: true },
@@ -108,7 +109,7 @@ Deno.test("old and current last-admin codes retain the Edge 409 contract", async
       new Request("https://edge.test/admin-users", {
         method: "POST",
         headers: {
-          Authorization: "Bearer session-token",
+          Authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -173,7 +174,7 @@ Deno.test("SDK role and rate RPC contracts are exact; unknown database errors do
     p_expected_role: null,
     p_reason: "Reason",
   });
-  await rejects(() => backend.assertAdmin(actor), {
+  await rejects(() => backend.assertAdmin(actor, token), {
     message: "unavailable",
     status: 503,
   });
@@ -181,8 +182,15 @@ Deno.test("SDK role and rate RPC contracts are exact; unknown database errors do
 
 Deno.test("SDK adapter fails closed on malformed readiness/rate replies", async () => {
   const { backend } = fixture([{ body: null }, { body: { allowed: "yes" } }]);
-  await rejects(() => backend.assertAdmin(actor), { message: "unavailable" });
+  await rejects(() => backend.assertAdmin(actor, token), { message: "unavailable" });
   await rejects(() => backend.consume(actor, "unknown", "invite"), {
     message: "unavailable",
   });
+});
+
+Deno.test("owner guard rejects mismatched subjects before service RPC", async () => {
+ const {backend,calls}=fixture([]);
+ const wrong=`header.${btoa(JSON.stringify({sub:"00000000-0000-4000-8000-000000000099",aal:"aal2"}))}.signature`;
+ await rejects(()=>backend.assertAdmin(actor,wrong),{message:"not_authorized"});
+ equal(calls.length,0);
 });
