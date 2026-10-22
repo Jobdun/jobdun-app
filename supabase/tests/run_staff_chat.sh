@@ -4,7 +4,8 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 test_container="jobdun-staff-chat-$$"
 cleanup() { docker rm -f "$test_container" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-docker run --detach --name "$test_container" --network none --env POSTGRES_PASSWORD=local-test-only public.ecr.aws/supabase/postgres:17.6.1.111 >/dev/null
+test_image="${ADMIN_TEST_IMAGE:-public.ecr.aws/supabase/postgres:17.6.1.111}"
+docker run --detach --name "$test_container" --network none --env POSTGRES_PASSWORD=local-test-only "$test_image" >/dev/null
 for attempt in {1..60}; do
  if [[ "$(docker inspect --format '{{.State.Health.Status}}' "$test_container" 2>/dev/null)" == healthy ]]; then break; fi
  sleep 1

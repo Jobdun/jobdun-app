@@ -1,0 +1,56 @@
+name: Admin staff chat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/admin-chat-files/**'
+      - 'supabase/migrations/*staff_chat*.sql'
+      - 'supabase/rollbacks/*staff_chat*.sql'
+      - 'supabase/tests/*staff_chat*'
+      - 'supabase/tests/company_admin_pre_migration_schema.sql'
+      - '.github/workflows/admin-staff-chat.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/admin-chat-files/**'
+      - 'supabase/migrations/*staff_chat*.sql'
+      - 'supabase/rollbacks/*staff_chat*.sql'
+      - 'supabase/tests/*staff_chat*'
+      - 'supabase/tests/company_admin_pre_migration_schema.sql'
+      - '.github/workflows/admin-staff-chat.yml'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  files:
+    name: Private file handler and validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/admin-chat-files/index.ts
+      - run: deno lint supabase/functions/admin-chat-files/
+      - run: deno fmt --check supabase/functions/admin-chat-files/*.ts
+      - run: deno test supabase/functions/admin-chat-files/
+
+  sql:
+    name: Private chat SQL access, retries and rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate public image pulls to avoid shared anonymous limits
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Isolated permissions, cleanup and rollback regressions
+        env:
+          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
+        run: bash supabase/tests/run_staff_chat_attachments.sh
