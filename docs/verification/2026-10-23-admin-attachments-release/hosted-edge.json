@@ -1,0 +1,9 @@
+{
+  "result": "passed",
+  "project": "zethpanvkfyijislxesn",
+  "checks": 3,
+  "anonymous": 401,
+  "unauthorizedOrMissingFile": 403,
+  "invalidUpload": 400,
+  "mutations": "No file persisted; no threads or messages created."
+}

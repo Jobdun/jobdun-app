@@ -1,0 +1,14 @@
+[
+  {
+    "file": "pre-schema.sql",
+    "bytes": 363947,
+    "sha256": "ba214f3e6bae6f12819554d4b775d526cd7a8b5309d15af89a51c11e23e52bfd",
+    "permissions": "0o600"
+  },
+  {
+    "file": "pre-public-data.sql",
+    "bytes": 59179,
+    "sha256": "f01706b7c2d6cc68425d3350fd2477321251da232b116258693c8228a421a078",
+    "permissions": "0o600"
+  }
+]

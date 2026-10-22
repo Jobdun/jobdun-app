@@ -1,0 +1,9 @@
+[
+  {
+    "name": "admin-chat-files",
+    "slug": "admin-chat-files",
+    "version": 1,
+    "status": "ACTIVE",
+    "verify_jwt": false
+  }
+]

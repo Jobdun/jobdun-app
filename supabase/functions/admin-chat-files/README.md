@@ -1,7 +1,8 @@
 # Private staff attachments
 
-This function is not deployed by the local implementation. Deploy the reviewed
-SQL migration before the Edge function and web changes. The Edge runtime alone
+Production deployment on23 October2026 is recorded in
+`docs/verification/2026-10-23-admin-attachments-release/report.md`. Future releases
+must apply the reviewed SQL migration before the Edge function and web changes. The Edge runtime alone
 holds `SUPABASE_SERVICE_ROLE_KEY`. The browser/Next server only forwards the
 current user's bearer token. Auth verifies that token through `getUser`; SQL
 checks fresh work email, active company staff/profile, membership and MFA

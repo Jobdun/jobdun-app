@@ -240,6 +240,357 @@ $$;
 ALTER FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_chat_allowed"() RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT public.admin_chat_eligible(auth.uid()) AND
+ (NOT EXISTS(SELECT 1 FROM public.admin_platform_settings WHERE key='admin_mfa_required' AND value='true'::jsonb)
+ OR coalesce(auth.jwt()->>'aal'='aal2',false))
+$$;
+
+
+ALTER FUNCTION "public"."admin_chat_allowed"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_eligible"("p_user" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT public.admin_company_actor_role(p_user) IS NOT NULL AND EXISTS (
+ SELECT 1 FROM auth.users WHERE id=p_user AND email_confirmed_at IS NOT NULL
+ AND lower(split_part(email,'@',2))='jobdun.com.au')
+$$;
+
+
+ALTER FUNCTION "public"."admin_chat_eligible"("p_user" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_access"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE item public.admin_chat_attachments%ROWTYPE;
+BEGIN
+ SELECT * INTO item FROM public.admin_chat_attachments WHERE id=p_id;
+ PERFORM public.admin_chat_file_actor_require(p_actor,p_aal,item.thread_id);
+ IF item.state<>'finalized' THEN PERFORM public.admin_chat_file_require(p_actor,p_aal,item.thread_id); END IF;
+ IF item.state NOT IN('validated','finalized') OR (item.state<>'finalized' AND (item.owner_id<>p_actor OR item.expires_at<=clock_timestamp())) THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ RETURN public.admin_chat_file_json(item.id)||jsonb_build_object('path',item.id::text);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_access"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_actor_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF auth.role() IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ IF p_aal NOT IN('aal1','aal2') OR p_aal IS NULL OR NOT public.admin_chat_eligible(p_actor) OR
+ (EXISTS(SELECT 1 FROM public.admin_platform_settings WHERE key='admin_mfa_required' AND value='true'::jsonb) AND p_aal<>'aal2')
+ OR NOT EXISTS(SELECT 1 FROM public.admin_chat_threads WHERE id=p_thread AND p_actor IN(member_low,member_high))
+ THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_actor_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_cleanup_claim"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE result jsonb;
+BEGIN
+ IF auth.role() IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ WITH candidates AS (SELECT id FROM public.admin_chat_attachments a WHERE ((state IN('reserved','validated','cleaning') AND expires_at<=clock_timestamp()) OR (state='cleaned' AND created_at<clock_timestamp()-interval '24 hours'))
+ AND NOT EXISTS(SELECT 1 FROM public.admin_chat_messages m WHERE m.attachment_id=a.id) ORDER BY expires_at LIMIT 10 FOR UPDATE SKIP LOCKED),
+ claimed AS (UPDATE public.admin_chat_attachments a SET state='cleaning' FROM candidates c WHERE a.id=c.id RETURNING a.id)
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'path',id::text)),'[]'::jsonb) INTO result FROM claimed;
+ RETURN result;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_cleanup_claim"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_cleanup_done"("p_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ IF auth.role() IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ -- Mark successfully removed objects separately, releasing pending capacity.
+ -- Keep immutable retry tombstones for 24 hours; a second removal at that time
+ -- catches any very late upload that raced the first expiry cleanup.
+ UPDATE public.admin_chat_attachments SET state='cleaned' WHERE id=p_id AND state='cleaning' AND created_at>=clock_timestamp()-interval '24 hours';
+ -- Deletion remains guarded against any linked message even under corruption.
+ DELETE FROM public.admin_chat_attachments a WHERE id=p_id AND state='cleaning' AND created_at<clock_timestamp()-interval '24 hours'
+ AND NOT EXISTS(SELECT 1 FROM public.admin_chat_messages m WHERE m.attachment_id=a.id);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_cleanup_done"("p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_json"("p_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT jsonb_build_object('id',id,'name',name,'mime',mime,'size',size) FROM public.admin_chat_attachments WHERE id=p_id
+$$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_json"("p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE peer uuid;
+BEGIN
+ PERFORM public.admin_chat_file_actor_require(p_actor,p_aal,p_thread);
+ SELECT CASE WHEN member_low=p_actor THEN member_high ELSE member_low END INTO peer FROM public.admin_chat_threads WHERE id=p_thread;
+ IF NOT public.admin_chat_eligible(peer) THEN RAISE EXCEPTION 'recipient_unavailable' USING ERRCODE='42501'; END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_reserve"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid", "p_client_tag" "uuid", "p_name" "text", "p_mime" "text", "p_size" bigint, "p_sha256" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+DECLARE item public.admin_chat_attachments%ROWTYPE;
+BEGIN
+ PERFORM public.admin_chat_file_require(p_actor,p_aal,p_thread);
+ -- Serialize limits and immutable retry identity across all of an actor's threads.
+ PERFORM pg_advisory_xact_lock(hashtextextended(p_actor::text,71423));
+ IF p_client_tag IS NULL OR p_name IS NULL OR length(p_name) NOT BETWEEN 1 AND 180 OR p_name ~ '[[:cntrl:]/\\]' OR
+ p_mime IS NULL OR p_mime NOT IN('image/jpeg','image/png','image/webp','application/pdf','text/plain') OR
+ p_size IS NULL OR p_size NOT BETWEEN 1 AND 3145728 OR p_sha256 IS NULL OR p_sha256 !~ '^[a-f0-9]{64}$'
+ THEN RAISE EXCEPTION 'invalid_file'; END IF;
+ SELECT * INTO item FROM public.admin_chat_attachments WHERE owner_id=p_actor AND client_tag=p_client_tag FOR UPDATE;
+ IF FOUND THEN
+  IF item.thread_id<>p_thread OR item.name<>p_name OR item.mime<>p_mime OR item.size<>p_size OR item.sha256<>p_sha256 THEN RAISE EXCEPTION 'retry_payload_changed'; END IF;
+  IF item.state='cleaning' OR (item.state<>'finalized' AND item.expires_at<=clock_timestamp()) THEN RAISE EXCEPTION 'attachment_expired'; END IF;
+ ELSE
+  IF EXISTS(SELECT 1 FROM public.admin_chat_messages WHERE thread_id=p_thread AND sender_id=p_actor AND client_tag=p_client_tag) THEN RAISE EXCEPTION 'retry_payload_changed'; END IF;
+  IF (SELECT count(*) FROM public.admin_chat_attachments WHERE owner_id=p_actor AND created_at>clock_timestamp()-interval '1 minute')>=20 OR
+   (SELECT count(*) FROM public.admin_chat_attachments WHERE owner_id=p_actor AND state IN('reserved','validated','cleaning'))>=10
+  THEN RAISE EXCEPTION 'attachment_rate_limit'; END IF;
+  INSERT INTO public.admin_chat_attachments(thread_id,owner_id,client_tag,name,mime,size,sha256)
+  VALUES(p_thread,p_actor,p_client_tag,p_name,p_mime,p_size,p_sha256) RETURNING * INTO item;
+ END IF;
+ RETURN public.admin_chat_file_json(item.id)||jsonb_build_object('path',item.id::text,'state',item.state);
+END $_$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_reserve"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid", "p_client_tag" "uuid", "p_name" "text", "p_mime" "text", "p_size" bigint, "p_sha256" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_file_validate"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE item public.admin_chat_attachments%ROWTYPE;
+BEGIN
+ SELECT * INTO item FROM public.admin_chat_attachments WHERE id=p_id FOR UPDATE;
+ PERFORM public.admin_chat_file_require(p_actor,p_aal,item.thread_id);
+ IF item.owner_id<>p_actor OR item.state NOT IN('reserved','validated','finalized') OR (item.state<>'finalized' AND item.expires_at<=clock_timestamp()) THEN RAISE EXCEPTION 'invalid_attachment'; END IF;
+ IF item.state='reserved' THEN UPDATE public.admin_chat_attachments SET state='validated' WHERE id=p_id; END IF;
+ RETURN public.admin_chat_file_json(item.id);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_file_validate"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_history"("p_thread" "uuid", "p_before" bigint DEFAULT NULL::bigint, "p_after" bigint DEFAULT NULL::bigint) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE result jsonb; oldest bigint; newest bigint;
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF NOT public.admin_chat_member(p_thread) THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ IF (p_before IS NOT NULL AND p_before<1) OR (p_after IS NOT NULL AND p_after<1) OR (p_before IS NOT NULL AND p_after IS NOT NULL) THEN RAISE EXCEPTION 'invalid_cursor'; END IF;
+ SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.id),'[]'::jsonb),min(x.id),max(x.id) INTO result,oldest,newest FROM
+ (SELECT id,sender_id AS "senderId",body,created_at AS "createdAt",client_tag AS "clientTag",public.admin_chat_file_json(attachment_id) AS attachment
+ FROM public.admin_chat_messages WHERE thread_id=p_thread AND(p_before IS NULL OR id<p_before) AND(p_after IS NULL OR id>p_after)
+ ORDER BY CASE WHEN p_after IS NOT NULL THEN id END ASC,id DESC LIMIT 50) x;
+ RETURN jsonb_build_object('messages',result,'hasMore',CASE WHEN p_after IS NULL THEN EXISTS(SELECT 1 FROM public.admin_chat_messages WHERE thread_id=p_thread AND id<oldest) ELSE EXISTS(SELECT 1 FROM public.admin_chat_messages WHERE thread_id=p_thread AND id>newest) END);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_history"("p_thread" "uuid", "p_before" bigint, "p_after" bigint) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_inbox"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE result jsonb;
+BEGIN
+ PERFORM public.admin_chat_require();
+ SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x."lastAt" DESC NULLS LAST,x.id),'[]'::jsonb) INTO result FROM (
+ SELECT t.id,p.id AS "peerId",coalesce(nullif(p.display_name,''),'Staff member') AS name,
+ public.admin_chat_eligible(p.id) AS available,
+ (SELECT count(*) FROM public.admin_chat_messages m WHERE m.thread_id=t.id AND m.sender_id<>auth.uid()
+ AND m.id>coalesce(r.last_message_id,0)) AS unread,
+ last_message.created_at AS "lastAt",left(coalesce(nullif(last_message.body,''),public.admin_chat_file_json(last_message.attachment_id)->>'name'),120) AS preview
+ FROM public.admin_chat_threads t JOIN public.profiles p ON p.id=CASE WHEN t.member_low=auth.uid() THEN t.member_high ELSE t.member_low END
+ LEFT JOIN public.admin_chat_reads r ON r.thread_id=t.id AND r.user_id=auth.uid()
+ LEFT JOIN LATERAL (SELECT body,created_at,attachment_id FROM public.admin_chat_messages WHERE thread_id=t.id ORDER BY id DESC LIMIT 1) last_message ON true
+ WHERE auth.uid() IN(t.member_low,t.member_high)
+ ORDER BY last_message.created_at DESC NULLS LAST,t.id LIMIT 100) x;
+ RETURN result;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_inbox"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_member"("p_thread" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+ SELECT public.admin_chat_allowed() AND EXISTS(SELECT 1 FROM public.admin_chat_threads
+ WHERE id=p_thread AND auth.uid() IN(member_low,member_high))
+$$;
+
+
+ALTER FUNCTION "public"."admin_chat_member"("p_thread" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_open"("p_peer" "uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE result uuid;
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF p_peer IS NULL OR p_peer=auth.uid() OR NOT public.admin_chat_eligible(p_peer) THEN
+ RAISE EXCEPTION 'recipient_unavailable' USING ERRCODE='42501'; END IF;
+ INSERT INTO public.admin_chat_threads(member_low,member_high) VALUES(least(auth.uid(),p_peer),greatest(auth.uid(),p_peer))
+ ON CONFLICT(member_low,member_high) DO UPDATE SET member_low=excluded.member_low RETURNING id INTO result;
+ RETURN result;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_open"("p_peer" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_read"("p_thread" "uuid", "p_last" bigint) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF NOT public.admin_chat_member(p_thread) OR NOT EXISTS(SELECT 1 FROM public.admin_chat_messages WHERE thread_id=p_thread AND id=p_last) THEN
+ RAISE EXCEPTION 'invalid_read_position' USING ERRCODE='42501'; END IF;
+ INSERT INTO public.admin_chat_reads(thread_id,user_id,last_message_id) VALUES(p_thread,auth.uid(),p_last)
+ ON CONFLICT(thread_id,user_id) DO UPDATE SET last_message_id=greatest(public.admin_chat_reads.last_message_id,excluded.last_message_id);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_read"("p_thread" "uuid", "p_last" bigint) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_require"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+ PERFORM public.admin_company_require('session');
+ IF NOT public.admin_chat_allowed() THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_require"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_send"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE item public.admin_chat_messages%ROWTYPE; peer uuid; v_body text:=btrim(p_body);
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF NOT public.admin_chat_member(p_thread) THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ SELECT CASE WHEN member_low=auth.uid() THEN member_high ELSE member_low END INTO peer
+ FROM public.admin_chat_threads WHERE id=p_thread FOR UPDATE;
+ IF NOT public.admin_chat_eligible(peer) THEN RAISE EXCEPTION 'recipient_unavailable' USING ERRCODE='42501'; END IF;
+ IF v_body IS NULL OR length(v_body) NOT BETWEEN 1 AND 5000 OR p_client_tag IS NULL THEN RAISE EXCEPTION 'invalid_message'; END IF;
+ SELECT * INTO item FROM public.admin_chat_messages WHERE thread_id=p_thread AND sender_id=auth.uid() AND client_tag=p_client_tag;
+ IF FOUND THEN
+  IF item.body<>v_body OR item.attachment_id IS NOT NULL THEN RAISE EXCEPTION 'retry_payload_changed'; END IF;
+ ELSE
+  IF (SELECT count(*) FROM public.admin_chat_messages WHERE sender_id=auth.uid() AND created_at>clock_timestamp()-interval '1 minute')>=30 THEN
+   RAISE EXCEPTION 'chat_rate_limit'; END IF;
+  INSERT INTO public.admin_chat_messages(thread_id,sender_id,client_tag,body) VALUES(p_thread,auth.uid(),p_client_tag,v_body) RETURNING * INTO item;
+ END IF;
+ RETURN jsonb_build_object('id',item.id,'senderId',item.sender_id,'body',item.body,'createdAt',item.created_at,'clientTag',item.client_tag);
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_send"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_send_attachment"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid", "p_attachment" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE item public.admin_chat_messages%ROWTYPE; file public.admin_chat_attachments%ROWTYPE; peer uuid; v_body text:=btrim(coalesce(p_body,''));
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF NOT public.admin_chat_member(p_thread) THEN RAISE EXCEPTION 'chat_denied' USING ERRCODE='42501'; END IF;
+ SELECT CASE WHEN member_low=auth.uid() THEN member_high ELSE member_low END INTO peer FROM public.admin_chat_threads WHERE id=p_thread FOR UPDATE;
+ IF NOT public.admin_chat_eligible(peer) THEN RAISE EXCEPTION 'recipient_unavailable' USING ERRCODE='42501'; END IF;
+ IF length(v_body)>5000 OR p_client_tag IS NULL OR p_attachment IS NULL THEN RAISE EXCEPTION 'invalid_message'; END IF;
+ SELECT * INTO item FROM public.admin_chat_messages WHERE thread_id=p_thread AND sender_id=auth.uid() AND client_tag=p_client_tag;
+ IF FOUND THEN
+  IF item.body<>v_body OR item.attachment_id IS DISTINCT FROM p_attachment THEN RAISE EXCEPTION 'retry_payload_changed'; END IF;
+ ELSE
+  SELECT * INTO file FROM public.admin_chat_attachments WHERE id=p_attachment FOR UPDATE;
+  IF NOT FOUND OR file.owner_id<>auth.uid() OR file.thread_id<>p_thread OR file.client_tag<>p_client_tag OR file.state<>'validated' OR file.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'invalid_attachment'; END IF;
+  IF (SELECT count(*) FROM public.admin_chat_messages WHERE sender_id=auth.uid() AND created_at>clock_timestamp()-interval '1 minute')>=30 THEN RAISE EXCEPTION 'chat_rate_limit'; END IF;
+  INSERT INTO public.admin_chat_messages(thread_id,sender_id,client_tag,body,attachment_id) VALUES(p_thread,auth.uid(),p_client_tag,v_body,p_attachment) RETURNING * INTO item;
+  UPDATE public.admin_chat_attachments SET state='finalized' WHERE id=p_attachment;
+ END IF;
+ RETURN jsonb_build_object('id',item.id,'senderId',item.sender_id,'body',item.body,'createdAt',item.created_at,'clientTag',item.client_tag,'attachment',public.admin_chat_file_json(item.attachment_id));
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_send_attachment"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid", "p_attachment" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_chat_staff"("p_query" "text" DEFAULT ''::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE result jsonb;
+BEGIN
+ PERFORM public.admin_chat_require();
+ IF length(p_query)>100 THEN RAISE EXCEPTION 'invalid_query'; END IF;
+ SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.name,x.id),'[]'::jsonb) INTO result FROM
+ (SELECT s.user_id AS id,coalesce(nullif(p.display_name,''),'Staff member') AS name,s.staff_role AS "staffRole"
+ FROM public.admin_staff s JOIN public.profiles p ON p.id=s.user_id
+ WHERE s.user_id<>auth.uid() AND public.admin_chat_eligible(s.user_id)
+ AND (coalesce(p_query,'')='' OR position(lower(p_query) IN lower(coalesce(p.display_name,'')))>0)
+ ORDER BY name,s.user_id LIMIT 50) x;
+ RETURN result;
+END $$;
+
+
+ALTER FUNCTION "public"."admin_chat_staff"("p_query" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_company_actor_role"("p_actor_id" "uuid") RETURNS "text"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -2608,6 +2959,77 @@ CREATE TABLE IF NOT EXISTS "public"."admin_actions" (
 ALTER TABLE "public"."admin_actions" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."admin_chat_attachments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "thread_id" "uuid" NOT NULL,
+    "owner_id" "uuid" NOT NULL,
+    "client_tag" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "mime" "text" NOT NULL,
+    "size" bigint NOT NULL,
+    "sha256" "text" NOT NULL,
+    "state" "text" DEFAULT 'reserved'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '01:00:00'::interval) NOT NULL,
+    CONSTRAINT "admin_chat_attachments_mime_check" CHECK (("mime" = ANY (ARRAY['image/jpeg'::"text", 'image/png'::"text", 'image/webp'::"text", 'application/pdf'::"text", 'text/plain'::"text"]))),
+    CONSTRAINT "admin_chat_attachments_name_check" CHECK (((("length"("name") >= 1) AND ("length"("name") <= 180)) AND ("name" !~ '[[:cntrl:]/\\]'::"text"))),
+    CONSTRAINT "admin_chat_attachments_sha256_check" CHECK (("sha256" ~ '^[a-f0-9]{64}$'::"text")),
+    CONSTRAINT "admin_chat_attachments_size_check" CHECK ((("size" >= 1) AND ("size" <= 3145728))),
+    CONSTRAINT "admin_chat_attachments_state_check" CHECK (("state" = ANY (ARRAY['reserved'::"text", 'validated'::"text", 'finalized'::"text", 'cleaning'::"text", 'cleaned'::"text"])))
+);
+
+
+ALTER TABLE "public"."admin_chat_attachments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_chat_messages" (
+    "id" bigint NOT NULL,
+    "thread_id" "uuid" NOT NULL,
+    "sender_id" "uuid" NOT NULL,
+    "client_tag" "uuid" NOT NULL,
+    "body" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    "attachment_id" "uuid",
+    CONSTRAINT "admin_chat_messages_body_check" CHECK (((("length"("btrim"("body")) >= 0) AND ("length"("btrim"("body")) <= 5000)) AND (("length"("btrim"("body")) > 0) OR ("attachment_id" IS NOT NULL))))
+);
+
+
+ALTER TABLE "public"."admin_chat_messages" OWNER TO "postgres";
+
+
+ALTER TABLE "public"."admin_chat_messages" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME "public"."admin_chat_messages_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_chat_reads" (
+    "thread_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "last_message_id" bigint NOT NULL
+);
+
+
+ALTER TABLE "public"."admin_chat_reads" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_chat_threads" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "member_low" "uuid" NOT NULL,
+    "member_high" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    CONSTRAINT "admin_chat_threads_check" CHECK (("member_low" < "member_high"))
+);
+
+
+ALTER TABLE "public"."admin_chat_threads" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."admin_platform_settings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "key" "text" NOT NULL,
@@ -3612,6 +4034,46 @@ ALTER TABLE ONLY "public"."admin_actions"
 
 
 
+ALTER TABLE ONLY "public"."admin_chat_attachments"
+    ADD CONSTRAINT "admin_chat_attachments_owner_id_client_tag_key" UNIQUE ("owner_id", "client_tag");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_attachments"
+    ADD CONSTRAINT "admin_chat_attachments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_attachment_id_key" UNIQUE ("attachment_id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_thread_id_sender_id_client_tag_key" UNIQUE ("thread_id", "sender_id", "client_tag");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_reads"
+    ADD CONSTRAINT "admin_chat_reads_pkey" PRIMARY KEY ("thread_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_threads"
+    ADD CONSTRAINT "admin_chat_threads_member_low_member_high_key" UNIQUE ("member_low", "member_high");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_threads"
+    ADD CONSTRAINT "admin_chat_threads_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."admin_platform_settings"
     ADD CONSTRAINT "admin_platform_settings_key_key" UNIQUE ("key");
 
@@ -3856,6 +4318,26 @@ CREATE INDEX "admin_actions_created_at_idx" ON "public"."admin_actions" USING "b
 
 
 CREATE INDEX "admin_actions_target_idx" ON "public"."admin_actions" USING "btree" ("target_table", "target_id");
+
+
+
+CREATE INDEX "admin_chat_attachments_expiry_idx" ON "public"."admin_chat_attachments" USING "btree" ("expires_at") WHERE ("state" <> 'finalized'::"text");
+
+
+
+CREATE INDEX "admin_chat_attachments_owner_idx" ON "public"."admin_chat_attachments" USING "btree" ("owner_id", "created_at" DESC);
+
+
+
+CREATE INDEX "admin_chat_messages_rate_idx" ON "public"."admin_chat_messages" USING "btree" ("sender_id", "created_at" DESC);
+
+
+
+CREATE INDEX "admin_chat_messages_thread_idx" ON "public"."admin_chat_messages" USING "btree" ("thread_id", "id" DESC);
+
+
+
+CREATE INDEX "admin_chat_threads_high_idx" ON "public"."admin_chat_threads" USING "btree" ("member_high");
 
 
 
@@ -4352,6 +4834,51 @@ ALTER TABLE ONLY "public"."admin_actions"
 
 
 
+ALTER TABLE ONLY "public"."admin_chat_attachments"
+    ADD CONSTRAINT "admin_chat_attachments_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_attachments"
+    ADD CONSTRAINT "admin_chat_attachments_thread_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "public"."admin_chat_threads"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_attachment_id_fkey" FOREIGN KEY ("attachment_id") REFERENCES "public"."admin_chat_attachments"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_messages"
+    ADD CONSTRAINT "admin_chat_messages_thread_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "public"."admin_chat_threads"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_reads"
+    ADD CONSTRAINT "admin_chat_reads_thread_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "public"."admin_chat_threads"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_reads"
+    ADD CONSTRAINT "admin_chat_reads_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_threads"
+    ADD CONSTRAINT "admin_chat_threads_member_high_fkey" FOREIGN KEY ("member_high") REFERENCES "public"."profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_chat_threads"
+    ADD CONSTRAINT "admin_chat_threads_member_low_fkey" FOREIGN KEY ("member_low") REFERENCES "public"."profiles"("id");
+
+
+
 ALTER TABLE ONLY "public"."admin_staff"
     ADD CONSTRAINT "admin_staff_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id");
 
@@ -4686,6 +5213,18 @@ CREATE POLICY "admin_actions_admin_read" ON "public"."admin_actions" FOR SELECT 
 
 
 
+ALTER TABLE "public"."admin_chat_attachments" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_chat_messages" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_chat_reads" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_chat_threads" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."admin_platform_settings" ENABLE ROW LEVEL SECURITY;
 
 
@@ -4973,6 +5512,18 @@ CREATE POLICY "notifications_update_own" ON "public"."notifications" FOR UPDATE 
 
 
 
+CREATE POLICY "own_read_position" ON "public"."admin_chat_reads" FOR SELECT TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."admin_chat_member"("thread_id")));
+
+
+
+CREATE POLICY "participant_read" ON "public"."admin_chat_messages" FOR SELECT TO "authenticated" USING ("public"."admin_chat_member"("thread_id"));
+
+
+
+CREATE POLICY "participant_read" ON "public"."admin_chat_threads" FOR SELECT TO "authenticated" USING ((( SELECT "public"."admin_chat_allowed"() AS "admin_chat_allowed") AND ((( SELECT "auth"."uid"() AS "uid") = "member_low") OR (( SELECT "auth"."uid"() AS "uid") = "member_high"))));
+
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
@@ -5254,6 +5805,110 @@ GRANT ALL ON FUNCTION "public"."admin_broadcast"("p_title" "text", "p_body" "tex
 REVOKE ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_broadcast_to_user"("p_title" "text", "p_body" "text", "p_user_id" "uuid", "p_data" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_allowed"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_allowed"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_allowed"() TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_eligible"("p_user" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_eligible"("p_user" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_access"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_access"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_actor_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_actor_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_cleanup_claim"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_cleanup_claim"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_cleanup_done"("p_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_cleanup_done"("p_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_json"("p_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_json"("p_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_require"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_reserve"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid", "p_client_tag" "uuid", "p_name" "text", "p_mime" "text", "p_size" bigint, "p_sha256" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_reserve"("p_actor" "uuid", "p_aal" "text", "p_thread" "uuid", "p_client_tag" "uuid", "p_name" "text", "p_mime" "text", "p_size" bigint, "p_sha256" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_file_validate"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_file_validate"("p_actor" "uuid", "p_aal" "text", "p_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_history"("p_thread" "uuid", "p_before" bigint, "p_after" bigint) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_history"("p_thread" "uuid", "p_before" bigint, "p_after" bigint) TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_history"("p_thread" "uuid", "p_before" bigint, "p_after" bigint) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_inbox"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_inbox"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_inbox"() TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_member"("p_thread" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_member"("p_thread" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_member"("p_thread" "uuid") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_open"("p_peer" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_open"("p_peer" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_open"("p_peer" "uuid") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_read"("p_thread" "uuid", "p_last" bigint) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_read"("p_thread" "uuid", "p_last" bigint) TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_read"("p_thread" "uuid", "p_last" bigint) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_require"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_require"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_send"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_send"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_send"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_send_attachment"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid", "p_attachment" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_send_attachment"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid", "p_attachment" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_send_attachment"("p_thread" "uuid", "p_body" "text", "p_client_tag" "uuid", "p_attachment" "uuid") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_chat_staff"("p_query" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_chat_staff"("p_query" "text") TO "service_role";
+GRANT ALL ON FUNCTION "public"."admin_chat_staff"("p_query" "text") TO "authenticated";
 
 
 
@@ -5627,6 +6282,29 @@ GRANT ALL ON FUNCTION "public"."update_conversation_last_message"() TO "service_
 GRANT ALL ON TABLE "public"."admin_actions" TO "anon";
 GRANT ALL ON TABLE "public"."admin_actions" TO "authenticated";
 GRANT ALL ON TABLE "public"."admin_actions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_chat_attachments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_chat_messages" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_chat_messages" TO "authenticated";
+
+
+
+GRANT ALL ON SEQUENCE "public"."admin_chat_messages_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_chat_reads" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_chat_reads" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."admin_chat_threads" TO "service_role";
+GRANT SELECT ON TABLE "public"."admin_chat_threads" TO "authenticated";
 
 
 
