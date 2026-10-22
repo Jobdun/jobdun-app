@@ -16,6 +16,8 @@ on:
       - 'supabase/tests/company_admin*'
       - 'supabase/tests/run_company_admin.sh'
       - 'supabase/schema.sql'
+      - 'scripts/prepare-admin-test-image.sh'
+      - 'scripts/tests/admin-test-image.py'
       - '.github/workflows/admin-user-management.yml'
   pull_request:
     branches: [main]
@@ -32,6 +34,8 @@ on:
       - 'supabase/tests/company_admin*'
       - 'supabase/tests/run_company_admin.sh'
       - 'supabase/schema.sql'
+      - 'scripts/prepare-admin-test-image.sh'
+      - 'scripts/tests/admin-test-image.py'
       - '.github/workflows/admin-user-management.yml'
 
 permissions:
@@ -64,11 +68,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare pinned SQL test image with bounded mirror retries
+        run: bash scripts/prepare-admin-test-image.sh
       - name: Isolated permissions, rollback and concurrency regressions
         # Official mirror with the same image digest; anonymous ECR pulls are
         # rate-limited on shared GitHub-hosted runner addresses.
-        env:
-          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
         run: bash supabase/tests/run_admin_safety.sh
 
   company:
@@ -83,7 +87,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare pinned SQL test image with bounded mirror retries
+        run: bash scripts/prepare-admin-test-image.sh
       - name: Isolated company authorization and rollback regressions
-        env:
-          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
         run: bash supabase/tests/run_company_admin.sh

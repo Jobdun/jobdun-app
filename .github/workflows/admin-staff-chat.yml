@@ -9,6 +9,8 @@ on:
       - 'supabase/rollbacks/*staff_chat*.sql'
       - 'supabase/tests/*staff_chat*'
       - 'supabase/tests/company_admin_pre_migration_schema.sql'
+      - 'scripts/prepare-admin-test-image.sh'
+      - 'scripts/tests/admin-test-image.py'
       - '.github/workflows/admin-staff-chat.yml'
   pull_request:
     branches: [main]
@@ -18,6 +20,8 @@ on:
       - 'supabase/rollbacks/*staff_chat*.sql'
       - 'supabase/tests/*staff_chat*'
       - 'supabase/tests/company_admin_pre_migration_schema.sql'
+      - 'scripts/prepare-admin-test-image.sh'
+      - 'scripts/tests/admin-test-image.py'
       - '.github/workflows/admin-staff-chat.yml'
 
 permissions:
@@ -33,6 +37,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - run: python3 scripts/tests/admin-test-image.py
       - run: deno check supabase/functions/admin-chat-files/index.ts
       - run: deno lint supabase/functions/admin-chat-files/
       - run: deno fmt --check supabase/functions/admin-chat-files/*.ts
@@ -50,7 +55,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare pinned SQL test image with bounded mirror retries
+        run: bash scripts/prepare-admin-test-image.sh
       - name: Isolated permissions, cleanup and rollback regressions
-        env:
-          ADMIN_TEST_IMAGE: ghcr.io/supabase/postgres:17.6.1.111@sha256:dda62da900896d4a8f1cf687cd9912c8d3ea4ad442c9273c27848fa8f42da6cc
         run: bash supabase/tests/run_staff_chat_attachments.sh
