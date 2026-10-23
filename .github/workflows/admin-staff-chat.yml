@@ -6,8 +6,11 @@ on:
     paths:
       - 'supabase/functions/admin-chat-files/**'
       - 'supabase/migrations/*staff_chat*.sql'
+      - 'supabase/migrations/*admin_work_email_exceptions*.sql'
       - 'supabase/rollbacks/*staff_chat*.sql'
+      - 'supabase/rollbacks/*admin_work_email_exceptions*.sql'
       - 'supabase/tests/*staff_chat*'
+      - 'supabase/tests/*admin_work_email*'
       - 'supabase/tests/company_admin_pre_migration_schema.sql'
       - 'scripts/prepare-admin-test-image.sh'
       - 'scripts/tests/admin-test-image.py'
@@ -17,8 +20,11 @@ on:
     paths:
       - 'supabase/functions/admin-chat-files/**'
       - 'supabase/migrations/*staff_chat*.sql'
+      - 'supabase/migrations/*admin_work_email_exceptions*.sql'
       - 'supabase/rollbacks/*staff_chat*.sql'
+      - 'supabase/rollbacks/*admin_work_email_exceptions*.sql'
       - 'supabase/tests/*staff_chat*'
+      - 'supabase/tests/*admin_work_email*'
       - 'supabase/tests/company_admin_pre_migration_schema.sql'
       - 'scripts/prepare-admin-test-image.sh'
       - 'scripts/tests/admin-test-image.py'
@@ -58,4 +64,4 @@ jobs:
       - name: Prepare pinned SQL test image with bounded mirror retries
         run: bash scripts/prepare-admin-test-image.sh
       - name: Isolated permissions, cleanup and rollback regressions
-        run: bash supabase/tests/run_staff_chat_attachments.sh
+        run: bash supabase/tests/run_admin_work_email_exceptions.sh
